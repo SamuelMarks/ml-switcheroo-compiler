@@ -9,6 +9,7 @@ detection, and graph visualization utilities (Graphviz and HTML exports).
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -26,10 +27,10 @@ from ml_switcheroo_compiler.diagnostics import (
     to_graphviz,
     to_html,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockNodeStub, MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_traceback_reconstructor() -> None:
@@ -42,43 +43,46 @@ def test_traceback_reconstructor() -> None:
 def test_debug_shapes() -> None:
     """Verify the shape debugging utility under various model execution scenarios."""
 
-    def dummy_model(x: EagerValue) -> EagerValue:
+    def dummy_model(x: Tensor) -> Tensor:
         """Dummy model.
 
         Args:
-            x (EagerValue): The first input tensor.
+            x (Tensor): The first input tensor.
 
         Returns:
-            EagerValue: The resulting output.
+            Tensor: The resulting output.
         """
-        return ensure_eager_tensor(x) + ensure_eager_tensor(1.0)
+        return x + 1.0
 
-    res = ensure_callable(debug_shapes)(dummy_model, (2, 2))
+    res = debug_shapes(dummy_model, (2, 2))
     assert "| input | (2, 2) | float64 |" in res
     assert "| output | (2, 2) | float64 |" in res
 
-    def dummy_model_no_shape(x: EagerValue) -> int:
+    def dummy_model_no_shape(x: BackendArg) -> int:
         """Dummy model no shape.
 
         Args:
-            x (EagerValue): The first input tensor.
+            x (BackendArg): The first input tensor.
 
         Returns:
             int: The resulting output.
         """
         return 5
 
-    res = ensure_callable(debug_shapes)(dummy_model_no_shape, (2, 2))
+    res = debug_shapes(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
-    def failing_model(x: EagerValue) -> typing.NoReturn:
+    def failing_model(x: BackendArg) -> typing.NoReturn:
         """Failing model.
 
         Args:
-            x (EagerValue): The first input tensor.
+            x (BackendArg): The first input tensor.
 
         Returns:
             NoReturn: The resulting output.
+
+        Raises:
+            RuntimeError: If execution or validation fails in `failing_model`.
         """
         msg = "fail"
         raise RuntimeError(msg)
@@ -93,7 +97,7 @@ def test_debug_shapes() -> None:
 
     with pytest.MonkeyPatch().context() as m:
         m.setattr(debugger, "_FORMATTERS", dummy_dict)
-        res_custom = ensure_callable(debug_shapes)(dummy_model, (2, 2))
+        res_custom = debug_shapes(dummy_model, (2, 2))
         assert "header" in str(res_custom)
 
         m.setattr(debugger, "_FORMATTERS", {"graphviz": {"header": "H", "node": "N", "edge": "E", "footer": "F"}})
@@ -116,18 +120,28 @@ def test_estimate_flops() -> None:
     graph.nodes["n2_no_out_shape"] = LogicalNode(id="n2_no_out_shape", op_type="MatMul", inputs=["in_a", "in_b"])
     graph.nodes["in_3d_a"] = LogicalNode(id="in_3d_a", op_type="Input", shape_metadata=(2, 4, 8))
     graph.nodes["in_3d_b"] = LogicalNode(id="in_3d_b", op_type="Input", shape_metadata=(2, 8, 5))
-    graph.nodes["n2_batched_no_out"] = LogicalNode(id="n2_batched_no_out", op_type="MatMul", inputs=["in_3d_a", "in_3d_b"])
+    graph.nodes["n2_batched_no_out"] = LogicalNode(
+        id="n2_batched_no_out", op_type="MatMul", inputs=["in_3d_a", "in_3d_b"]
+    )
     graph.nodes["n2_fallback_2d"] = LogicalNode(id="n2_fallback_2d", op_type="MatMul", shape_metadata=(10, 10))
     graph.nodes["n2_fallback_1d"] = LogicalNode(id="n2_fallback_1d", op_type="MatMul", shape_metadata=(10,))
     graph.nodes["n2_no_shape"] = LogicalNode(id="n2_no_shape", op_type="MatMul")
     graph.nodes["in_1d"] = LogicalNode(id="in_1d", op_type="Input", shape_metadata=(8,))
-    graph.nodes["n2_1d_in"] = LogicalNode(id="n2_1d_in", op_type="MatMul", inputs=["in_1d", "in_1d"], shape_metadata=(1,))
+    graph.nodes["n2_1d_in"] = LogicalNode(
+        id="n2_1d_in", op_type="MatMul", inputs=["in_1d", "in_1d"], shape_metadata=(1,)
+    )
     graph.nodes["conv_in"] = LogicalNode(id="conv_in", op_type="Input", shape_metadata=(1, 3, 8, 8))
     graph.nodes["conv_w_oihw"] = LogicalNode(id="conv_w_oihw", op_type="Input", shape_metadata=(16, 3, 3, 3))
     graph.nodes["conv_w_hwio"] = LogicalNode(id="conv_w_hwio", op_type="Input", shape_metadata=(3, 3, 3, 16))
-    graph.nodes["conv1"] = LogicalNode(id="conv1", op_type="Conv2D", inputs=["conv_in", "conv_w_oihw"], shape_metadata=(1, 16, 6, 6))
-    graph.nodes["conv2"] = LogicalNode(id="conv2", op_type="Conv2D", inputs=["conv_in", "conv_w_hwio"], shape_metadata=(1, 6, 6, 8))
-    graph.nodes["conv_bad_w"] = LogicalNode(id="conv_bad_w", op_type="Conv2D", inputs=["conv_in", "in_1d"], shape_metadata=(1, 6, 6, 16))
+    graph.nodes["conv1"] = LogicalNode(
+        id="conv1", op_type="Conv2D", inputs=["conv_in", "conv_w_oihw"], shape_metadata=(1, 16, 6, 6)
+    )
+    graph.nodes["conv2"] = LogicalNode(
+        id="conv2", op_type="Conv2D", inputs=["conv_in", "conv_w_hwio"], shape_metadata=(1, 6, 6, 8)
+    )
+    graph.nodes["conv_bad_w"] = LogicalNode(
+        id="conv_bad_w", op_type="Conv2D", inputs=["conv_in", "in_1d"], shape_metadata=(1, 6, 6, 16)
+    )
     graph.nodes["conv_fallback"] = LogicalNode(id="conv_fallback", op_type="Conv2D", shape_metadata=(1, 6, 6, 16))
     graph.nodes["conv_no_shape"] = LogicalNode(id="conv_no_shape", op_type="Conv2D")
     graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add")
@@ -136,12 +150,16 @@ def test_estimate_flops() -> None:
         """Bad Shape class."""
 
         def __iter__(self) -> None:
-            """Raise TypeError on iteration."""
+            """Raise TypeError on iteration.
+
+            Raises:
+                TypeError: If an argument passed to `__iter__` has an incompatible type.
+            """
             msg = "bad iterator"
             raise TypeError(msg)
 
-    n5 = LogicalNode(id="n5", op_type="Add")
-    ensure_mutable(n5).shape_metadata = ensure_eager_tensor(BadShape())
+    n5 = MockNodeStub(id="n5", op_type="Add")
+    pytest.MonkeyPatch().setattr(n5, "shape_metadata", BadShape(), raising=False)
     graph.nodes["n5"] = n5
     flops = estimate_flops(graph)
     assert flops > 2000
@@ -161,12 +179,16 @@ def test_memory_profiler() -> None:
         """Bad Shape class."""
 
         def __iter__(self) -> None:
-            """Raise TypeError on iteration."""
+            """Raise TypeError on iteration.
+
+            Raises:
+                TypeError: If an argument passed to `__iter__` has an incompatible type.
+            """
             msg = "bad iterator"
             raise TypeError(msg)
 
-    n3 = LogicalNode(id="n3", op_type="Add")
-    ensure_mutable(n3).shape_metadata = ensure_eager_tensor(BadShape())
+    n3 = MockNodeStub(id="n3", op_type="Add")
+    pytest.MonkeyPatch().setattr(n3, "shape_metadata", BadShape(), raising=False)
     graph.nodes["n3"] = n3
     mem = memory_profiler(graph)
     assert mem == 400 + 8 + 20 + 4
@@ -186,11 +208,11 @@ def test_numerical_anomaly_detector() -> None:
     with pytest.raises(ValueError, match="Tensor contains NaN or Inf"):
         check_numerical_anomaly(t2)
 
-    class NonArray:
+    class NonArray(MockTestStub):
         """Non Array class."""
 
-    t3 = ensure_callable(Tensor)(ensure_callable(NonArray)(), ensure_callable(TensorConfig)((2,), DType.Float32, device))
-    ensure_callable(check_numerical_anomaly)(t3)
+    t3 = Tensor(NonArray(), TensorConfig((2,), DType.Float32, device))
+    check_numerical_anomaly(t3)
     config.eager_mode = False
 
 
@@ -212,11 +234,11 @@ def test_to_html() -> None:
     assert "<h1>IR Graph</h1>" in html
 
 
-def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None:
+def test_encode_image_and_write_raw_pb(tmp_path: Path) -> None:
     """Verify image encoding to PNG bytes and protobuf writing.
 
     Args:
-        tmp_path (pytest.TempPathFactory): Temporary directory fixture.
+        tmp_path (Path): Temporary directory fixture.
     """
     import io
 
@@ -262,7 +284,7 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     assert decoded_1c.size == (12, 12)
 
     # 4. Test write_raw_pb
-    logdir: str = str(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("tfevents"))
+    logdir: str = str(tmp_path / "tfevents")
     write_raw_pb(b"mock_proto_data", logdir)
     with open(f"{logdir}/events.out.tfevents.pb", "rb") as f:
         assert f.read() == b"mock_proto_data"
@@ -270,9 +292,9 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     # 5. Test debugging.enable_dump_debug_info
     from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info, get_debug_dump_config
 
-    dump_dir: str = str(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("dump_debug"))
+    dump_dir: str = str(tmp_path / "dump_debug")
     enable_dump_debug_info(dump_dir, tensor_debug_mode="FULL_TENSOR", circular_buffer_size=128)
-    assert ensure_callable((ensure_eager_tensor(tmp_path) / ensure_eager_tensor("dump_debug")).exists)()
+    assert (tmp_path / "dump_debug").exists()
     dbg_cfg = get_debug_dump_config()
     assert dbg_cfg["enabled"] is True
     assert dbg_cfg["dump_root"] == dump_dir

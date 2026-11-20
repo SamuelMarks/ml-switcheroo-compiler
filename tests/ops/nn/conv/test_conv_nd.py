@@ -1,171 +1,119 @@
-"""Tests for test_conv_nd."""
+"""Behavioral tests for multidimensional `conv`, `conv_transpose`, `depthwise_conv`, and `separable_conv`."""
 
 from __future__ import annotations
 
-import importlib
-import sys
-import typing
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.core.config import ConfigContext, config
+from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.conv_nd import conv, conv_transpose, depthwise_conv, separable_conv
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-GenericConvConfig = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_nd")).GenericConvConfig)
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.nn.conv import conv, conv_transpose, depthwise_conv, separable_conv
+from ml_switcheroo_compiler.ops.nn.conv_utils import GenericConvConfig
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 
 
-def test_conv_nd_extra() -> None:
-    """Test the conv nd extra behavior.
+class _UnshapedResult:
+    """Backend payload lacking `.shape`."""
 
-    Returns:
-        TensorOrScalar: The inferred shape or computed result.
-    """
+    val: int = 123
+
+
+def test_conv_transpose_eager_and_tracing_ir_emission() -> None:
+    """Verify `conv_transpose` handles shaped/unshaped eager outputs and emits `ConvTranspose` IR nodes when tracing."""
     device = Device("cpu")
-    t1_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
-    t2_1d = Tensor(np.ones((3, 2, 3)), TensorConfig((3, 2, 3), "float32", device))
-    conf_1d = GenericConvConfig(strides=1, padding="VALID", dilation_rate=1)
-    with ConfigContext(eager_mode=True):
-        with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv1d") as mock_conv1d:
-            mock_conv1d.return_value = "res"
-            ensure_callable(conv)(t1_1d, t2_1d, conf_1d)
-            assert mock_conv1d.called
-        t1_depth_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
-        t2_depth_1d = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), "float32", device))
-        with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv1d") as mock_dw:
-            mock_dw.return_value = "res"
-            ensure_callable(depthwise_conv)(t1_depth_1d, t2_depth_1d, conf_1d)
-            assert mock_dw.called
-        t1_sep_1d = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
-        t2_sep_dw = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), "float32", device))
-        t2_sep_pw = Tensor(np.ones((4, 2, 1)), TensorConfig((4, 2, 1), "float32", device))
-        with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv1d") as mock_sep:
-            mock_sep.return_value = "res"
-            ensure_callable(separable_conv)(t1_sep_1d, t2_sep_dw, t2_sep_pw, conf_1d)
-            assert mock_sep.called
+    t1 = Tensor(np.ones((1, 4, 2), dtype=np.float32), TensorConfig((1, 4, 2), "float32", device))
+    k1 = Tensor(np.ones((2, 2, 2), dtype=np.float32), TensorConfig((2, 2, 2), "float32", device))
 
+    backend = MagicMock()
+    backend.execute_op.return_value = np.ones((1, 4, 2), dtype=np.float32)
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.ops.nn.conv.get_active_backend", return_value=backend),
+    ):
+        eager_shaped = conv_transpose(t1, k1, strides=1, padding="VALID")
+        assert isinstance(eager_shaped, Tensor)
+        assert eager_shaped.shape == (1, 4, 2)
 
-def test_conv_transpose_extra() -> None:
-    """Test the conv transpose extra behavior.
+        backend.execute_op.return_value = _UnshapedResult()
+        eager_unshaped = conv_transpose(t1, k1)
+        assert isinstance(eager_unshaped, Tensor)
+        assert eager_unshaped.shape == ()
 
-    Returns:
-        TensorOrScalar: The inferred shape or computed result.
-    """
-    device = Device("cpu")
-    t1 = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
-    t2 = Tensor(np.ones((3, 2, 3)), TensorConfig((3, 2, 3), "float32", device))
-    with ConfigContext(eager_mode=True):
-        with patch("ml_switcheroo_compiler.ops.nn.conv_nd.get_active_backend") as mock_backend:
-            mock_backend.return_value.execute_op.return_value = np.ones((1, 3, 7))
-            res = conv_transpose(t1, t2, strides=1, padding="VALID")
-            assert res is not None
+    t_sym = Tensor(ProxyTensor("ct_in", (1, 4, 2), "float32"), TensorConfig((1, 4, 2), "float32", device))
+    k_sym = Tensor(ProxyTensor("ct_w", (2, 2, 2), "float32"), TensorConfig((2, 2, 2), "float32", device))
     with ConfigContext(eager_mode=False):
-        from ml_switcheroo_compiler.tracing.state import global_tracing_state
-
-        global_tracing_state.start_tracing()
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("conv_transpose_trace")
         try:
-            res_traced = conv_transpose(t1, t2, strides=1, padding="VALID")
-            assert isinstance(res_traced, Tensor)
+            traced_out = conv_transpose(t_sym, k_sym, strides=1, padding="VALID")
         finally:
-            global_tracing_state.stop_tracing()
+            tape.stop_tracing()
+
+    assert isinstance(traced_out, Tensor)
+    ct_nodes = [n for n in traced_graph.nodes.values() if n.op_type == "ConvTranspose"]
+    assert len(ct_nodes) == 1
+    assert ct_nodes[0].inputs == ["ct_in", "ct_w"]
 
 
-def test_conv_nd_2d_3d() -> None:
-    """Test the conv nd 2d 3d behavior.
-
-    Returns:
-        TensorOrScalar: The inferred shape or computed result.
-    """
+def test_conv_depthwise_and_separable_spatial_rank_routing() -> None:
+    """Verify `conv`, `depthwise_conv`, and `separable_conv` route 1D/2D/3D tensors and reject unsupported ranks."""
     device = Device("cpu")
-    t1_2d = Tensor(np.ones((1, 2, 5, 5)), TensorConfig((1, 2, 5, 5), "float32", device))
-    t2_2d = Tensor(np.ones((3, 2, 3, 3)), TensorConfig((3, 2, 3, 3), "float32", device))
-    t1_3d = Tensor(np.ones((1, 2, 5, 5, 5)), TensorConfig((1, 2, 5, 5, 5), "float32", device))
-    t2_3d = Tensor(np.ones((3, 2, 3, 3, 3)), TensorConfig((3, 2, 3, 3, 3), "float32", device))
+    t_2d_rank = Tensor(np.ones((1, 2), dtype=np.float32), TensorConfig((1, 2), "float32", device))
+    t_1d = Tensor(np.ones((1, 4, 2), dtype=np.float32), TensorConfig((1, 4, 2), "float32", device))
+    t_2d = Tensor(np.ones((1, 4, 4, 2), dtype=np.float32), TensorConfig((1, 4, 4, 2), "float32", device))
+    t_3d = Tensor(np.ones((1, 4, 4, 4, 2), dtype=np.float32), TensorConfig((1, 4, 4, 4, 2), "float32", device))
+    t_4d = Tensor(np.ones((1, 4, 4, 4, 4, 2), dtype=np.float32), TensorConfig((1, 4, 4, 4, 4, 2), "float32", device))
+    k = Tensor(np.ones((2, 2, 2), dtype=np.float32), TensorConfig((2, 2, 2), "float32", device))
     conf = GenericConvConfig(strides=1, padding="VALID", dilation_rate=1)
-    with ConfigContext(eager_mode=True):
-        with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv2d") as mock_conv2d:
-            mock_conv2d.return_value = "res"
-            ensure_callable(conv)(t1_2d, t2_2d, conf)
-            assert mock_conv2d.called
-        with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv3d") as mock_conv3d:
-            mock_conv3d.return_value = "res"
-            ensure_callable(conv)(t1_3d, t2_3d, conf)
-            assert mock_conv3d.called
-        with pytest.raises(ValueError):
-            ensure_callable(depthwise_conv)(t1_3d, t2_3d, conf)
-        with pytest.raises(ValueError):
-            ensure_callable(separable_conv)(t1_3d, t2_3d, t2_3d, conf)
 
+    with (
+        patch("ml_switcheroo_compiler.ops.nn.conv.conv1d", return_value=t_1d) as mock_c1,
+        patch("ml_switcheroo_compiler.ops.nn.conv.conv2d", return_value=t_2d) as mock_c2,
+        patch("ml_switcheroo_compiler.ops.nn.conv.conv3d", return_value=t_3d) as mock_c3,
+    ):
+        assert conv(t_1d, k) is t_1d
+        assert conv(t_1d, k, config=conf) is t_1d
+        assert mock_c1.call_count == 2
 
-gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
+        assert conv(t_2d, k, config=GenericConvConfig(strides=2)) is t_2d
+        mock_c2.assert_called_once()
 
+        assert conv(t_3d, k) is t_3d
+        assert conv(t_3d, k, config=conf) is t_3d
+        assert mock_c3.call_count == 2
 
-def test_conv_nd_coverage() -> None:
-    """Test function test_conv_nd_coverage."""
-    config.eager_mode = True
-    t_1d = Tensor(np.ones((1, 3, 2)), TensorConfig(shape=(1, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-    w_1d = Tensor(np.ones((2, 2, 4)), TensorConfig(shape=(2, 2, 4), dtype=DType("float32"), device=Device("cpu")))
-    t_2d = Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-    w_2d = Tensor(np.ones((2, 2, 2, 4)), TensorConfig(shape=(2, 2, 2, 4), dtype=DType("float32"), device=Device("cpu")))
-    t_3d = Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-    w_3d = Tensor(np.ones((2, 2, 2, 2, 4)), TensorConfig(shape=(2, 2, 2, 2, 4), dtype=DType("float32"), device=Device("cpu")))
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.get_active_backend") as mock_backend:
-        mock_backend.return_value.execute_op.return_value = np.zeros((1, 3, 2))
-        res = conv_transpose(t_1d, w_1d)
-        assert res is not None
-        config.eager_mode = False
-        from ml_switcheroo_compiler.tracing.state import global_tracing_state
+        with pytest.raises(ValueError, match="Unsupported spatial rank"):
+            conv(t_4d, k)
+        with pytest.raises(ValueError, match="Unsupported spatial rank"):
+            conv(t_2d_rank, t_2d_rank)
 
-        global_tracing_state.is_tracing = True
+    with (
+        patch("ml_switcheroo_compiler.ops.nn.conv.depthwise_conv1d", return_value=t_1d) as mock_dw1,
+        patch("ml_switcheroo_compiler.ops.nn.conv.depthwise_conv2d", return_value=t_2d) as mock_dw2,
+    ):
+        assert depthwise_conv(t_1d, k) is t_1d
+        assert depthwise_conv(t_1d, k, config=conf) is t_1d
+        assert mock_dw1.call_count == 2
 
-        def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_emit.
+        assert depthwise_conv(t_2d, k, config=GenericConvConfig()) is t_2d
+        mock_dw2.assert_called_once()
 
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
+        with pytest.raises(ValueError, match="Unsupported spatial rank for depthwise_conv"):
+            depthwise_conv(t_3d, k)
 
-            Returns:
-                EagerValue: Computed output value from `dummy_emit`.
-            """
-            return "emitted"
+    with (
+        patch("ml_switcheroo_compiler.ops.nn.conv.separable_conv1d", return_value=t_1d) as mock_sep1,
+        patch("ml_switcheroo_compiler.ops.nn.conv.separable_conv2d", return_value=t_2d) as mock_sep2,
+    ):
+        assert separable_conv(t_1d, k, k) is t_1d
+        assert separable_conv(t_1d, k, k, config=conf) is t_1d
+        assert mock_sep1.call_count == 2
 
-        import ml_switcheroo_compiler.ops.nn.conv_nd as conv_nd_mod
+        assert separable_conv(t_2d, k, k, config=GenericConvConfig()) is t_2d
+        mock_sep2.assert_called_once()
 
-        ensure_mutable(conv_nd_mod)._emit_linalg_node = ensure_eager_tensor(dummy_emit)
-        assert conv_transpose(t_1d, w_1d) == "emitted"
-        config.eager_mode = True
-        global_tracing_state.is_tracing = False
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv1d") as mock_c1:
-        mock_c1.return_value = "c1"
-        assert ensure_eager_tensor(conv(t_1d, w_1d)) == ensure_eager_tensor("c1")
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv2d") as mock_c2:
-        mock_c2.return_value = "c2"
-        assert ensure_eager_tensor(conv(t_2d, w_2d)) == ensure_eager_tensor("c2")
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.conv3d") as mock_c3:
-        mock_c3.return_value = "c3"
-        assert ensure_eager_tensor(conv(t_3d, w_3d)) == ensure_eager_tensor("c3")
-    with pytest.raises(ValueError):
-        conv(Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))))
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv1d") as mock_d1:
-        mock_d1.return_value = "d1"
-        assert ensure_eager_tensor(depthwise_conv(t_1d, w_1d)) == ensure_eager_tensor("d1")
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.depthwise_conv2d") as mock_d2:
-        mock_d2.return_value = "d2"
-        assert ensure_eager_tensor(depthwise_conv(t_2d, w_2d)) == ensure_eager_tensor("d2")
-    with pytest.raises(ValueError):
-        depthwise_conv(t_3d, w_3d)
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv1d") as mock_s1:
-        mock_s1.return_value = "s1"
-        assert ensure_eager_tensor(separable_conv(t_1d, w_1d, w_1d)) == ensure_eager_tensor("s1")
-    with patch("ml_switcheroo_compiler.ops.nn.conv_nd.separable_conv2d") as mock_s2:
-        mock_s2.return_value = "s2"
-        assert ensure_eager_tensor(separable_conv(t_2d, w_2d, w_2d)) == ensure_eager_tensor("s2")
-    with pytest.raises(ValueError):
-        separable_conv(t_3d, w_3d, w_3d)
+        with pytest.raises(ValueError, match="Unsupported spatial rank for separable_conv"):
+            separable_conv(t_3d, k, k)

@@ -4,30 +4,36 @@ from __future__ import annotations
 
 import os
 import typing  # noqa: F401
+from types import ModuleType
+
+from ml_switcheroo_ir import IRGraph
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_callable,
-    ensure_eager_tensor,
-    ensure_int,
+    BackendArg,
+    coerce_int,
+    require_callable,
 )
 from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxControlFlowVisitor,
     JaxDistributedVisitor,
     JaxMathVisitor,
 )
-from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.backends.jax.jaxpr_ingest import ingest_jaxpr
+from ml_switcheroo_compiler.backends.protocols import (
+    EagerBackendAdapter,
+    StaticEagerBackendAdapter,
+    adapt_backend_module,
+)
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 @typing.runtime_checkable
 class _DistributedBackendConfigProtocol(typing.Protocol):
     """Protocol for distributed backend configuration objects."""
 
-    options: dict[str, EagerValue] | None
+    options: dict[str, BackendArg] | None
     world_size: int | None
     rank: int | None
 
@@ -36,12 +42,14 @@ class _DistributedBackendConfigProtocol(typing.Protocol):
 class JAXCodeGenerator(BaseGenerator):
     """JAX code generator."""
 
+    ingest_graph = staticmethod(ingest_jaxpr)
+
     @classmethod
-    def get_memory_info(cls, device: EagerValue = None) -> dict[str, int]:
+    def get_memory_info(cls, device: BackendArg = None) -> dict[str, int]:
         """Retrieve current and peak memory telemetry from JAX device stats or stdlib resource.
 
         Args:
-            device (EagerValue): Optional device identifier.
+            device (BackendArg): Optional device identifier.
 
         Returns:
             dict[str, int]: Mapping with 'current' and 'peak' memory usage in bytes.
@@ -50,19 +58,19 @@ class JAXCodeGenerator(BaseGenerator):
 
         try:
             dev = jax.local_devices()[0]
-            stats = ensure_mod(dev.memory_stats())
+            stats = dev.memory_stats()
             return {
-                "current": int(ensure_int(stats.get("bytes_in_use", 0))),
-                "peak": int(ensure_int(stats.get("peak_bytes_in_use", 0))),
+                "current": int(coerce_int(stats.get("bytes_in_use", 0))),
+                "peak": int(coerce_int(stats.get("peak_bytes_in_use", 0))),
             }
-        except Exception:
+        except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError):
             import resource
 
             rss: int = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
             return {"current": rss, "peak": rss}
 
     @classmethod
-    def initialize_distributed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def initialize_distributed(cls, *args: BackendArg, **kwargs: BackendArg) -> None:
         """Initialize distributed context.
 
         Args:
@@ -71,8 +79,8 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.distributed
 
-        backend_config: EagerValue = kwargs.get("backend_config")
-        dist_mod = ensure_mod(jax.distributed)
+        backend_config: BackendArg | _DistributedBackendConfigProtocol = kwargs.get("backend_config")
+        dist_mod = jax.distributed
         if isinstance(backend_config, _DistributedBackendConfigProtocol):
             coord = backend_config.options.get("coordinator_address") if backend_config.options else None
             dist_mod.initialize(
@@ -84,7 +92,9 @@ class JAXCodeGenerator(BaseGenerator):
             dist_mod.initialize()
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
+    def load(
+        cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"
+    ) -> BackendArg:
         """Load.
 
         Args:
@@ -94,14 +104,16 @@ class JAXCodeGenerator(BaseGenerator):
             encoding (str): Input `encoding` argument (encoding).
 
         Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
         """
         import jax.numpy as jnp
 
-        return ensure_eager_tensor(jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding))
+        return require_callable(jnp.load)(
+            filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding
+        )
 
     @classmethod
-    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: BackendArg, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -112,10 +124,10 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        ensure_mod(jnp).save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        require_callable(jnp.save)(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
-    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Savez.
 
         Args:
@@ -125,10 +137,10 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        ensure_mod(jnp).savez(file, *args, **kwds)
+        require_callable(jnp.savez)(file, *args, **kwds)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez_compressed(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Savez compressed.
 
         Args:
@@ -138,7 +150,9 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        ensure_mod(jnp).savez_compressed(file, *args, **kwds)
+        savez_comp_fn = adapt_backend_module(jnp).get_symbol("savez_compressed", None)
+        if savez_comp_fn is not None:
+            require_callable(savez_comp_fn)(file, *args, **kwds)
 
     def __init__(self, graph: IRGraph) -> None:
         """Init.
@@ -156,7 +170,7 @@ class JAXCodeGenerator(BaseGenerator):
             ]
         )
 
-    def _format_zeros_like(self, op: str, kwargs: dict[str, EagerValue]) -> str:
+    def _format_zeros_like(self, op: str, kwargs: dict[str, BackendArg]) -> str:
         """Execute format zeros like for compiler processing.
 
         Args:
@@ -171,7 +185,7 @@ class JAXCodeGenerator(BaseGenerator):
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: dict[str, EagerValue]) -> str:
+    def _format_full(self, kwargs: dict[str, BackendArg]) -> str:
         """Execute format full for compiler processing.
 
         Args:
@@ -205,7 +219,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         return "jnp"
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, BackendArg] | None = None) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -261,29 +275,29 @@ class JAXCodeGenerator(BaseGenerator):
         self.add_line("def apply_model(params, *args, **kwargs) -> object:")
         self.indent_level = self.indent_level + 1
 
-    def _build_jax_interpreter_fallback(self, graph: IRGraph) -> EagerValue:
+    def _build_jax_interpreter_fallback(self, graph: IRGraph) -> BackendArg:
         """Create an interpreter-based graph evaluation callable for JAX AOT fallback.
 
         Args:
             graph (IRGraph): Target computational graph.
 
         Returns:
-            EagerValue: Fallback evaluation callable.
+            BackendArg: Fallback evaluation callable.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        def fallback_forward(*fn_args: EagerValue) -> EagerValue:
+        def fallback_forward(*fn_args: BackendArg) -> BackendArg:
             """Execute interpreter graph evaluation fallback.
 
             Args:
-                *fn_args (EagerValue): Positional input arguments.
+                *fn_args (BackendArg): Positional input arguments.
 
             Returns:
-                EagerValue: Evaluated output tensors.
+                BackendArg: Evaluated output tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
-            inputs: dict[str, EagerValue] = {}
+            inputs: dict[str, BackendArg] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
@@ -297,43 +311,47 @@ class JAXCodeGenerator(BaseGenerator):
 
         return fallback_forward
 
-    def _wrap_jax_callable(self, target_fn: EagerValue, jnp_mod: EagerValue) -> EagerValue:
+    def _wrap_jax_callable(self, target_fn: BackendArg, jnp_mod: BackendArg) -> BackendArg:
         """Wrap a compiled or JIT-wrapped JAX callable to automatically unwrap Tensor inputs.
 
         Args:
-            target_fn (EagerValue): Underlying JAX compiled or JIT callable.
-            jnp_mod (EagerValue): Loaded jax.numpy module.
+            target_fn (BackendArg): Underlying JAX compiled or JIT callable.
+            jnp_mod (BackendArg): Loaded jax.numpy module.
 
         Returns:
-            EagerValue: Wrapped execution function.
+            BackendArg: Wrapped execution function.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
-        def executable(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
+        def executable(*w_args: BackendArg, **w_kwargs: BackendArg) -> BackendArg:
             """Execute the compiled or JIT-wrapped JAX callable.
 
             Args:
-                *w_args (EagerValue): Input tensors.
-                **w_kwargs (EagerValue): Keyword arguments.
+                *w_args (BackendArg): Input tensors.
+                **w_kwargs (BackendArg): Keyword arguments.
 
             Returns:
-                EagerValue: Result from the JAX callable.
+                BackendArg: Result from the JAX callable.
             """
             del w_kwargs
-            jax_args = [ensure_mod(jnp_mod).asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return ensure_callable(target_fn)(*jax_args)
+            asarray_fn = adapt_backend_module(jnp_mod).require_op("asarray")
+            jax_args = [asarray_fn(a.data if isinstance(a, Tensor) else a) for a in w_args]
+            return require_callable(target_fn)(*jax_args)
 
         return executable
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into an ahead-of-time (AOT) compiled executable using JAX JIT and XLA lowering.
 
         Args:
             graph (IRGraph): The target computational graph to compile.
-            **kwargs (EagerValue): Optional compilation options, such as 'sample_inputs'.
+            **kwargs (BackendArg): Optional compilation options, such as 'sample_inputs'.
 
         Returns:
-            EagerValue: AOT execution callable wrapping the JAX compiled executable.
+            BackendArg: AOT execution callable wrapping the JAX compiled executable.
+
+        Raises:
+            ValueError: When raised during `_compile_aot_impl` (Generated JAX module is missing apply_model).
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -341,20 +359,21 @@ class JAXCodeGenerator(BaseGenerator):
             import jax
             import jax.numpy as jnp
 
-            scope: dict[str, EagerValue] = {}
-            exec(self.generate(), scope)
+            from ml_switcheroo_compiler.backends._module_loader import load_generated_code
+
+            scope = load_generated_code(self.generate())
             apply_model_fn = scope.get("apply_model")
             if apply_model_fn is None or not callable(apply_model_fn):
                 raise ValueError("Generated JAX module is missing apply_model.")
 
-            def jax_forward(*fn_args: EagerValue) -> EagerValue:
+            def jax_forward(*fn_args: BackendArg) -> BackendArg:
                 """Execute generated JAX model function.
 
                 Args:
-                    *fn_args (EagerValue): Positional input arguments.
+                    *fn_args (BackendArg): Positional input arguments.
 
                 Returns:
-                    EagerValue: Computed outputs.
+                    BackendArg: Computed outputs.
                 """
                 return apply_model_fn(None, *fn_args)
 
@@ -365,72 +384,189 @@ class JAXCodeGenerator(BaseGenerator):
                 return self._wrap_jax_callable(compiled, jnp)
 
             return self._wrap_jax_callable(jax.jit(jax_forward), jnp)
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             return self._build_jax_interpreter_fallback(graph)
 
     @classmethod
-    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute operation eagerly on JAX backend.
 
         Args:
             op_type (str): Operation type.
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Evaluated JAX result.
+            BackendArg: Evaluated JAX result.
         """
         from .eager import execute_op as _execute_op
 
         return _execute_op(cls, op_type, *args, **kwargs)
 
     @staticmethod
-    def all_reduce(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def all_reduce(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Delegate all_reduce to distributed_collectives.jax_all_reduce.
 
         Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Reduced tensor result.
+            BackendArg: Reduced tensor result.
         """
         import importlib
 
         dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        return ensure_mod(dc).jax_all_reduce(*args, **kwargs)
+        return require_callable(adapt_backend_module(dc).require_symbol("jax_all_reduce"))(*args, **kwargs)
 
     @staticmethod
-    def all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def all_gather(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Delegate all_gather to distributed_collectives.jax_all_gather.
 
         Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Gathered tensor result.
+            BackendArg: Gathered tensor result.
         """
         import importlib
 
         dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        return ensure_mod(dc).jax_all_gather(*args, **kwargs)
+        return require_callable(adapt_backend_module(dc).require_symbol("jax_all_gather"))(*args, **kwargs)
 
     @staticmethod
-    def broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def broadcast(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Delegate broadcast to distributed_collectives.jax_broadcast.
 
         Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Broadcasted tensor result.
+            BackendArg: Broadcasted tensor result.
         """
         import importlib
 
         dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        return ensure_mod(dc).jax_broadcast(*args, **kwargs)
+        return require_callable(adapt_backend_module(dc).require_symbol("jax_broadcast"))(*args, **kwargs)
+
+    @classmethod
+    def get_module(cls) -> ModuleType:
+        """Return the underlying ``jax.numpy`` runtime module.
+
+        Returns:
+            ModuleType: Imported ``jax.numpy`` module.
+        """
+        import importlib
+
+        return importlib.import_module("jax.numpy")
+
+    @classmethod
+    def execute_collective(
+        cls,
+        op_name: str,
+        tensor: BackendArg,
+        **kwargs: BackendArg,
+    ) -> BackendArg | None:
+        """Execute an eager distributed collective via JAX collective primitives.
+
+        Args:
+            op_name (str): Canonical collective operation name.
+            tensor (BackendArg): Input tensor buffer.
+            **kwargs (BackendArg): Collective parameters (``op``, ``mesh_axis``, ``axis``, ``root``).
+
+        Returns:
+            BackendArg | None: Evaluated collective tensor, or ``None`` if unavailable/unsupported.
+        """
+        try:
+            from ml_switcheroo_compiler.backends.jax.distributed_collectives import (
+                jax_all_gather,
+                jax_all_reduce,
+                jax_broadcast,
+            )
+
+            raw_axis = kwargs.get("axis", 0)
+            axis = int(raw_axis) if isinstance(raw_axis, (int, float)) else 0
+            raw_root = kwargs.get("root", 0)
+            root = int(raw_root) if isinstance(raw_root, (int, float)) else 0
+            mesh_axis = str(kwargs.get("mesh_axis", "data"))
+            op_str = str(kwargs.get("op", "SUM"))
+
+            if op_name == "AllReduce":
+                return jax_all_reduce(tensor, op=op_str, axis_name=mesh_axis)
+            if op_name == "AllGather":
+                return jax_all_gather(tensor, axis_name=mesh_axis, axis=axis)
+            if op_name == "Broadcast":
+                return jax_broadcast(tensor, src=root)
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            import logging
+
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        return None
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for JAX (`jax.numpy`).
+
+        Returns:
+            EagerBackendAdapter: Concrete JAX eager backend adapter.
+        """
+        import jax.numpy as jnp
+
+        return StaticEagerBackendAdapter(
+            backend_name="jax",
+            ops={
+                "abs": jnp.abs,
+                "add": jnp.add,
+                "subtract": jnp.subtract,
+                "multiply": jnp.multiply,
+                "divide": jnp.divide,
+                "sin": jnp.sin,
+                "cos": jnp.cos,
+                "tanh": jnp.tanh,
+                "exp": jnp.exp,
+                "log": jnp.log,
+                "sqrt": jnp.sqrt,
+                "matmul": jnp.matmul,
+                "sum": jnp.sum,
+                "mean": jnp.mean,
+                "reshape": jnp.reshape,
+                "transpose": jnp.transpose,
+                "asarray": jnp.asarray,
+                "array": jnp.array,
+                "zeros": jnp.zeros,
+                "ones": jnp.ones,
+                "empty": jnp.empty,
+            },
+            dtypes={
+                "float16": jnp.float16,
+                "float32": jnp.float32,
+                "bfloat16": jnp.bfloat16,
+                "int8": jnp.int8,
+                "int16": jnp.int16,
+                "int32": jnp.int32,
+                "uint8": jnp.uint8,
+                "bool": jnp.bool_,
+                "bool_": jnp.bool_,
+                "complex64": jnp.complex64,
+            },
+            submodules={
+                "linalg": jnp.linalg,
+                "fft": jnp.fft,
+            },
+            module=jnp,
+        )
 
 
 JaxGenerator = JAXCodeGenerator

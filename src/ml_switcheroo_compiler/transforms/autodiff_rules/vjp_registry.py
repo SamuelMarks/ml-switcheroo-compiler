@@ -92,6 +92,36 @@ def load_primitive_vjp_rules(path: str | None = None) -> dict[str, VJPRuleModel]
 _VJP_REGISTRY: dict[str, VJPRuleCallable] = {}
 
 
+class _VJPRuleDecorator:
+    """Callable VJP rule registration decorator storing ``op_type`` metadata."""
+
+    def __init__(self, op_name: str) -> None:
+        """Initialize VJP rule decorator for ``op_name``.
+
+        Args:
+            op_name (str): Canonical IR operation name.
+        """
+        self.op_type: str = op_name
+
+    def __call__(self, func: VJPRuleCallable) -> VJPRuleCallable:
+        """Register ``func`` in ``_VJP_REGISTRY`` under ``self.op_type``.
+
+        Args:
+            func (VJPRuleCallable): Custom VJP rule callable.
+
+        Returns:
+            VJPRuleCallable: Registered VJP rule callable.
+
+        Raises:
+            ValueError: If a VJP rule for ``self.op_type`` is already registered.
+        """
+        if self.op_type in _VJP_REGISTRY:
+            msg = f"VJP for operation '{self.op_type}' is already registered."
+            raise ValueError(msg)
+        _VJP_REGISTRY[self.op_type] = func
+        return func
+
+
 def register_vjp(op_name: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
     """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
@@ -101,23 +131,7 @@ def register_vjp(op_name: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
     Returns:
         Callable[[VJPRuleCallable], VJPRuleCallable]: Decorator function.
     """
-
-    def decorator(func: VJPRuleCallable) -> VJPRuleCallable:
-        """Execute decorator for compiler processing.
-
-        Args:
-            func (VJPRuleCallable): Input `func` argument (func).
-
-        Returns:
-            VJPRuleCallable: Computed `VJPRuleCallable` output.
-        """
-        if op_name in _VJP_REGISTRY:
-            msg = f"VJP for operation '{op_name}' is already registered."
-            raise ValueError(msg)
-        _VJP_REGISTRY[op_name] = func
-        return func
-
-    return decorator
+    return _VJPRuleDecorator(op_name)
 
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data

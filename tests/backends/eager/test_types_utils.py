@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import ml_switcheroo_compiler.backends.eager as eager_pkg
 import ml_switcheroo_compiler.backends.eager.types_utils as eager_types_utils
-from tests.testing_utils import has_backend_member
+from ml_switcheroo_compiler.core.shape import OpValue
+from tests.testing_utils import adapt_backend_module
 
 
 class _MockBackendModule:
@@ -23,31 +24,31 @@ class _MockBackendModule:
 
     def array(
         self,
-        data: list[int] | list[float] | tuple[int, ...] | int | float | str,
-        dtype: str | type | None = None,
-    ) -> tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str, str | type | None]:
+        data: OpValue,
+        dtype: OpValue = None,
+    ) -> OpValue:
         """Mock array.
 
         Args:
-            data (list[int] | list[float] | tuple[int, ...] | int | float | str): Input data.
-            dtype (str | type | None): Optional data type.
+            data (OpValue): Input data.
+            dtype (OpValue): Optional data type.
 
         Returns:
-            tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str, str | type | None]: Mock array descriptor.
+            OpValue: Mock array descriptor.
         """
         return ("array", data, dtype)
 
     def asarray(
         self,
-        data: list[int] | list[float] | tuple[int, ...] | int | float | str,
-    ) -> tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str]:
+        data: OpValue,
+    ) -> OpValue:
         """Mock asarray.
 
         Args:
-            data (list[int] | list[float] | tuple[int, ...] | int | float | str): Input data.
+            data (OpValue): Input data.
 
         Returns:
-            tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str]: Mock asarray descriptor.
+            OpValue: Mock asarray descriptor.
         """
         return ("asarray", data)
 
@@ -104,10 +105,10 @@ def _sample_shape_fn(a: int, b: int) -> tuple[int, int]:
 
 def test_backends_eager_init_and_types_utils() -> None:
     """Verify eager package __init__ exports and all types_utils functions."""
-    assert has_backend_member(eager_pkg, "generic_zeros")
-    assert has_backend_member(eager_pkg, "generic_array")
-    assert has_backend_member(eager_pkg, "generic_asarray")
-    assert has_backend_member(eager_pkg, "generic_item")
+    assert adapt_backend_module(eager_pkg).has_symbol("generic_zeros")
+    assert adapt_backend_module(eager_pkg).has_symbol("generic_array")
+    assert adapt_backend_module(eager_pkg).has_symbol("generic_asarray")
+    assert adapt_backend_module(eager_pkg).has_symbol("generic_item")
     assert "elastic_transform_eager" in eager_pkg.__all__
     assert "_allclose" in eager_pkg.__all__
 

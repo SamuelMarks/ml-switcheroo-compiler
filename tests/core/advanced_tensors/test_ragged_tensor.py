@@ -4,17 +4,24 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTensorStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class DummyTensor:
+class DummyTensor(MockTensorStub):
     """Test class DummyTensor."""
 
-    def __init__(self, shape: EagerValue, dtype: EagerValue = "float32", device: EagerValue = "cpu", requires_grad: EagerValue = True) -> None:
+    def __init__(
+        self,
+        shape: BackendArg,
+        dtype: BackendArg = "float32",
+        device: BackendArg = "cpu",
+        requires_grad: bool = True,
+    ) -> None:
         """Test function __init__.
 
         Args:
@@ -28,13 +35,13 @@ class DummyTensor:
         self.device = device
         self.requires_grad = requires_grad
 
-    def __len__(self) -> EagerValue:
+    def __len__(self) -> int:
         """Test function __len__.
 
         Returns:
-            EagerValue: Computed output value from `__len__`.
+            int: Computed output value from `__len__`.
         """
-        return ensure_eager_tensor(self.shape)[0]
+        return int(ensure_ndarray(self.shape)[0])
 
 
 def test_ragged_tensor() -> None:
@@ -42,9 +49,9 @@ def test_ragged_tensor() -> None:
     v = DummyTensor((4, 2))
     r = DummyTensor((3,))
 
-    rt = ensure_callable(RaggedTensor)(v, r)
-    assert rt.values == v
-    assert rt.row_splits == r
+    rt = RaggedTensor(v, r)
+    assert rt.values is v
+    assert rt.row_splits is r
 
     assert rt.shape == (2, -1, 2)
     assert rt.dtype == "float32"
@@ -54,5 +61,5 @@ def test_ragged_tensor() -> None:
     # Empty
     v2 = DummyTensor(())
     r2 = DummyTensor((0,))
-    rt2 = ensure_callable(RaggedTensor)(v2, r2)
+    rt2 = RaggedTensor(v2, r2)
     assert rt2.shape == (0,)

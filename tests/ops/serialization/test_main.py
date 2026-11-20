@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E501
 import os
 import tempfile
-import typing
 import zipfile
+from pathlib import Path
 
 import pytest
+from pytest_mock import MockerFixture
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.serialization import (
+    ArchiveFileEditor,
+    ArchiveSerializationContext,
     CustomObjectScope,
-    KerasFileEditor,
-    KerasSerializationContext,
     MaxShardSizePolicy,
     PythonState,
     SavedModel,
@@ -35,8 +35,8 @@ from ml_switcheroo_compiler.serialization import (
     _save_as_h5,
     _save_as_safetensors,
     _validate_and_map_weights,
+    _write_archive_zip,
     _write_h5_to_zip,
-    _write_keras_zip,
     custom_object_scope,
     deserialize_object,
     export_model_topology,
@@ -56,31 +56,28 @@ from ml_switcheroo_compiler.serialization import (
     save_weights,
     serialize_object,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from tests.testing_utils import MockTestStub
 
 
 class _MockVarItem:
     """Test class _MockVarItem."""
 
-    def __init__(self, data: EagerValue, name: EagerValue = None) -> None:
+    def __init__(self, data: BackendArg, name: BackendArg = None) -> None:
         """Initialize _MockVarItem.
 
         Args:
-            data: Data value.
-            name: Optional variable name.
+            data (BackendArg): Data value.
+            name (BackendArg): Optional variable name.
         """
         self._data = data
         if name is not None:
             self.name = name
 
-    def numpy(self) -> EagerValue:
+    def numpy(self) -> BackendArg:
         """Return numpy value.
 
         Returns:
-            EagerValue: Computed output value from `numpy`.
+            BackendArg: Computed output value from `numpy`.
         """
         return self._data
 
@@ -94,7 +91,7 @@ class _MockOpt:
         self.momentums = [_MockVarItem("m1_data", "m1"), _MockVarItem("m2_data")]
 
 
-class MockModel:
+class MockModel(MockTestStub):
     """Test class MockModel."""
 
     def __init__(self) -> None:
@@ -108,34 +105,33 @@ class MockModel:
 
             name = "ema1"
 
-            def numpy(self) -> EagerValue:
+            def numpy(self) -> BackendArg:
                 """Test function numpy.
 
                 Returns:
-                    EagerValue: Computed output value from `numpy`.
+                    BackendArg: Computed output value from `numpy`.
                 """
                 return "ema1_data"
-
-        self.ema_variables = [EMA()]
 
         class EMA2:
             """Test class EMA2."""
 
-            def numpy(self) -> EagerValue:
+            def numpy(self) -> BackendArg:
                 """Test function numpy.
 
                 Returns:
-                    EagerValue: Computed output value from `numpy`.
+                    BackendArg: Computed output value from `numpy`.
                 """
                 return "ema2_data"
 
-        ensure_callable(self.ema_variables.append)(ensure_callable(EMA2)())
+        self.ema_variables: list[EMA | EMA2] = [EMA()]
+        self.ema_variables.append(EMA2())
 
-    def get_config(self) -> EagerValue:
+    def get_config(self) -> BackendArg:
         """Test function get_config.
 
         Returns:
-            EagerValue: Computed output value from `get_config`.
+            BackendArg: Computed output value from `get_config`.
         """
         return {"conf": "mock"}
 
@@ -156,7 +152,7 @@ def test_get_format_handler() -> None:
     assert type(_get_format_handler("pickle")).__name__ == "PickleWeightFormat"
 
 
-def test_save_load_helpers(mocker: EagerTensorProtocol) -> None:
+def test_save_load_helpers(mocker: MockerFixture) -> None:
     """Test function test_save_load_helpers.
 
     Args:
@@ -178,10 +174,10 @@ def test_save_load_helpers(mocker: EagerTensorProtocol) -> None:
 
 def test_validate_and_map_weights() -> None:
     """Test function test_validate_and_map_weights."""
-    assert ensure_callable(_validate_and_map_weights)({"a": 1}) == {"a": 1}
+    assert _validate_and_map_weights({"a": 1}) == {"a": 1}
 
 
-def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
+def test_load_save_weights(mocker: MockerFixture) -> None:
     """Test function test_load_save_weights.
 
     Args:
@@ -190,132 +186,134 @@ def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.serialization.PickleWeightFormat.load", return_value={"a": 1})
     assert load_weights("test.pkl") == {"a": 1}
     with tempfile.NamedTemporaryFile() as f:
-        ensure_callable(save_weights)(ensure_callable(MockModel)(), f.name)
+        save_weights(MockModel(), f.name)
         assert os.path.exists(f.name)
 
 
-def test_export_funcs(mocker: EagerTensorProtocol) -> None:
+def test_export_funcs(mocker: MockerFixture) -> None:
     """Test function test_export_funcs.
 
     Args:
         mocker: Test parameter `mocker`.
     """
     mock_graph = mocker.MagicMock()
-    ensure_mutable(mock_graph.to_json).return_value = ensure_eager_tensor("{}")
+    pytest.MonkeyPatch().setattr(mock_graph.to_json, "return_value", "{}", raising=False)
     with tempfile.NamedTemporaryFile() as f:
-        ensure_callable(export_to_onnx)(mock_graph, f.name)
-        ensure_callable(export_to_tflite)(mock_graph, f.name)
-        ensure_callable(export_model_topology)(mock_graph, f.name)
-    assert ensure_callable(graph_to_json)(mock_graph) == "{}"
+        export_to_onnx(mock_graph, f.name)
+        export_to_tflite(mock_graph, f.name)
+        export_model_topology(mock_graph, f.name)
+    assert graph_to_json(mock_graph) == "{}"
 
 
-def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
+def test_extract_model_state(mocker: MockerFixture) -> None:
     """Test function test_extract_model_state.
 
     Args:
         mocker: Test parameter `mocker`.
     """
-    mocker.patch("ml_switcheroo_compiler.serialization.to_numpy", side_effect=lambda x: x.numpy())
+    mocker.patch("ml_switcheroo_compiler.serialization.weights_io.to_numpy", side_effect=lambda x: x.numpy())
 
-    class MockModelNoConfig:
+    class MockModelNoConfig(MockTestStub):
         """Test class MockModelNoConfig."""
 
         pass
 
     m2 = MockModelNoConfig()
-    ensure_callable(_compile_model_metadata)(m2)
+    _compile_model_metadata(m2)
     m = MockModel()
-    weights = ensure_callable(_extract_model_weights)(m)
+    weights = _extract_model_weights(m)
     assert weights == {"w1": "w1_data", "weight_1": "w2_data"}
-    state = ensure_tensor_dict({})
-    ensure_callable(_extract_optimizer_state)(m, state)
+    state: dict[str, BackendArg] = {}
+    _extract_optimizer_state(m, state)
     assert state == {"v1": "v1_data", "opt_state_1": "v2_data", "m1": "m1_data", "momentum_1": "m2_data"}
     state = {}
-    ensure_callable(_extract_non_trainable_state)(m, state, weights)
+    _extract_non_trainable_state(m, state, weights)
 
     class NT2:
         """Test class NT2."""
 
         name = "nt2"
 
-        def numpy(self) -> EagerValue:
+        def numpy(self) -> BackendArg:
             """Test function numpy.
 
             Returns:
-                EagerValue: Computed output value from `numpy`.
+                BackendArg: Computed output value from `numpy`.
             """
             return "nt2_data"
 
-    ensure_callable(_extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
+    _extract_non_trainable_state(m, state, {"nt2": "nt2_data"})
     pass
     state = {}
-    ensure_callable(_extract_ema_state)(m, state)
+    _extract_ema_state(m, state)
     pass
-    state = ensure_tensor_dict(ensure_callable(_extract_model_state)(m, weights))
+    state = _extract_model_state(m, weights)
 
-    class MockModelNoOptimizer:
+    class MockModelNoOptimizer(MockTestStub):
         """Test class MockModelNoOptimizer."""
 
         pass
 
-    ensure_callable(_extract_optimizer_state)(ensure_callable(MockModelNoOptimizer)(), {})
+    _extract_optimizer_state(MockModelNoOptimizer(), {})
     pass
 
 
 def test_compile_model_metadata() -> None:
     """Test function test_compile_model_metadata."""
 
-    class MockModelNoConfig:
+    class MockModelNoConfig(MockTestStub):
         """Test class MockModelNoConfig."""
 
         pass
 
     m2 = MockModelNoConfig()
-    ensure_callable(_compile_model_metadata)(m2)
+    _compile_model_metadata(m2)
     m = MockModel()
-    (config, meta) = ensure_callable(_compile_model_metadata)(m)
+    (config, meta) = _compile_model_metadata(m)
     assert config == {"conf": "mock"}
-    assert "keras_version" in meta
+    assert "compiler_version" in meta
 
 
-def test_write_h5_to_zip(mocker: EagerTensorProtocol, tmp_path: EagerTensorProtocol) -> None:
+def test_write_h5_to_zip(mocker: MockerFixture, tmp_path: Path) -> None:
     """Test function test_write_h5_to_zip.
 
     Args:
         mocker: Test parameter `mocker`.
         tmp_path: Test parameter `tmp_path`.
     """
-    mocker.patch("ml_switcheroo_compiler.serialization._save_as_h5")
+    mocker.patch("ml_switcheroo_compiler.serialization.model_archive._save_as_h5")
     with tempfile.NamedTemporaryFile() as f:
         with zipfile.ZipFile(f.name, "w") as zf:
             _write_h5_to_zip(zf, "test.h5", {})
 
     keras_path = str(tmp_path / "model_bundle.keras")
-    ctx = KerasSerializationContext(filepath=keras_path, config_dict={}, metadata={}, weights_store={}, state_store={})
-    _write_keras_zip(ctx)
+    ctx = ArchiveSerializationContext(
+        filepath=keras_path, config_dict={}, metadata={}, weights_store={}, state_store={}
+    )
+    _write_archive_zip(ctx)
     assert os.path.exists(keras_path)
 
 
-def test_keras_zip_save_load(mocker: EagerTensorProtocol) -> None:
+def test_keras_zip_save_load(mocker: MockerFixture) -> None:
     """Test function test_keras_zip_save_load.
 
     Args:
         mocker: Test parameter `mocker`.
     """
-    mocker.patch("ml_switcheroo_compiler.serialization._load_h5_weights", return_value={"w1": "w1_data"})
-    mocker.patch("ml_switcheroo_compiler.serialization._save_as_h5")
-    mocker.patch("ml_switcheroo_compiler.serialization.to_numpy", side_effect=lambda x: x.numpy())
+    mocker.patch("ml_switcheroo_compiler.serialization.model_archive._load_h5_weights", return_value={"w1": "w1_data"})
+    mocker.patch("ml_switcheroo_compiler.serialization.model_archive._save_as_h5")
+    mocker.patch("ml_switcheroo_compiler.serialization.weights_io.to_numpy", side_effect=lambda x: x.numpy())
 
-    class MockModelNoConfig:
+    class MockModelNoConfig(MockTestStub):
         """Test class MockModelNoConfig."""
 
         pass
 
     m2 = MockModelNoConfig()
-    ensure_callable(_compile_model_metadata)(m2)
+    _compile_model_metadata(m2)
     m = MockModel()
     with tempfile.NamedTemporaryFile() as f:
-        ensure_callable(save_model)(m, f.name)
+        save_model(m, f.name)
         m_loaded = load_model(f.name)
         assert m_loaded.config == {"conf": "mock"}
 
@@ -348,7 +346,7 @@ def test_custom_object_scope() -> None:
 
 def test_keras_file_editor() -> None:
     """Test function test_keras_file_editor."""
-    editor = KerasFileEditor("test.keras")
+    editor = ArchiveFileEditor("test.keras")
     assert editor.filepath == "test.keras"
 
 
@@ -357,18 +355,18 @@ def test_deserialize_serialize_keras_object() -> None:
     assert deserialize_object({"a": 1}) == {"a": 1}
     assert deserialize_object(a=1) == {"a": 1}
 
-    class Obj:
+    class Obj(MockTestStub):
         """Test class Obj."""
 
-        def get_config(self) -> EagerValue:
+        def get_config(self) -> BackendArg:
             """Test function get_config.
 
             Returns:
-                EagerValue: Computed output value from `get_config`.
+                BackendArg: Computed output value from `get_config`.
             """
             return {"a": 1}
 
-    assert serialize_object(ensure_eager_tensor(Obj())) == {"a": 1}
+    assert serialize_object(Obj()) == {"a": 1}
     assert serialize_object() == {}
 
 

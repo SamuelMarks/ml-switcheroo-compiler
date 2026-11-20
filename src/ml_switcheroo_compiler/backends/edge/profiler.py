@@ -6,13 +6,15 @@ import logging
 import resource
 import sys
 import time
+from collections.abc import Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
-from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
+from ml_switcheroo_ir import IRGraph
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict, compute_statistical_metrics
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 def _get_process_memory_mb() -> float:
@@ -38,11 +40,13 @@ def _calculate_edge_memory_bytes(graph: IRGraph) -> int:
         int: Total memory allocated in bytes aligned to WASM/WebGPU pages.
     """
     total_bytes: int = 0
-    if not has_backend_member(graph, "nodes") or not graph.nodes:
+    if not adapt_backend_module(graph).has_symbol("nodes") or not graph.nodes:
         return 65536
 
     for node in graph.nodes.values():
-        shape = get_backend_member(node, "shape_metadata", None) or get_backend_member(node, "shape", None)
+        shape = adapt_backend_module(node).get_symbol("shape_metadata", None) or adapt_backend_module(node).get_symbol(
+            "shape", None
+        )
         if shape and isinstance(shape, (tuple, list)):
             num_elements: int = 1
             for dim in shape:
@@ -62,19 +66,19 @@ class EdgeProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> list[EagerValue]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> list[BackendArg]:
         """Convert input payloads into ordered buffer structures.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input data.
+            inputs: Named input data.
 
         Returns:
             list[object]: Ordered list of input payloads.
         """
-        sorted_nodes = topological_sort(graph) if get_backend_member(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if get_backend_member(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if adapt_backend_module(graph).get_symbol("nodes", None) else []
+        input_keys = [n.id for n in sorted_nodes if adapt_backend_module(n).get_symbol("op_type", "") == "Input"]
         if input_keys and all(k in inputs for k in input_keys):
             return [inputs[k] for k in input_keys]
         return list(inputs.values())
@@ -82,35 +86,38 @@ class EdgeProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on edge backend.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input structures.
+            inputs: Named input structures.
             device (Optional[str]): Device target ('webgpu', 'wasm', 'webgl').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         del device
 
         edge_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(get_backend_member(graph, "nodes", None) and any(get_backend_member(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(
+            adapt_backend_module(graph).get_symbol("nodes", None)
+            and any(adapt_backend_module(n).get_symbol("op_type", "") != "Input" for n in graph.nodes.values())
+        )
 
         eval_inputs = dict(inputs)
 
-        def _execute_step() -> EagerValue:
+        def _execute_step() -> BackendArg:
             """Execute a single evaluation step on edge target.
 
             Returns:
-                EagerValue: Evaluated output tensors or input buffers.
+                BackendArg: Evaluated output tensors or input buffers.
             """
             if has_ops:
                 try:

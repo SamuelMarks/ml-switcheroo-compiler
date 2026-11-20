@@ -7,10 +7,11 @@ import uuid
 from collections.abc import Sequence
 
 import libcst as cst
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, ensure_attr_val, ensure_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attr_val, ensure_attrs
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
@@ -297,14 +298,14 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self,
         args: Sequence[cst.Arg],
         inputs: list[str],
-        attributes: dict[str, EagerValue],
+        attributes: dict[str, BackendArg],
     ) -> None:
         """Parse positional, keyword, and varargs call arguments.
 
         Args:
             args (Sequence[cst.Arg]): Call arguments sequence.
             inputs (list[str]): Inputs list to populate.
-            attributes (dict[str, object]): Attributes dictionary to populate.
+            attributes (dict[str, BackendArg]): Attributes dictionary to populate.
         """
         for arg in args:
             if arg.star == "*":
@@ -315,7 +316,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self._resolve_call_arg(arg.value, inputs)
             elif arg.keyword:
                 kw = arg.keyword.value
-                val: EagerValue | None = None
+                val: BackendArg | None = None
                 if isinstance(arg.value, cst.Integer):
                     val = int(arg.value.value)
                 elif isinstance(arg.value, cst.Float):
@@ -350,7 +351,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self.current_id += 1
 
         inputs: list[str] = []
-        attributes: dict[str, EagerValue] = {}
+        attributes: dict[str, BackendArg] = {}
         if op_type == "ForeignCall":
             attributes["callee"] = full_name
 
@@ -625,7 +626,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
         node_id = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
         self.current_id += 1
 
-        ir_node: IRNode = IRNode(id=node_id, op_type="Constant", inputs=[], attributes={"value": int(node.value), "dtype": "int64"})
+        ir_node: IRNode = IRNode(
+            id=node_id, op_type="Constant", inputs=[], attributes={"value": int(node.value), "dtype": "int64"}
+        )
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -638,7 +641,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
         node_id = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
         self.current_id += 1
 
-        ir_node: IRNode = IRNode(id=node_id, op_type="Constant", inputs=[], attributes={"value": float(node.value), "dtype": "float32"})
+        ir_node: IRNode = IRNode(
+            id=node_id, op_type="Constant", inputs=[], attributes={"value": float(node.value), "dtype": "float32"}
+        )
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -656,7 +661,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             inputs.append(self.var_table[node.value.value])
 
         op_type = "Slice"
-        attributes: dict[str, EagerValue] = {}
+        attributes: dict[str, BackendArg] = {}
 
         if node.slice and len(node.slice) == 1:
             slice_elem = node.slice[0].slice

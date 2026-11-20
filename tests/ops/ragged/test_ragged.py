@@ -1,4 +1,4 @@
-"""Tests for test_ragged."""
+"""Behavioral unit tests for ragged."""
 
 from __future__ import annotations
 
@@ -6,8 +6,12 @@ import typing
 from unittest.mock import patch
 
 import numpy as np
+import pytest
+from ml_switcheroo_ir import LogicalNode
 
-import ml_switcheroo_compiler.ops.ragged.frontend as ragged_frontend
+import ml_switcheroo_compiler.ops.ragged.api as ragged_frontend
+import ml_switcheroo_compiler.ops.ragged.core as ragged_core_mod
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.ragged import (
@@ -29,34 +33,42 @@ from ml_switcheroo_compiler.ops.ragged import (
     map_flat_values,
     ragged_tensor_to_dense,
 )
+from ml_switcheroo_compiler.ops.ragged.api import ragged_dot, ragged_stack, ragged_stack_dynamic_partitions
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
-from ml_switcheroo_compiler.ops.ragged.frontend import ragged_dot, ragged_stack, ragged_stack_dynamic_partitions
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_ragged_ops() -> None:
     """Test the ragged ops behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    with patch("ml_switcheroo_compiler.ops.ragged.frontend._ragged_op") as mock_ragged:
+    with patch("ml_switcheroo_compiler.ops.ragged.api._ragged_op") as mock_ragged:
         mock_ragged.return_value = "res"
         res1 = ragged_stack()
-        assert ensure_eager_tensor(res1) == ensure_eager_tensor("res")
+        assert res1 == "res"
         res2 = ragged_stack_dynamic_partitions()
-        assert ensure_eager_tensor(res2) == ensure_eager_tensor("res")
+        assert res2 == "res"
         res3 = ragged_dot()
-        assert ensure_eager_tensor(res3) == ensure_eager_tensor("res")
+        assert res3 == "res"
     op = RaggedDot()
     res4 = op.infer_shape()
     assert res4 == ()
 
 
-def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestRaggedCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_ragged_coverage` split helpers."""
+
+    DummyOp: type
+    orig_eager: bool
+    t: Tensor
+
+
+def _test_ragged_coverage_part_1(_state: _TestRaggedCoverageState) -> None:
     """Execute part 1 of test_ragged_coverage.
 
     Args:
@@ -71,17 +83,17 @@ def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     assert RaggedDynamicBroadcast().infer_shape() == ()
     assert RaggedConstant().infer_shape() == ()
     assert RaggedCrossHashed().infer_shape() == ()
-    assert ensure_callable(len)(ensure_callable(RaggedRange)().infer_shape()) == 2
-    assert ensure_callable(len)(ensure_callable(RaggedRowSplitsToSegmentIds)().infer_shape()) == 1
-    assert ensure_callable(len)(ensure_callable(RaggedSegmentIdsToRowSplits)().infer_shape()) == 1
+    assert len(coerce_operand_list(RaggedRange().infer_shape())) == 2
+    assert len(coerce_operand_list(RaggedRowSplitsToSegmentIds().infer_shape())) == 1
+    assert len(coerce_operand_list(RaggedSegmentIdsToRowSplits().infer_shape())) == 1
     assert RaggedStack().infer_shape() == ()
-    assert ensure_callable(len)(ensure_callable(RaggedStackDynamicPartitions)().infer_shape()) == 2
-    assert ensure_callable(len)(ensure_callable(BooleanMask)().infer_shape()) == 1
+    assert len(coerce_operand_list(RaggedStackDynamicPartitions().infer_shape())) == 2
+    assert len(coerce_operand_list(BooleanMask().infer_shape())) == 1
     assert MapFlatValues().infer_shape(t) == ()
-    _state.update(ensure_tensor_dict({"t": t}))
+    _state.update({"t": t})
 
 
-def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_ragged_coverage_part_2(_state: _TestRaggedCoverageState) -> None:
     """Execute part 2 of test_ragged_coverage.
 
     Args:
@@ -90,7 +102,7 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     t = _state["t"]
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
-        assert ensure_callable(ragged_tensor_to_dense)(t) is not None
+        assert ragged_tensor_to_dense(t) is not None
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -100,9 +112,9 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = ensure_tensor_dict({})
+            nodes: dict[str, LogicalNode] = {}
 
-            def add_node(self, node: EagerValue) -> None:
+            def add_node(self, node: BackendArg) -> None:
                 """Test function add_node.
 
                 Args:
@@ -110,15 +122,14 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
                 """
                 pass
 
-        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-        assert ensure_callable(ragged_tensor_to_dense)(t) is not None
+        pytest.MonkeyPatch().setattr(global_tracing_state, "active_graph", DummyGraph(), raising=False)
+        assert ragged_tensor_to_dense(t) is not None
         config.eager_mode = True
         global_tracing_state.is_tracing = False
-    _state.update(ensure_tensor_dict({"DummyGraph": DummyGraph, "global_tracing_state": global_tracing_state, "mock_backend": mock_backend}))
-    _state.update(ensure_tensor_dict({"t": t}))
+    _state.update({"t": t})
 
 
-def _test_ragged_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_ragged_coverage_part_3(_state: _TestRaggedCoverageState) -> None:
     """Execute part 3 of test_ragged_coverage.
 
     Args:
@@ -135,17 +146,20 @@ def _test_ragged_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None
             self.op_type = "dummy"
 
     orig_eager = config.eager_mode
-    orig_get_op = ensure_eager_tensor(ensure_eager_tensor(ragged_frontend).get_op)
-    _state.update(ensure_tensor_dict({"DummyOp": DummyOp, "orig_eager": orig_eager, "orig_get_op": orig_get_op}))
+    _state.update({"DummyOp": DummyOp, "orig_eager": orig_eager})
 
 
-def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_ragged_coverage_part_4(_state: _TestRaggedCoverageState) -> None:
     """Execute part 4 of test_ragged_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    (DummyOp, orig_eager, orig_get_op, t) = (_state["DummyOp"], _state["orig_eager"], _state["orig_get_op"], _state["t"])
+    (DummyOp, orig_eager, t) = (
+        _state["DummyOp"],
+        _state["orig_eager"],
+        _state["t"],
+    )
     try:
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -156,9 +170,9 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = ensure_tensor_dict({})
+            nodes: dict[str, LogicalNode] = {}
 
-            def add_node(self, node: EagerValue) -> None:
+            def add_node(self, node: BackendArg) -> None:
                 """Test function add_node.
 
                 Args:
@@ -166,12 +180,12 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                 """
                 pass
 
-        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+        pytest.MonkeyPatch().setattr(global_tracing_state, "active_graph", DummyGraph(), raising=False)
 
         class DummyOpMask:
             """Test class DummyOpMask."""
 
-            def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def __call__(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function __call__.
 
                 Args:
@@ -179,11 +193,11 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `__call__`.
+                    BackendArg: Computed output value from `__call__`.
                 """
                 return "masked"
 
-            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function infer_shape.
 
                 Args:
@@ -191,31 +205,101 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `infer_shape`.
+                    BackendArg: Computed output value from `infer_shape`.
                 """
                 return ()
 
-        ensure_mutable(ragged_frontend).get_op = ensure_eager_tensor(lambda x: DummyOpMask)
+            def dispatch_infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
+                """Delegate shape inference to `infer_shape`.
+
+                Args:
+                    args: Test parameter `args`.
+                    kwargs: Test parameter `kwargs`.
+
+                Returns:
+                    BackendArg: Inferred shape tuple.
+                """
+                return self.infer_shape(*args, **kwargs)
+
         import ml_switcheroo_compiler.ops.linalg.utils as linalg_utils
 
         orig_emit = linalg_utils._emit_linalg_node
-        ensure_mutable(linalg_utils)._emit_linalg_node = ensure_eager_tensor(lambda *args, **kwargs: "masked")
+        pytest.MonkeyPatch().setattr(linalg_utils, "_emit_linalg_node", lambda *args, **kwargs: "masked", raising=False)
         try:
-            assert ensure_callable(boolean_mask)(t, t) is not None
-            assert ensure_callable(map_flat_values)(ensure_callable(DummyOp)(), t) is not None
+            with patch.object(ragged_frontend, "get_op", lambda x: DummyOpMask):
+                assert boolean_mask(t, t) is not None
+                assert map_flat_values(DummyOp(), t) is not None
         finally:
             linalg_utils._emit_linalg_node = orig_emit
     finally:
-        ensure_mutable(config).eager_mode = ensure_eager_tensor(orig_eager)
-        ensure_mutable(ragged_frontend).get_op = ensure_eager_tensor(orig_get_op)
+        pytest.MonkeyPatch().setattr(config, "eager_mode", orig_eager, raising=False)
         global_tracing_state.is_tracing = False
 
 
 def test_ragged_coverage() -> None:
     """Test function test_ragged_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestRaggedCoverageState = {}
     _test_ragged_coverage_part_1(_state)
     _test_ragged_coverage_part_2(_state)
     _test_ragged_coverage_part_3(_state)
     _test_ragged_coverage_part_4(_state)
     assert len(_state) > 0
+
+
+class DummyWithShape:
+    """Mock operand providing a shape attribute."""
+
+    def __init__(self, shape: tuple[int, ...]) -> None:
+        """Initialize mock with specific shape.
+
+        Args:
+            shape (tuple[int, ...]): Target shape.
+        """
+        self.shape: tuple[int, ...] = shape
+
+
+class DummyWithoutShape:
+    """Mock operand lacking a shape attribute."""
+
+    def __init__(self) -> None:
+        """Initialize mock without shape."""
+        self.val: int = 42
+
+
+def test_ragged_core_coverage() -> None:
+    """Verify 100% line and branch coverage for ragged core operations."""
+    dot_op = ragged_core_mod.RaggedDot()
+
+    # len(args) >= 2 with shapes
+    t1 = DummyWithShape((2, 4, 8))
+    t2 = DummyWithShape((8, 16))
+    out1 = dot_op.infer_shape(t1, t2)
+    assert out1 == (2, 4, 16)
+
+    # len(args) < 2 using kwargs rt_a and b
+    out2 = dot_op.infer_shape(rt_a=t1, b=t2)
+    assert out2 == (2, 4, 16)
+
+    # a is None -> returns ()
+    assert dot_op.infer_shape(None, None) == ()
+
+    # shape_a variations:
+    # 1. a is raw list/tuple
+    assert ensure_ndarray(dot_op.infer_shape([3, 5], None))[0] == 3
+
+    # 2. len(shape_a) <= 1 (ragged_dim uses SymVar fallback)
+    t_1d = DummyWithShape((7,))
+    out_1d = dot_op.infer_shape(t_1d, None)
+    assert ensure_ndarray(out_1d)[0] == 7
+    assert str(ensure_ndarray(out_1d)[1]) == "ragged_dim"
+    assert ensure_ndarray(out_1d)[2] == 1  # len(shape_a) <= 2, len(shape_b) == 0 fallback
+
+    # 3. len(shape_a) == 0 (batch fallback to 1)
+    t_0d = DummyWithShape(())
+    out_0d = dot_op.infer_shape(t_0d, None)
+    assert ensure_ndarray(out_0d)[0] == 1
+
+    # 4. len(shape_b) == 0, len(shape_a) > 2 (out_features falls back to shape_a[-1])
+    t_3d = DummyWithShape((2, 3, 9))
+    out_3d = dot_op.infer_shape(t_3d, None)
+    assert ensure_ndarray(out_3d)[2] == 9

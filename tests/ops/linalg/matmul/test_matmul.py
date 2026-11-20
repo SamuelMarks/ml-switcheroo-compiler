@@ -10,24 +10,24 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub, coerce_int_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 mod = sys.modules["ml_switcheroo_compiler.ops.linalg.matmul"]
 
 
 class Tensor:
     """Test class Tensor."""
 
-    def __init__(self, shape: EagerValue) -> None:
+    def __init__(self, shape: BackendArg) -> None:
         """Test function __init__.
 
         Args:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = ensure_callable(np.zeros)(shape)
+        self.data = np.zeros(coerce_int_list(shape))
         self.dtype = "float32"
         self.device = None
 
@@ -45,10 +45,10 @@ def test_matmul_tracing() -> None:
     mock_shape = MagicMock()
     mock_add = MagicMock()
     mock_multiply = MagicMock()
-    ensure_mutable(mod)._emit_linalg_node = ensure_eager_tensor(mock_linalg)
-    ensure_mutable(mod)._emit_shape_node = ensure_eager_tensor(mock_shape)
-    ensure_mutable(mod).add = ensure_eager_tensor(mock_add)
-    ensure_mutable(mod).multiply = ensure_eager_tensor(mock_multiply)
+    pytest.MonkeyPatch().setattr(mod, "_emit_linalg_node", mock_linalg, raising=False)
+    pytest.MonkeyPatch().setattr(mod, "_emit_shape_node", mock_shape, raising=False)
+    pytest.MonkeyPatch().setattr(mod, "add", mock_add, raising=False)
+    pytest.MonkeyPatch().setattr(mod, "multiply", mock_multiply, raising=False)
     config.eager_mode = False
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -71,10 +71,10 @@ def test_matmul_tracing() -> None:
     mod.gather_mm(a, b, lhs_indices=None, rhs_indices=c)
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
-    ensure_mutable(mod)._emit_linalg_node = ensure_eager_tensor(original_linalg)
-    ensure_mutable(mod)._emit_shape_node = ensure_eager_tensor(original_shape)
-    ensure_mutable(mod).add = ensure_eager_tensor(original_add)
-    ensure_mutable(mod).multiply = ensure_eager_tensor(original_multiply)
+    pytest.MonkeyPatch().setattr(mod, "_emit_linalg_node", original_linalg, raising=False)
+    pytest.MonkeyPatch().setattr(mod, "_emit_shape_node", original_shape, raising=False)
+    pytest.MonkeyPatch().setattr(mod, "add", original_add, raising=False)
+    pytest.MonkeyPatch().setattr(mod, "multiply", original_multiply, raising=False)
     assert c.shape == (2,)
 
 
@@ -87,7 +87,7 @@ def test_matmul_eager() -> None:
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
     mock_get_backend.return_value = mock_backend
-    ensure_mutable(mod).get_active_backend = ensure_eager_tensor(mock_get_backend)
+    pytest.MonkeyPatch().setattr(mod, "get_active_backend", mock_get_backend, raising=False)
     config.eager_mode = True
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -107,7 +107,7 @@ def test_matmul_eager() -> None:
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
     config.eager_mode = False
-    ensure_mutable(mod).get_active_backend = ensure_eager_tensor(original_backend)
+    pytest.MonkeyPatch().setattr(mod, "get_active_backend", original_backend, raising=False)
     assert c.shape == (2,)
 
 
@@ -185,16 +185,18 @@ def test_dot_general_missing_shape_real() -> None:
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
             with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
                 original_emit = matmul_mod._emit_linalg_node
-                ensure_mutable(matmul_mod)._emit_linalg_node = ensure_eager_tensor(lambda *args, **kwargs: "dummy_node")
+                pytest.MonkeyPatch().setattr(
+                    matmul_mod, "_emit_linalg_node", lambda *args, **kwargs: "dummy_node", raising=False
+                )
                 try:
                     assert matmul_mod.dot_general(t1, t2, (((), ()), ((), ()))) == "dummy_node"
                 finally:
-                    ensure_mutable(matmul_mod)._emit_linalg_node = ensure_eager_tensor(original_emit)
+                    pytest.MonkeyPatch().setattr(matmul_mod, "_emit_linalg_node", original_emit, raising=False)
     finally:
         config.eager_mode = old_eager
 
 
-def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
+def test_matmul_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_matmul_missing.
 
     Args:
@@ -206,9 +208,9 @@ def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ops.linalg.matmul import BlockMaskedMm, GatherMm, dot_general
 
     op1 = BlockMaskedMm()
-    assert ensure_callable(op1.infer_shape)((2, 3), (4, 5)) is None
+    assert op1.infer_shape((2, 3), (4, 5)) is None
     op2 = GatherMm()
-    assert ensure_callable(op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
+    assert op2.infer_shape((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -219,17 +221,17 @@ def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
 
 def test_solvers_missing() -> None:
     """Test function test_solvers_missing."""
-    from ml_switcheroo_compiler.ops.linalg.solvers import Pinv
+    from ml_switcheroo_compiler.ops.linalg.decompositions.inv import Pinv
 
     op = Pinv()
-    assert ensure_callable(op.infer_shape)(None) == ()
+    assert op.infer_shape(None) == ()
 
-    class DummyShape:
+    class DummyShape(MockTestStub):
         """Test class DummyShape."""
 
         shape = (3,)
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(DummyShape)()) == (3,)
+    assert op.infer_shape(DummyShape()) == (3,)
 
 
 def test_einsum_missing() -> None:
@@ -247,7 +249,7 @@ def test_einsum_missing_branch() -> None:
 
     p = ParsedEquationPart(chars="ij", shape=(3, 1))
     p.shape = (3, 1)
-    ensure_mutable(p).chars = ensure_eager_tensor(["i", "i"])
+    pytest.MonkeyPatch().setattr(p, "chars", ["i", "i"], raising=False)
     axis_map = {"i": 3}
     p.process_axis_map(axis_map)
     assert axis_map["i"] == 3

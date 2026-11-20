@@ -25,15 +25,15 @@ class _DummyGenerator:
 class _MockArrayWithNumpy:
     """Mock object with numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with numpy array.
 
         Args:
-            arr (np.ndarray): Underlying array.
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
         """
         self.arr = arr
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Return underlying numpy array.
 
         Returns:
@@ -45,11 +45,11 @@ class _MockArrayWithNumpy:
 class _MockDataWithNumpy:
     """Mock object with data.numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with nested data object.
 
         Args:
-            arr (np.ndarray): Underlying array.
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
         """
         self.data = _MockArrayWithNumpy(arr)
 
@@ -100,9 +100,9 @@ class _MockBackendH5:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load h5 mock weights.
 
         Args:
@@ -113,11 +113,11 @@ class _MockBackendH5:
         """
         return {"backend_key": np.array([42.0])}
 
-    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], path: str) -> None:
+    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save h5 mock weights.
 
         Args:
-            weights (dict[str, np.ndarray]): Weights dict.
+            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
@@ -128,18 +128,18 @@ class _MockBackendNPZ:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], path: str) -> None:
+    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save npz mock weights.
 
         Args:
-            weights (dict[str, np.ndarray]): Weights dict.
+            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
 
-    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load npz mock weights.
 
         Args:
@@ -154,7 +154,9 @@ class _MockBackendNPZ:
 class _MockBackendSafetensors:
     """Mock backend implementing custom from_buffer method."""
 
-    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
+    def from_buffer(
+        self, buffer: bytes, dtype: str, shape: Sequence[int]
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
         """Reconstruct array from buffer.
 
         Args:
@@ -180,12 +182,14 @@ def test_ops_text_create_token() -> None:
     Returns:
         None
     """
-    assert text_mod.CreateToken is not None
-    assert text_mod.create_token is not None
+    assert type(text_mod.CreateToken).__name__ == "type"
+    assert type(text_mod.create_token).__name__ == "function"
+
+    from ml_switcheroo_compiler.core.shape import ShapeProtocol
 
     global_tracing_state.start_tracing()
     try:
         node = text_mod.create_token("word_token")
-        assert node is not None
+        assert isinstance(node, ShapeProtocol) and tuple(node.shape) == ()
     finally:
         global_tracing_state.stop_tracing()

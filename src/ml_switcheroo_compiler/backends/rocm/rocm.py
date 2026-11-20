@@ -2,250 +2,66 @@
 
 from __future__ import annotations
 
-import ctypes
-import ctypes.util
 import logging
 import os
-import re
-import tempfile
-import typing
 from types import ModuleType
 
-import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
     EagerTensorProtocol,
-    EagerValue,
-    ensure_bytes,
-    ensure_eager_tensor,
-    ensure_int,
-    ensure_int_list,
-    ensure_str,
+    coerce_int_list,
+    coerce_str,
 )
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
     compute_liveness,
     load_hardware_templates,
-    query_optimal_launch_geometry,
     resolve_hardware_launch_grid_and_args,
 )
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    ROCM_SYNTH_MATH_MAP as ROCM_SYNTH_MATH_MAP,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    KernelArgType as KernelArgType,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _calculate_node_bytes as _calculate_node_bytes,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _evaluate_rocm_fallback as _evaluate_rocm_fallback,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _extract_kernel_name as _extract_kernel_name,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _graph_nodes_values as _graph_nodes_values,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _graph_str_list as _graph_str_list,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _marshall_kernel_params as _marshall_kernel_params,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _node_inputs_list as _node_inputs_list,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _prepare_rocm_input_buffers as _prepare_rocm_input_buffers,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_helpers import (
+    _synthesize_rocm_kernel as _synthesize_rocm_kernel,
+)
+from ml_switcheroo_compiler.backends.rocm._rocm_runner_exec import ROCmRunner as ROCmRunner
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-
-def _is_rocm_tpl_opt(val: EagerValue) -> typing.TypeGuard[HardwareTemplateConfig | None]:
-    """Type guard narrowing `val` to `HardwareTemplateConfig | None`.
-
-    Args:
-        val (EagerValue): Candidate template entry.
-
-    Returns:
-        bool: Always True.
-    """
-    return val is None or isinstance(val, (HardwareTemplateConfig, dict))
-
-
-def _as_rocm_tpl_opt(val: EagerValue) -> HardwareTemplateConfig | None:
-    """Narrow `val` to `HardwareTemplateConfig | None`.
-
-    Args:
-        val (EagerValue): Candidate template entry.
-
-    Returns:
-        HardwareTemplateConfig | None: Narrowed template.
-    """
-    assert _is_rocm_tpl_opt(val)
-    return val
-
-
-def _node_inputs_list(node: EagerValue) -> list[str]:
-    """Return string list of input IDs on `node`.
-
-    Args:
-        node (EagerValue): Target node.
-
-    Returns:
-        list[str]: Node input IDs.
-    """
-    raw = get_backend_member(node, "inputs", [])
-    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
-
-
-def _graph_str_list(graph: EagerValue, attr: str) -> list[str]:
-    """Return string list attribute (`inputs` or `outputs`) on `graph`.
-
-    Args:
-        graph (EagerValue): Target graph.
-        attr (str): Attribute name.
-
-    Returns:
-        list[str]: List of string identifiers.
-    """
-    raw = get_backend_member(graph, attr, [])
-    return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
-
-
-def _graph_nodes_values(graph: IRGraph) -> list[IRNode]:
-    """Return list of nodes from `graph.nodes`.
-
-    Args:
-        graph (IRGraph): Target graph.
-
-    Returns:
-        list[IRNode]: Graph nodes.
-    """
-    return list(graph.nodes.values()) if get_backend_member(graph, "nodes", None) else []
-
 
 cupy: ModuleType | None = None
-
-KernelArgType = typing.Union[ctypes.c_void_p, int, float, str, "None"]
-
-
-def _calculate_node_bytes(node: EagerTensorProtocol | IRNode) -> tuple[int, int]:
-    """Calculate total number of elements and allocated byte size for an IRNode.
-
-    Args:
-        node (EagerTensorProtocol | IRNode): The IR node.
-
-    Returns:
-        tuple[int, int]: (num_elements, total_bytes).
-    """
-    shape = get_backend_member(node, "shape_metadata", None)
-    if isinstance(shape, (list, tuple)) and shape:
-        num_elements = 1
-        for d in shape:
-            num_elements *= int(d) if isinstance(d, (int, float, str)) else 1
-    else:
-        num_elements = 1024
-    bytes_per_elem = 4
-    raw_attrs = get_backend_member(node, "attributes", {})
-    dtype = raw_attrs.get("dtype", "float32") if isinstance(raw_attrs, dict) else "float32"
-    if dtype in ("float64", "int64", "double"):
-        bytes_per_elem = 8
-    elif dtype in ("float16", "int16", "bfloat16"):
-        bytes_per_elem = 2
-    elif dtype in ("int8", "uint8", "bool"):
-        bytes_per_elem = 1
-    return num_elements, num_elements * bytes_per_elem
-
-
-def _extract_kernel_name(body: str, default: str) -> str:
-    """Extract kernel function name from C++ kernel body definition.
-
-    Args:
-        body (str): C++ kernel source.
-        default (str): Fallback kernel name.
-
-    Returns:
-        str: Extracted kernel identifier.
-    """
-    m = re.search(r"void\s+([a-zA-Z0-9_]+)\s*\(", body)
-    if m:
-        return m.group(1)
-    return default
-
-
-def _prepare_rocm_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -> dict[str, bytes]:
-    """Prepare raw byte buffers for ROCm execution.
-
-    Args:
-        graph (IRGraph): Graph being executed.
-        args (tuple[object, ...]): Input positional arguments.
-
-    Returns:
-        dict[str, bytes]: Mapping of input names to byte buffers.
-    """
-    input_buffers: dict[str, bytes] = {}
-    for idx, arg in enumerate(args):
-        input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if has_backend_member(arg, "tobytes"):
-            input_buffers[input_name] = ensure_bytes(get_backend_member(arg, "tobytes")())
-        elif isinstance(arg, (bytes, bytearray, memoryview)):
-            input_buffers[input_name] = bytes(arg)
-        elif has_backend_member(arg, "data") and has_backend_member(get_backend_member(arg, "data"), "tobytes"):
-            input_buffers[input_name] = ensure_bytes(get_backend_member(arg, "data").tobytes())
-        else:
-            input_buffers[input_name] = ensure_bytes(arg)
-    return input_buffers
-
-
-def _evaluate_rocm_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> EagerValue:
-    """Evaluate graph using reference interpreter fallback.
-
-    Args:
-        graph (IRGraph): Computation graph to evaluate.
-        args (tuple[object, ...]): Input positional arguments.
-
-    Returns:
-        EagerValue: Resulting tensor or tuple of tensors.
-    """
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: get_backend_member(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
-    res_dict = evaluate_graph(graph, feed_dict)
-    if len(graph.outputs) == 1:
-        return res_dict.get(graph.outputs[0])
-    return ensure_eager_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
-
-
-ROCM_SYNTH_MATH_MAP: dict[str, str] = {
-    "cbrt": "cbrtf(A[id])",
-    "square": "A[id] * A[id]",
-    "cube": "A[id] * A[id] * A[id]",
-    "reciprocal": "1.0f / A[id]",
-    "hardsilu": "A[id] * fminf(fmaxf(A[id] + 3.0f, 0.0f), 6.0f) / 6.0f",
-    "squareplus": "0.5f * (A[id] + sqrtf(A[id] * A[id] + 4.0f))",
-    "softsign": "A[id] / (1.0f + fabsf(A[id]))",
-    "logsigmoid": "-log1pf(expf(-A[id]))",
-    "isnan": "isnan(A[id]) ? 1.0f : 0.0f",
-    "is_nan": "isnan(A[id]) ? 1.0f : 0.0f",
-    "isinf": "isinf(A[id]) ? 1.0f : 0.0f",
-    "is_inf": "isinf(A[id]) ? 1.0f : 0.0f",
-    "isfinite": "isfinite(A[id]) ? 1.0f : 0.0f",
-    "is_finite": "isfinite(A[id]) ? 1.0f : 0.0f",
-    "shift_left": "(float)((int)A[id] << (int)B[id])",
-    "shift_right": "(float)((int)A[id] >> (int)B[id])",
-    "fmod": "fmodf(A[id], B[id])",
-    "remainder": "remainderf(A[id], B[id])",
-    "hypot": "hypotf(A[id], B[id])",
-    "where": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
-    "select": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
-    "clamp": "fminf(fmaxf(in_0[id], in_1[id]), in_2[id])",
-    "fma": "fmaf(in_0[id], in_1[id], in_2[id])",
-}
-
-
-def _synthesize_rocm_kernel(clean_op: str, inps: list[str], scalar_expr: str | None = None) -> str:
-    """Synthesize a C++ ROCm HIP kernel without fallback placeholder loops.
-
-    Args:
-        clean_op (str): Normalized op identifier.
-        inps (list[str]): Input argument names.
-        scalar_expr (Optional[str]): Explicit scalar math expression if provided.
-
-    Returns:
-        str: Synthesized C++ ROCm HIP kernel source.
-    """
-    if len(inps) <= 1:
-        expr = scalar_expr or ROCM_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id])")
-        helper = f"__device__ inline float {clean_op}_op(float a) {{ return a; }}\n" if clean_op not in ROCM_SYNTH_MATH_MAP and not scalar_expr else ""
-        return f"{helper}__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
-    if len(inps) == 2:
-        expr = scalar_expr or ROCM_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id], B[id])")
-        helper = f"__device__ inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n" if clean_op not in ROCM_SYNTH_MATH_MAP and not scalar_expr else ""
-        return f"{helper}__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
-    params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
-    call_args = ", ".join([f"in_{i}[id]" for i in range(len(inps))])
-    fn_params = ", ".join([f"float in{i}" for i in range(len(inps))])
-    expr = scalar_expr or ROCM_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op({call_args})")
-    helper = f"__device__ inline float {clean_op}_op({fn_params}) {{ return in0; }}\n" if clean_op not in ROCM_SYNTH_MATH_MAP and not scalar_expr else ""
-    return f"{helper}__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
 
 
 @register_backend("rocm")
@@ -268,7 +84,9 @@ class RocmCodeGenerator(BaseGenerator):
         self,
         node: EagerTensorProtocol | IRNode,
         node_idx: int,
-    ) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
+    ) -> (
+        HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | int | float | None
+    ):
         """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
 
         Args:
@@ -276,9 +94,13 @@ class RocmCodeGenerator(BaseGenerator):
             node_idx (int): Current node index.
 
         Returns:
-            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
+            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str],
+                str]]: Existing or synthesized template.
+
+        Raises:
+            BackendNotSupportedError: If `_ensure_template` encounters an unsupported operation or missing template.
         """
-        op_type = get_backend_member(node, "op_type", "")
+        op_type = adapt_backend_module(node).get_symbol("op_type", "")
         if op_type.lower() in ("input", "output", "fusedelementwise"):
             return None
         if "unsupported" in op_type.lower():
@@ -287,13 +109,15 @@ class RocmCodeGenerator(BaseGenerator):
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
             inps = _node_inputs_list(node)
-            raw_attrs = get_backend_member(node, "attributes", {})
+            raw_attrs = adapt_backend_module(node).get_symbol("attributes", {})
             raw_se = raw_attrs.get("scalar_expr") if isinstance(raw_attrs, dict) else None
             scalar_expr = str(raw_se) if raw_se is not None else None
             body = _synthesize_rocm_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
-                grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),
+                grid_calc=GridDimensionConfig(
+                    x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"
+                ),
                 workgroup_size=[256, 1, 1],
             )
             self.config.templates[op_type.lower()] = tpl
@@ -344,8 +168,10 @@ class RocmCodeGenerator(BaseGenerator):
         Returns:
             str: Output argument name or comma-separated names.
         """
-        raw_attrs = get_backend_member(node, "attributes", {})
-        raw_outs = (raw_attrs.get("outputs") if isinstance(raw_attrs, dict) else None) or (node.outputs if has_backend_member(node, "outputs") and len(node.outputs) > 1 else None)
+        raw_attrs = adapt_backend_module(node).get_symbol("attributes", {})
+        raw_outs = (raw_attrs.get("outputs") if isinstance(raw_attrs, dict) else None) or (
+            node.outputs if adapt_backend_module(node).has_symbol("outputs") and len(node.outputs) > 1 else None
+        )
         if raw_outs and isinstance(raw_outs, (list, tuple)) and len(raw_outs) > 1:
             out_names: list[str] = []
             for out_idx, out_id in enumerate(raw_outs):
@@ -354,11 +180,11 @@ class RocmCodeGenerator(BaseGenerator):
                 out_names.append(sub_out_name)
                 hip.append(f"    float* {sub_out_name};")
                 hip.append(f"    HIP_CHECK(hipMalloc(&{sub_out_name}, {bytes_alloc}));")
-            node_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_names[0]
+            node_buffers[coerce_str(adapt_backend_module(node).get_symbol("id", ""))] = out_names[0]
             return ", ".join(out_names)
 
         out_name = f"d_out_{node_idx}"
-        node_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_name
+        node_buffers[coerce_str(adapt_backend_module(node).get_symbol("id", ""))] = out_name
         hip.append(f"    float* {out_name};")
         hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
         return out_name
@@ -384,18 +210,23 @@ class RocmCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             hip (list[str]): Output ROCm HIP source lines.
         """
-        op_type = get_backend_member(node, "op_type", "")
+        op_type = adapt_backend_module(node).get_symbol("op_type", "")
         if op_type.lower() == "fusedelementwise":
             out_name = f"d_out_{node_idx}"
-            node_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_name
+            node_buffers[coerce_str(adapt_backend_module(node).get_symbol("id", ""))] = out_name
             num_elements, bytes_alloc = _calculate_node_bytes(node)
             hip.append(f"    float* {out_name};")
             hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
             hip.append(f"    dim3 block_{node_idx}(256, 1, 1);")
-            (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, {}, node_buffers, out_name, num_elements, node_idx, self.graph)
+            (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(
+                node, {}, node_buffers, out_name, num_elements, node_idx, self.graph
+            )
             hip.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
-            hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
+            hip.append(
+                f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, "
+                f"{', '.join(launch_args)});"
+            )
             hip.append("    HIP_CHECK(hipGetLastError());")
             self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, hip)
             return
@@ -405,14 +236,20 @@ class RocmCodeGenerator(BaseGenerator):
             return
         num_elements, bytes_alloc = _calculate_node_bytes(node)
         out_name = self._allocate_node_outputs(node, node_idx, node_buffers, bytes_alloc, hip)
-        wg = ensure_int_list(get_backend_member(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = coerce_int_list(adapt_backend_module(tpl).require_symbol("get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         hip.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
-        (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
+        (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(
+            node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph
+        )
         hip.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
-        kernel_fn = _extract_kernel_name(ensure_str(get_backend_member(tpl, "get")("body", "")), op_type.lower())
-        hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
+        kernel_fn = _extract_kernel_name(
+            coerce_str(adapt_backend_module(tpl).require_symbol("get")("body", "")), op_type.lower()
+        )
+        hip.append(
+            f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});"
+        )
         hip.append("    HIP_CHECK(hipGetLastError());")
 
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, hip)
@@ -433,13 +270,19 @@ class RocmCodeGenerator(BaseGenerator):
             "    do { ",
             "        hipError_t err = call; ",
             "        if (err != hipSuccess) { ",
-            '            std::cerr << "HIP Error: " << hipGetErrorString(err) << " at " << __FILE__ << ":" << __LINE__ << std::endl; ',
+            (
+                '            std::cerr << "HIP Error: " << hipGetErrorString(err) << " at " << __FILE__ << '
+                '":" << __LINE__ << std::endl; '
+            ),
             "            exit(err); ",
             "        } ",
             "    } while (0)",
             "",
             "// Dynamic N-dimensional coordinate-to-linear-offset index calculation",
-            "__device__ inline int coords_to_offset_nd(int linear_idx, const int* shape, const int* strides, int ndim) {",
+            (
+                "__device__ inline int coords_to_offset_nd(int linear_idx, const int* shape, const int* "
+                "strides, int ndim) {"
+            ),
             "    int offset = 0;",
             "    int rem = linear_idx;",
             "    for (int d = ndim - 1; d >= 0; --d) {",
@@ -453,9 +296,9 @@ class RocmCodeGenerator(BaseGenerator):
         ]
 
         for node_idx, node in enumerate(_graph_nodes_values(self.graph)):
-            op_type = get_backend_member(node, "op_type", "")
+            op_type = adapt_backend_module(node).get_symbol("op_type", "")
             if op_type.lower() == "fusedelementwise":
-                raw_attrs = get_backend_member(node, "attributes", {})
+                raw_attrs = adapt_backend_module(node).get_symbol("attributes", {})
                 scalar_expr = str(raw_attrs.get("scalar_expr", "in0")) if isinstance(raw_attrs, dict) else "in0"
                 in_list = _node_inputs_list(node)
                 in_params = ", ".join([f"const float* in_{k}" for k in range(len(in_list))])
@@ -471,7 +314,7 @@ class RocmCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    hip.append(ensure_str(get_backend_member(tpl, "get")("body", "")))
+                    hip.append(coerce_str(adapt_backend_module(tpl).require_symbol("get")("body", "")))
 
         hip.append("void evaluate_rocm(const std::vector<float*>& inputs, std::vector<float*>& outputs) {")
         hip.append("    // 1. Dynamic Memory Allocation (Host to Device)")
@@ -485,7 +328,7 @@ class RocmCodeGenerator(BaseGenerator):
 
         node_idx = 0
         for node in _graph_nodes_values(self.graph):
-            if get_backend_member(node, "op_type", "") == "Input":
+            if adapt_backend_module(node).get_symbol("op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, hip)
             node_idx += 1
@@ -494,15 +337,15 @@ class RocmCodeGenerator(BaseGenerator):
         hip.append("}")
         return "\n".join(hip)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into ahead-of-time ROCm HIP executable artifact.
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options such as optimization levels and target arch.
+            **kwargs (BackendArg): Compiler options such as optimization levels and target arch.
 
         Returns:
-            EagerValue: Executable compiled artifact.
+            BackendArg: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
         from ml_switcheroo_compiler.backends.hardware_compilers import HIPCompiler
@@ -512,23 +355,23 @@ class RocmCodeGenerator(BaseGenerator):
         compile_opts = kwargs.get("compile_options", None)
         comp_res = compiler.compile(hip_source, options=compile_opts if isinstance(compile_opts, list) else None)
 
-        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
+        def runner(*args: BackendArg, **runner_kwargs: BackendArg) -> BackendArg:
             """Execute compiled ROCm artifact with runtime dispatch or fallback.
 
             Args:
-                *args (EagerValue): Input tensor or buffer arguments.
-                **runner_kwargs (EagerValue): Optional execution options.
+                *args (BackendArg): Input tensor or buffer arguments.
+                **runner_kwargs (BackendArg): Optional execution options.
 
             Returns:
-                EagerValue: Output tensor or tuple of output tensors.
+                BackendArg: Output tensor or tuple of output tensors.
             """
             if ROCmRunner.is_available():
                 try:
                     runner_inst = ROCmRunner()
                     input_buffers = _prepare_rocm_input_buffers(graph, args)
-                    out_dict = get_backend_member(runner_inst, "execute_graph")(graph, input_buffers)
+                    out_dict = adapt_backend_module(runner_inst).require_symbol("execute_graph")(graph, input_buffers)
                     if len(graph.outputs) == 1:
-                        return ensure_eager_tensor(out_dict.get(graph.outputs[0]))
+                        return out_dict.get(graph.outputs[0])
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -541,470 +384,3 @@ class RocmCodeGenerator(BaseGenerator):
             source_code=hip_source,
             metadata={"backend": "rocm", "compiler_cli": comp_res.compiler_cli, "success": comp_res.success},
         )
-
-
-def _marshall_kernel_params(args: list[KernelArgType] | None) -> ctypes.Array[ctypes.c_void_p] | None:
-    """Marshall Python objects into ctypes kernel parameter array.
-
-    Args:
-        args (Optional[list[KernelArgType]]): Kernel arguments.
-
-    Returns:
-        Optional[ctypes.Array]: ctypes array of pointers or None.
-    """
-    if not args:
-        return None
-    c_args: list[ctypes.c_void_p] = []
-    for a in args:
-        if isinstance(a, ctypes.c_void_p):
-            c_args.append(a)
-        elif isinstance(a, int):
-            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_int32(a))))
-        elif isinstance(a, float):
-            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_float(a))))
-        elif has_backend_member(a, "value"):
-            c_args.append(ctypes.c_void_p(ensure_int(get_backend_member(a, "value"))))
-        else:
-            c_args.append(ctypes.c_void_p(int(a) if a is not None else 0))
-    return (ctypes.c_void_p * len(c_args))(*[ctypes.c_void_p(ctypes.addressof(arg_obj)).value for arg_obj in c_args])
-
-
-class ROCmRunner:
-    """ROCm Runner utilizing cupy if available, fallback to ctypes driver API."""
-
-    @classmethod
-    def is_available(cls) -> bool:
-        """Check if ROCm HIP driver and accelerator hardware are functional.
-
-        Returns:
-            bool: True if ROCm HIP is functional, False otherwise.
-        """
-        if cupy is not None:
-            try:
-                return bool(has_backend_member(cupy.cuda, "is_hip") and cupy.cuda.is_hip)
-            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        try:
-            hip_path = ctypes.util.find_library("amdhip64") or ctypes.util.find_library("hip_hcc")
-            if hip_path:
-                lib = ctypes.cdll.LoadLibrary(hip_path)
-                if has_backend_member(lib, "hipInit") and lib.hipInit(0) == 0:
-                    count = ctypes.c_int()
-                    if has_backend_member(lib, "hipGetDeviceCount") and lib.hipGetDeviceCount(ctypes.byref(count)) == 0:
-                        return count.value > 0
-        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        return False
-
-    def __init__(self) -> None:
-        """Initialize ROCmRunner and load hardware limits."""
-        self.limits: dict[str, int | list[int] | str | None] = {}
-        limits_path: str = os.path.join(os.path.dirname(__file__), "hardware_limits.yaml")
-        if os.path.exists(limits_path):
-            with open(limits_path) as f:
-                self.limits = yaml.safe_load(f) or {}
-
-        self.rocm_lib: ctypes.CDLL | None = None
-        self._ctx: ctypes.c_void_p | None = None
-
-        if cupy is not None and get_backend_member(get_backend_member(cupy, "cuda", None), "is_hip", False):
-            self.mode = "cupy"
-        else:
-            self.mode = "ctypes"
-            try:
-                rocm_lib_path = ctypes.util.find_library("amdhip64")
-                if rocm_lib_path:
-                    self.rocm_lib = ctypes.cdll.LoadLibrary(rocm_lib_path)
-                    self.rocm_lib.hipInit(0)
-            except Exception:
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-
-    def allocate_buffer(self, size: int) -> ctypes.c_void_p | None:
-        """Allocate device memory.
-
-        Args:
-            size (int): Size in bytes.
-
-        Returns:
-            Optional[ctypes.c_void_p]: Pointer to device memory.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            mem = cupy.cuda.alloc(size)
-            return ctypes.c_void_p(mem.ptr)
-
-        if not self.rocm_lib:
-            return ctypes.c_void_p(0)
-
-        dptr = ctypes.c_void_p()
-        res = self.rocm_lib.hipMalloc(ctypes.byref(dptr), size)
-        if res != 0:
-            raise RuntimeError(f"hipMalloc failed with error code {res}")
-        return dptr
-
-    def write_buffer(self, device_ptr: ctypes.c_void_p | None, host_data: bytes) -> None:
-        """Write to device buffer.
-
-        Args:
-            device_ptr (ctypes.c_void_p): Device pointer.
-            host_data (bytes): Data to write.
-        """
-        if device_ptr is None or not get_backend_member(device_ptr, "value", device_ptr):
-            return
-
-        if self.mode == "cupy" and cupy is not None:
-            arr = cupy.asarray(bytearray(host_data), dtype="uint8")
-            dst = cupy.ndarray(arr.shape, dtype=arr.dtype, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, arr.nbytes, device_ptr), 0))
-            dst.set(arr)
-            return
-
-        if self.rocm_lib:
-            res = self.rocm_lib.hipMemcpyHtoD(device_ptr, host_data, len(host_data))
-            if res != 0:
-                raise RuntimeError(f"hipMemcpyHtoD failed with error code {res}")
-
-    def read_buffer(self, device_ptr: ctypes.c_void_p | None, size: int) -> bytes:
-        """Read from device buffer.
-
-        Args:
-            device_ptr (ctypes.c_void_p): Device pointer.
-            size (int): Size to read.
-
-        Returns:
-            bytes: Read data.
-        """
-        if device_ptr is None or not get_backend_member(device_ptr, "value", device_ptr):
-            return b"\x00" * size
-
-        if self.mode == "cupy" and cupy is not None:
-            src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
-            arr = src.get()
-            return ensure_bytes(arr.tobytes())
-
-        if self.rocm_lib:
-            host_data = ctypes.create_string_buffer(size)
-            res = self.rocm_lib.hipMemcpyDtoH(host_data, device_ptr, size)
-            if res != 0:
-                raise RuntimeError(f"hipMemcpyDtoH failed with error code {res}")
-            return host_data.raw
-        return b"\x00" * size
-
-    def free_buffer(self, device_ptr: ctypes.c_void_p | None) -> None:
-        """Free device memory.
-
-        Args:
-            device_ptr (ctypes.c_void_p): Device pointer.
-        """
-        if device_ptr is None or not get_backend_member(device_ptr, "value", device_ptr):
-            return
-
-        if self.mode == "cupy":
-            pass
-        elif self.rocm_lib:
-            self.rocm_lib.hipFree(device_ptr)
-
-    def compile_hip_to_code(
-        self,
-        hip_source: str,
-        source_filename: str = "kernel.hip",
-        options: list[str] | None = None,
-    ) -> bytes:
-        """Compile HIP source code to executable code object bytes.
-
-        Args:
-            hip_source (str): HIP C++ source code.
-            source_filename (str): Virtual source filename.
-            options (Optional[list[str]]): Compiler flags.
-
-        Returns:
-            bytes: Compiled binary code object.
-        """
-        try:
-            hiprtc_path = ctypes.util.find_library("hiprtc") or "libhiprtc.so"
-            hiprtc_lib = ctypes.cdll.LoadLibrary(hiprtc_path)
-        except Exception as err:
-            raise RuntimeError("HIPRTC library unavailable") from err
-
-        prog = ctypes.c_void_p()
-        res = hiprtc_lib.hiprtcCreateProgram(
-            ctypes.byref(prog),
-            hip_source.encode("utf-8"),
-            source_filename.encode("utf-8"),
-            0,
-            None,
-            None,
-        )
-        if res != 0:
-            raise RuntimeError(f"hiprtcCreateProgram failed with error code {res}")
-
-        opt_list = options or []
-        c_opts = (ctypes.c_char_p * len(opt_list))(*[opt.encode("utf-8") for opt in opt_list])
-        res = hiprtc_lib.hiprtcCompileProgram(prog, len(opt_list), c_opts)
-        if res != 0:
-            log_size = ctypes.c_size_t()
-            hiprtc_lib.hiprtcGetProgramLogSize(prog, ctypes.byref(log_size))
-            log_buf = ctypes.create_string_buffer(log_size.value)
-            hiprtc_lib.hiprtcGetProgramLog(prog, log_buf)
-            log_msg = log_buf.value.decode("utf-8", errors="replace")
-            if has_backend_member(hiprtc_lib, "hiprtcDestroyProgram"):
-                hiprtc_lib.hiprtcDestroyProgram(ctypes.byref(prog))
-            raise RuntimeError(f"HIPRTC compilation failed: {log_msg}")
-
-        code_size = ctypes.c_size_t()
-        hiprtc_lib.hiprtcGetCodeSize(prog, ctypes.byref(code_size))
-        code_buf = ctypes.create_string_buffer(code_size.value)
-        hiprtc_lib.hiprtcGetCode(prog, code_buf)
-        if has_backend_member(hiprtc_lib, "hiprtcDestroyProgram"):
-            hiprtc_lib.hiprtcDestroyProgram(ctypes.byref(prog))
-        return code_buf.raw
-
-    def load_and_dispatch(
-        self,
-        binary_path: str,
-        entry_point: str,
-        grid_size: list[int],
-        block_size: list[int],
-        args: list[KernelArgType] | None = None,
-        shared_memory_bytes: int = 0,
-        stream: ctypes.c_void_p | None = None,
-    ) -> None:
-        """Load binaries and launch kernels with dynamic shared memory and stream support.
-
-        Args:
-            binary_path (str): Code object file path.
-            entry_point (str): Kernel entry point.
-            grid_size (list[int]): Grid sizing.
-            block_size (list[int]): Block sizing.
-            args (Optional[list[KernelArgType]]): Kernel arguments to marshall to device.
-            shared_memory_bytes (int): Dynamic LDS shared memory size in bytes.
-            stream (Optional[ctypes.c_void_p]): Asynchronous HIP stream.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            with open(binary_path, "rb") as f:
-                code_bytes = f.read()
-            module = cupy.RawModule(code=code_bytes)
-            kernel = module.get_function(entry_point)
-            kernel(tuple(grid_size), tuple(block_size), tuple(args) if args else ())
-            return
-
-        if self.rocm_lib:
-            module = ctypes.c_void_p()
-            res = self.rocm_lib.hipModuleLoad(ctypes.byref(module), binary_path.encode("utf-8"))
-            if res != 0:
-                raise RuntimeError(f"hipModuleLoad failed with error code {res}")
-
-            kernel = ctypes.c_void_p()
-            res = self.rocm_lib.hipModuleGetFunction(ctypes.byref(kernel), module, entry_point.encode("utf-8"))
-            if res != 0:
-                raise RuntimeError(f"hipModuleGetFunction failed with error code {res}")
-
-            kernel_params = _marshall_kernel_params(args)
-
-            h_stream = stream if stream is not None else ctypes.c_void_p(0)
-            res = self.rocm_lib.hipModuleLaunchKernel(
-                kernel,
-                grid_size[0],
-                grid_size[1] if len(grid_size) > 1 else 1,
-                grid_size[2] if len(grid_size) > 2 else 1,
-                block_size[0],
-                block_size[1] if len(block_size) > 1 else 1,
-                block_size[2] if len(block_size) > 2 else 1,
-                shared_memory_bytes,
-                h_stream,
-                kernel_params,
-                0,
-            )
-            if res != 0:
-                raise RuntimeError(f"hipModuleLaunchKernel failed with error code {res}")
-
-    def create_stream(self) -> ctypes.c_void_p | None:
-        """Create an asynchronous ROCm HIP stream.
-
-        Returns:
-            Optional[ctypes.c_void_p]: Pointer to created HIP stream.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            stream = cupy.cuda.Stream()
-            ptr_val = get_backend_member(stream, "ptr", 1000)
-            return ctypes.c_void_p(int(ptr_val) if ptr_val else 1000)
-        if self.rocm_lib:
-            stream = ctypes.c_void_p()
-            res = self.rocm_lib.hipStreamCreate(ctypes.byref(stream))
-            if res != 0:
-                raise RuntimeError(f"hipStreamCreate failed with error code {res}")
-            return stream
-        return None
-
-    def synchronize_stream(self, stream: ctypes.c_void_p | None = None) -> None:
-        """Synchronize an asynchronous ROCm HIP stream.
-
-        Args:
-            stream (Optional[ctypes.c_void_p]): Stream to synchronize. Defaults to None.
-
-        Raises:
-            RuntimeError: If stream synchronization fails.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            if stream is not None and stream.value:
-                cupy.cuda.Stream(null=False).synchronize()
-            else:
-                cupy.cuda.Device().synchronize()
-            return
-        if self.rocm_lib:
-            st = stream if stream is not None else ctypes.c_void_p(0)
-            res = self.rocm_lib.hipStreamSynchronize(st)
-            if res != 0:
-                raise RuntimeError(f"hipStreamSynchronize failed with error code {res}")
-
-    def synchronize(self) -> None:
-        """Synchronize active ROCm HIP device or stream.
-
-        Raises:
-            RuntimeError: If device synchronization fails.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            try:
-                cupy.cuda.Stream.null.synchronize()
-            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-            return
-
-        if not self.rocm_lib:
-            return
-
-        if has_backend_member(self.rocm_lib, "hipDeviceSynchronize"):
-            res = self.rocm_lib.hipDeviceSynchronize()
-            if res != 0:
-                raise RuntimeError(f"hipDeviceSynchronize failed with error code {res}")
-
-    def _prepare_device_buffers(
-        self,
-        inputs: dict[str, bytes | memoryview | list[float]],
-    ) -> dict[str, ctypes.c_void_p]:
-        """Allocate and populate device memory buffers for inputs.
-
-        Args:
-            inputs (dict[str, Union[bytes, memoryview, list[float]]]): Host input payloads.
-
-        Returns:
-            dict[str, ctypes.c_void_p]: Allocated device pointers by input name.
-        """
-        device_buffers: dict[str, ctypes.c_void_p] = {}
-        for inp_name, data in inputs.items():
-            if isinstance(data, list):
-                float_arr = (ctypes.c_float * len(data))(*data)
-                raw_bytes = bytes(float_arr)
-            else:
-                raw_bytes = bytes(data)
-
-            dptr = self.allocate_buffer(len(raw_bytes))
-            if dptr is not None:
-                self.write_buffer(dptr, raw_bytes)
-                device_buffers[inp_name] = dptr
-        return device_buffers
-
-    def _dispatch_compute_node(
-        self,
-        node: EagerTensorProtocol | IRNode,
-        node_idx: int,
-        generator: RocmCodeGenerator,
-        tmp_code_path: str | None,
-        device_buffers: dict[str, ctypes.c_void_p],
-    ) -> None:
-        """Dispatch compute kernel execution for a single IRNode.
-
-        Args:
-            node (EagerTensorProtocol | IRNode): The IR node to execute.
-            node_idx (int): Current node execution index.
-            generator (RocmCodeGenerator): ROCm code generator holding op templates.
-            tmp_code_path (Optional[str]): Compiled code object file path.
-            device_buffers (dict[str, ctypes.c_void_p]): Active device buffer allocations.
-        """
-        num_elements, byte_size = _calculate_node_bytes(node)
-        out_ptr = self.allocate_buffer(byte_size)
-        if out_ptr is not None:
-            device_buffers[ensure_str(get_backend_member(node, "id", ""))] = out_ptr
-
-        op_type = get_backend_member(node, "op_type", "").lower()
-        if op_type == "fusedelementwise":
-            kernel_fn = f"fused_elementwise_kernel_{node_idx}"
-            tpl = HardwareTemplateConfig(body="", workgroup_size=[256, 1, 1])
-        else:
-            tpl_opt = _as_rocm_tpl_opt(generator.config.templates.get(op_type))
-            if tpl_opt is None:
-                return
-            tpl = tpl_opt
-            kernel_fn = _extract_kernel_name(ensure_str(tpl.get("body", "")), op_type)
-
-        raw_sh = get_backend_member(node, "shape_metadata", None)
-        shape_arg: tuple[int | str, ...] = tuple(int(x) if isinstance(x, (int, float)) else str(x) for x in raw_sh) if isinstance(raw_sh, (list, tuple)) and raw_sh else (num_elements,)
-        block_cfg, grid_cfg = query_optimal_launch_geometry(shape_arg)
-        block_size = [block_cfg[0], block_cfg[1], block_cfg[2]]
-        grid_size = [grid_cfg[0], grid_cfg[1], grid_cfg[2]]
-
-        kernel_args: list[KernelArgType] = [device_buffers[inp] for inp in _node_inputs_list(node) if inp in device_buffers]
-        if out_ptr is not None:
-            kernel_args.append(out_ptr)
-        kernel_args.append(num_elements)
-
-        if tmp_code_path and out_ptr is not None:
-            self.load_and_dispatch(tmp_code_path, kernel_fn, grid_size, block_size, kernel_args)
-
-    def execute_graph(
-        self,
-        graph: IRGraph,
-        inputs: dict[str, bytes | memoryview | list[float]],
-    ) -> dict[str, bytes]:
-        """Execute multi-node IRGraph through dynamic compilation and kernel dispatch.
-
-        Args:
-            graph (IRGraph): Target computation graph.
-            inputs (dict[str, Union[bytes, memoryview, list[float]]]): Host input buffers.
-
-        Returns:
-            dict[str, bytes]: Result dictionary of output buffers.
-
-        Raises:
-            BackendNotSupportedError: When ROCm HIP hardware or driver is unavailable.
-        """
-        if not self.is_available() and not self.rocm_lib and (self.mode != "cupy" or cupy is None):
-            raise BackendNotSupportedError("ROCm HIP accelerator hardware or driver is not available.")
-
-        rocm_source = RocmCodeGenerator(graph).generate()
-        code_bytes = self.compile_hip_to_code(rocm_source)
-
-        device_buffers = self._prepare_device_buffers(inputs)
-        generator = RocmCodeGenerator(graph)
-        node_idx: int = 0
-        tmp_code_path: str | None = None
-        if code_bytes:
-            with tempfile.NamedTemporaryFile(suffix=".co", delete=False) as tf:
-                tf.write(code_bytes)
-                tmp_code_path = tf.name
-
-        try:
-            for node in _graph_nodes_values(graph):
-                if get_backend_member(node, "op_type", "") == "Input":
-                    continue
-                self._dispatch_compute_node(node, node_idx, generator, tmp_code_path, device_buffers)
-                node_idx += 1
-
-            self.synchronize()
-        finally:
-            if tmp_code_path and os.path.exists(tmp_code_path):
-                os.remove(tmp_code_path)
-
-        outputs_list = _graph_str_list(graph, "outputs")
-        output_data: dict[str, bytes] = {}
-
-        for out_name in outputs_list:
-            out_node = graph.nodes.get(out_name)
-            _, byte_size = _calculate_node_bytes(out_node) if out_node else (1024, 4096)
-            out_buf = device_buffers.get(out_name)
-            if out_buf is not None:
-                output_data[out_name] = self.read_buffer(out_buf, byte_size)
-
-        for ptr in device_buffers.values():
-            if ptr is not None:
-                self.free_buffer(ptr)
-
-        return output_data

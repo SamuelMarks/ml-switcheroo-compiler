@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _check_distributed_infer_shape(classes: EagerValue, t: EagerValue) -> None:
+def _check_distributed_infer_shape(classes: list[str], t: BackendArg) -> None:
     """Test infer_shape for distributed op classes.
 
     Args:
@@ -19,15 +19,16 @@ def _check_distributed_infer_shape(classes: EagerValue, t: EagerValue) -> None:
     """
     from ml_switcheroo_compiler.ops.registry import get_op
 
-    for cls_name in ensure_eager_tensor(classes):
-        OpCls = ensure_callable(get_op)(cls_name)
+    for cls_name in classes:
+        OpCls = get_op(cls_name)
         inst = OpCls()
+        infer_fn = require_callable(inst.infer_shape)
         if cls_name == "Recv":
-            inst.infer_shape((1,), "float32", 0)
+            infer_fn((1,), "float32", 0)
         elif cls_name == "Send":
-            inst.infer_shape(t, 0)
+            infer_fn(t, 0)
         else:
-            inst.infer_shape(t)
+            infer_fn(t)
 
 
 def test_all_distributed_ops() -> None:
@@ -101,7 +102,7 @@ def test_all_distributed_ops() -> None:
         """Test class DummyBackend."""
 
         @classmethod
-        def execute_op(cls, op: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def execute_op(cls, op: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -110,37 +111,59 @@ def test_all_distributed_ops() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return DummyData()
 
+    dist_members = {
+        "shard_tensor": dist_ops.shard_tensor,
+        "nccl_all_reduce": dist_ops.nccl_all_reduce,
+        "hierarchical_copy_all_reduce": dist_ops.hierarchical_copy_all_reduce,
+        "broadcast": dist_ops.broadcast,
+        "all_gather": dist_ops.all_gather,
+        "reduce": dist_ops.reduce,
+        "all_reduce": dist_ops.all_reduce,
+        "reduce_scatter": dist_ops.reduce_scatter,
+        "all_to_all": dist_ops.all_to_all,
+        "broadcast_arrays": dist_ops.broadcast_arrays,
+        "broadcast_to": dist_ops.broadcast_to,
+        "broadcast_to_rank": dist_ops.broadcast_to_rank,
+        "broadcasted_iota": dist_ops.broadcasted_iota,
+        "pbroadcast": dist_ops.pbroadcast,
+        "outfeed": dist_ops.outfeed,
+        "pmax": dist_ops.pmax,
+        "pmin": dist_ops.pmin,
+        "ppermute": dist_ops.ppermute,
+        "pshuffle": dist_ops.pshuffle,
+        "psum_scatter": dist_ops.psum_scatter,
+        "pswapaxes": dist_ops.pswapaxes,
+        "send": dist_ops.send,
+        "recv": dist_ops.recv,
+    }
     orig_eager = config.eager_mode
     try:
         with patch("ml_switcheroo_compiler.backends.registry.BackendRegistry.get", return_value=DummyBackend):
-            from tests.testing_utils import get_test_members
-
-            dist_members = get_test_members(dist_ops)
             config.eager_mode = True
             t = Tensor(DummyData(), TensorConfig((1,), "float32", "cpu"))
             for func_name in funcs:
                 if func_name not in ("send", "recv"):
-                    func = ensure_callable(dist_members[func_name])
-                    func(t, None, None) if func_name == "shard_tensor" else func(t)
+                    func = dist_members[func_name]
+                    require_callable(func)(t, None, None) if func_name == "shard_tensor" else require_callable(func)(t)
 
             config.eager_mode = False
             global_tracing_state.start_tracing()
             try:
                 pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
                 for func_name in funcs:
-                    func = ensure_callable(dist_members[func_name])
+                    func = dist_members[func_name]
                     if func_name == "shard_tensor":
-                        func(pt, None, None)
+                        require_callable(func)(pt, None, None)
                     elif func_name == "recv":
-                        func((1,), "float32", 0)
+                        require_callable(func)((1,), "float32", 0)
                     elif func_name == "send":
-                        func(pt, 0)
+                        require_callable(func)(pt, 0)
                     else:
-                        func(pt)
+                        require_callable(func)(pt)
             finally:
                 global_tracing_state.stop_tracing()
 
@@ -152,12 +175,19 @@ def test_all_distributed_ops() -> None:
 
 def test_distributed_ops_infer_shapes_extras() -> None:
     """Test function test_distributed_ops_infer_shapes_extras."""
-    from ml_switcheroo_compiler.ops.distributed_ops import AllToAll, BroadcastArrays, BroadcastedIota, BroadcastTo, BroadcastToRank, Pbroadcast
+    from ml_switcheroo_compiler.ops.distributed_ops import (
+        AllToAll,
+        BroadcastArrays,
+        BroadcastedIota,
+        BroadcastTo,
+        BroadcastToRank,
+        Pbroadcast,
+    )
 
-    class DummyShape:
+    class DummyShape(MockTestStub):
         """Test class DummyShape."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -168,18 +198,18 @@ def test_distributed_ops_infer_shapes_extras() -> None:
     for cls in (AllToAll, BroadcastArrays, BroadcastTo, BroadcastToRank, BroadcastedIota, Pbroadcast):
         op = cls()
         assert op.infer_shape() == ()
-        assert ensure_callable(op.infer_shape)(1, 2) == ()  # no shape attr
+        assert op.infer_shape(1, 2) == ()  # no shape attr
 
         # one shape
-        res = ensure_callable(op.infer_shape)(ensure_callable(DummyShape)((2,)))
+        res = op.infer_shape(DummyShape((2,)))
         assert res == (2,) or (cls == BroadcastToRank and res == (2,))
 
         if cls != BroadcastToRank:
             # two shapes
-            assert ensure_callable(op.infer_shape)(ensure_callable(DummyShape)((2, 2)), ensure_callable(DummyShape)((1, 2))) == (2, 2)
+            assert op.infer_shape(DummyShape((2, 2)), DummyShape((1, 2))) == (2, 2)
 
     # BroadcastTo specific
     assert BroadcastTo().infer_shape(shape=(3, 3)) == (3, 3)
 
     # BroadcastToRank specific
-    assert ensure_callable(BroadcastToRank)().infer_shape(ensure_callable(DummyShape)((2,)), rank=3) == (1, 1, 2)
+    assert BroadcastToRank().infer_shape(DummyShape((2,)), rank=3) == (1, 1, 2)

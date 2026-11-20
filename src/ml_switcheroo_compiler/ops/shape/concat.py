@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int
+from ml_switcheroo_compiler.backends.registry import coerce_int
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_shape,
 )
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
@@ -33,7 +33,7 @@ class Concatenate(OpDef):
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [_extract_shape_or_seq(s) for s in args[0]]
-            axis = int(ensure_int(kwargs.get("axis", 0)))
+            axis = int(coerce_int(kwargs.get("axis", 0)))
             if not shapes:
                 return ()
             res = list(shapes[0])
@@ -162,12 +162,12 @@ class Hstack(OpDef):
     This operator stacks arrays in sequence horizontally (column wise).
     """
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
@@ -192,12 +192,12 @@ class Vstack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
@@ -222,12 +222,12 @@ class Dstack(OpDef):
     This operator stacks arrays in sequence depth wise (along third axis).
     """
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
@@ -254,12 +254,12 @@ class ColumnStack(OpDef):
     This operator stacks 1-D arrays as columns into a 2-D array.
     """
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
@@ -305,7 +305,7 @@ class Argwhere(OpDef):
     op_name = "Argwhere"
     np_op_name = "argwhere"
 
-    def infer_shape(self, a: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the Argwhere operation.
 
         Args:
@@ -324,27 +324,38 @@ class Append(OpDef):
     This operator appends values to the end of an array.
     """
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
         """
-        raw_args: tuple[TensorOrScalar, ...] = args
+        raw_args: tuple[OpValue, ...] = args
         if not raw_args or not isinstance(raw_args[0], ShapeProtocol):
             return ()
         axis = kwargs.get("axis")
         if axis is not None:
-            ax = ensure_int(axis)
-            res = list(raw_args[0].shape)
-            ensure_eager_tensor(res)[axis] += raw_args[1].shape[ax] if len(raw_args) > 1 and isinstance(raw_args[1], ShapeProtocol) else 1
+            ax = coerce_int(axis)
+            res = list(extract_shape(raw_args[0]))
+            rhs_dim = (
+                coerce_int(extract_shape(raw_args[1])[ax])
+                if len(raw_args) > 1 and isinstance(raw_args[1], ShapeProtocol)
+                else 1
+            )
+            res[ax] = coerce_int(res[ax]) + rhs_dim
             return tuple(res)
         import math
 
-        s1 = math.prod(raw_args[0].shape)
-        s2 = math.prod(raw_args[1].shape) if len(raw_args) > 1 and isinstance(raw_args[1], ShapeProtocol) else 1
+        from ml_switcheroo_compiler.core.shape import extract_int_shape
+
+        s1 = math.prod([int(d) for d in extract_int_shape(raw_args[0])])
+        s2 = (
+            math.prod([int(d) for d in extract_int_shape(raw_args[1])])
+            if len(raw_args) > 1 and isinstance(raw_args[1], ShapeProtocol)
+            else 1
+        )
         return (s1 + s2,)

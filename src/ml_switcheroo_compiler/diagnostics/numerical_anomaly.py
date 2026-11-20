@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
 class _TensorDataProtocol(typing.Protocol):
     """Protocol for tensor objects exposing a `.data` attribute."""
 
-    data: TensorOrScalar
+    data: OpValue
 
 
 def format_traceback(exc: Exception) -> str:

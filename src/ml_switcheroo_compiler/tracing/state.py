@@ -1,4 +1,8 @@
-"""Global tracing state."""
+"""Active graph builder tracing context (State Layer 3).
+
+Manages the dynamic graph stack, stream scopes, loop invariants, and source AST
+linkage while recording ``LogicalNode`` instances into an active ``LogicalGraph``.
+"""
 
 from __future__ import annotations
 
@@ -8,60 +12,49 @@ import typing
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
+    from ml_switcheroo_ir import AttributeValue, TensorSpec
 
-    from ml_switcheroo_ir import AttributeValue
-    from ml_switcheroo_ir.types import TensorSpec
-
-    from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.tracing.autograph import LoopOptions, ShapeInvariantType
 
 
+@typing.runtime_checkable
 class _GraphInputsProtocol(typing.Protocol):
     """Protocol for graph objects exposing `inputs`."""
 
     inputs: list[str]
 
 
+@typing.runtime_checkable
 class _GraphInputSpecsProtocol(typing.Protocol):
     """Protocol for graph objects exposing `input_specs`."""
 
     input_specs: dict[str, TensorSpec]
 
 
-def _is_attr_dict(val: Mapping[str, AttributeValue]) -> typing.TypeGuard[dict[str, LoopOptions | TensorOrScalar | AttributeValue]]:
-    """Type guard narrowing node attributes dict to accept `LoopOptions`.
-
-    Args:
-        val (Mapping[str, AttributeValue]): Node attributes dictionary.
-
-    Returns:
-        bool: Always True for runtime dicts.
-    """
-    return isinstance(val, dict)
-
-
+@typing.runtime_checkable
 class _NodeAstRefProtocol(typing.Protocol):
     """Protocol for nodes exposing `source_ast_ref`."""
 
     source_ast_ref: str | None
 
 
+@typing.runtime_checkable
 class _NodeDomainProtocol(typing.Protocol):
     """Protocol for nodes exposing `domain`."""
 
     domain: str
 
 
+@typing.runtime_checkable
 class _NodeStreamProtocol(typing.Protocol):
     """Protocol for nodes exposing `stream`."""
 
     stream: str | None
 
 
+@typing.runtime_checkable
 class _NodeLoopAttrsProtocol(typing.Protocol):
     """Protocol for loop nodes exposing `op_type` and `attributes`."""
 
@@ -69,11 +62,18 @@ class _NodeLoopAttrsProtocol(typing.Protocol):
     attributes: dict[str, AttributeValue]
 
 
+@typing.runtime_checkable
 class _NodeOpTypeProtocol(typing.Protocol):
     """Protocol for nodes exposing `id` and `op_type`."""
 
     id: str
     op_type: str
+
+
+class _NodeIdOnlyProtocol(typing.Protocol):
+    """Protocol for minimal node stubs exposing only `id`."""
+
+    id: str
 
 
 class _GraphNameProtocol(typing.Protocol):
@@ -82,16 +82,16 @@ class _GraphNameProtocol(typing.Protocol):
     name: str | None
 
 
-def _has_graph_inputs(val: LogicalGraph) -> typing.TypeGuard[_GraphInputsProtocol]:
+def _has_graph_inputs(val: LogicalGraph | _GraphNameProtocol) -> typing.TypeGuard[_GraphInputsProtocol]:
     """Check whether `val` exposes `inputs`.
 
     Args:
-        val (LogicalGraph): Active graph.
+        val (LogicalGraph | _GraphNameProtocol): Active graph.
 
     Returns:
         bool: True if `val` has `inputs`.
     """
-    return has_backend_member(val, "inputs")
+    return isinstance(val, _GraphInputsProtocol)
 
 
 def _has_graph_input_specs(val: LogicalGraph | _GraphInputsProtocol) -> typing.TypeGuard[_GraphInputSpecsProtocol]:
@@ -103,67 +103,67 @@ def _has_graph_input_specs(val: LogicalGraph | _GraphInputsProtocol) -> typing.T
     Returns:
         bool: True if `val` has `input_specs`.
     """
-    return has_backend_member(val, "input_specs")
+    return isinstance(val, _GraphInputSpecsProtocol)
 
 
-def _has_node_ast_ref(val: LogicalNode) -> typing.TypeGuard[_NodeAstRefProtocol]:
+def _has_node_ast_ref(val: LogicalNode | _NodeIdOnlyProtocol) -> typing.TypeGuard[_NodeAstRefProtocol]:
     """Check whether `val` exposes `source_ast_ref`.
 
     Args:
-        val (LogicalNode): Target node.
+        val (LogicalNode | _NodeIdOnlyProtocol): Target node.
 
     Returns:
         bool: True if `val` has `source_ast_ref`.
     """
-    return has_backend_member(val, "source_ast_ref")
+    return isinstance(val, _NodeAstRefProtocol)
 
 
-def _has_node_domain(val: LogicalNode) -> typing.TypeGuard[_NodeDomainProtocol]:
+def _has_node_domain(val: LogicalNode | _NodeIdOnlyProtocol) -> typing.TypeGuard[_NodeDomainProtocol]:
     """Check whether `val` exposes `domain`.
 
     Args:
-        val (LogicalNode): Target node.
+        val (LogicalNode | _NodeIdOnlyProtocol): Target node.
 
     Returns:
         bool: True if `val` has `domain`.
     """
-    return has_backend_member(val, "domain")
+    return isinstance(val, _NodeDomainProtocol)
 
 
-def _has_node_stream(val: LogicalNode) -> typing.TypeGuard[_NodeStreamProtocol]:
+def _has_node_stream(val: LogicalNode | _NodeIdOnlyProtocol) -> typing.TypeGuard[_NodeStreamProtocol]:
     """Check whether `val` exposes `stream`.
 
     Args:
-        val (LogicalNode): Target node.
+        val (LogicalNode | _NodeIdOnlyProtocol): Target node.
 
     Returns:
         bool: True if `val` has `stream`.
     """
-    return has_backend_member(val, "stream")
+    return isinstance(val, _NodeStreamProtocol)
 
 
-def _has_node_loop_attrs(val: LogicalNode) -> typing.TypeGuard[_NodeLoopAttrsProtocol]:
+def _has_node_loop_attrs(val: LogicalNode | _NodeIdOnlyProtocol) -> typing.TypeGuard[_NodeLoopAttrsProtocol]:
     """Check whether `val` exposes `op_type` and `attributes`.
 
     Args:
-        val (LogicalNode): Target node.
+        val (LogicalNode | _NodeIdOnlyProtocol): Target node.
 
     Returns:
         bool: True if `val` has `op_type` and `attributes`.
     """
-    return has_backend_member(val, "op_type") and has_backend_member(val, "attributes")
+    return isinstance(val, _NodeLoopAttrsProtocol)
 
 
-def _has_node_op_type(val: LogicalNode) -> typing.TypeGuard[_NodeOpTypeProtocol]:
+def _has_node_op_type(val: LogicalNode | _NodeIdOnlyProtocol) -> typing.TypeGuard[_NodeOpTypeProtocol]:
     """Check whether `val` exposes `id` and `op_type`.
 
     Args:
-        val (LogicalNode): Target node.
+        val (LogicalNode | _NodeIdOnlyProtocol): Target node.
 
     Returns:
         bool: True if `val` has `id` and `op_type`.
     """
-    return has_backend_member(val, "id") and has_backend_member(val, "op_type")
+    return isinstance(val, _NodeOpTypeProtocol)
 
 
 class TracingState:
@@ -226,10 +226,14 @@ class TracingState:
         Args:
             node (LogicalNode): The IR node to populate with loop options.
         """
-        if self.current_loop_options is None or not _has_node_loop_attrs(node) or node.op_type not in ("Loop", "WhileLoop") or not isinstance(node.attributes, dict):
+        if (
+            self.current_loop_options is None
+            or not _has_node_loop_attrs(node)
+            or node.op_type not in ("Loop", "WhileLoop")
+            or not isinstance(node.attributes, dict)
+        ):
             return
         attrs = node.attributes
-        assert _is_attr_dict(attrs)
         opts = self.current_loop_options
         opt_items: tuple[tuple[str, int | bool | ShapeInvariantType | None], ...] = (
             ("parallel_iterations", opts.parallel_iterations),

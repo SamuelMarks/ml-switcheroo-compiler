@@ -6,10 +6,11 @@ import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends import eager_registry as m
-from tests.testing_utils import ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import coerce_numeric
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_tuple_get_item_coverage() -> None:
@@ -32,7 +33,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
     backend = MagicMock()
 
     # 1. _eager_custom_jvp with callable fun
-    def my_fun(x: EagerValue, y: EagerValue) -> EagerValue:
+    def my_fun(x: BackendArg, y: BackendArg) -> BackendArg:
         """Test function my_fun.
 
         Args:
@@ -40,9 +41,9 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             y: Test parameter `y`.
 
         Returns:
-            EagerValue: Computed output value from `my_fun`.
+            BackendArg: Computed output value from `my_fun`.
         """
-        return ensure_eager_tensor(x) * ensure_eager_tensor(y)
+        return coerce_numeric(x) * coerce_numeric(y)
 
     res_fun = m._eager_custom_jvp(backend, 3, 4, fun=my_fun)
     assert res_fun == 12
@@ -52,7 +53,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
     assert m._eager_custom_jvp(backend, 1, 2) == (1, 2)
 
     # 2. _eager_process_custom_jvp_call with 2-tuple return
-    def rule_packed(primals: EagerValue, tangents: EagerValue) -> EagerValue:
+    def rule_packed(primals: BackendArg, tangents: BackendArg) -> BackendArg:
         """Test function rule_packed.
 
         Args:
@@ -60,15 +61,15 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             tangents: Test parameter `tangents`.
 
         Returns:
-            EagerValue: Computed output value from `rule_packed`.
+            BackendArg: Computed output value from `rule_packed`.
         """
-        return (ensure_eager_tensor(primals)[0] * 2, ensure_eager_tensor(tangents)[0] * 2)
+        return (ensure_ndarray(primals)[0] * 2, ensure_ndarray(tangents)[0] * 2)
 
     res_rule1 = m._eager_process_custom_jvp_call(backend, 5, 1, num_primals=1, jvp_rule=rule_packed)
     assert res_rule1 == (10, 2)
 
     # 3. _eager_process_custom_jvp_call with unpacked fallback on TypeError
-    def rule_unpacked(p: EagerValue, t: EagerValue) -> EagerValue:
+    def rule_unpacked(p: BackendArg, t: BackendArg) -> BackendArg:
         """Test function rule_unpacked.
 
         Args:
@@ -76,15 +77,15 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             t: Test parameter `t`.
 
         Returns:
-            EagerValue: Computed output value from `rule_unpacked`.
+            BackendArg: Computed output value from `rule_unpacked`.
         """
-        return (ensure_eager_tensor(p) + ensure_eager_tensor(1), ensure_eager_tensor(t) + ensure_eager_tensor(1))
+        return (coerce_numeric(p) + 1, coerce_numeric(t) + 1)
 
     res_rule2 = m._eager_process_custom_jvp_call(backend, 10, 2, num_primals=1, jvp_rule=rule_unpacked)
     assert res_rule2 == (11, 3)
 
     # 4. _eager_process_custom_jvp_call returning non-tuple (falls back to (None, res))
-    def rule_single(primals: EagerValue, tangents: EagerValue) -> EagerValue:
+    def rule_single(primals: BackendArg, tangents: BackendArg) -> BackendArg:
         """Test function rule_single.
 
         Args:
@@ -92,7 +93,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             tangents: Test parameter `tangents`.
 
         Returns:
-            EagerValue: Computed output value from `rule_single`.
+            BackendArg: Computed output value from `rule_single`.
         """
         return 999
 

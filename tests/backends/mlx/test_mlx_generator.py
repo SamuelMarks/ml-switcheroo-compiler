@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import types
 import typing
 
+import pytest
+
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_generator_save_load(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test save and load methods of MLX generator.
 
     Args:
@@ -23,7 +25,7 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
         """Test class MockMX."""
 
         @staticmethod
-        def load(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def load(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function load.
 
             Args:
@@ -31,12 +33,12 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `load`.
+                BackendArg: Computed output value from `load`.
             """
             return "mock_load"
 
         @staticmethod
-        def save(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def save(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function save.
 
             Args:
@@ -44,12 +46,12 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `save`.
+                BackendArg: Computed output value from `save`.
             """
             return "mock_save"
 
         @staticmethod
-        def save_safetensors(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def save_safetensors(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function save_safetensors.
 
             Args:
@@ -57,22 +59,21 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `save_safetensors`.
+                BackendArg: Computed output value from `save_safetensors`.
             """
             return "mock_save_safetensors"
 
     # Mock the actual module import within MLXCodeGenerator.load/save
     import sys
-    import types
 
     # Create a mock module for mlx.core
     mock_mlx_core = types.ModuleType("mlx.core")
-    ensure_mutable(mock_mlx_core).load = ensure_eager_tensor(ensure_eager_tensor(MockMX).load)
-    ensure_mutable(mock_mlx_core).save = ensure_eager_tensor(ensure_eager_tensor(MockMX).save)
-    ensure_mutable(mock_mlx_core).save_safetensors = ensure_eager_tensor(ensure_eager_tensor(MockMX).save_safetensors)
+    pytest.MonkeyPatch().setattr(mock_mlx_core, "load", MockMX.load, raising=False)
+    pytest.MonkeyPatch().setattr(mock_mlx_core, "save", MockMX.save, raising=False)
+    pytest.MonkeyPatch().setattr(mock_mlx_core, "save_safetensors", MockMX.save_safetensors, raising=False)
 
     mock_mlx = types.ModuleType("mlx")
-    ensure_mutable(mock_mlx).core = ensure_eager_tensor(mock_mlx_core)
+    pytest.MonkeyPatch().setattr(mock_mlx, "core", mock_mlx_core, raising=False)
 
     # Use monkeypatch.setitem on sys.modules
     monkeypatch.setitem(sys.modules, "mlx.core", mock_mlx_core)
@@ -92,22 +93,20 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
     assert MLXCodeGenerator.savez_compressed("dummy.npz", None) is None
 
 
-def test_mlx_generator_zeros_and_item(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_generator_zeros_and_item(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test MLXCodeGenerator.zeros, array, asarray, and item classmethods.
 
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
-    import types
-
     import numpy as np
 
     import ml_switcheroo_compiler.backends.mlx.types as mlx_types
 
-    if ensure_eager_tensor(mlx_types.mx) is None:
+    if mlx_types.mx is None:
         mock_mx = types.ModuleType("mlx.core")
-        ensure_mutable(mock_mx).zeros = ensure_eager_tensor(np.zeros)
-        ensure_mutable(mock_mx).array = ensure_eager_tensor(np.array)
+        pytest.MonkeyPatch().setattr(mock_mx, "zeros", np.zeros, raising=False)
+        pytest.MonkeyPatch().setattr(mock_mx, "array", np.array, raising=False)
         monkeypatch.setattr(mlx_types, "mx", mock_mx)
 
     z_arr = MLXCodeGenerator.zeros((1,))

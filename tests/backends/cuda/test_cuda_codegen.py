@@ -6,15 +6,10 @@ import re
 import typing
 
 import numpy as np
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.backends.cuda.cuda import (
-    CUDA_SYNTH_MATH_MAP,
-    CudaCodeGenerator,
-    _synthesize_cuda_kernel,
-)
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_eager_tensor
+from ml_switcheroo_compiler.backends.cuda.cuda import CUDA_SYNTH_MATH_MAP, CudaCodeGenerator, _synthesize_cuda_kernel
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
     pass
@@ -69,7 +64,7 @@ def test_custom_scalar_expr_synthesized_properly() -> None:
 
     tpl = gen._ensure_template(custom_node, 0)
     assert tpl is not None
-    body = ensure_eager_tensor(tpl).body
+    body = adapt_backend_module(tpl).require_symbol("body")
     assert "fminf(fmaxf(A[id], 0.0f), 6.0f)" in body
     assert "relu6custom_kernel" in body
 
@@ -106,20 +101,20 @@ def test_expanded_cuda_templates_yaml_coverage() -> None:
     for op in new_ops:
         assert op in templates, f"Template for '{op}' missing in cuda_templates.yaml"
         tpl = templates[op]
-        body = ensure_eager_tensor(ensure_eager_tensor(tpl).get)("body", "")
-        assert "__global__ void" in body, f"Kernel body for '{op}' must contain '__global__ void'"
-        assert f"{op}" in body, f"Kernel body for '{op}' should contain function name"
+        body = adapt_backend_module(tpl).require_symbol("get")("body", "")
+        assert "__global__ void" in str(body), f"Kernel body for '{op}' must contain '__global__ void'"
+        assert f"{op}" in str(body), f"Kernel body for '{op}' should contain function name"
 
     # Specific check for argmax / argmin reduction
-    argmax_body = ensure_eager_tensor(ensure_eager_tensor(templates)["argmax"].get)("body", "")
-    assert "__shared__ float s_val" in argmax_body
-    assert "__shared__ int s_idx" in argmax_body
-    assert "__syncthreads()" in argmax_body
+    argmax_body = adapt_backend_module(templates["argmax"]).require_symbol("get")("body", "")
+    assert "__shared__ float s_val" in str(argmax_body)
+    assert "__shared__ int s_idx" in str(argmax_body)
+    assert "__syncthreads()" in str(argmax_body)
 
-    argmin_body = ensure_eager_tensor(ensure_eager_tensor(templates)["argmin"].get)("body", "")
-    assert "__shared__ float s_val" in argmin_body
-    assert "__shared__ int s_idx" in argmin_body
-    assert "__syncthreads()" in argmin_body
+    argmin_body = adapt_backend_module(templates["argmin"]).require_symbol("get")("body", "")
+    assert "__shared__ float s_val" in str(argmin_body)
+    assert "__shared__ int s_idx" in str(argmin_body)
+    assert "__syncthreads()" in str(argmin_body)
 
 
 def test_cuda_code_generator_full_pipeline_syntax_validation() -> None:

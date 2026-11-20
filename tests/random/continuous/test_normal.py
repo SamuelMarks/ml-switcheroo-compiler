@@ -8,7 +8,6 @@ from unittest.mock import patch
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.continuous.normal import normal
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -19,7 +18,7 @@ def test_normal() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.normal"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
         result = normal("key", shape=(2, 2), dtype=dtypes.DType.Float64)
-        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
+        assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomNormal", ["key"], (2, 2), dtypes.DType.Float64)
 
 
@@ -28,5 +27,5 @@ def test_normal_default_shape_and_dtype() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.normal"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
         result = normal("key")
-        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
+        assert result == "mocked_result"
         mock_emit.assert_called_once_with("RandomNormal", ["key"], (), dtypes.DType.Float32)

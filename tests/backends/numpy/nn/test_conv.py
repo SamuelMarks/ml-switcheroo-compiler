@@ -8,7 +8,9 @@ import typing
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.numpy.eager.conv import (
+from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import (
+    ConvDimSpecs,
+    ConvExecutionState,
     PatchConfig,
     _apply_conv_dilation,
     _apply_conv_padding_helper,
@@ -32,7 +34,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.conv import (
     _preprocess_conv_tensors,
 )
 from ml_switcheroo_compiler.ops.configs import ConvConfig
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub, adapt_backend_module, extract_test_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -42,7 +44,9 @@ def test_get_transpose() -> None:
     """Test function test_get_transpose."""
     res = _get_transpose("NHWC", "NCHW")
     assert res == (0, 3, 1, 2)
-    with pytest.raises((ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=r".*"):
+    with pytest.raises(
+        (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, Exception), match=r".*"
+    ):
         _get_transpose("NCHW", "XYZW")
     res = _get_transpose((0, 2, 1), "NCW")
     assert res == (0, 2, 1)
@@ -64,7 +68,7 @@ def test_parse_conv_dimension_numbers() -> None:
     res2b = _parse_conv_dimension_numbers(4, 4, 2, ("NHWC", "HWIO", "NHWC"))
     assert tuple(res2b.lhs_spec) == (0, 3, 1, 2)
 
-    class MockDimSpec:
+    class MockDimSpec(MockTestStub):
         """Test class MockDimSpec."""
 
         def __init__(self) -> None:
@@ -73,8 +77,8 @@ def test_parse_conv_dimension_numbers() -> None:
             self.rhs_spec = (0, 1, 2, 3)
             self.out_spec = (0, 1, 2, 3)
 
-    res3 = ensure_callable(_parse_conv_dimension_numbers)(4, 4, 2, ensure_callable(MockDimSpec)())
-    assert ensure_eager_tensor(tuple(res3.lhs_spec)) == ensure_eager_tensor((0, 1, 2, 3))
+    res3 = _parse_conv_dimension_numbers(4, 4, 2, MockDimSpec())
+    assert tuple(res3.lhs_spec) == (0, 1, 2, 3)
 
 
 def test_calculate_same_padding() -> None:
@@ -111,9 +115,9 @@ def test_apply_conv_dilation() -> None:
     """Test function test_apply_conv_dilation."""
     tensor = np.ones((1, 1, 2, 2))
     res = _apply_conv_dilation(tensor, [2, 2], 2)
-    assert ensure_eager_tensor(res).shape == (1, 1, 3, 3)
+    assert extract_test_shape(res) == (1, 1, 3, 3)
     res2 = _apply_conv_dilation(tensor, [1, 1], 2)
-    assert ensure_eager_tensor(res2).shape == (1, 1, 2, 2)
+    assert extract_test_shape(res2) == (1, 1, 2, 2)
 
 
 def test_compute_conv_patch_group() -> None:
@@ -122,7 +126,7 @@ def test_compute_conv_patch_group() -> None:
     rhs_c = np.ones((4, 2, 3, 3))
     config = PatchConfig(axes_lhs=[1, 2, 3], axes_rhs=[1, 2, 3], group_in_c=2, group_out_c=2, feature_group_count=2)
     res = _compute_conv_patch_group(lhs_patch, rhs_c, config, 0)
-    assert ensure_eager_tensor(res).shape == (1, 2)
+    assert extract_test_shape(res) == (1, 2)
 
 
 def test_compute_single_patch_grouped() -> None:
@@ -147,31 +151,28 @@ def test_compute_single_patch() -> None:
     rhs_c = np.ones((1, 1, 3, 3))
     out = np.zeros((1, 1, 1, 1))
     config = ConvConfig(window_strides=(1, 1), padding="VALID", feature_group_count=1)
-
-    class MockState:
-        """Test class MockState."""
-
-        def __init__(self) -> None:
-            """Test function __init__."""
-            self.lhs_pad = lhs_pad
-            self.rhs_c = rhs_c
-            self.out = out
-            self.config = config
-            self.spatial_dims = 2
-
-    state = MockState()
-    ensure_callable(_compute_single_patch)(state, (0, 0))
+    np_adp = adapt_backend_module(np)
+    state = ConvExecutionState(
+        lhs_pad=np_adp.asarray(lhs_pad),
+        rhs_c=np_adp.asarray(rhs_c),
+        out=np_adp.asarray(out),
+        config=config,
+        spatial_dims=2,
+    )
+    _compute_single_patch(state, (0, 0))
     assert out[0, 0, 0, 0] > 0
     lhs_pad_g = np.ones((1, 4, 3, 3))
     rhs_c_g = np.ones((4, 2, 3, 3))
     out_g = np.zeros((1, 4, 1, 1))
     config_g = ConvConfig(window_strides=(1, 1), padding="VALID", feature_group_count=2)
-    state_g = MockState()
-    state_g.lhs_pad = lhs_pad_g
-    state_g.rhs_c = rhs_c_g
-    state_g.out = out_g
-    state_g.config = config_g
-    ensure_callable(_compute_single_patch)(state_g, (0, 0))
+    state_g = ConvExecutionState(
+        lhs_pad=np_adp.asarray(lhs_pad_g),
+        rhs_c=np_adp.asarray(rhs_c_g),
+        out=np_adp.asarray(out_g),
+        config=config_g,
+        spatial_dims=2,
+    )
+    _compute_single_patch(state_g, (0, 0))
     assert out_g[0, 0, 0, 0] > 0
 
 
@@ -191,7 +192,7 @@ def test_apply_conv_padding_helper() -> None:
     rhs_c = np.ones((1, 1, 3, 3))
     config = ConvConfig(window_strides=(1, 1), padding="SAME")
     res = _apply_conv_padding_helper(lhs_c, rhs_c, config)
-    assert ensure_eager_tensor(res).shape == (1, 1, 5, 5)
+    assert extract_test_shape(res) == (1, 1, 5, 5)
 
 
 def test_preprocess_conv_tensors() -> None:
@@ -199,25 +200,15 @@ def test_preprocess_conv_tensors() -> None:
     lhs = np.ones((1, 1, 3, 3))
     rhs = np.ones((1, 1, 3, 3))
     config = ConvConfig(window_strides=(1, 1), padding="VALID", feature_group_count=1)
-
-    class MockSpec:
-        """Test class MockSpec."""
-
-        def __init__(self) -> None:
-            """Test function __init__."""
-            self.lhs_spec = (0, 1, 2, 3)
-            self.rhs_spec = (0, 1, 2, 3)
-            self.spatial_dims = 2
-
-    spec = MockSpec()
-    (lhs_pad, rhs_c) = ensure_callable(_preprocess_conv_tensors)(lhs, rhs, config, spec)
-    assert ensure_eager_tensor(lhs_pad).shape == (1, 1, 3, 3)
-    assert ensure_eager_tensor(rhs_c).shape == (1, 1, 3, 3)
+    spec = ConvDimSpecs(lhs_spec=(0, 1, 2, 3), rhs_spec=(0, 1, 2, 3), out_spec=(0, 1, 2, 3), spatial_dims=2)
+    (lhs_pad, rhs_c) = _preprocess_conv_tensors(lhs, rhs, config, spec)
+    assert lhs_pad.shape == (1, 1, 3, 3)
+    assert rhs_c.shape == (1, 1, 3, 3)
     config_g = ConvConfig(window_strides=(1, 1), padding="VALID", feature_group_count=2)
     lhs_g = np.ones((1, 4, 3, 3))
     rhs_g = np.ones((4, 4, 3, 3))
-    (lhs_pad_g, rhs_c_g) = ensure_callable(_preprocess_conv_tensors)(lhs_g, rhs_g, config_g, spec)
-    assert ensure_eager_tensor(rhs_c_g).shape == (8, 2, 3, 3)
+    (lhs_pad_g, rhs_c_g) = _preprocess_conv_tensors(lhs_g, rhs_g, config_g, spec)
+    assert rhs_c_g.shape == (8, 2, 3, 3)
 
 
 def test_compute_out_shape() -> None:
@@ -238,25 +229,25 @@ def test_conv_general_dilated() -> None:
     rhs = np.ones((1, 1, 3, 3))
     config = ConvConfig(window_strides=(1, 1), padding="VALID", dimension_numbers=None)
     res = _conv_general_dilated(lhs, rhs, config)
-    assert ensure_eager_tensor(res).shape == (1, 1, 3, 3)
+    assert extract_test_shape(res) == (1, 1, 3, 3)
 
 
 def test_np_conv_general_dilated() -> None:
     """Test function test_np_conv_general_dilated."""
     lhs = np.ones((1, 1, 5, 5))
     rhs = np.ones((1, 1, 3, 3))
-    res = _np_conv_general_dilated(ensure_eager_tensor(np), lhs, rhs, (1, 1), "VALID")
-    assert ensure_eager_tensor(res).shape == (1, 1, 3, 3)
+    res = _np_conv_general_dilated(np, lhs, rhs, (1, 1), "VALID")
+    assert extract_test_shape(res) == (1, 1, 3, 3)
     config = ConvConfig(window_strides=(1, 1), padding="VALID", dimension_numbers=None)
-    res2 = _np_conv_general_dilated(ensure_eager_tensor(np), lhs, rhs, config)
-    assert ensure_eager_tensor(res2).shape == (1, 1, 3, 3)
+    res2 = _np_conv_general_dilated(np, lhs, rhs, config)
+    assert extract_test_shape(res2) == (1, 1, 3, 3)
 
 
 def test_calculate_conv_transpose_padding() -> None:
     """Test function test_calculate_conv_transpose_padding."""
-    (out_spatial, pads) = ensure_callable(_calculate_conv_transpose_padding)((3, 3), (3, 3), (1, 1), "VALID")
+    (out_spatial, pads) = _calculate_conv_transpose_padding((3, 3), (3, 3), (1, 1), "VALID")
     assert out_spatial == [5, 5]
-    (out_spatial2, pads2) = ensure_callable(_calculate_conv_transpose_padding)((3, 3), (3, 3), (1, 1), "SAME")
+    (out_spatial2, pads2) = _calculate_conv_transpose_padding((3, 3), (3, 3), (1, 1), "SAME")
     assert out_spatial2 == [3, 3]
 
 
@@ -270,59 +261,58 @@ def test_np_conv_transpose() -> None:
     """Test function test_np_conv_transpose."""
     lhs = np.ones((1, 1, 3, 3))
     rhs = np.ones((1, 1, 3, 3))
-    res = _np_conv_transpose(ensure_eager_tensor(np), lhs, rhs, strides=1, padding="VALID")
-    assert ensure_eager_tensor(res).shape == (1, 1, 5, 5)
-    res2 = _np_conv_transpose(ensure_eager_tensor(np), lhs, rhs, 1, "SAME")
-    res3 = _np_conv_transpose(ensure_eager_tensor(np), lhs, rhs, strides=(1, 1), padding="VALID")
+    res = _np_conv_transpose(np, lhs, rhs, strides=1, padding="VALID")
+    assert extract_test_shape(res) == (1, 1, 5, 5)
+    res2 = _np_conv_transpose(np, lhs, rhs, 1, "SAME")
+    res3 = _np_conv_transpose(np, lhs, rhs, strides=(1, 1), padding="VALID")
     assert res3 is not None
-    assert ensure_eager_tensor(res2).shape == (1, 1, 3, 3)
+    assert extract_test_shape(res2) == (1, 1, 3, 3)
 
 
 def test_numpy_conv_branch_coverage() -> None:
     """Test coverage for conv."""
     import numpy as np
 
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d, _preprocess_conv_tensors
+    from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import _np_conv2d, _preprocess_conv_tensors
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
-    class MockDimSpecs:
-        """Test class MockDimSpecs."""
-
-        spatial_dims = 2
-        lhs_spec = (0, 1, 2, 3)
-        rhs_spec = (0, 1, 2, 3)
-        out_spec = (0, 1, 2, 3)
-
-    specs = MockDimSpecs()
-    config = ConvConfig(window_strides=(1, 1), padding=((0, 0), (0, 0)), lhs_dilation=(1, 1), rhs_dilation=(1, 1), feature_group_count=2, batch_group_count=1)
+    specs = ConvDimSpecs(spatial_dims=2, lhs_spec=(0, 1, 2, 3), rhs_spec=(0, 1, 2, 3), out_spec=(0, 1, 2, 3))
+    config = ConvConfig(
+        window_strides=(1, 1),
+        padding=((0, 0), (0, 0)),
+        lhs_dilation=(1, 1),
+        rhs_dilation=(1, 1),
+        feature_group_count=2,
+        batch_group_count=1,
+    )
     lhs = np.random.rand(1, 4, 3, 3)
     rhs = np.random.rand(2, 999, 2, 2)
-    ensure_callable(_preprocess_conv_tensors)(lhs, rhs, config, specs)
+    _preprocess_conv_tensors(lhs, rhs, config, specs)
     rhs_exact = np.random.rand(2, 2, 2, 2)
-    (res_pad, res_rhs) = ensure_callable(_preprocess_conv_tensors)(lhs, rhs_exact, config, specs)
-    assert res_pad is not None
-    assert res_rhs is not None
+    (res_pad, res_rhs) = _preprocess_conv_tensors(lhs, rhs_exact, config, specs)
+    assert tuple(res_pad.shape) == (1, 4, 3, 3)
+    assert tuple(res_rhs.shape) == (2, 2, 2, 2)
     lhs_conv = np.ones((1, 1, 5, 5))
     rhs_conv = np.ones((1, 1, 3, 3))
-    out1 = _np_conv2d(ensure_eager_tensor(np), lhs_conv, rhs_conv, stride=1, padding=(1, 1))
-    assert out1 is not None
-    out2 = _np_conv2d(ensure_eager_tensor(np), lhs_conv, rhs_conv, strides=[1, 1], padding="VALID")
-    assert out2 is not None
+    out1 = _np_conv2d(np, lhs_conv, rhs_conv, stride=1, padding=(1, 1))
+    assert tuple(extract_test_shape(out1)) == (1, 1, 5, 5)
+    out2 = _np_conv2d(np, lhs_conv, rhs_conv, strides=[1, 1], padding="VALID")
+    assert tuple(extract_test_shape(out2)) == (1, 1, 3, 3)
 
 
 def test_np_conv2d_groups() -> None:
     """Test _np_conv2d execution with grouped convolutions."""
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d
+    from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import _np_conv2d
 
     lhs = np.ones((2, 4, 8, 8), dtype=np.float32)
     rhs = np.ones((4, 2, 3, 3), dtype=np.float32)
-    out = _np_conv2d(ensure_eager_tensor(np), lhs, rhs, stride=1, padding="SAME", groups=2)
-    assert ensure_eager_tensor(out).shape == (2, 4, 8, 8)
+    out = _np_conv2d(np, lhs, rhs, stride=1, padding="SAME", groups=2)
+    assert extract_test_shape(out) == (2, 4, 8, 8)
 
 
 def test_compute_conv2d_padding_values() -> None:
     """Test _compute_conv2d_padding_values under different padding spec types."""
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _compute_conv2d_padding_values
+    from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import _compute_conv2d_padding_values
 
     assert _compute_conv2d_padding_values((10, 10), (3, 3), (1, 1), (1, 1), (2, 3), (10, 10)) == (2, 2, 3, 3)
     assert _compute_conv2d_padding_values((10, 10), (3, 3), (1, 1), (1, 1), (1, 2, 3, 4), (10, 10)) == (1, 2, 3, 4)
@@ -336,37 +326,48 @@ def test_compute_conv2d_padding_values() -> None:
 
 def test_np_conv2d_input_grad() -> None:
     """Test _np_conv2d_input_grad gradient evaluation for grouped and standard convolutions."""
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d_input_grad
+    from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import _np_conv2d_input_grad
 
     d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
     weight = np.ones((4, 2, 3, 3), dtype=np.float32)
-    dx = _np_conv2d_input_grad(ensure_eager_tensor(np), d_out, weight, stride=1, dilation=1, groups=2, padding="SAME", target_shape=(2, 4, 8, 8))
-    assert ensure_eager_tensor(dx).shape == (2, 4, 8, 8)
+    dx = _np_conv2d_input_grad(
+        np,
+        d_out,
+        weight,
+        stride=1,
+        dilation=1,
+        groups=2,
+        padding="SAME",
+        target_shape=(2, 4, 8, 8),
+    )
+    assert dx.shape == (2, 4, 8, 8)
     weight_g1 = np.ones((4, 3, 1, 1), dtype=np.float32)
     d_out_g1 = np.ones((2, 4, 6, 6), dtype=np.float32)
-    dx_g1 = _np_conv2d_input_grad(ensure_eager_tensor(np), d_out_g1, weight_g1, strides=(1, 1), dilations=(1, 1), groups=1, padding="VALID")
-    assert ensure_eager_tensor(dx_g1).shape == (2, 3, 6, 6)
+    dx_g1 = _np_conv2d_input_grad(np, d_out_g1, weight_g1, strides=(1, 1), dilations=(1, 1), groups=1, padding="VALID")
+    assert dx_g1.shape == (2, 3, 6, 6)
 
 
 def test_np_conv2d_weight_grad() -> None:
     """Test _np_conv2d_weight_grad gradient evaluation for grouped and standard convolutions."""
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d_weight_grad
+    from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import _np_conv2d_weight_grad
 
     x = np.ones((2, 4, 8, 8), dtype=np.float32)
     d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
-    dw = _np_conv2d_weight_grad(ensure_eager_tensor(np), x, d_out, stride=1, dilation=1, groups=2, padding="SAME", target_shape=(4, 2, 3, 3))
-    assert ensure_eager_tensor(dw).shape == (4, 2, 3, 3)
+    dw = _np_conv2d_weight_grad(np, x, d_out, stride=1, dilation=1, groups=2, padding="SAME", target_shape=(4, 2, 3, 3))
+    assert dw.shape == (4, 2, 3, 3)
     x_valid = np.ones((2, 3, 8, 8), dtype=np.float32)
     d_out_valid = np.ones((2, 6, 6, 6), dtype=np.float32)
-    dw_valid = _np_conv2d_weight_grad(ensure_eager_tensor(np), x_valid, d_out_valid, strides=(1, 1), dilations=(1, 1), groups=1, padding="VALID")
-    assert ensure_eager_tensor(dw_valid).shape == (6, 3, 3, 3)
+    dw_valid = _np_conv2d_weight_grad(
+        np, x_valid, d_out_valid, strides=(1, 1), dilations=(1, 1), groups=1, padding="VALID"
+    )
+    assert dw_valid.shape == (6, 3, 3, 3)
 
 
 def test_np_conv2d_bias_grad() -> None:
     """Test _np_conv2d_bias_grad gradient evaluation."""
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d_bias_grad
+    from ml_switcheroo_compiler.backends.eager.nn_ops.conv_reference import _np_conv2d_bias_grad
 
     d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
-    db = _np_conv2d_bias_grad(ensure_eager_tensor(np), d_out)
-    assert ensure_eager_tensor(db).shape == (4,)
-    assert ensure_callable(np.allclose)(db, 2 * 8 * 8)
+    db = _np_conv2d_bias_grad(np, d_out)
+    assert db.shape == (4,)
+    assert np.allclose(db, 2 * 8 * 8)

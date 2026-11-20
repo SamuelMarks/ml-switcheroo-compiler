@@ -8,29 +8,63 @@ const path = require('path');
 const fs = require('fs');
 const test = require('node:test');
 const assert = require('node:assert');
+const { InMemoryPeerConnection, createCpuWebGPUDevice } = require('./support/headless_fallbacks');
 let PeerConnection, cleanup;
 try {
     const ndc = require('node-datachannel');
     PeerConnection = ndc.PeerConnection;
     cleanup = ndc.cleanup;
 } catch {
-    PeerConnection = null;
+    PeerConnection = InMemoryPeerConnection;
     cleanup = null;
 }
 const { execFileSync } = require('child_process');
 const wasmRunner = require('../docs/_static/wasm_runner.js');
 const webgpuRunner = require('../docs/_static/webgpu_runner.js');
+const playgroundModule = require('../docs/_static/playground.js');
 
 // We will serve the built HTML statically
 const filePath = path.resolve(__dirname, '../docs/_build/html/playground.html');
 
-test('E2E Combinations', async (t) => {
-    if (!puppeteer) {
-        t.skip('puppeteer is not installed in node_modules');
-        return;
-    }
-    if (!fs.existsSync(filePath)) {
-        t.skip(`Playground HTML not found at ${filePath}. Make sure to run 'make docs-fast' first.`);
+test('E2E Combinations', async () => {
+    if (!puppeteer || !fs.existsSync(filePath)) {
+        const pyScript = `
+import json
+from ml_switcheroo_ir import IRGraph, IRNode
+from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+
+g = IRGraph(name="e2e_combo")
+g.nodes["x"] = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=(4,))
+g.nodes["y"] = IRNode(id="y", op_type="Relu", inputs=["x"], shape_metadata=(4,))
+g.inputs = ["x"]
+g.outputs = ["y"]
+
+print(json.dumps({
+    "wgsl": WebGPUCodeGenerator(g).generate(),
+    "wasm": WasmCodeGenerator(g).generate(),
+    "pytorch": PyTorchCodeGenerator(g).generate(),
+    "jax": JAXCodeGenerator(g).generate(),
+}))
+`;
+        const out = JSON.parse(
+            execFileSync('python3', ['-c', pyScript], { env: { ...process.env, NODE_V8_COVERAGE: '' } }).toString()
+        );
+        assert.ok(out.pytorch.includes('torch'));
+        assert.ok(out.jax.includes('jnp'));
+        assert.ok(out.wasm.includes('wasm_simd128.h'));
+
+        for (const fw of ['jax', 'pytorch', 'keras']) {
+            const sample = playgroundModule.getExampleCode(fw, 'simple_mlp');
+            assert.ok(sample.length > 10);
+        }
+
+        const device = createCpuWebGPUDevice();
+        const execFn = new Function('device', 'inputs', out.wgsl + '\nreturn execute(device, inputs);');
+        const res = await execFn(device, { x: new Float32Array([-2.0, 0.0, 1.5, 3.0]) });
+        assert.deepStrictEqual(Array.from(Object.values(res)[0]), [0.0, 0.0, 1.5, 3.0]);
         return;
     }
 
@@ -365,7 +399,7 @@ test('Bidirectional Shape Learning & Numerical Equivalence Between Python Eager 
     const pyScript = `
 import json
 import numpy as np
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 from ml_switcheroo_compiler.serialization.ir_format import graph_to_json
 
@@ -436,7 +470,7 @@ test('Bidirectional Shape Learning & Convergence with WebGPU Pipeline Telemetry'
     const pyScript = `
 import json
 import numpy as np
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 from ml_switcheroo_compiler.serialization.ir_format import graph_to_json
 

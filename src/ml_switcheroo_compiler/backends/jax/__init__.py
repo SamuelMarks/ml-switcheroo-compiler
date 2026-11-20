@@ -16,6 +16,7 @@ if not _has_pkg and "sphinx" not in sys.modules and "pytest" not in sys.modules:
 from .distributed_collectives import jax_all_gather, jax_all_reduce, jax_broadcast
 from .eager import execute_op
 from .generator import JAXCodeGenerator
+from .jaxpr_ingest import ingest_jaxpr
 
 _all_reduce = JAXCodeGenerator.all_reduce
 _all_gather = JAXCodeGenerator.all_gather
@@ -24,6 +25,7 @@ _broadcast = JAXCodeGenerator.broadcast
 __all__ = [
     "JAXCodeGenerator",
     "execute_op",
+    "ingest_jaxpr",
     "jax_all_gather",
     "jax_all_reduce",
     "jax_broadcast",

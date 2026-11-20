@@ -5,22 +5,12 @@ from __future__ import annotations
 import os
 import pathlib
 import tempfile
-import typing
 
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft import (
-    _fft,
-    _fftconvolve,
-    _fftnd,
-    _np_hfft,
-    _rfft,
-)
-from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import (
-    _np_tensorarrayread,
-    _np_tensorarraywrite,
-)
+from ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft import _fft, _fftconvolve, _fftnd, _np_hfft, _rfft
+from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import _np_tensorarrayread, _np_tensorarraywrite
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_logical import (
     _axis_index,
     _infeed,
@@ -31,130 +21,153 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_logical import (
 )
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_string_io import _np_writefile
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import _assert
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
-
-if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.core.shape import OpValue
+from tests.testing_utils import MockTestStub, coerce_operand_list, extract_test_shape
 
 
 def test_tensorarray_read_and_write() -> None:
     """Test dynamic tensorarray read, write, bounds checking, and expansion."""
     # Empty / None inputs
-    assert _np_tensorarrayread(ensure_eager_tensor(np)) == 0
-    assert _np_tensorarraywrite(ensure_eager_tensor(np)) == 0
+    assert _np_tensorarrayread(np) == 0
+    assert _np_tensorarraywrite(np) == 0
 
     # 1. List handle read / write
     handle_list = [10, 20, 30]
-    assert _np_tensorarrayread(ensure_eager_tensor(np), handle_list, 1) == 20
+    assert _np_tensorarrayread(np, handle_list, 1) == 20
 
     # Out of bounds on list
     with pytest.raises(IndexError, match="out of bounds"):
-        _np_tensorarrayread(ensure_eager_tensor(np), handle_list, 5)
+        _np_tensorarrayread(np, handle_list, 5)
     with pytest.raises(IndexError, match="out of bounds"):
-        _np_tensorarrayread(ensure_eager_tensor(np), handle_list, -1)
+        _np_tensorarrayread(np, handle_list, -1)
 
     # In-bounds list write
-    w1 = _np_tensorarraywrite(ensure_eager_tensor(np), handle_list, 1, 99)
-    assert ensure_eager_tensor(w1)[1] == 99
+    w1 = _np_tensorarraywrite(np, handle_list, 1, 99)
+    assert ensure_ndarray(w1)[1] == 99
     assert handle_list[1] == 20  # non-mutating copy
 
     # Expanding list write
-    w_expand = _np_tensorarraywrite(ensure_eager_tensor(np), handle_list, 5, 555)
-    assert ensure_callable(len)(w_expand) == 6
-    assert ensure_eager_tensor(w_expand)[5] == 555
-    assert ensure_eager_tensor(w_expand)[3] is None
+    w_expand = _np_tensorarraywrite(np, handle_list, 5, 555)
+    assert len(coerce_operand_list(w_expand)) == 6
+    assert ensure_ndarray(w_expand)[5] == 555
+    assert ensure_ndarray(w_expand)[3] is None
 
     # Write on None creates new list
-    w_none = _np_tensorarraywrite(ensure_eager_tensor(np), None, 2, "hello")
-    assert ensure_callable(len)(w_none) == 3
-    assert ensure_eager_tensor(w_none)[2] == "hello"
+    w_none = _np_tensorarraywrite(np, None, 2, "hello")
+    assert len(coerce_operand_list(w_none)) == 3
+    assert ensure_ndarray(w_none)[2] == "hello"
 
     # Negative index rejection
     with pytest.raises(IndexError, match="Negative TensorArray index"):
-        _np_tensorarraywrite(ensure_eager_tensor(np), handle_list, -1, 100)
+        _np_tensorarraywrite(np, handle_list, -1, 100)
 
     # 2. NumPy ndarray read / write
     arr_np = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    elem0 = _np_tensorarrayread(ensure_eager_tensor(np), arr_np, 0)
-    assert ensure_callable(np.allclose)(elem0, [1.0, 2.0])
+    elem0 = _np_tensorarrayread(np, arr_np, 0)
+    assert np.allclose(ensure_ndarray(elem0), [1.0, 2.0])
 
     with pytest.raises(IndexError, match="out of bounds"):
-        _np_tensorarrayread(ensure_eager_tensor(np), arr_np, 4)
+        _np_tensorarrayread(np, arr_np, 4)
 
     # NumPy in-bounds write
-    arr_w = _np_tensorarraywrite(ensure_eager_tensor(np), arr_np, 1, np.array([9.0, 9.0], dtype=np.float32))
-    assert ensure_callable(np.allclose)(ensure_eager_tensor(arr_w)[1], [9.0, 9.0])
+    arr_w = _np_tensorarraywrite(np, arr_np, 1, np.array([9.0, 9.0], dtype=np.float32))
+    assert np.allclose(ensure_ndarray(coerce_operand_list(arr_w)[1]), [9.0, 9.0])
     assert np.allclose(arr_np[1], [3.0, 4.0])  # non-mutating
 
     # NumPy expanding write
-    arr_exp = _np_tensorarraywrite(ensure_eager_tensor(np), arr_np, 3, np.array([8.0, 8.0], dtype=np.float32))
-    assert ensure_eager_tensor(arr_exp).shape[0] == 4
-    assert ensure_callable(np.allclose)(ensure_eager_tensor(arr_exp)[3], [8.0, 8.0])
+    arr_exp = _np_tensorarraywrite(np, arr_np, 3, np.array([8.0, 8.0], dtype=np.float32))
+    assert extract_test_shape(arr_exp)[0] == 4
+    assert np.allclose(ensure_ndarray(coerce_operand_list(arr_exp)[3]), [8.0, 8.0])
 
     # 3. Dict handle read / write
-    d_handle: dict[int, str] = {0: "zero", 1: "one"}
-    assert _np_tensorarrayread(ensure_eager_tensor(np), ensure_eager_tensor(d_handle), 1) == "one"
+    d_handle: dict[str | int, OpValue] = {0: "zero", 1: "one"}
+    assert _np_tensorarrayread(np, d_handle, 1) == "one"
 
     with pytest.raises(IndexError, match="not found in sparse handle"):
-        _np_tensorarrayread(ensure_eager_tensor(np), ensure_eager_tensor(d_handle), 99)
+        _np_tensorarrayread(np, d_handle, 99)
 
-    d_w = _np_tensorarraywrite(ensure_eager_tensor(np), ensure_eager_tensor(d_handle), 2, "two")
-    assert ensure_eager_tensor(d_w)[2] == "two"
+    d_w = _np_tensorarraywrite(np, d_handle, 2, "two")
+    assert _np_tensorarrayread(np, d_w, 2) == "two"
 
     # 4. Unknown type fallback
-    assert _np_tensorarrayread(ensure_eager_tensor(np), 12345) == 0
-    assert _np_tensorarraywrite(ensure_eager_tensor(np), 12345) == 0
+    assert _np_tensorarrayread(np, 12345) == 0
+    assert _np_tensorarraywrite(np, 12345) == 0
 
 
 def test_axis_index_and_infeed() -> None:
     """Test SPMD axis index context management and infeed host queue ingestion."""
     clear_axis_indices()
     # Default without registration
-    assert _axis_index(ensure_eager_tensor(np), "batch") == 0
-    assert _axis_index(ensure_eager_tensor(np), axis_name="model") == 0
+    assert _axis_index(np, "batch") == 0
+    assert _axis_index(np, axis_name="model") == 0
 
     # Set and retrieve axis indices
     set_axis_index("batch", 3)
     set_axis_index("data_parallel", 7)
-    assert _axis_index(ensure_eager_tensor(np), "batch") == 3
-    assert _axis_index(ensure_eager_tensor(np), "data_parallel") == 7
+    assert _axis_index(np, "batch") == 3
+    assert _axis_index(np, "data_parallel") == 7
 
     clear_axis_indices()
-    assert _axis_index(ensure_eager_tensor(np), "batch") == 0
+    assert _axis_index(np, "batch") == 0
 
     clear_infeed_queues()
     # Infeed on unconfigured queue
-    assert _infeed(ensure_eager_tensor(np), "unconfigured") == 0
+    assert _infeed(np, "unconfigured") == 0
 
     # Infeed from list queue
     batch_data = [np.array([1, 2]), np.array([3, 4])]
     register_infeed_queue("train_queue", list(batch_data))
 
-    item1 = _infeed(ensure_eager_tensor(np), "train_queue")
-    assert ensure_callable(np.allclose)(item1, [1, 2])
-    item2 = _infeed(ensure_eager_tensor(np), queue_name="train_queue")
-    assert ensure_callable(np.allclose)(item2, [3, 4])
+    item1 = _infeed(np, "train_queue")
+    assert np.allclose(ensure_ndarray(item1), [1, 2])
+    item2 = _infeed(np, queue_name="train_queue")
+    assert np.allclose(ensure_ndarray(item2), [3, 4])
 
     # Exhausted queue returns 0
-    assert _infeed(ensure_eager_tensor(np), "train_queue") == 0
+    assert _infeed(np, "train_queue") == 0
 
     # Infeed from generator / iterator
-    def dummy_gen() -> Iterator[EagerValue]:
-        """Test function dummy_gen.
+    class _DummyIterator(MockTestStub):
+        """Iterator stub implementing both BackendArg and collections.abc.Iterator."""
 
-        Yields:
-            EagerValue: Yielded test context or value from `dummy_gen`.
-        """
-        yield 100
-        yield 200
+        def __init__(self, items: list[int]) -> None:
+            """Initialize iterator with items.
 
-    ensure_callable(register_infeed_queue)("gen_queue", ensure_callable(dummy_gen)())
-    assert _infeed(ensure_eager_tensor(np), "gen_queue") == 100
-    assert _infeed(ensure_eager_tensor(np), "gen_queue") == 200
-    assert _infeed(ensure_eager_tensor(np), "gen_queue") == 0
+            Args:
+                items: Items to yield in sequence.
+            """
+            self._items = list(items)
+            self._idx = 0
+
+        def __iter__(self) -> _DummyIterator:
+            """Return iterator self.
+
+            Returns:
+                _DummyIterator: Iterator instance.
+            """
+            return self
+
+        def __next__(self) -> int:
+            """Return next item or raise StopIteration.
+
+            Returns:
+                int: Next integer item.
+
+            Raises:
+                StopIteration: When all items have been consumed.
+            """
+            if self._idx >= len(self._items):
+                raise StopIteration
+            val = self._items[self._idx]
+            self._idx += 1
+            return val
+
+    register_infeed_queue("gen_queue", _DummyIterator([100, 200]))
+    assert _infeed(np, "gen_queue") == 100
+    assert _infeed(np, "gen_queue") == 200
+    assert _infeed(np, "gen_queue") == 0
 
     clear_infeed_queues()
 
@@ -162,32 +175,32 @@ def test_axis_index_and_infeed() -> None:
 def test_assert_operation() -> None:
     """Test _assert condition verification, error formatting, and summaries."""
     # True condition passes silently
-    assert _assert(ensure_eager_tensor(np), True, data=None) is None
-    assert _assert(ensure_eager_tensor(np), np.array([True, True]), data=np.array([1, 2, 3])) is None
+    assert _assert(np, True, data=None) is None
+    assert _assert(np, np.array([True, True]), data=np.array([1, 2, 3])) is None
 
     # False condition raises AssertionError with node ID
     with pytest.raises(AssertionError, match="Assertion failed in node 'Node_42'"):
-        _assert(ensure_eager_tensor(np), False, data=np.array([10, 20, 30, 40, 50]), summarize=2, node_id="Node_42")
+        _assert(np, False, data=np.array([10, 20, 30, 40, 50]), summarize=2, node_id="Node_42")
 
     # False array condition with data summary
     cond_arr = np.array([True, False, True])
     with pytest.raises(AssertionError, match=r"Data sample: \[10, 20\]"):
-        _assert(ensure_eager_tensor(np), cond_arr, data=np.array([10, 20, 30, 40]), summarize=2, node_id="CheckPos")
+        _assert(np, cond_arr, data=np.array([10, 20, 30, 40]), summarize=2, node_id="CheckPos")
 
     # False condition with data=None
     with pytest.raises(AssertionError, match="Assertion failed in node 'AssertOp'"):
-        _assert(ensure_eager_tensor(np), False, data=None)
+        _assert(np, False, data=None)
 
 
 def test_writefile_operation() -> None:
     """Test atomic file writing with directory creation across text, bytes, and array data."""
     # Missing args
-    assert _np_writefile(ensure_eager_tensor(np)) == 0
+    assert _np_writefile(np) == 0
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # 1. Text write to nested directory
         nested_txt = os.path.join(tmpdir, "subdir", "test.txt")
-        ret_txt = _np_writefile(ensure_eager_tensor(np), nested_txt, "Hello, world!")
+        ret_txt = _np_writefile(np, nested_txt, "Hello, world!")
         assert ret_txt == 1
         with open(nested_txt, encoding="utf-8") as f:
             assert f.read() == "Hello, world!"
@@ -195,32 +208,32 @@ def test_writefile_operation() -> None:
         # 2. Bytes write
         bin_path = os.path.join(tmpdir, "test.bin")
         payload = b"\x00\x01\x02\x03\x04"
-        ret_bin = _np_writefile(ensure_eager_tensor(np), bin_path, payload)
+        ret_bin = _np_writefile(np, bin_path, payload)
         assert ret_bin == 1
         with open(bin_path, "rb") as fb:
-            assert ensure_eager_tensor(fb.read()) == ensure_eager_tensor(payload)
+            assert fb.read() == payload
 
         # 3. Array tobytes write
         arr_path = os.path.join(tmpdir, "arr.bin")
         arr = np.array([1.5, 2.5, 3.5], dtype=np.float64)
-        ret_arr = _np_writefile(ensure_eager_tensor(np), arr_path, arr)
+        ret_arr = _np_writefile(np, arr_path, arr)
         assert ret_arr == 1
         with open(arr_path, "rb") as fb:
-            read_arr = ensure_callable(np.frombuffer)(ensure_callable(fb.read)(), dtype=np.float64)
-            assert ensure_callable(np.allclose)(read_arr, arr)
+            read_arr = np.frombuffer(fb.read(), dtype=np.float64)
+            assert np.allclose(read_arr, arr)
 
         # 4. Integer / generic content write
         int_path = os.path.join(tmpdir, "int.txt")
-        assert _np_writefile(ensure_eager_tensor(np), int_path, 98765) == 1
+        assert _np_writefile(np, int_path, 98765) == 1
         with open(int_path, encoding="utf-8") as f:
             assert f.read() == "98765"
 
         # 5. Backend with custom writefile method
-        class MockWritefileBackend:
+        class MockWritefileBackend(MockTestStub):
             """Test class MockWritefileBackend."""
 
             @staticmethod
-            def writefile(*a: EagerValue, **k: EagerValue) -> EagerValue:
+            def writefile(*a: BackendArg, **k: BackendArg) -> BackendArg:
                 """Test function writefile.
 
                 Args:
@@ -228,66 +241,66 @@ def test_writefile_operation() -> None:
                     k: Test parameter `k`.
 
                 Returns:
-                    EagerValue: Computed output value from `writefile`.
+                    BackendArg: Computed output value from `writefile`.
                 """
                 return 42
 
-        assert _np_writefile(ensure_mod(MockWritefileBackend()), "dummy.txt", "abc") == 42
+        assert _np_writefile(MockWritefileBackend(), "dummy.txt", "abc") == 42
 
         # 6. OSError trigger on write failure
         with pytest.raises(OSError):
-            _np_writefile(ensure_eager_tensor(np), "/non_existent_path_dir/forbidden/file.txt", "fail")
+            _np_writefile(np, "/non_existent_path_dir/forbidden/file.txt", "fail")
 
 
 def test_fftconvolve_fallback() -> None:
     """Test frequency-domain convolution fallback across modes, dimensions, and dtypes."""
     # None inputs
-    assert _fftconvolve(ensure_eager_tensor(np), None, None) is None
+    assert _fftconvolve(np, None, None) is None
 
     # 1D real signals
     x = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     h = np.array([0.5, 1.0], dtype=np.float32)
 
     # Full convolution: length 4 + 2 - 1 = 5
-    out_full = _fftconvolve(ensure_eager_tensor(np), x, h, mode="full")
-    assert ensure_eager_tensor(out_full).shape == (5,)
+    out_full = _fftconvolve(np, x, h, mode="full")
+    assert extract_test_shape(out_full) == (5,)
     expected_full = np.convolve(x, h, mode="full")
-    assert ensure_callable(np.allclose)(out_full, expected_full, atol=1e-5)
+    assert np.allclose(ensure_ndarray(out_full), expected_full, atol=1e-5)
 
     # Same convolution: length 4
-    out_same = _fftconvolve(ensure_eager_tensor(np), x, h, mode="same")
-    assert ensure_eager_tensor(out_same).shape == (4,)
+    out_same = _fftconvolve(np, x, h, mode="same")
+    assert extract_test_shape(out_same) == (4,)
     expected_same = np.convolve(x, h, mode="same")
-    assert ensure_callable(np.allclose)(out_same, expected_same, atol=1e-5)
+    assert np.allclose(ensure_ndarray(out_same), expected_same, atol=1e-5)
 
     # Valid convolution: length 4 - 2 + 1 = 3
-    out_valid = _fftconvolve(ensure_eager_tensor(np), x, h, mode="valid")
-    assert ensure_eager_tensor(out_valid).shape == (3,)
+    out_valid = _fftconvolve(np, x, h, mode="valid")
+    assert extract_test_shape(out_valid) == (3,)
     expected_valid = np.convolve(x, h, mode="valid")
-    assert ensure_callable(np.allclose)(out_valid, expected_valid, atol=1e-5)
+    assert np.allclose(ensure_ndarray(out_valid), expected_valid, atol=1e-5)
 
     # Valid mode with h larger than x returns empty
-    out_empty = _fftconvolve(ensure_eager_tensor(np), np.array([1.0]), np.array([1.0, 2.0, 3.0]), mode="valid")
-    assert ensure_eager_tensor(ensure_eager_tensor(out_empty).size) == 0
+    out_empty = _fftconvolve(np, np.array([1.0]), np.array([1.0, 2.0, 3.0]), mode="valid")
+    assert ensure_ndarray(out_empty).size == 0
 
     # 2D real signals
     img2d = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     k2d = np.array([[1.0, 0.5], [0.5, 0.25]], dtype=np.float32)
-    out_2d = _fftconvolve(ensure_eager_tensor(np), img2d, k2d, mode="full")
-    assert ensure_eager_tensor(out_2d).shape == (3, 3)
+    out_2d = _fftconvolve(np, img2d, k2d, mode="full")
+    assert extract_test_shape(out_2d) == (3, 3)
 
     # Complex signal convolution
     c1 = np.array([1.0 + 2.0j, 2.0 - 1.0j], dtype=np.complex64)
     c2 = np.array([0.5 + 0.5j, 1.0 + 0.0j], dtype=np.complex64)
-    out_complex = _fftconvolve(ensure_eager_tensor(np), c1, c2, mode="full")
-    assert ensure_eager_tensor(out_complex).shape == (3,)
+    out_complex = _fftconvolve(np, c1, c2, mode="full")
+    assert extract_test_shape(out_complex) == (3,)
 
     # Backend with fft.fftconvolve
     class MockFFTModule:
         """Test class MockFFTModule."""
 
         @staticmethod
-        def fftconvolve(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fftconvolve(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fftconvolve.
 
             Args:
@@ -295,23 +308,23 @@ def test_fftconvolve_fallback() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fftconvolve`.
+                BackendArg: Computed output value from `fftconvolve`.
             """
             return np.array([77.0])
 
-    class MockFFTBackend:
+    class MockFFTBackend(MockTestStub):
         """Test class MockFFTBackend."""
 
         fft = MockFFTModule()
 
-    assert ensure_callable(np.allclose)(ensure_callable(_fftconvolve)(ensure_callable(MockFFTBackend)(), x, h), [77.0])
+    assert np.allclose(ensure_ndarray(_fftconvolve(MockFFTBackend(), x, h)), [77.0])
 
     # Backend with signal.fftconvolve
     class MockSignalModule:
         """Test class MockSignalModule."""
 
         @staticmethod
-        def fftconvolve(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fftconvolve(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fftconvolve.
 
             Args:
@@ -319,16 +332,16 @@ def test_fftconvolve_fallback() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fftconvolve`.
+                BackendArg: Computed output value from `fftconvolve`.
             """
             return np.array([88.0])
 
-    class MockSignalBackend:
+    class MockSignalBackend(MockTestStub):
         """Test class MockSignalBackend."""
 
         signal = MockSignalModule()
 
-    assert ensure_callable(np.allclose)(ensure_callable(_fftconvolve)(ensure_callable(MockSignalBackend)(), x, h), [88.0])
+    assert np.allclose(ensure_ndarray(_fftconvolve(MockSignalBackend(), x, h)), [88.0])
 
 
 def test_math_fft_edge_cases() -> None:
@@ -337,24 +350,24 @@ def test_math_fft_edge_cases() -> None:
     h = np.array([0.5], dtype=np.float32)
 
     # 1. Unknown convolution mode falls through to 'return out'
-    out_custom = _fftconvolve(ensure_eager_tensor(np), x, h, mode="custom_unhandled")
-    assert ensure_eager_tensor(out_custom).shape == (2,)
+    out_custom = _fftconvolve(np, x, h, mode="custom_unhandled")
+    assert extract_test_shape(out_custom) == (2,)
 
     # 2. _fft and _rfft with backend missing fft
-    class EmptyBackend:
+    class EmptyBackend(MockTestStub):
         """Test class EmptyBackend."""
 
         pass
 
-    assert _fft(ensure_mod(EmptyBackend()), x) is None
-    assert _rfft(ensure_mod(EmptyBackend()), x) is None
+    assert _fft(EmptyBackend(), x) is None
+    assert _rfft(EmptyBackend(), x) is None
 
     # 3. _fftnd with fftnd attribute
     class MockFFTNDModule:
         """Test class MockFFTNDModule."""
 
         @staticmethod
-        def fftnd(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def fftnd(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function fftnd.
 
             Args:
@@ -362,23 +375,23 @@ def test_math_fft_edge_cases() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `fftnd`.
+                BackendArg: Computed output value from `fftnd`.
             """
             return np.array([123.0])
 
-    class MockFFTNDBackend:
+    class MockFFTNDBackend(MockTestStub):
         """Test class MockFFTNDBackend."""
 
         fft = MockFFTNDModule()
 
-    assert ensure_callable(np.allclose)(ensure_callable(_fftnd)(ensure_callable(MockFFTNDBackend)(), x), [123.0])
+    assert np.allclose(ensure_ndarray(_fftnd(MockFFTNDBackend(), x)), [123.0])
 
     # 4. _np_hfft with hfft attribute on backend.fft
     class MockHFFTModule:
         """Test class MockHFFTModule."""
 
         @staticmethod
-        def hfft(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def hfft(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function hfft.
 
             Args:
@@ -386,19 +399,19 @@ def test_math_fft_edge_cases() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `hfft`.
+                BackendArg: Computed output value from `hfft`.
             """
             return np.array([456.0])
 
-    class MockHFFTBackend:
+    class MockHFFTBackend(MockTestStub):
         """Test class MockHFFTBackend."""
 
         fft = MockHFFTModule()
 
-    assert ensure_callable(np.allclose)(ensure_callable(_np_hfft)(ensure_callable(MockHFFTBackend)(), x), [456.0])
+    assert np.allclose(ensure_ndarray(_np_hfft(MockHFFTBackend(), x)), [456.0])
 
     # 5. _np_hfft fallback to np.fft.hfft
-    res_hfft_fallback = _np_hfft(ensure_mod(EmptyBackend()), x)
+    res_hfft_fallback = _np_hfft(EmptyBackend(), x)
     assert res_hfft_fallback is not None
 
 
@@ -411,16 +424,16 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
     """
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_string_io import _np_writefile
 
-    class _BareMod:
+    class _BareMod(MockTestStub):
         """Empty dummy module."""
 
     target_file = tmp_path / "test_out.txt"
 
     # 1. Normal write success with str, bytes, and tobytes
-    assert _np_writefile(ensure_mod(_BareMod()), str(target_file), "hello world") == 1
-    assert _np_writefile(ensure_mod(_BareMod()), str(target_file), b"hello bytes") == 1
+    assert _np_writefile(_BareMod(), str(target_file), "hello world") == 1
+    assert _np_writefile(_BareMod(), str(target_file), b"hello bytes") == 1
 
-    class DummyWithToBytes:
+    class DummyWithToBytes(MockTestStub):
         """Test class DummyWithToBytes."""
 
         def tobytes(self) -> bytes:
@@ -431,7 +444,7 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
             """
             return b"dummy_bytes"
 
-    assert _np_writefile(ensure_mod(_BareMod()), str(target_file), ensure_eager_tensor(DummyWithToBytes())) == 1
+    assert _np_writefile(_BareMod(), str(target_file), DummyWithToBytes()) == 1
 
     # 2. OSError where tmp file exists and gets cleaned up
     def mock_replace_error(src: str, dst: str) -> None:
@@ -440,15 +453,18 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
         Args:
             src: Test parameter `src`.
             dst: Test parameter `dst`.
+
+        Raises:
+            OSError: When raised during `mock_replace_error` (Disk full error).
         """
         raise OSError("Disk full error")
 
     monkeypatch.setattr("os.replace", mock_replace_error)
     with pytest.raises(OSError, match="Disk full error"):
-        _np_writefile(ensure_mod(_BareMod()), str(target_file), "content")
+        _np_writefile(_BareMod(), str(target_file), "content")
 
     # 3. OSError where tmp file does not exist
-    def mock_open_error(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def mock_open_error(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function mock_open_error.
 
         Args:
@@ -456,16 +472,19 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `mock_open_error`.
+            BackendArg: Computed output value from `mock_open_error`.
+
+        Raises:
+            OSError: When raised during `mock_open_error` (Cannot open error).
         """
         raise OSError("Cannot open error")
 
     monkeypatch.setattr("builtins.open", mock_open_error)
     with pytest.raises(OSError, match="Cannot open error"):
-        _np_writefile(ensure_mod(_BareMod()), str(target_file), "content")
+        _np_writefile(_BareMod(), str(target_file), "content")
 
     # 4. Bare filename (no directory) covering dir_name == "" branch and other object types
     monkeypatch.undo()
     monkeypatch.chdir(tmp_path)
-    assert _np_writefile(ensure_mod(_BareMod()), "bare_filename.txt", 12345) == 1
+    assert _np_writefile(_BareMod(), "bare_filename.txt", 12345) == 1
     assert (tmp_path / "bare_filename.txt").read_text(encoding="utf-8") == "12345"

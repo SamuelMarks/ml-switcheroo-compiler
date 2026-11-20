@@ -8,6 +8,7 @@ from unittest.mock import patch
 import numpy as np
 
 import ml_switcheroo_compiler.ops.nn.quantized_ops as q_ops
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -36,7 +37,6 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     quantized_matmul,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -81,7 +81,7 @@ def test_quantized_ops_trace() -> None:
                 ComputeFloat8ScaleOp,
             ]:
                 op = op_class()
-                assert op.infer_shape(t) == (1, 2)
+                assert op.dispatch_infer_shape(t) == (1, 2)
 
             assert quantized_linear(t, qoc) is not None
             assert quantized_embedding(t, qoc) is not None
@@ -99,11 +99,11 @@ def test_quantized_ops_trace() -> None:
         config.eager_mode = orig
 
 
-def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> Tensor:
+def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
     """Create a CPU Float32 Tensor from a NumPy array.
 
     Args:
-        data (np.ndarray): Input array.
+        data (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Input array.
 
     Returns:
         Tensor: Wrapped tensor.
@@ -121,7 +121,7 @@ def test_quantized_ops_missing() -> None:
     with ConfigContext(eager_mode=True):
         res = quantized_conv(inp, q_cfg)
         assert isinstance(res, Tensor)
-        ensure_callable(np.testing.assert_array_equal)(ensure_callable(res.numpy)(), ensure_callable(np.array)([[[[4.0]]]]))
+        np.testing.assert_array_equal(ensure_ndarray(res.numpy()), np.array([[[[4.0]]]]))
 
 
 def test_quantized_ops_brute() -> None:

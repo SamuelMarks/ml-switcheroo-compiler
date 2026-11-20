@@ -8,7 +8,9 @@ import typing
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import IRGraph
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.benchmarks.config_models import (
     BenchmarkPlan,
     BenchmarkRunResult,
@@ -18,11 +20,10 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     load_benchmark_suite,
 )
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
-from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, install_profiler_backend_stubs
+from tests.testing_utils import coerce_operand_list, install_profiler_backend_stubs
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 @pytest.fixture(autouse=True)
@@ -51,31 +52,34 @@ def test_benchmark_plan_model() -> None:
     assert plan.targets[0].backend == "numpy"
 
 
-def test_orchestrator_execution(monkeypatch: EagerTensorProtocol) -> None:
+def test_orchestrator_execution(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the orchestrator execution loop.
 
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
 
-    def mock_get_backend(name: str) -> EagerValue:
+    def mock_get_backend(name: str) -> BackendArg:
         """Test function mock_get_backend.
 
         Args:
             name: Test parameter `name`.
 
         Returns:
-            EagerValue: Computed output value from `mock_get_backend`.
+            BackendArg: Computed output value from `mock_get_backend`.
         """
+        from tests.testing_utils import MockTestStub
 
-        class MockBackend:
+        class MockBackend(MockTestStub):
             """Test class MockBackend."""
 
             pass
 
-        return ensure_eager_tensor(MockBackend())
+        return MockBackend()
 
-    monkeypatch.setattr("ml_switcheroo_compiler.benchmarks.orchestrator.BackendRegistry.get", mock_get_backend, raising=False)
+    monkeypatch.setattr(
+        "ml_switcheroo_compiler.benchmarks.orchestrator.BackendRegistry.get", mock_get_backend, raising=False
+    )
 
     target = BenchmarkTarget(backend="numpy", device="cpu")
     plan = BenchmarkPlan(
@@ -89,7 +93,9 @@ def test_orchestrator_execution(monkeypatch: EagerTensorProtocol) -> None:
 
     orchestrator = BenchmarkOrchestrator(plan)
 
-    def fast_run_single(graph: IRGraph, backend_name: str, batch_size: int, num_iters: int, warmup_iters: int) -> dict[str, EagerValue]:
+    def fast_run_single(
+        graph: IRGraph, backend_name: str, batch_size: int, num_iters: int, warmup_iters: int
+    ) -> dict[str, BackendArg]:
         """Test function fast_run_single.
 
         Args:
@@ -100,11 +106,11 @@ def test_orchestrator_execution(monkeypatch: EagerTensorProtocol) -> None:
             warmup_iters: Test parameter `warmup_iters`.
 
         Returns:
-            dict[str, EagerValue]: Computed output value from `fast_run_single`.
+            dict[str, BackendArg]: Computed output value from `fast_run_single`.
         """
         return {"latencies": [10.0] * num_iters, "peak_memory_mb": 50.0}
 
-    ensure_callable(monkeypatch.setattr)(orchestrator, "_run_single", fast_run_single)
+    monkeypatch.setattr(orchestrator, "_run_single", fast_run_single)
 
     results = orchestrator.execute()
 
@@ -119,7 +125,7 @@ def test_orchestrator_execution(monkeypatch: EagerTensorProtocol) -> None:
     assert res.throughput_items_per_sec == 100.0  # (1000 / 10) * 1
 
 
-def test_orchestrator_internal_run(monkeypatch: EagerTensorProtocol) -> None:
+def test_orchestrator_internal_run(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the _run_single internal logic explicitly.
 
     Args:
@@ -150,44 +156,49 @@ def test_orchestrator_internal_run(monkeypatch: EagerTensorProtocol) -> None:
 
     monkeypatch.setattr("time.perf_counter", mock_perf_counter)
 
-    def mock_get_backend(name: str) -> EagerValue:
+    def mock_get_backend(name: str) -> BackendArg:
         """Test function mock_get_backend.
 
         Args:
             name: Test parameter `name`.
 
         Returns:
-            EagerValue: Computed output value from `mock_get_backend`.
+            BackendArg: Computed output value from `mock_get_backend`.
         """
+        from tests.testing_utils import MockTestStub
 
-        class MockBackend:
+        class MockBackend(MockTestStub):
             """Test class MockBackend."""
 
             pass
 
-        return ensure_eager_tensor(MockBackend())
+        return MockBackend()
 
-    monkeypatch.setattr("ml_switcheroo_compiler.benchmarks.orchestrator.BackendRegistry.get", mock_get_backend, raising=False)
+    monkeypatch.setattr(
+        "ml_switcheroo_compiler.benchmarks.orchestrator.BackendRegistry.get", mock_get_backend, raising=False
+    )
 
     plan = BenchmarkPlan(name="test", models=["m1"], batch_sizes=[1], targets=[BenchmarkTarget(backend="numpy")])
     orchestrator = BenchmarkOrchestrator(plan)
 
     metrics = orchestrator._run_single(IRGraph(), "numpy", 1, 5, 2)
-    assert ensure_callable(len)(metrics["latencies"]) == 5
-    assert ensure_eager_tensor(metrics)["latencies"][0] == 5.0
+    assert len(coerce_operand_list(metrics["latencies"])) == 5
+    assert ensure_ndarray(metrics["latencies"])[0] == 5.0
 
 
 def test_orchestrator_unregistered_backend() -> None:
     """Test _run_single with an unregistered backend name to trigger BackendNotSupportedError in registry lookup."""
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    plan = BenchmarkPlan(name="test", models=["m1"], batch_sizes=[1], targets=[BenchmarkTarget(backend="non_existent_backend")])
+    plan = BenchmarkPlan(
+        name="test", models=["m1"], batch_sizes=[1], targets=[BenchmarkTarget(backend="non_existent_backend")]
+    )
     orchestrator = BenchmarkOrchestrator(plan)
     with pytest.raises(BackendNotSupportedError):
         orchestrator._run_single(IRGraph(), "non_existent_backend", 1, 2, 1)
 
 
-def test_orchestrator_zero_latency(monkeypatch: EagerTensorProtocol) -> None:
+def test_orchestrator_zero_latency(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the throughput_items_per_sec with 0 latency.
 
     Args:
@@ -196,7 +207,9 @@ def test_orchestrator_zero_latency(monkeypatch: EagerTensorProtocol) -> None:
     plan = BenchmarkPlan(name="test", models=["m1"], batch_sizes=[1], targets=[BenchmarkTarget(backend="dummy")])
     orchestrator = BenchmarkOrchestrator(plan)
 
-    def fast_run_single(graph: IRGraph, backend_name: str, batch_size: int, num_iters: int, warmup_iters: int) -> dict[str, EagerValue]:
+    def fast_run_single(
+        graph: IRGraph, backend_name: str, batch_size: int, num_iters: int, warmup_iters: int
+    ) -> dict[str, BackendArg]:
         """Test function fast_run_single.
 
         Args:
@@ -207,16 +220,16 @@ def test_orchestrator_zero_latency(monkeypatch: EagerTensorProtocol) -> None:
             warmup_iters: Test parameter `warmup_iters`.
 
         Returns:
-            dict[str, EagerValue]: Computed output value from `fast_run_single`.
+            dict[str, BackendArg]: Computed output value from `fast_run_single`.
         """
         return {"latencies": [0.0] * num_iters, "peak_memory_mb": 50.0}
 
-    ensure_callable(monkeypatch.setattr)(orchestrator, "_run_single", fast_run_single)
+    monkeypatch.setattr(orchestrator, "_run_single", fast_run_single)
     results = orchestrator.execute()
     assert results[0].throughput_items_per_sec == 0.0
 
 
-def test_orchestrator_internal_run_with_inputs(monkeypatch: EagerTensorProtocol) -> None:
+def test_orchestrator_internal_run_with_inputs(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the _run_single internal logic explicitly with inputs.
 
     Args:
@@ -247,22 +260,23 @@ def test_orchestrator_internal_run_with_inputs(monkeypatch: EagerTensorProtocol)
 
     monkeypatch.setattr("time.perf_counter", mock_perf_counter)
 
-    def mock_get_backend(name: str) -> EagerValue:
+    def mock_get_backend(name: str) -> BackendArg:
         """Test function mock_get_backend.
 
         Args:
             name: Test parameter `name`.
 
         Returns:
-            EagerValue: Computed output value from `mock_get_backend`.
+            BackendArg: Computed output value from `mock_get_backend`.
         """
+        from tests.testing_utils import MockTestStub
 
-        class MockBackend:
+        class MockBackend(MockTestStub):
             """Test class MockBackend."""
 
             pass
 
-        return ensure_eager_tensor(MockBackend())
+        return MockBackend()
 
     monkeypatch.setattr("ml_switcheroo_compiler.benchmarks.orchestrator.BackendRegistry.get", mock_get_backend)
 
@@ -272,7 +286,7 @@ def test_orchestrator_internal_run_with_inputs(monkeypatch: EagerTensorProtocol)
     g = IRGraph()
     g.inputs = ["in_1"]
     metrics = orchestrator._run_single(g, "numpy", 1, 1, 1)
-    assert ensure_callable(len)(metrics["latencies"]) == 1
+    assert len(coerce_operand_list(metrics["latencies"])) == 1
 
 
 def test_mlx_profiler() -> None:
@@ -284,10 +298,10 @@ def test_mlx_profiler() -> None:
     assert "peak_memory_mb" in res_empty
 
     inp = {"x": [1.0, 2.0, 3.0]}
-    res = ensure_callable(MLXProfiler)().profile_graph(ensure_callable(IRGraph)(), inp, num_iters=3, warmup_iters=1)
-    assert ensure_eager_tensor(res)["latency_ms"] >= 0.0
-    assert ensure_callable(len)(res["latencies"]) == 3
-    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
+    res = MLXProfiler().profile_graph(IRGraph(), inp, num_iters=3, warmup_iters=1)
+    assert res["latency_ms"] >= 0.0
+    assert len(coerce_operand_list(res["latencies"])) == 3
+    assert res["peak_memory_mb"] > 0.0
 
 
 def test_numpy_profiler() -> None:
@@ -299,10 +313,10 @@ def test_numpy_profiler() -> None:
     assert "peak_memory_mb" in res_empty
 
     inp = {"x": np.array([1.0, 2.0, 3.0], dtype=np.float32)}
-    res = ensure_callable(NumpyProfiler)().profile_graph(ensure_callable(IRGraph)(), inp, num_iters=3, warmup_iters=1)
-    assert ensure_eager_tensor(res)["latency_ms"] >= 0.0
-    assert ensure_callable(len)(res["latencies"]) == 3
-    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
+    res = NumpyProfiler().profile_graph(IRGraph(), inp, num_iters=3, warmup_iters=1)
+    assert res["latency_ms"] >= 0.0
+    assert len(coerce_operand_list(res["latencies"])) == 3
+    assert res["peak_memory_mb"] > 0.0
 
 
 def test_pytorch_profiler() -> None:
@@ -313,10 +327,10 @@ def test_pytorch_profiler() -> None:
     assert "latency_ms" in res_empty
 
     inp = {"x": [1.0, 2.0, 3.0]}
-    res = ensure_callable(PyTorchProfiler)().profile_graph(ensure_callable(IRGraph)(), inp, device="cpu", num_iters=3, warmup_iters=1)
-    assert ensure_eager_tensor(res)["latency_ms"] >= 0.0
-    assert ensure_callable(len)(res["latencies"]) == 3
-    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
+    res = PyTorchProfiler().profile_graph(IRGraph(), inp, device="cpu", num_iters=3, warmup_iters=1)
+    assert res["latency_ms"] >= 0.0
+    assert len(coerce_operand_list(res["latencies"])) == 3
+    assert res["peak_memory_mb"] > 0.0
 
 
 def test_jax_profiler() -> None:
@@ -327,10 +341,10 @@ def test_jax_profiler() -> None:
     assert "latency_ms" in res_empty
 
     inp = {"x": [1.0, 2.0, 3.0]}
-    res = ensure_callable(JAXProfiler)().profile_graph(ensure_callable(IRGraph)(), inp, num_iters=3, warmup_iters=1)
-    assert ensure_eager_tensor(res)["latency_ms"] >= 0.0
-    assert ensure_callable(len)(res["latencies"]) == 3
-    assert ensure_eager_tensor(res)["peak_memory_mb"] > 0.0
+    res = JAXProfiler().profile_graph(IRGraph(), inp, num_iters=3, warmup_iters=1)
+    assert res["latency_ms"] >= 0.0
+    assert len(coerce_operand_list(res["latencies"])) == 3
+    assert res["peak_memory_mb"] > 0.0
 
 
 def test_cupy_profiler() -> None:
@@ -341,19 +355,20 @@ def test_cupy_profiler() -> None:
     assert "latency_ms" in res_empty
 
 
-def test_orchestrator_profiler_import_error_fallback(monkeypatch: EagerTensorProtocol) -> None:
+def test_orchestrator_profiler_import_error_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test profiler error raising when module import raises ImportError.
 
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
     import importlib
+    import types
 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     orig_import = importlib.import_module
 
-    def mock_import(name: EagerValue, package: EagerValue = None) -> EagerValue:
+    def mock_import(name: str, package: str | None = None) -> types.ModuleType:
         """Test function mock_import.
 
         Args:
@@ -361,11 +376,14 @@ def test_orchestrator_profiler_import_error_fallback(monkeypatch: EagerTensorPro
             package: Test parameter `package`.
 
         Returns:
-            EagerValue: Computed output value from `mock_import`.
+            types.ModuleType: Computed output value from `mock_import`.
+
+        Raises:
+            ImportError: When raised during `mock_import` (Simulated missing profiler).
         """
-        if ensure_eager_tensor("ml_switcheroo_compiler.backends.pytorch.profiler") in ensure_eager_tensor(name):
+        if "ml_switcheroo_compiler.backends.pytorch.profiler" in str(name):
             raise ImportError("Simulated missing profiler")
-        return ensure_callable(orig_import)(name, package)
+        return orig_import(name, package)
 
     monkeypatch.setattr(importlib, "import_module", mock_import)
     orchestrator = BenchmarkOrchestrator(BenchmarkPlan(name="t", models=["m"], batch_sizes=[1], targets=[]))
@@ -378,7 +396,9 @@ def test_orchestrator_profiler_import_error_fallback(monkeypatch: EagerTensorPro
 
 def test_load_benchmark_yaml() -> None:
     """Test loading benchmark suite and plan from YAML."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "benchmarks", "benchmarks.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "benchmarks", "benchmarks.yaml"
+    )
     suite = load_benchmark_suite(yaml_path)
     assert isinstance(suite, BenchmarkSuite)
     assert len(suite.benchmarks) > 0

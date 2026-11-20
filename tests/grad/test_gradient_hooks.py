@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from tests.testing_utils import ensure_tensor, unpack_pair
 
 
 def test_gradient_hooks() -> None:
@@ -21,32 +16,32 @@ def test_gradient_hooks() -> None:
     config.backend = "numpy"
     config.eager_mode = False
 
-    def my_fun(x: EagerValue) -> EagerValue:
+    def my_fun(x: Tensor) -> Tensor:
         # We hook the intermediate value
         """Test function my_fun.
 
         Args:
-            x: Test parameter `x`.
+            x (Tensor): Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_fun`.
+            Tensor: Computed output value from `my_fun`.
         """
-        y = ensure_eager_tensor(x) * ensure_eager_tensor(2.0)
+        y = x * 2.0
 
         # multiply gradient by 10
-        def my_hook(grad: EagerValue) -> EagerValue:
+        def my_hook(grad: Tensor) -> Tensor:
             """Test function my_hook.
 
             Args:
-                grad: Test parameter `grad`.
+                grad (Tensor): Test parameter `grad`.
 
             Returns:
-                EagerValue: Computed output value from `my_hook`.
+                Tensor: Computed output value from `my_hook`.
             """
-            return ensure_eager_tensor(grad) * ensure_eager_tensor(10.0)
+            return grad * 10.0
 
         y_hooked = hook_gradient(y, my_hook)
-        return ensure_eager_tensor(y_hooked) * ensure_eager_tensor(3.0)
+        return ensure_tensor(y_hooked) * 3.0
 
     vg = value_and_grad(my_fun)
 
@@ -54,9 +49,9 @@ def test_gradient_hooks() -> None:
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted = ensure_callable(jit)(vg)
+    jitted = jit(vg)
 
-    v1, g1 = jitted(x)
+    v1, g1 = unpack_pair(jitted(x))
 
     # Forward: 2.0 * 2.0 = 4.0, 4.0 * 3.0 = 12.0
     # Backward: grad of x = grad(x*2)*2.
@@ -64,5 +59,11 @@ def test_gradient_hooks() -> None:
     # hook multiplies by 10.0 -> 30.0
     # grad of x = 30.0 * 2.0 = 60.0
 
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(v1).numpy))(), ensure_callable(np.array)([12.0], dtype=np.float32))
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(g1).numpy))(), ensure_callable(np.array)([60.0], dtype=np.float32))
+    np.testing.assert_allclose(
+        np.asarray(ensure_tensor(v1).numpy()),
+        np.array([12.0], dtype=np.float32),
+    )
+    np.testing.assert_allclose(
+        np.asarray(ensure_tensor(g1).numpy()),
+        np.array([60.0], dtype=np.float32),
+    )

@@ -3,18 +3,20 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
+from pytest_mock import MockerFixture
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.ops.io.image_io import _decode_image_with_pil, decode_bmp, decode_gif, decode_png
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTensorStub, MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
+def test_decode_image_with_pil(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify the behavior and output invariants of test decode image with pil.
 
     Args:
@@ -33,32 +35,33 @@ def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: Eager
     with pytest.raises(NotImplementedError):
         _decode_image_with_pil("dummy")
 
-    class DummyImgArray:
+    class DummyImgArray(MockTestStub):
         """Test class DummyImgArray."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: tuple[int, ...]) -> None:
             """Test function __init__.
 
             Args:
-                shape: Test parameter `shape`.
+                shape (tuple[int, ...]): Test parameter `shape`.
             """
-            self.shape = shape
+            super().__init__()
+            self.shape: tuple[int, ...] = shape
 
     class DummyDecodeBackend:
         """Test class DummyDecodeBackend."""
 
         @staticmethod
-        def decode_image_bytes(data: EagerValue, channels: EagerValue = 0) -> EagerValue:
+        def decode_image_bytes(data: BackendArg, channels: int = 0) -> BackendArg:
             """Test function decode_image_bytes.
 
             Args:
-                data: Test parameter `data`.
-                channels: Test parameter `channels`.
+                data (BackendArg): Test parameter `data`.
+                channels (int): Test parameter `channels`.
 
             Returns:
-                EagerValue: Computed output value from `decode_image_bytes`.
+                BackendArg: Computed output value from `decode_image_bytes`.
             """
-            return ensure_eager_tensor(DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3)))
+            return DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3))
 
     monkeypatch.setattr(registry, "get_active_backend", lambda: DummyDecodeBackend)
 
@@ -75,7 +78,7 @@ def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: Eager
     assert t4.shape == (10, 10, 4)
 
 
-def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
+def test_decode_image_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify the behavior and output invariants of test decode image backend.
 
     Args:
@@ -86,7 +89,7 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
         """Test class DummyBackend."""
 
         @staticmethod
-        def decode_png(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def decode_png(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function decode_png.
 
             Args:
@@ -94,12 +97,12 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `decode_png`.
+                BackendArg: Computed output value from `decode_png`.
             """
             return "png"
 
         @staticmethod
-        def decode_gif(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def decode_gif(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function decode_gif.
 
             Args:
@@ -107,12 +110,12 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `decode_gif`.
+                BackendArg: Computed output value from `decode_gif`.
             """
             return "gif"
 
         @staticmethod
-        def decode_bmp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def decode_bmp(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function decode_bmp.
 
             Args:
@@ -120,15 +123,15 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `decode_bmp`.
+                BackendArg: Computed output value from `decode_bmp`.
             """
             return "bmp"
 
     monkeypatch.setattr(registry, "get_active_backend", lambda: DummyBackend)
 
-    assert ensure_eager_tensor(decode_png(b"", channels=3)) == ensure_eager_tensor("png")
-    assert ensure_eager_tensor(decode_gif(b"")) == ensure_eager_tensor("gif")
-    assert ensure_eager_tensor(decode_bmp(b"", channels=3)) == ensure_eager_tensor("bmp")
+    assert decode_png(b"", channels=3).data == "png"
+    assert decode_gif(b"").data == "gif"
+    assert decode_bmp(b"", channels=3).data == "bmp"
 
 
 def test_decode_image_fallback() -> None:
@@ -149,7 +152,7 @@ def test_decode_image_fallback() -> None:
     assert t_bmp.data == b""
 
 
-def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
+def test_decode_image_eager_mode(mocker: MockerFixture) -> None:
     """Verify the behavior and output invariants of test decode image eager mode.
 
     Args:
@@ -163,7 +166,7 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
     class DummyBackend:
         """Test class DummyBackend."""
 
-        def execute_op(self, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def execute_op(self, op_name: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -172,12 +175,12 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return op_name
 
         @staticmethod
-        def decode_jpeg(contents: EagerValue, channels: EagerValue, ratio: EagerValue) -> EagerValue:
+        def decode_jpeg(contents: BackendArg, channels: BackendArg, ratio: BackendArg) -> BackendArg:
             """Test function decode_jpeg.
 
             Args:
@@ -186,14 +189,14 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
                 ratio: Test parameter `ratio`.
 
             Returns:
-                EagerValue: Computed output value from `decode_jpeg`.
+                BackendArg: Computed output value from `decode_jpeg`.
             """
             return "jpeg"
 
-    ensure_callable(mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=ensure_callable(DummyBackend)())
+    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=DummyBackend())
 
-    assert ensure_eager_tensor(decode_image("x")) == ensure_eager_tensor("DecodeImage")
-    assert ensure_eager_tensor(decode_jpeg("x")) == ensure_eager_tensor("jpeg")
+    assert decode_image("x") == "DecodeImage"
+    assert decode_jpeg("x").data == "jpeg"
 
     config.eager_mode = False
 
@@ -206,10 +209,10 @@ def test_decode_image_infer_shape() -> None:
 
     assert op.infer_shape() == ()
 
-    class DummyTensor:
+    class DummyTensor(MockTensorStub):
         """Test class DummyTensor."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -220,7 +223,7 @@ def test_decode_image_infer_shape() -> None:
     t1 = DummyTensor((2, 3))
     t2 = DummyTensor((2, 1))
 
-    assert ensure_callable(op.infer_shape)(t1, t2) == (2, 3)
+    assert op.infer_shape(t1, t2) == (2, 3)
 
 
 def test_decode_image_non_eager() -> None:
@@ -230,11 +233,14 @@ def test_decode_image_non_eager() -> None:
 
     config.eager_mode = False
 
-    class DummyNode:
+    class DummyNode(MockTensorStub):
         """Test class DummyNode."""
 
-        shape = ()
-        dtype = "float32"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = ()
+            self.dtype = "float32"
 
-    res = ensure_callable(decode_image)(ensure_callable(DummyNode)())
-    assert res is not None
+    res = decode_image(DummyNode())
+    assert tuple(extract_test_shape(res)) == ()

@@ -5,15 +5,19 @@ from __future__ import annotations
 import sys
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_str
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    coerce_str,
+    require_callable,
+)
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
-from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 _T = typing.TypeVar("_T")
 
 
-def _get_keras_module() -> EagerValue | None:
+def _get_keras_module() -> BackendArg | None:
     """Safely obtain or import keras module.
 
     Returns:
@@ -28,39 +32,51 @@ def _get_keras_module() -> EagerValue | None:
     return keras
 
 
-def _convert_arg(arg: EagerValue, keras: EagerValue | None) -> EagerValue:
+def _convert_arg(arg: BackendArg, keras: BackendArg | None) -> BackendArg:
     """Convert input sequence argument to Keras tensor if possible.
 
     Args:
-        arg (EagerValue): Argument to convert.
-        keras (Optional[object]): Loaded keras module.
+        arg (BackendArg): Argument to convert.
+        keras (BackendArg | None): Loaded keras module.
 
     Returns:
-        EagerValue: Converted tensor or original object.
+        BackendArg: Converted tensor or original object.
     """
-    ops_mod = resolve_backend_member(keras, "ops", None)[1] if keras is not None else None
-    has_conv, conv_fn = resolve_backend_member(ops_mod, "convert_to_tensor") if ops_mod is not None else (False, None)
-    if isinstance(arg, (list, tuple)) and has_conv:
+    ops_mod = adapt_backend_module(keras).resolve_symbol("ops", None)[1] if keras is not None else None
+    has_conv, conv_fn = (
+        adapt_backend_module(ops_mod).resolve_symbol("convert_to_tensor") if ops_mod is not None else (False, None)
+    )
+    if isinstance(arg, (list, tuple)) and has_conv and conv_fn is not None:
         try:
-            return ensure_eager_tensor(ensure_callable(conv_fn)(arg))
-        except Exception:
+            return require_callable(conv_fn)(arg)
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             return arg
     return arg
 
 
 def _try_dispatch_mapped_op(
     op_spec: OpMappingSchema,
-    keras: EagerValue | None,
-    args: list[EagerValue],
-    kwargs: dict[str, EagerValue],
-) -> EagerValue | None:
+    keras: BackendArg | None,
+    args: list[BackendArg],
+    kwargs: dict[str, BackendArg],
+) -> BackendArg | None:
     """Attempt to dispatch operation from mapping schema.
 
     Args:
         op_spec (OpMappingSchema): Operation specification.
-        keras (Optional[object]): Keras module.
-        args (list[object]): Processed arguments.
-        kwargs (dict[str, object]): Keyword arguments.
+        keras (BackendArg | None): Keras module.
+        args (list[BackendArg]): Processed arguments.
+        kwargs (dict[str, BackendArg]): Keyword arguments.
 
     Returns:
         Optional[object]: Result if dispatched, else None.
@@ -72,42 +88,42 @@ def _try_dispatch_mapped_op(
     if not (target_api or custom_code):
         return None
 
-    func = resolve_target_api(ensure_str(target_api), custom_code, keras)
+    func = resolve_target_api(coerce_str(target_api), custom_code, keras)
     if func is None or not callable(func):
         return None
 
     kwarg_trans = op_spec.kwarg_translations or {}
-    translated_kwargs: dict[str, EagerValue] = {kwarg_trans.get(k, k): v for k in kwargs for v in (kwargs[k],)}
+    translated_kwargs: dict[str, BackendArg] = {kwarg_trans.get(k, k): v for k in kwargs for v in (kwargs[k],)}
     if op_spec.is_method and args:
-        has_method, method = resolve_backend_member(args[0], ensure_str(target_api), None)
+        has_method, method = adapt_backend_module(args[0]).resolve_symbol(coerce_str(target_api), None)
         if has_method and callable(method):
-            return ensure_eager_tensor(ensure_callable(method)(*args[1:], **translated_kwargs))
+            return method(*args[1:], **translated_kwargs)
     return func(*args, **translated_kwargs)
 
 
 def execute_op(
-    cls: type[_T],
+    cls: type[_T] | None,
     /,
     op_type: str,
-    *args: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute operation eagerly on Keras backend with native argument validation.
 
     Args:
-        cls (type): The caller class or context.
+        cls (type | None): The caller class or context.
         op_type (str): The name of the operation.
-        *args (EagerValue): Positional arguments for the op.
-        **kwargs (EagerValue): Keyword arguments for the op.
+        *args (BackendArg): Positional arguments for the op.
+        **kwargs (BackendArg): Keyword arguments for the op.
 
     Returns:
-        EagerValue: Result of native Keras evaluation.
+        BackendArg: Result of native Keras evaluation.
 
     Raises:
         BackendNotSupportedError: If Keras is unavailable or op is unmapped.
     """
     keras = _get_keras_module()
-    processed_args: list[EagerValue] = [_convert_arg(arg, keras) for arg in args]
+    processed_args: list[BackendArg] = [_convert_arg(arg, keras) for arg in args]
 
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 

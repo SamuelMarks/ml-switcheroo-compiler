@@ -6,7 +6,7 @@ import os
 import typing
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 class _TensorDataProtocol(typing.Protocol):
     """Protocol for tensor objects exposing a `.data` payload."""
 
-    data: TensorOrScalar
+    data: OpValue
 
 
 def write_raw_pb(pb_data: bytes, logdir: str) -> None:
@@ -48,11 +48,11 @@ def _pack_png_chunk(chunk_type: bytes, data: bytes) -> bytes:
     return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
 
 
-def encode_image(tensor: Tensor) -> bytes:
+def encode_image(tensor: Tensor | ShapeProtocol) -> bytes:
     """Encode an image tensor into PNG byte format suitable for summary.image.
 
     Args:
-        tensor (Tensor): The image tensor to encode (2D, 3D, or 4D).
+        tensor (Tensor | ShapeProtocol): The image tensor or array to encode (2D, 3D, or 4D).
 
     Returns:
         bytes: PNG encoded image bytes starting with valid PNG header.
@@ -88,4 +88,9 @@ def encode_image(tensor: Tensor) -> bytes:
 
     ihdr = struct.pack(">IIBBBBB", w, h, 8, color_type, 0, 0, 0)
     idat = zlib.compress(bytes(raw_rows))
-    return b"\x89PNG\r\n\x1a\n" + _pack_png_chunk(b"IHDR", ihdr) + _pack_png_chunk(b"IDAT", idat) + _pack_png_chunk(b"IEND", b"")
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _pack_png_chunk(b"IHDR", ihdr)
+        + _pack_png_chunk(b"IDAT", idat)
+        + _pack_png_chunk(b"IEND", b"")
+    )

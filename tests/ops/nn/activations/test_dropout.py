@@ -1,78 +1,93 @@
-"""Tests for test_dropout."""
+"""Behavioral tests for dropout, alpha dropout, spatial dropouts, and activity regularization."""
 
 from __future__ import annotations
 
-# ruff: noqa: E501
-import sys
-import typing
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 import ml_switcheroo_compiler.ops.nn.dropout as do
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-
-gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
+from tests.testing_utils import MockTestStub
 
 
-def test_dropout_coverage() -> None:
-    """Test function test_dropout_coverage."""
-    config.eager_mode = True
-    t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
+class _ShapedDummy(MockTestStub):
+    """Operand exposing an explicit `.shape` tuple."""
 
-    assert ensure_callable(do.Dropout)().infer_shape(t) == (2, 2)
-    assert ensure_callable(do.AlphaDropout)().infer_shape(t) == (2, 2)
-    assert ensure_callable(do.ActivityRegularization)().infer_shape(t) == (2, 2)
-    assert ensure_callable(do.ActivityRegularization)().infer_shape([t]) == [t]
+    def __init__(self, shape: tuple[int, ...]) -> None:
+        """Initialize shaped dummy operand.
 
-    class DummyShape:
-        """Test class DummyShape."""
+        Args:
+            shape (tuple[int, ...]): Desired shape tuple.
+        """
+        self.shape = shape
 
-        shape = (2, 2)
 
-    assert ensure_callable(do.Dropout1d)().infer_shape(ensure_callable(DummyShape)()) == (2, 2)
-    assert ensure_callable(do.Dropout2d)().infer_shape(ensure_callable(DummyShape)()) == (2, 2)
-    assert ensure_callable(do.Dropout3d)().infer_shape(ensure_callable(DummyShape)()) == (2, 2)
+class _UnshapedDummy(MockTestStub):
+    """Operand lacking `.shape`."""
 
-    with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
-        config.eager_mode = False
-        mock_op = mock_get_op.return_value.return_value
-        mock_op.return_value = "dropped"
-        assert do.dropout(t) == "dropped"
-        assert do.alpha_dropout(t) == "dropped"
-        assert do.activity_regularization(t) == "dropped"
-        config.eager_mode = True
+    val: int = 123
 
-    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
-        mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
-        with patch("ml_switcheroo_compiler.ops.nn.dropout.get_active_backend") as mock_backend_2:
-            mock_backend_2.return_value.execute_op.return_value = np.zeros((2, 2))
-            assert do.dropout1d(t) is not None
-            assert do.dropout2d(t) is not None
-            assert do.dropout3d(t) is not None
 
-        config.eager_mode = False
-        import ml_switcheroo_compiler.ops.nn.dropout as d_mod
+def test_dropout_op_classes_infer_shape() -> None:
+    """Verify shape inference across `Dropout`, `AlphaDropout`, `ActivityRegularization`, and 1D/2D/3D variants."""
+    t_in = Tensor(np.ones((2, 2), dtype=np.float32), TensorConfig((2, 2), DType.Float32, Device("cpu")))
 
-        def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function dummy_emit.
+    assert do.Dropout().infer_shape(t_in) == (2, 2)
+    assert do.AlphaDropout().infer_shape(t_in) == (2, 2)
+    assert do.ActivityRegularization().infer_shape(t_in) == (2, 2)
+    assert do.ActivityRegularization().infer_shape((t_in, t_in)) == (t_in, t_in)
 
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
+    unshaped = _UnshapedDummy()
+    assert do.Dropout1d().infer_shape(_ShapedDummy((2, 4))) == (2, 4)
+    assert do.Dropout1d().infer_shape(unshaped) == ()
+    assert do.Dropout2d().infer_shape(_ShapedDummy((2, 4, 4))) == (2, 4, 4)
+    assert do.Dropout2d().infer_shape(unshaped) == ()
+    assert do.Dropout3d().infer_shape(_ShapedDummy((2, 4, 4, 4))) == (2, 4, 4, 4)
+    assert do.Dropout3d().infer_shape(unshaped) == ()
 
-            Returns:
-                EagerValue: Computed output value from `dummy_emit`.
-            """
-            return "emitted"
 
-        ensure_mutable(d_mod)._emit_shape_node = ensure_eager_tensor(dummy_emit)
-        assert do.dropout1d(t) == "emitted"
-        assert do.dropout2d(t) == "emitted"
-        assert do.dropout3d(t) == "emitted"
-        config.eager_mode = True
+def test_dropout_eager_and_tracing_ir_emission() -> None:
+    """Verify eager execution and symbolic `TracerTape` IR node emission for all dropout functions."""
+    cfg = do.DropoutConfig(noise_shape=(2, 2), training=True, seed=123)
+    assert cfg.training is True
+
+    t_eager = Tensor(np.ones((2, 2), dtype=np.float32), TensorConfig((2, 2), DType.Float32, Device("cpu")))
+    backend = MagicMock()
+    backend.execute_op.return_value = np.ones((2, 2), dtype=np.float32)
+
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=backend),
+        patch("ml_switcheroo_compiler.ops.nn.dropout.get_active_backend", return_value=backend),
+    ):
+        r1 = do.dropout1d(t_eager, p=0.5, training=True)
+        r2 = do.dropout2d(t_eager, p=0.5, training=True)
+        r3 = do.dropout3d(t_eager, p=0.5, training=True)
+        assert isinstance(r1, Tensor) and r1.shape == (2, 2)
+        assert isinstance(r2, Tensor) and r2.shape == (2, 2)
+        np.testing.assert_allclose(np.asarray(r3), np.ones((2, 2), dtype=np.float32))
+
+    t_sym = Tensor(ProxyTensor("drop_in", (2, 2), "float32"), TensorConfig((2, 2), DType.Float32, Device("cpu")))
+    with ConfigContext(eager_mode=False):
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("dropout_trace")
+        try:
+            s_dp = do.dropout(t_sym, rate=0.2, config=cfg)
+            s_adp = do.alpha_dropout(t_sym, rate=0.2, config=cfg)
+            s_act = do.activity_regularization(t_sym, l1=0.01, l2=0.02)
+            s_1d = do.dropout1d(t_sym, p=0.5)
+            s_2d = do.dropout2d(t_sym, p=0.5)
+            s_3d = do.dropout3d(t_sym, p=0.5)
+        finally:
+            tape.stop_tracing()
+
+    for out in (s_dp, s_adp, s_act, s_1d, s_2d, s_3d):
+        assert isinstance(out, Tensor)
+
+    op_types = {node.op_type for node in traced_graph.nodes.values()}
+    assert {"Dropout", "AlphaDropout", "ActivityRegularization", "Dropout1d", "Dropout2d", "Dropout3d"} <= op_types

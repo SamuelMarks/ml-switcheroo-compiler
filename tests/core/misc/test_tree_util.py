@@ -8,9 +8,19 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tree_util import TreeDef, tree_all, tree_flatten, tree_leaves, tree_map, tree_reduce, tree_structure, tree_unflatten
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.tree_util import (
+    TreeDef,
+    tree_all,
+    tree_flatten,
+    tree_leaves,
+    tree_map,
+    tree_reduce,
+    tree_structure,
+    tree_unflatten,
+)
+from tests.testing_utils import coerce_numeric
 
 if typing.TYPE_CHECKING:
     pass
@@ -20,7 +30,7 @@ def test_tree_util_extra() -> None:
     """Test the tree util extra behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     device = Device("cpu")
     t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
@@ -29,36 +39,38 @@ def test_tree_util_extra() -> None:
     assert tree_structure({"a": t1, "b": t2}) is not None
     assert tree_all([True, True])
     assert not tree_all([True, False])
-    assert ensure_callable(tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
-    assert ensure_callable(tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
+    assert tree_reduce(lambda x, y: coerce_numeric(x) + coerce_numeric(y), [1, 2, 3]) == 6
+    assert tree_reduce(lambda x, y: coerce_numeric(x) + coerce_numeric(y), [1, 2, 3], 10) == 16
 
 
 def test_tree_flatten_unflatten() -> None:
     """Test the tree flatten unflatten behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    tree = {"a": 1, "b": [2, 3], "c": (4, {"d": 5})}
-    (leaves, treedef) = ensure_callable(tree_flatten)(tree)
+    tree: dict[str, OpValue] = {"a": 1, "b": [2, 3], "c": (4, {"d": 5})}
+    (leaves, treedef) = tree_flatten(tree)
     assert leaves == [1, 2, 3, 4, 5]
     assert repr(treedef).startswith("TreeDef")
-    (_, treedef2) = ensure_callable(tree_flatten)({"a": 1, "b": [2, 3], "c": (4, {"d": 5})})
+    tree_dup: dict[str, OpValue] = {"a": 1, "b": [2, 3], "c": (4, {"d": 5})}
+    (_, treedef2) = tree_flatten(tree_dup)
     assert treedef == treedef2
     assert hash(treedef) == hash(treedef2)
-    (_, mutated_treedef) = ensure_callable(tree_flatten)({"a": 10, "b": [20, 30], "c": (40, {"d": 50})})
+    tree_mut: dict[str, OpValue] = {"a": 10, "b": [20, 30], "c": (40, {"d": 50})}
+    (_, mutated_treedef) = tree_flatten(tree_mut)
     assert treedef == mutated_treedef
     (_, different_treedef) = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
     assert treedef != different_treedef
     assert hash(treedef) != hash(different_treedef)
     assert treedef != TreeDef(list)
     assert treedef != "Not a TreeDef"
-    tree_reconstructed = ensure_callable(tree_unflatten)(treedef, leaves)
+    tree_reconstructed = tree_unflatten(treedef, leaves)
     assert tree == tree_reconstructed
     with pytest.raises(ValueError, match="Too few leaves"):
-        ensure_callable(tree_unflatten)(treedef, [1, 2, 3, 4])
+        tree_unflatten(treedef, [1, 2, 3, 4])
     with pytest.raises(ValueError, match="Too many leaves"):
-        ensure_callable(tree_unflatten)(treedef, [1, 2, 3, 4, 5, 6])
+        tree_unflatten(treedef, [1, 2, 3, 4, 5, 6])
     with pytest.raises(ValueError, match="Unsupported treedef node_type"):
         tree_unflatten(TreeDef(set), [])
     with pytest.raises(ValueError, match="Dict treedef must have keys"):
@@ -69,15 +81,15 @@ def test_tree_map() -> None:
     """Test the tree map behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    tree1 = {"a": 1, "b": [2, 3]}
-    tree2 = {"a": 10, "b": [20, 30]}
-    res = ensure_callable(tree_map)(lambda x, y: x + y, tree1, tree2)
+    tree1: dict[str, OpValue] = {"a": 1, "b": [2, 3]}
+    tree2: dict[str, OpValue] = {"a": 10, "b": [20, 30]}
+    res = tree_map(lambda x, y: coerce_numeric(x) + coerce_numeric(y), tree1, tree2)
     assert res == {"a": 11, "b": [22, 33]}
-    tree3 = {"a": 1, "b": 2}
+    tree3: dict[str, OpValue] = {"a": 1, "b": 2}
     with pytest.raises(ValueError, match="All trees must have the same structure"):
-        ensure_callable(tree_map)(lambda x, y: x + y, tree1, tree3)
+        tree_map(lambda x, y: coerce_numeric(x) + coerce_numeric(y), tree1, tree3)
 
 
 def test_tree_def_repr() -> None:
@@ -104,7 +116,7 @@ def test_tree_def_eq() -> None:
     td1 = TreeDef(list)
     td2 = TreeDef(list)
     assert td1 == td2
-    assert ensure_eager_tensor(td1) != ensure_eager_tensor("not_a_treedef")
+    assert td1 != "not_a_treedef"
 
 
 def test_unflatten_dict_no_keys() -> None:
@@ -174,8 +186,8 @@ def test_tree_reduce() -> None:
     """Test function test_tree_reduce."""
     from ml_switcheroo_compiler.tree_util import tree_reduce
 
-    assert ensure_callable(tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
-    assert ensure_callable(tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
+    assert tree_reduce(lambda x, y: coerce_numeric(x) + coerce_numeric(y), [1, 2, 3]) == 6
+    assert tree_reduce(lambda x, y: coerce_numeric(x) + coerce_numeric(y), [1, 2, 3], 10) == 16
 
 
 def test_tree_transpose_inner_size_zero() -> None:
@@ -202,12 +214,16 @@ def test_tree_def_hash_eq() -> None:
     """Test the tree def hash eq behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    (flat1, tree_def1) = ensure_callable(tree_flatten)({"a": 1, "b": [2, 3]})
-    (flat2, tree_def2) = ensure_callable(tree_flatten)({"a": 1, "b": [2, 3]})
-    (flat3, tree_def3) = ensure_callable(tree_flatten)({"a": 1, "b": [2, 4]})
-    (flat4, tree_def4) = ensure_callable(tree_flatten)({"a": 1, "b": {"c": 3}})
+    t1: dict[str, OpValue] = {"a": 1, "b": [2, 3]}
+    t2: dict[str, OpValue] = {"a": 1, "b": [2, 3]}
+    t3: dict[str, OpValue] = {"a": 1, "b": [2, 4]}
+    t4: dict[str, OpValue] = {"a": 1, "b": {"c": 3}}
+    (flat1, tree_def1) = tree_flatten(t1)
+    (flat2, tree_def2) = tree_flatten(t2)
+    (flat3, tree_def3) = tree_flatten(t3)
+    (flat4, tree_def4) = tree_flatten(t4)
     assert hash(tree_def1) == hash(tree_def2)
     assert tree_def1 == tree_def2
     assert tree_def1 == tree_def3

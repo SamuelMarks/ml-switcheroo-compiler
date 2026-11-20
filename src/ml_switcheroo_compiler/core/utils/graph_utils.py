@@ -5,9 +5,11 @@ from __future__ import annotations
 import typing
 from collections.abc import Mapping
 
+from ml_switcheroo_ir import IRGraph, LogicalNode
+
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, is_traced_data
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode, as_node_list
+from ml_switcheroo_compiler.core.shape import OpValue, is_traced_data
+from ml_switcheroo_compiler.ir.core import as_node_list
 
 
 @typing.runtime_checkable
@@ -58,7 +60,7 @@ class _TopologicalSorter:
 
         self.temp_mark.add(node_id)
         node: LogicalNode | None = None
-        raw_nodes: TensorOrScalar = self.graph.nodes
+        raw_nodes: OpValue | _NodeGetProtocol = self.graph.nodes
         if isinstance(raw_nodes, _NodeGetProtocol):
             node = raw_nodes.get(node_id)
         else:
@@ -83,12 +85,15 @@ class _TopologicalSorter:
         Returns:
             list[LogicalNode]: The sorted nodes.
         """
-        raw_nodes: TensorOrScalar = self.graph.nodes
+        raw_nodes: OpValue | _NodeGetProtocol = self.graph.nodes
         node_ids: list[str]
         if isinstance(raw_nodes, Mapping):
             node_ids = [str(k) for k in raw_nodes.keys()]
         elif isinstance(raw_nodes, list):
-            node_ids = [x if isinstance(x, str) else (str(x.id) if isinstance(x, LogicalNode) or is_traced_data(x) else str(x)) for x in raw_nodes]
+            node_ids = [
+                x if isinstance(x, str) else (str(x.id) if isinstance(x, LogicalNode) or is_traced_data(x) else str(x))
+                for x in raw_nodes
+            ]
         else:
             return []
         for node_id in node_ids:

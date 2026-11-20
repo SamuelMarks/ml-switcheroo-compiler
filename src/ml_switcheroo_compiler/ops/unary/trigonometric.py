@@ -1,4 +1,4 @@
-"""Implementation of trigonometric operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.trigonometric`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.unary.trigonometric`."""
 
 from __future__ import annotations
 

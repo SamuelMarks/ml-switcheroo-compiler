@@ -6,7 +6,7 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills import (
+from ml_switcheroo_compiler.backends.eager.nn_ops.polyfills import (
     _np_all_candidate_sampler,
     _np_collapse_repeated,
     _np_ctc_beam_search_decoder,
@@ -14,14 +14,17 @@ from ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills import (
     _np_ctc_unique_labels,
     _np_depthwise_conv2d_backprop_filter,
     _np_depthwise_conv2d_backprop_input,
-    _np_log_poisson_loss,
-    _np_max_pool_with_argmax,
     _np_normalize_moments,
     _np_quantized_conv,
     _np_sufficient_statistics,
     _np_weighted_moments,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager.scipy_ndimage_kernels import (
+    _np_log_poisson_loss,
+    _np_max_pool_with_argmax,
+)
+from tests.testing_utils import coerce_operand_list, extract_test_shape, unpack_pair
 
 if typing.TYPE_CHECKING:
     pass
@@ -31,37 +34,37 @@ def test_log_poisson_loss() -> None:
     """Test function test_log_poisson_loss."""
     targets = np.array([1.0, 2.0])
     log_input = np.array([0.5, -0.5])
-    res = _np_log_poisson_loss(ensure_eager_tensor(np), targets, log_input)
-    assert ensure_eager_tensor(res).shape == (2,)
+    res = _np_log_poisson_loss(np, targets, log_input)
+    assert res.shape == (2,)
 
-    res_full = _np_log_poisson_loss(ensure_eager_tensor(np), targets, log_input, compute_full_loss=True)
-    assert ensure_eager_tensor(res_full).shape == (2,)
+    res_full = _np_log_poisson_loss(np, targets, log_input, compute_full_loss=True)
+    assert res_full.shape == (2,)
 
     # Test non-log predictions
     pred_non_log = np.array([1.5, 0.6])
-    res_non_log = _np_log_poisson_loss(ensure_eager_tensor(np), targets, pred_non_log, log_input=False)
-    assert ensure_eager_tensor(res_non_log).shape == (2,)
+    res_non_log = _np_log_poisson_loss(np, targets, pred_non_log, log_input=False)
+    assert res_non_log.shape == (2,)
 
     # Test Stirling approximation fallback without scipy
     import sys
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"scipy.special": None}):
-        res_stirling = _np_log_poisson_loss(ensure_eager_tensor(np), np.array([0.5, 2.0]), np.array([0.1, 0.2]), compute_full_loss=True)
-        assert ensure_eager_tensor(res_stirling).shape == (2,)
+        res_stirling = _np_log_poisson_loss(np, np.array([0.5, 2.0]), np.array([0.1, 0.2]), compute_full_loss=True)
+        assert res_stirling.shape == (2,)
 
         # Also test with target < 0.5 so that t + 1.0 < 1.5 triggers small_mask in _stirling_gammaln
-        res_stirling_small = _np_log_poisson_loss(ensure_eager_tensor(np), np.array([0.2]), np.array([0.1]), compute_full_loss=True)
-        assert ensure_eager_tensor(res_stirling_small).shape == (1,)
+        res_stirling_small = _np_log_poisson_loss(np, np.array([0.2]), np.array([0.1]), compute_full_loss=True)
+        assert res_stirling_small.shape == (1,)
 
 
 def test_all_candidate_sampler() -> None:
     """Test function test_all_candidate_sampler."""
     true_classes = np.array([[1], [2]])
-    sampled, true_exp, sampled_exp = ensure_callable(_np_all_candidate_sampler)(np, true_classes, num_sampled=2, num_classes=5)
-    assert ensure_eager_tensor(sampled).shape == (2,)
-    assert ensure_eager_tensor(true_exp).shape == (2, 1)
-    assert ensure_eager_tensor(sampled_exp).shape == (2,)
+    sampled, true_exp, sampled_exp = _np_all_candidate_sampler(np, true_classes, num_sampled=2, num_classes=5)
+    assert sampled.shape == (2,)
+    assert true_exp.shape == (2, 1)
+    assert sampled_exp.shape == (2,)
 
 
 def test_ctc_beam_search_decoder_extend_path() -> None:
@@ -77,37 +80,40 @@ def test_ctc_beam_search_decoder_extend_path() -> None:
     )
     inputs = np.log(inputs)
     seq_len = np.array([3])
-    sparse, log_probs = ensure_callable(_np_ctc_beam_search_decoder)(np, inputs, seq_len, beam_width=5)
-    assert ensure_callable(len)(sparse) == 3
+    sparse, log_probs = unpack_pair(_np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5))
+    assert len(coerce_operand_list(sparse)) == 3
     inputs = np.random.rand(5, 2, 4)
     seq_len = np.array([5, 4])
-    sparse, log_probs = ensure_callable(_np_ctc_beam_search_decoder)(np, inputs, seq_len, beam_width=2)
-    assert ensure_callable(len)(sparse) == 3
-    assert ensure_eager_tensor(log_probs).shape == (2,)
+    sparse, log_probs = unpack_pair(_np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=2))
+    assert len(coerce_operand_list(sparse)) == 3
+    assert extract_test_shape(log_probs) == (2,)
 
     # Empty test
-    sparse, log_probs = ensure_callable(_np_ctc_beam_search_decoder)(np, ensure_callable(np.zeros)((0, 0, 4)), ensure_callable(np.array)([]), beam_width=2)
-    assert ensure_callable(len)(sparse) == 3
+    sparse, log_probs = unpack_pair(_np_ctc_beam_search_decoder(np, np.zeros((0, 0, 4)), np.array([]), beam_width=2))
+    assert len(coerce_operand_list(sparse)) == 3
 
     # Multi-path test
-    sparse_multi, log_probs_multi = ensure_callable(_np_ctc_beam_search_decoder)(np, inputs, seq_len, beam_width=5, top_paths=3)
-    assert ensure_callable(len)(sparse_multi) == 3
-    assert ensure_eager_tensor(log_probs_multi).shape == (2, 3)
-    for sp in sparse_multi:
-        assert ensure_callable(len)(sp) == 3
-        assert ensure_eager_tensor(sp)[2][0] == 2
+    sparse_multi, log_probs_multi = unpack_pair(
+        _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5, top_paths=3)
+    )
+    assert len(coerce_operand_list(sparse_multi)) == 3
+    assert extract_test_shape(log_probs_multi) == (2, 3)
+    for sp in coerce_operand_list(sparse_multi):
+        sp_parts = coerce_operand_list(sp)
+        assert len(sp_parts) == 3
+        assert ensure_ndarray(sp_parts[2])[0] == 2
 
 
 def test_ctc_unique_labels() -> None:
     """Test function test_ctc_unique_labels."""
     labels = np.array([1, 1, 2, 3, 2])
-    unique, indices = ensure_callable(_np_ctc_unique_labels)(np, labels)
-    assert ensure_callable(list)(unique) == [1, 2, 3]
+    unique, indices = _np_ctc_unique_labels(np, labels)
+    assert list(unique) == [1, 2, 3]
 
 
 def test_normalize_moments() -> None:
     """Test function test_normalize_moments."""
-    mean, var = ensure_callable(_np_normalize_moments)(np, 10, 5, 20, 1.0)
+    mean, var = _np_normalize_moments(np, 10, 5, 20, 1.0)
     assert mean == 1.5
     assert var > 0
 
@@ -115,39 +121,39 @@ def test_normalize_moments() -> None:
 def test_sufficient_statistics() -> None:
     """Test function test_sufficient_statistics."""
     x = np.random.rand(2, 3, 4)
-    c, m, v, s = ensure_callable(_np_sufficient_statistics)(np, x, axes=(1, 2), keepdims=True)
-    assert ensure_eager_tensor(s).shape == (2, 1, 1)
+    c, m, v, s = _np_sufficient_statistics(np, x, axes=(1, 2), keepdims=True)
+    assert s.shape == (2, 1, 1)
 
-    c, m, v, s = ensure_callable(_np_sufficient_statistics)(np, x, axes=None)
-    assert ensure_eager_tensor(s).shape == ()
+    c, m, v, s = _np_sufficient_statistics(np, x, axes=None)
+    assert s.shape == ()
 
 
 def test_weighted_moments() -> None:
     """Test function test_weighted_moments."""
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
     fw = np.array([[1.0, 1.0], [2.0, 2.0]])
-    m, v = ensure_callable(_np_weighted_moments)(np, x, axes=(1,), frequency_weights=fw, keepdims=True)
-    assert ensure_eager_tensor(m).shape == (2, 1)
+    m, v = _np_weighted_moments(np, x, axes=(1,), frequency_weights=fw, keepdims=True)
+    assert m.shape == (2, 1)
 
 
 def test_max_pool_with_argmax() -> None:
     """Test function test_max_pool_with_argmax."""
     x = np.random.rand(1, 4, 4, 1)
-    m, a = ensure_callable(_np_max_pool_with_argmax)(np, x, pool_size=2)
-    assert ensure_eager_tensor(m).shape == (1, 4, 4, 1)
+    m, a = _np_max_pool_with_argmax(np, x, pool_size=2)
+    assert m.shape == (1, 4, 4, 1)
 
-    m, a = ensure_callable(_np_max_pool_with_argmax)(np, x, pool_size=(1, 2, 2, 1))
-    assert ensure_eager_tensor(m).shape == (1, 4, 4, 1)
+    m, a = _np_max_pool_with_argmax(np, x, pool_size=(1, 2, 2, 1))
+    assert m.shape == (1, 4, 4, 1)
 
 
 def test_collapse_repeated() -> None:
     """Test function test_collapse_repeated."""
     x = np.array([1, 1, 2, 2, 3, 1])
-    c, idx = ensure_callable(_np_collapse_repeated)(np, x)
-    assert ensure_callable(list)(c) == [1, 2, 3, 1]
+    c, idx = _np_collapse_repeated(np, x)
+    assert list(c) == [1, 2, 3, 1]
 
-    c, idx = ensure_callable(_np_collapse_repeated)(np, ensure_callable(np.array)([]))
-    assert ensure_callable(len)(c) == 0
+    c, idx = _np_collapse_repeated(np, np.array([]))
+    assert len(c) == 0
 
 
 def test_quantized_conv() -> None:
@@ -158,22 +164,22 @@ def test_quantized_conv() -> None:
     scales = np.array([1.0, 1.0, 1.0], dtype=np.float32)
     biases = np.zeros(3, dtype=np.float32)
 
-    res = _np_quantized_conv(ensure_eager_tensor(np), inp, wt, scales, biases, stride=1, padding=0, dilation=1)
-    assert ensure_eager_tensor(res).shape == (1, 3, 3, 3)
+    res = _np_quantized_conv(np, inp, wt, scales, biases, stride=1, padding=0, dilation=1)
+    assert res.shape == (1, 3, 3, 3)
 
-    res = _np_quantized_conv(ensure_eager_tensor(np), inp, wt, scales, None, stride=(1, 1), padding=1, dilation=(1, 1))
-    assert ensure_eager_tensor(res).shape == (1, 5, 5, 3)
+    res = _np_quantized_conv(np, inp, wt, scales, None, stride=(1, 1), padding=1, dilation=(1, 1))
+    assert res.shape == (1, 5, 5, 3)
 
     # Test padding as string / non-int to cover 387->393 branch
-    res_valid = _np_quantized_conv(ensure_eager_tensor(np), inp, wt, scales, biases, stride=1, padding="VALID", dilation=1)
-    assert ensure_eager_tensor(res_valid).shape == (1, 3, 3, 3)
+    res_valid = _np_quantized_conv(np, inp, wt, scales, biases, stride=1, padding="VALID", dilation=1)
+    assert res_valid.shape == (1, 3, 3, 3)
 
 
 def test_ctc_beam_step_edge_cases() -> None:
     """Test function test_ctc_beam_step_edge_cases."""
-    beam = {(1,): (-1.0, -2.0)}
+    beam: dict[tuple[int, ...], tuple[float, float]] = {(1,): (-1.0, -2.0)}
     log_p = np.array([-0.5, -0.6, -1.0])
-    next_beam = ensure_callable(_np_ctc_beam_step)(beam, log_p, num_classes=3, blank=2, beam_width=2)
+    next_beam = _np_ctc_beam_step(beam, log_p, num_classes=3, blank=2, beam_width=2)
     assert (1,) in next_beam
     assert (1, 0) in next_beam
 
@@ -199,20 +205,22 @@ def test_ctc_beam_search_merge_paths() -> None:
     # log probs
     inputs = np.log(inputs)
     seq_len = np.array([2])
-    sparse, log_probs = ensure_callable(_np_ctc_beam_search_decoder)(np, inputs, seq_len, beam_width=5)
-    assert ensure_callable(len)(sparse) == 3
+    sparse, log_probs = unpack_pair(_np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5))
+    assert len(coerce_operand_list(sparse)) == 3
 
     # Test top_paths > 1
-    sparse_multi, log_probs_multi = ensure_callable(_np_ctc_beam_search_decoder)(np, inputs, seq_len, beam_width=5, top_paths=2)
-    assert ensure_callable(len)(sparse_multi) == 2
-    assert ensure_eager_tensor(log_probs_multi).shape == (1, 2)
+    sparse_multi, log_probs_multi = unpack_pair(
+        _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5, top_paths=2)
+    )
+    assert len(coerce_operand_list(sparse_multi)) == 2
+    assert extract_test_shape(log_probs_multi) == (1, 2)
 
     # Test top_paths == 1 with top_paths < 1 in loop (forcing empty sparse_list)
     from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills.range", return_value=[]):
-        sparse_empty, _ = ensure_callable(_np_ctc_beam_search_decoder)(np, inputs, seq_len, beam_width=5, top_paths=1)
-        assert ensure_eager_tensor(sparse_empty)[0].shape == (0, 2)
+    with patch("ml_switcheroo_compiler.backends.eager.nn_ops.polyfills.range", return_value=[]):
+        sparse_empty, _ = unpack_pair(_np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5, top_paths=1))
+        assert extract_test_shape(coerce_operand_list(sparse_empty)[0]) == (0, 2)
 
 
 def test_max_pool_with_argmax_fallback() -> None:
@@ -222,19 +230,19 @@ def test_max_pool_with_argmax_fallback() -> None:
 
     x = np.random.rand(1, 4, 4, 1)
     with patch.dict(sys.modules, {"scipy.ndimage": None}):
-        m, a = ensure_callable(_np_max_pool_with_argmax)(np, x, pool_size=2)
-        assert ensure_eager_tensor(m).shape == (1, 4, 4, 1)
-        assert ensure_eager_tensor(a).shape == (1,)
+        m, a = _np_max_pool_with_argmax(np, x, pool_size=2)
+        assert m.shape == (1, 4, 4, 1)
+        assert a.shape == (1,)
 
 
 def test_depthwise_conv2d_backprop_polyfills() -> None:
     """Verify NumPy eager polyfills for depthwise conv2d filter and input backprop."""
-    df = _np_depthwise_conv2d_backprop_filter(ensure_eager_tensor(np), np.zeros((1, 4, 4, 2)), (3, 3, 2, 1), np.zeros((1, 2, 2, 2)))
+    df = _np_depthwise_conv2d_backprop_filter(np, np.zeros((1, 4, 4, 2)), (3, 3, 2, 1), np.zeros((1, 2, 2, 2)))
     assert df.shape == (3, 3, 2, 1)
-    df_int = _np_depthwise_conv2d_backprop_filter(ensure_eager_tensor(np), np.zeros((1, 4, 4, 2)), 4, np.zeros((1, 2, 2, 2)))
+    df_int = _np_depthwise_conv2d_backprop_filter(np, np.zeros((1, 4, 4, 2)), 4, np.zeros((1, 2, 2, 2)))
     assert df_int.shape == (4,)
 
-    di = _np_depthwise_conv2d_backprop_input(ensure_eager_tensor(np), (1, 4, 4, 2), np.zeros((3, 3, 2, 1)), np.zeros((1, 2, 2, 2)))
+    di = _np_depthwise_conv2d_backprop_input(np, (1, 4, 4, 2), np.zeros((3, 3, 2, 1)), np.zeros((1, 2, 2, 2)))
     assert di.shape == (1, 4, 4, 2)
-    di_int = _np_depthwise_conv2d_backprop_input(ensure_eager_tensor(np), 4, np.zeros((3, 3, 2, 1)), np.zeros((1, 2, 2, 2)))
+    di_int = _np_depthwise_conv2d_backprop_input(np, 4, np.zeros((3, 3, 2, 1)), np.zeros((1, 2, 2, 2)))
     assert di_int.shape == (4,)

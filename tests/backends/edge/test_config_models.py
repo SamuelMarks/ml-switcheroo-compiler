@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
+
+import pytest
 
 from ml_switcheroo_compiler.backends.edge.config_models import (
     MemoryAlignmentRuleConfig,
@@ -22,10 +25,9 @@ from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import (
     WasmTemplateConfig,
     WasmTemplatesConfig,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_wgsl_config_model() -> None:
@@ -48,7 +50,7 @@ def test_wgsl_config_model() -> None:
             }
         }
     }
-    config = ensure_callable(WgslTemplatesConfig)(**data)
+    config = WgslTemplatesConfig.model_validate(data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["workgroup_size"] == [1, 2, 3]
     assert dumped["templates"]["test"]["workgroup_layout"]["max_workgroup_invocations"] == 256
@@ -85,7 +87,7 @@ def test_wasm_config_model() -> None:
             }
         }
     }
-    config = ensure_callable(WasmTemplatesConfig)(**data)
+    config = WasmTemplatesConfig.model_validate(data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["simd_unroll_factor"] == 4
     assert dumped["templates"]["test"]["alignment"]["alignment_bytes"] == 16
@@ -101,12 +103,15 @@ def test_wasm_config_model() -> None:
     assert lane_cfg.lanes == 4
     assert lane_cfg.element_type == "f32"
 
-    intr_cfg = WasmIntrinsicConfig(macro_name="TEST_MACRO", simd_expr="return x;", alignment=mem_cfg, lane_arithmetic=lane_cfg)
+    intr_cfg = WasmIntrinsicConfig(
+        macro_name="TEST_MACRO", simd_expr="return x;", alignment=mem_cfg, lane_arithmetic=lane_cfg
+    )
     assert intr_cfg.macro_name == "TEST_MACRO"
 
     intrs_cfg = WasmIntrinsicsConfig(intrinsics={"test": intr_cfg}, scalars={"abs": "return std::abs(a);"})
     assert "test" in intrs_cfg.intrinsics
-    assert ensure_eager_tensor(intrs_cfg.scalars)["abs"] == "return std::abs(a);"
+    assert intrs_cfg.scalars is not None
+    assert intrs_cfg.scalars["abs"] == "return std::abs(a);"
 
 
 def test_onnx_and_stablehlo_config_models() -> None:
@@ -166,13 +171,16 @@ def test_edge_webrtc_collectives_config_explicit_path() -> None:
 
     real_path = os.path.join(os.path.dirname(cm.__file__), "webrtc_collectives.yaml")
     cfg = load_webrtc_collectives(path=real_path)
-    assert cfg is not None
+    assert type(cfg).__name__ == "WebrtcCollectivesConfig"
 
 
 def test_bindgroup_schemas_config() -> None:
     """Test loading and validating bindgroup_schemas.yaml."""
     from ml_switcheroo_compiler.backends.edge.config_models import BindGroupSchemasConfig, load_bindgroup_schemas
-    from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import generate_dynamic_bindgroup_declarations, get_bindgroup_schemas
+    from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
+        generate_dynamic_bindgroup_declarations,
+        get_bindgroup_schemas,
+    )
 
     cfg = load_bindgroup_schemas()
     assert isinstance(cfg, BindGroupSchemasConfig)
@@ -215,8 +223,6 @@ def test_dtype_emulation_config() -> None:
 
 def test_webgl_texture_packing_validation() -> None:
     """Test validation errors and valid configurations for WebglTexturePackingConfig."""
-    import pytest
-
     from ml_switcheroo_compiler.backends.edge.config_models import WebglTexturePackingConfig
 
     # Valid configurations
@@ -248,11 +254,11 @@ def test_load_webrtc_collectives_default_path() -> None:
     assert cfg.schema_def is not None
 
 
-def test_load_edge_control_flow_templates(tmp_path: EagerTensorProtocol) -> None:
+def test_load_edge_control_flow_templates(tmp_path: Path) -> None:
     """Test loading and validating edge control flow templates from YAML file.
 
     Args:
-        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
+        tmp_path (Path): Pytest temporary path fixture.
     """
     import os
 

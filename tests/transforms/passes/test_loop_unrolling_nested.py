@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
-from tests.testing_utils import ensure_attrs
 
 
 def test_nested_loop_unrolling_both_levels() -> None:

@@ -21,7 +21,7 @@ def test_proxy_tensor_dunders() -> None:
     """Test the proxy tensor dunders behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     global_tracing_state.start_tracing()
     try:
@@ -67,7 +67,7 @@ def test_proxy_tensor_outside_tracing() -> None:
     """Test the proxy tensor outside tracing behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     p1 = ProxyTensor("p1", (2, 2), "float32")
     p2 = ProxyTensor("p2", (2, 2), "float32")
@@ -85,7 +85,7 @@ def test_add_node_outside_tracing() -> None:
     """Test the add node outside tracing behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     node = LogicalNode(id="dummy", op_type="Input")
     global_tracing_state.add_node(node)
@@ -96,7 +96,7 @@ def test_matmul_invalid() -> None:
     """Test the matmul invalid behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     global_tracing_state.start_tracing()
     try:

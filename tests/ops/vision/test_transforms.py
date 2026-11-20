@@ -1,23 +1,31 @@
-"""Tests for test_transforms."""
+"""Behavioral unit tests for transforms."""
 
 from __future__ import annotations
 
 import typing
 
-# ruff: noqa: E501
+import pytest
+from pytest_mock import MockerFixture
+
+import ml_switcheroo_compiler.ops.vision.api as vision_frontend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.vision.transforms import elastic_transform, flip_left_right, flip_up_down, perspective_transform
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.ops.vision.transforms import (
+    elastic_transform,
+    flip_left_right,
+    flip_up_down,
+    perspective_transform,
+)
+from tests.testing_utils import MockTestStub, ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -29,7 +37,7 @@ class MockTensor:
         self.data = [1, 2]
 
 
-def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
+def test_vision_transforms_funcs(mocker: MockerFixture) -> None:
     """Test function test_vision_transforms_funcs.
 
     Args:
@@ -40,22 +48,22 @@ def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.vision.transforms._emit_shape_node", return_value="node")
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_op")
     mock_op = mocker.MagicMock()
-    ensure_mutable(mock_get_op).return_value = ensure_eager_tensor(mocker.MagicMock(return_value=mock_op))
+    mock_get_op.return_value = mocker.MagicMock(return_value=mock_op)
     assert perspective_transform(t, t, t) == "node"
     assert elastic_transform(t, t) == "node"
     assert flip_left_right(t) == mock_op()
     assert flip_up_down(t) == mock_op()
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3)))
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(perspective_transform(t, t, t)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(elastic_transform(t, t)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(flip_left_right(t)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(flip_up_down(t)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)), raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(perspective_transform(t, t, t)).config.shape == (2, 3)
+    assert ensure_tensor(elastic_transform(t, t)).config.shape == (2, 3)
+    assert ensure_tensor(flip_left_right(t)).config.shape == (2, 3)
+    assert ensure_tensor(flip_up_down(t)).config.shape == (2, 3)
 
 
-def test_vision_transforms_funcs_kwargs(mocker: EagerTensorProtocol) -> None:
+def test_vision_transforms_funcs_kwargs(mocker: MockerFixture) -> None:
     """Test function test_vision_transforms_funcs_kwargs.
 
     Args:
@@ -70,15 +78,21 @@ def test_vision_transforms_funcs_kwargs(mocker: EagerTensorProtocol) -> None:
 
 def test_transforms_opdef_infer_shape() -> None:
     """Test function test_transforms_opdef_infer_shape."""
-    import ml_switcheroo_compiler.ops.vision.frontend as frontend
+    import ml_switcheroo_compiler.ops.vision.api as frontend
     from ml_switcheroo_compiler.ops.vision.transforms import ElasticTransform
 
     assert frontend is not None
 
-    class DummyTensor:
+    class DummyTensor(MockTestStub):
         """Test class DummyTensor."""
 
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert ensure_callable(ElasticTransform)().infer_shape(t) == (1, 2, 3)
+    assert ElasticTransform().infer_shape(t) == (1, 2, 3)
+
+
+def test_vision_frontend_module() -> None:
+    """Verify vision frontend module structure and exports."""
+    assert vision_frontend.__all__ is not None
+    assert vision_frontend.__all__ == []

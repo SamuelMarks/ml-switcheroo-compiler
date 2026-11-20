@@ -6,10 +6,10 @@ import os
 
 import pytest
 import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.distributed.config_models import PipelineTopologiesConfig
 from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_pipeline_parallelism_strategy_init_topologies() -> None:
@@ -97,7 +97,15 @@ def test_insert_send_recv_nodes() -> None:
 
 def test_pipeline_topologies_yaml_schema() -> None:
     """Validate pipeline_topologies.yaml against PipelineTopologiesConfig schema."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "distributed", "pipeline_topologies.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "src",
+        "ml_switcheroo_compiler",
+        "distributed",
+        "pipeline_topologies.yaml",
+    )
     with open(yaml_path, encoding="utf-8") as f:
         raw_data = yaml.safe_load(f)
 

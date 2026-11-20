@@ -6,9 +6,11 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.backends.eager.core_group_ops import _group_mean, _group_norm, _group_variance
-from tests.testing_utils import ensure_callable
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import MockTensorStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -18,14 +20,17 @@ def test_group_mean_eager() -> None:
     """Test the group mean eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
+
+    Raises:
+        e: If execution or validation fails in `test_group_mean_eager`.
     """
     try:
         x = np.random.randn(2, 4, 4, 8).astype(np.float32)
         out = _group_mean(np, x, 2, axis=-1)
         reshaped = x.reshape(2, 4, 4, 2, 4)
         expected = np.mean(reshaped, axis=(1, 2, 4), keepdims=True)
-        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(ensure_ndarray(out), expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
 
@@ -34,14 +39,17 @@ def test_group_variance_eager() -> None:
     """Test the group variance eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
+
+    Raises:
+        e: If execution or validation fails in `test_group_variance_eager`.
     """
     try:
         x = np.random.randn(2, 4, 4, 8).astype(np.float32)
         out = _group_variance(np, x, 2, axis=-1)
         reshaped = x.reshape(2, 4, 4, 2, 4)
         expected = np.var(reshaped, axis=(1, 2, 4), keepdims=True)
-        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(ensure_ndarray(out), expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
 
@@ -50,7 +58,10 @@ def test_group_norm_eager() -> None:
     """Test the group norm eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
+
+    Raises:
+        e: If execution or validation fails in `test_group_norm_eager`.
     """
     try:
         x = np.random.randn(2, 4, 4, 8).astype(np.float32)
@@ -59,7 +70,7 @@ def test_group_norm_eager() -> None:
         mean = np.mean(reshaped, axis=(1, 2, 4), keepdims=True)
         var = np.var(reshaped, axis=(1, 2, 4), keepdims=True)
         expected = ((reshaped - mean) / np.sqrt(var + 1e-05)).reshape(x.shape)
-        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(ensure_ndarray(out), expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
 
@@ -68,7 +79,10 @@ def test_group_norm_5d_eager() -> None:
     """Test the group norm 5d eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
+
+    Raises:
+        e: If execution or validation fails in `test_group_norm_5d_eager`.
     """
     try:
         x = np.random.randn(2, 3, 4, 4, 8).astype(np.float32)
@@ -80,24 +94,25 @@ def test_group_norm_5d_eager() -> None:
         var = np.var(reshaped, axis=(1, 2, 3, 5), keepdims=True)
         expected = ((reshaped - mean) / np.sqrt(var + 1e-05)).reshape(x.shape)
         expected = expected * weight.reshape(1, 1, 1, 1, 8) + bias.reshape(1, 1, 1, 1, 8)
-        ensure_callable(np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(ensure_ndarray(out), expected, rtol=1e-05, atol=1e-05)
     except Exception as e:
         raise e
 
 
 def test_group_norm_invalid_channels() -> None:
     """Test group norm with channels not divisible by groups."""
-    import pytest
-
     from ml_switcheroo_compiler.ops.nn.normalization import group_norm
 
-    class DummyTensor:
+    class DummyTensor(MockTensorStub):
         """Test class DummyTensor."""
 
-        shape = (1, 3, 2, 2)
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = (1, 3, 2, 2)
 
     with pytest.raises(ValueError):
-        ensure_callable(group_norm)(ensure_callable(DummyTensor)(), num_groups=2)
+        group_norm(DummyTensor(), num_groups=2)
 
 
 def test_backends_eager_group_ops_affine_branches() -> None:
@@ -108,4 +123,4 @@ def test_backends_eager_group_ops_affine_branches() -> None:
     weight = np.array([2.0, 2.0, 2.0, 2.0], dtype=np.float32)
     bias = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
     res = _apply_affine_transform(np, out, axis=1, weight=weight, bias=bias)
-    assert ensure_callable(np.allclose)(res, 3.0)
+    assert np.allclose(ensure_ndarray(res), 3.0)

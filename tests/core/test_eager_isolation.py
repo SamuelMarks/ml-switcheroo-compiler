@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+
 from ml_switcheroo_compiler.core.config import config
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def test_eager_mode_isolation(monkeypatch: EagerTensorProtocol) -> None:
+def test_eager_mode_isolation(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that when eager mode is on, we don't fall back to numpy inadvertently via AST.
 
     Args:

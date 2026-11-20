@@ -103,10 +103,14 @@ s_unbound = x[unbound_var]
     multi_node = next(n for n in graph.nodes.values() if n.id.startswith("node_") and n.op_type == "Slice")
     assert multi_node.op_type == "Slice"
 
-    expr_node = next(n for n in graph.nodes.values() if n.id.startswith("node_") and n.op_type == "Slice" and n != multi_node)
+    expr_node = next(
+        n for n in graph.nodes.values() if n.id.startswith("node_") and n.op_type == "Slice" and n != multi_node
+    )
     assert expr_node.op_type == "Slice"
 
-    unbound_node = next(n for n in graph.nodes.values() if n.op_type == "GetItem" and n.attributes.get("index_var") == "unbound_var")
+    unbound_node = next(
+        n for n in graph.nodes.values() if n.op_type == "GetItem" and n.attributes.get("index_var") == "unbound_var"
+    )
     assert unbound_node is not None
     # unbound_var is not in var_table, so only base tensor x is in inputs
     assert len(unbound_node.inputs) == 1
@@ -134,5 +138,7 @@ elem = arr[idx]
     dict_node = next(n for n in graph.nodes.values() if n.op_type == "DictGet")
     assert dict_node.attributes.get("key") == "a"
 
-    getitem_node = next(n for n in graph.nodes.values() if n.op_type == "GetItem" and n.attributes.get("index_var") == "idx")
+    getitem_node = next(
+        n for n in graph.nodes.values() if n.op_type == "GetItem" and n.attributes.get("index_var") == "idx"
+    )
     assert len(getitem_node.inputs) == 2

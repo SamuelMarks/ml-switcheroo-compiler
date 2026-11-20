@@ -14,8 +14,16 @@ from ml_switcheroo_compiler.core.config import (
     enable_tensor_float_32_execution,
     tensor_float_32_execution_enabled,
 )
-from ml_switcheroo_compiler.core.device import Device, DeviceType, Stream, StreamContext, exporter, get_logical_devices, get_memory_info, get_physical_devices
-from tests.testing_utils import ensure_eager_tensor
+from ml_switcheroo_compiler.core.device import (
+    Device,
+    DeviceType,
+    Stream,
+    StreamContext,
+    exporter,
+    get_logical_devices,
+    get_memory_info,
+    get_physical_devices,
+)
 
 if typing.TYPE_CHECKING:
     pass
@@ -90,38 +98,54 @@ def test_stream_context_extra() -> None:
 def test_config_methods_extra() -> None:
     """Test."""
     config.seed = 42
-    assert ensure_eager_tensor(config.seed) == 42
+    assert config.seed == 42
 
     config.backend = "numpy"
-    assert ensure_eager_tensor(config.backend) == "numpy"
+    assert config.backend == "numpy"
 
     config.current_stream = "main"
-    assert ensure_eager_tensor(config.current_stream) == "main"
+    assert config.current_stream == "main"
 
     config.layout_map = "layout"
-    assert ensure_eager_tensor(config.layout_map) == "layout"
+    assert config.layout_map == "layout"
 
-    config.jax_enable_x64 = True
-    assert ensure_eager_tensor(config.jax_enable_x64)
-    config.jax_enable_x64 = False
+    config.enable_x64 = False
+    assert not config.enable_x64
+    config.enable_x64 = True
 
     config.op_determinism = True
-    assert ensure_eager_tensor(config.op_determinism)
+    assert config.op_determinism
 
     config.tensor_float_32_execution = True
-    assert ensure_eager_tensor(config.tensor_float_32_execution)
+    assert config.tensor_float_32_execution
+
+    def eager_flag() -> bool:
+        """Return current `config.eager_mode` flag.
+
+        Returns:
+            bool: Eager mode flag.
+        """
+        return bool(config.eager_mode)
+
+    def tf32_flag() -> bool:
+        """Return current `config.tensor_float_32_execution` flag.
+
+        Returns:
+            bool: TF32 execution flag.
+        """
+        return bool(config.tensor_float_32_execution)
 
     disable_compile()
-    assert ensure_eager_tensor(config.eager_mode)
+    assert eager_flag()
 
     enable_compile()
-    assert not ensure_eager_tensor(config.eager_mode)
+    assert not eager_flag()
 
     enable_op_determinism()
     assert config.op_determinism
 
     enable_tensor_float_32_execution(False)
-    assert not config.tensor_float_32_execution
+    assert not tf32_flag()
     assert not tensor_float_32_execution_enabled()
 
 
@@ -130,12 +154,20 @@ def test_eager_mode_with_tracing_state_extra() -> None:
     config.eager_mode = True
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
+    def eager_flag() -> bool:
+        """Return current `config.eager_mode` flag.
+
+        Returns:
+            bool: Eager mode flag.
+        """
+        return bool(config.eager_mode)
+
     orig = global_tracing_state.is_tracing
     global_tracing_state.is_tracing = True
-    assert not ensure_eager_tensor(config.eager_mode)
+    assert not eager_flag()
 
     global_tracing_state.is_tracing = False
-    assert ensure_eager_tensor(config.eager_mode)
+    assert eager_flag()
     global_tracing_state.is_tracing = orig
 
 
@@ -147,9 +179,9 @@ def test_config_context_exceptions_extra() -> None:
     with pytest.raises(ValueError):
         with ConfigContext(unknown_key="val"):
             pass
-    with ensure_eager_tensor(EagerMode()):
+    with EagerMode():
         pass
-    with ensure_eager_tensor(ConfigStreamContext("stream_name")):
+    with ConfigStreamContext("stream_name"):
         pass
 
 
@@ -195,5 +227,5 @@ def test_config_context_env() -> None:
     """Test."""
     from ml_switcheroo_compiler.core.config import ConfigContext, config
 
-    with ConfigContext(jax_enable_x64=True):
-        assert config.jax_enable_x64
+    with ConfigContext(enable_x64=True):
+        assert config.enable_x64

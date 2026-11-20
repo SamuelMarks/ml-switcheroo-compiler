@@ -1,21 +1,23 @@
-"""Implementation of math fft operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_eager_tensor,
+    BackendArg,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
 @global_eager_registry.register("Fft")
-def _fft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fft(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fft operation on the active backend array.
 
     Args:
@@ -24,14 +26,16 @@ def _fft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.fft(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Rfft")
-def _rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _rfft(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager rfft operation on the active backend array.
 
     Args:
@@ -40,14 +44,16 @@ def _rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.rfft(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Fft2")
-def _fft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fft2(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fft2 operation on the active backend array.
 
     Args:
@@ -56,50 +62,57 @@ def _fft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.fft2(*args, **kwargs) if fft_mod else None
 
 
 def _slice_fftconvolve_output(
-    out: EagerValue,
-    mode: EagerValue,
+    out: BackendArg,
+    mode: BackendArg,
     s1: list[int],
     s2: list[int],
     ndim: int,
     np_mod: BackendModuleProtocol,
-) -> EagerValue:
+) -> BackendArg:
     """Slice full FFT convolution result according to the requested mode ('full', 'same', 'valid').
 
     Args:
-        out (EagerValue): Full discrete convolution array.
-        mode (EagerValue): Convolution mode string.
+        out (BackendArg): Full discrete convolution array.
+        mode (BackendArg): Convolution mode string.
         s1 (list[int]): Padded shape of first input.
         s2 (list[int]): Padded shape of second input.
         ndim (int): Number of dimensions.
-        np_mod (EagerValue): NumPy-compatible array module.
+        np_mod (BackendModuleProtocol): NumPy-compatible array module.
 
     Returns:
-        EagerValue: Sliced convolution output array.
+        BackendArg: Sliced convolution output array.
     """
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_array
+
+    out_arr = coerce_array(np_mod, out)
     if mode == "same":
         slices = [slice((s2[i] - 1) // 2, (s2[i] - 1) // 2 + s1[i]) for i in range(ndim)]
-        return ensure_eager_tensor(out)[tuple(slices)]
+        return out_arr[tuple(slices)]
     if mode == "valid":
         slices = []
         for i in range(ndim):
             start = s2[i] - 1
             length = s1[i] - s2[i] + 1
             if length < 1:
-                return ensure_eager_tensor(get_backend_member(np_mod, "empty")((0,) * ndim, dtype=get_backend_member(out, "dtype")))
+                return adapt_backend_module(np_mod).require_symbol("empty")(
+                    (0,) * ndim, dtype=adapt_backend_module(out).require_symbol("dtype")
+                )
             slices.append(slice(start, start + length))
-        return ensure_eager_tensor(out)[tuple(slices)]
+        return out_arr[tuple(slices)]
     return out
 
 
 @global_eager_registry.register("Fftconvolve")
-def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftconvolve(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate _fftconvolve operation using backend or native FFT/IFFT fallback.
 
     Args:
@@ -108,17 +121,17 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         **kwargs: Keyword args (mode, axes).
 
     Returns:
-        EagerValue: Discrete convolution result of in1 and in2.
+        BackendArg: Discrete convolution result of in1 and in2.
     """
     if len(args) < 2 or args[0] is None or args[1] is None:
         return None
 
-    fft_mod = get_backend_member(backend_module, "fft", None)
-    if has_backend_member(fft_mod, "fftconvolve"):
-        return ensure_eager_tensor(get_backend_member(fft_mod, "fftconvolve")(*args, **kwargs))
-    signal_mod = get_backend_member(backend_module, "signal", None)
-    if has_backend_member(signal_mod, "fftconvolve"):
-        return ensure_eager_tensor(get_backend_member(signal_mod, "fftconvolve")(*args, **kwargs))
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
+    if adapt_backend_module(fft_mod).has_symbol("fftconvolve"):
+        return adapt_backend_module(fft_mod).require_symbol("fftconvolve")(*args, **kwargs)
+    signal_mod = adapt_backend_module(backend_module).get_symbol("signal", None)
+    if adapt_backend_module(signal_mod).has_symbol("fftconvolve"):
+        return adapt_backend_module(signal_mod).require_symbol("fftconvolve")(*args, **kwargs)
 
     in1, in2 = args[0], args[1]
     mode = kwargs.get("mode", "full")
@@ -134,7 +147,7 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     conv_shape = [s1[i] + s2[i] - 1 for i in range(ndim)]
 
     is_real = not (np_mod.iscomplexobj(a1) or np_mod.iscomplexobj(a2))
-    fft_lib = get_backend_member(np_mod, "fft")
+    fft_lib = adapt_backend_module(np_mod).require_symbol("fft")
 
     if is_real:
         f1 = fft_lib.rfftn(a1, s=conv_shape, axes=axes)
@@ -149,7 +162,9 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
 
 @global_eager_registry.register("Fftfreq")
-def _fftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftfreq(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fftfreq operation on the active backend array.
 
     Args:
@@ -158,14 +173,16 @@ def _fftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.fftfreq(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Fftn")
-def _fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftn(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fftn operation on the active backend array.
 
     Args:
@@ -174,14 +191,16 @@ def _fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Fftnd")
-def _fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftnd(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fftnd operation on the active backend array.
 
     Args:
@@ -190,16 +209,18 @@ def _fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
-    if has_backend_member(fft_mod, "fftnd"):
-        return ensure_eager_tensor(get_backend_member(fft_mod, "fftnd")(*args, **kwargs))
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
+    if adapt_backend_module(fft_mod).has_symbol("fftnd"):
+        return adapt_backend_module(fft_mod).require_symbol("fftnd")(*args, **kwargs)
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Fftshift")
-def _fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftshift(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fftshift operation on the active backend array.
 
     Args:
@@ -208,14 +229,16 @@ def _fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.fftshift(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Ifft")
-def _ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifft(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager ifft operation on the active backend array.
 
     Args:
@@ -224,14 +247,16 @@ def _ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.ifft(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Ifft2")
-def _ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifft2(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager ifft2 operation on the active backend array.
 
     Args:
@@ -240,14 +265,16 @@ def _ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.ifft2(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Ifftn")
-def _ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifftn(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager ifftn operation on the active backend array.
 
     Args:
@@ -256,14 +283,16 @@ def _ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.ifftn(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Ifftshift")
-def _ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifftshift(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager ifftshift operation on the active backend array.
 
     Args:
@@ -272,14 +301,16 @@ def _ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
     return fft_mod.ifftshift(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("NpHfft")
-def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_hfft(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np hfft operation on the active backend array.
 
     Args:
@@ -288,9 +319,9 @@ def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    fft_mod = get_backend_member(backend_module, "fft", None)
-    if fft_mod and has_backend_member(fft_mod, "hfft"):
-        return ensure_eager_tensor(fft_mod.hfft(*args, **kwargs))
+    fft_mod = adapt_backend_module(backend_module).get_symbol("fft", None)
+    if fft_mod and adapt_backend_module(fft_mod).has_symbol("hfft"):
+        return fft_mod.hfft(*args, **kwargs)
     return _resolve_eager_mod(backend_module).fft.hfft(*args, **kwargs)

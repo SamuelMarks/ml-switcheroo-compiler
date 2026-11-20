@@ -7,8 +7,7 @@ from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 @typing.runtime_checkable
@@ -24,84 +23,94 @@ class LineEmitterProtocol(typing.Protocol):
         ...
 
 
-def _is_line_emitter(val: LineEmitterProtocol | PyTorchNNMixin | EagerValue) -> typing.TypeGuard[LineEmitterProtocol]:
+def _is_line_emitter(val: LineEmitterProtocol | PyTorchNNMixin | BackendArg) -> typing.TypeGuard[LineEmitterProtocol]:
     """Check whether `val` exposes an `.add_line` attribute.
 
     Args:
-        val (LineEmitterProtocol | PyTorchNNMixin | EagerValue): Candidate emitter object.
+        val (LineEmitterProtocol | PyTorchNNMixin | BackendArg): Candidate emitter object.
 
     Returns:
         bool: True if `val` has an `.add_line` attribute.
     """
-    return has_backend_member(val, "add_line")
+    return isinstance(val, LineEmitterProtocol)
 
 
 class PyTorchScatterVisitor:
     """Mixin."""
 
-    def visit_TensorScatterUpdate(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_TensorScatterUpdate(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Handle TensorScatterUpdate nodes.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]})"
 
-    def visit_TensorScatterAdd(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_TensorScatterAdd(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Handle TensorScatterAdd nodes.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
         """
-        return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
+        return (
+            f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
+        )
 
-    def visit_TensorScatterMax(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_TensorScatterMax(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the TensorScatterMax operation.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
         """
-        return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
+        return (
+            "(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d "
+            "in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', "
+            f"include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
+        )
 
-    def visit_TensorScatterMin(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_TensorScatterMin(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the TensorScatterMin operation.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
         """
-        return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
+        return (
+            "(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d "
+            "in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', "
+            f"include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
+        )
 
 
 class PyTorchDistributedVisitor:
     """Mixin."""
 
-    def visit_AllGather(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AllGather(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for all_gather.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
@@ -109,13 +118,13 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_gather_into_tensor(output, {tensor})"
 
-    def visit_ReduceScatter(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_ReduceScatter(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for reduce_scatter.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
@@ -123,13 +132,13 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.reduce_scatter_tensor(torch.empty_like({tensor}), {tensor})"
 
-    def visit_AllReduce(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AllReduce(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for all_reduce.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
@@ -137,13 +146,13 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_reduce({tensor})"
 
-    def visit_AllToAll(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AllToAll(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for all_to_all.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
@@ -151,13 +160,13 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_to_all_single(torch.empty_like({tensor}), {tensor})"
 
-    def visit_Broadcast(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Broadcast(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for broadcast.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
@@ -176,19 +185,19 @@ class PyTorchNNMixin:
 
     def __init__(
         self,
-        *args: EagerValue,
-        generator: LineEmitterProtocol | EagerValue = None,
-        **kwargs: EagerValue,
+        *args: BackendArg,
+        generator: LineEmitterProtocol | BackendArg = None,
+        **kwargs: BackendArg,
     ) -> None:
         """Initialize PyTorchNNMixin.
 
         Args:
-            *args (EagerValue): Variable length arguments.
-            generator (LineEmitterProtocol | EagerValue): The parent code generator instance.
-            **kwargs (EagerValue): Arbitrary keyword arguments.
+            *args (BackendArg): Variable length arguments.
+            generator (LineEmitterProtocol | BackendArg): The parent code generator instance.
+            **kwargs (BackendArg): Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.generator: LineEmitterProtocol | EagerValue = generator
+        self.generator: LineEmitterProtocol | BackendArg = generator
 
     def _add_line(self, line: str) -> None:
         """Add a line to code output.
@@ -201,13 +210,13 @@ class PyTorchNNMixin:
         elif self.generator and _is_line_emitter(self.generator):
             self.generator.add_line(line)
 
-    def visit_Send(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Send(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Send tensor.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variables.
-            **kwargs (EagerValue): Additional attributes.
+            **kwargs (BackendArg): Additional attributes.
 
         Returns:
             str: PyTorch code for send.
@@ -217,13 +226,13 @@ class PyTorchNNMixin:
         self._add_line(f"        torch.distributed.isend({input_vars[0]}, dst={dst}, tag={tag})")
         return ""
 
-    def visit_Recv(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Recv(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Receive tensor.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variables.
-            **kwargs (EagerValue): Additional attributes.
+            **kwargs (BackendArg): Additional attributes.
 
         Returns:
             str: PyTorch code for recv.
@@ -239,13 +248,13 @@ class PyTorchNNMixin:
         self._add_line(f"        torch.distributed.irecv({res_var}, src={src}, tag={tag})")
         return res_var
 
-    def visit_Conv1D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Conv1D(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for 1D convolution.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv1d expression.
@@ -256,15 +265,18 @@ class PyTorchNNMixin:
         dilation = attrs.get("dilation", 1)
         groups = attrs.get("groups", 1)
         bias = input_vars[2] if len(input_vars) > 2 else "None"
-        return f"torch.nn.functional.conv1d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
+        return (
+            f"torch.nn.functional.conv1d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, "
+            f"padding={padding}, dilation={dilation}, groups={groups})"
+        )
 
-    def visit_Conv2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Conv2D(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for 2D convolution.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv2d expression.
@@ -275,15 +287,18 @@ class PyTorchNNMixin:
         dilation = attrs.get("dilation", 1)
         groups = attrs.get("groups", 1)
         bias = input_vars[2] if len(input_vars) > 2 else "None"
-        return f"torch.nn.functional.conv2d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
+        return (
+            f"torch.nn.functional.conv2d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, "
+            f"padding={padding}, dilation={dilation}, groups={groups})"
+        )
 
-    def visit_Conv3D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Conv3D(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for 3D convolution.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch conv3d expression.
@@ -294,15 +309,18 @@ class PyTorchNNMixin:
         dilation = attrs.get("dilation", 1)
         groups = attrs.get("groups", 1)
         bias = input_vars[2] if len(input_vars) > 2 else "None"
-        return f"torch.nn.functional.conv3d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, padding={padding}, dilation={dilation}, groups={groups})"
+        return (
+            f"torch.nn.functional.conv3d({input_vars[0]}, {input_vars[1]}, bias={bias}, stride={stride}, "
+            f"padding={padding}, dilation={dilation}, groups={groups})"
+        )
 
-    def visit_MultiHeadAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_MultiHeadAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for MultiHeadAttention / ScaledDotProductAttention.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Query, Key, Value input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch attention expression.
@@ -312,26 +330,26 @@ class PyTorchNNMixin:
         q, k, v = input_vars[0], input_vars[1], input_vars[2]
         return f"torch.nn.functional.scaled_dot_product_attention({q}, {k}, {v}, is_causal={is_causal})"
 
-    def visit_ScaledDotProductAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_ScaledDotProductAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for scaled dot product attention.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Query, Key, Value input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch attention expression.
         """
         return self.visit_MultiHeadAttention(node, input_vars, **kwargs)
 
-    def visit_LayerNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_LayerNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for LayerNorm.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch layer_norm expression.
@@ -343,13 +361,13 @@ class PyTorchNNMixin:
         bias = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.layer_norm({input_vars[0]}, {shape}, weight={weight}, bias={bias}, eps={eps})"
 
-    def visit_RMSNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_RMSNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for RMSNorm.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch rms_norm expression.
@@ -358,15 +376,19 @@ class PyTorchNNMixin:
         shape = attrs.get("normalized_shape", [1])
         eps = attrs.get("eps", 1e-5)
         weight = input_vars[1] if len(input_vars) > 1 else "None"
-        return f"(torch.nn.functional.rms_norm({input_vars[0]}, {shape}, weight={weight}, eps={eps}) if hasattr(torch.nn.functional, 'rms_norm') else ({input_vars[0]} * torch.rsqrt(torch.mean({input_vars[0]} ** 2, dim=-1, keepdim=True) + {eps})))"
+        return (
+            f"(torch.nn.functional.rms_norm({input_vars[0]}, {shape}, weight={weight}, eps={eps}) if "
+            f"hasattr(torch.nn.functional, 'rms_norm') else ({input_vars[0]} * "
+            f"torch.rsqrt(torch.mean({input_vars[0]} ** 2, dim=-1, keepdim=True) + {eps})))"
+        )
 
-    def visit_BatchNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_BatchNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for BatchNorm.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch batch_norm expression.
@@ -377,13 +399,13 @@ class PyTorchNNMixin:
         var = input_vars[2] if len(input_vars) > 2 else "None"
         return f"torch.nn.functional.batch_norm({input_vars[0]}, running_mean={mean}, running_var={var}, eps={eps})"
 
-    def visit_GroupNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_GroupNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for GroupNorm.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch group_norm expression.
@@ -393,13 +415,13 @@ class PyTorchNNMixin:
         eps = attrs.get("eps", 1e-5)
         return f"torch.nn.functional.group_norm({input_vars[0]}, num_groups={num_groups}, eps={eps})"
 
-    def visit_MaxPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_MaxPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for MaxPool2D.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch max_pool2d expression.
@@ -409,13 +431,13 @@ class PyTorchNNMixin:
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.max_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
 
-    def visit_AvgPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AvgPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for AvgPool2D.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch avg_pool2d expression.
@@ -425,13 +447,13 @@ class PyTorchNNMixin:
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.avg_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
 
-    def visit_AdaptiveAvgPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AdaptiveAvgPool2D(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for AdaptiveAvgPool2D.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch adaptive_avg_pool2d expression.
@@ -440,13 +462,13 @@ class PyTorchNNMixin:
         output_size = attrs.get("output_size", [1, 1])
         return f"torch.nn.functional.adaptive_avg_pool2d({input_vars[0]}, output_size={output_size})"
 
-    def visit_Linear(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Linear(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate PyTorch code for Linear projection.
 
         Args:
             node (LogicalNode): The IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional operation attributes.
+            **kwargs (BackendArg): Additional operation attributes.
 
         Returns:
             str: Generated PyTorch linear expression.

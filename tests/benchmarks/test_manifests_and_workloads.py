@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import typing
+from pathlib import Path
 
 import pytest
 
@@ -30,7 +31,7 @@ from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
 from tests.testing_utils import install_profiler_backend_stubs
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 @pytest.fixture(autouse=True)
@@ -122,7 +123,10 @@ def test_manifest_invalid_structure() -> None:
 def test_load_benchmark_plan_valid() -> None:
     """Verify loading a valid benchmark plan YAML."""
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
-        f.write("name: test_plan\nmodels: [mlp_model]\nbatch_sizes: [1]\nwarmup_iterations: 2\nbenchmark_iterations: 5\ntargets: []\n")
+        f.write(
+            "name: test_plan\nmodels: [mlp_model]\nbatch_sizes: [1]\nwarmup_iterations: "
+            "2\nbenchmark_iterations: 5\ntargets: []\n"
+        )
         tmp_path = f.name
 
     try:
@@ -235,7 +239,9 @@ benchmarks:
 def test_standard_workloads_manifest() -> None:
     """Verify standard_workloads.yaml exists and contains all required model workloads."""
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    manifest_path = os.path.join(base_dir, "src", "ml_switcheroo_compiler", "benchmarks", "manifests", "standard_workloads.yaml")
+    manifest_path = os.path.join(
+        base_dir, "src", "ml_switcheroo_compiler", "benchmarks", "manifests", "standard_workloads.yaml"
+    )
     assert os.path.exists(manifest_path)
     workloads = load_model_workloads(manifest_path)
     expected = [
@@ -406,7 +412,7 @@ def test_benchmark_specs_and_constraints() -> None:
     assert plan.latency_thresholds.max_mean_latency_ms == 10.0
 
 
-def test_perf_baselines_custom_path(tmp_path: EagerTensorProtocol) -> None:
+def test_perf_baselines_custom_path(tmp_path: Path) -> None:
     """Test load_perf_baselines with an explicit path argument.
 
     Args:
@@ -436,6 +442,10 @@ def test_benchmarks_orchestrator_invalid_profile_branch() -> None:
     from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
 
     mock_manifest = {"profiles": {"invalid_backend": "not_a_dict_payload"}}
-    with patch("pathlib.Path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_manifest):
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("builtins.open", MagicMock()),
+        patch("yaml.safe_load", return_value=mock_manifest),
+    ):
         specs = BenchmarkOrchestrator._load_manifest_profiles()
         assert specs == {}

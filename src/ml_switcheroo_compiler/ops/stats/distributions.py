@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 
 
@@ -11,7 +10,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 class NormPdf(OpDef):
     """Operation for calculating the probability density function (PDF) of a normal distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the normal PDF operation.
 
         Args:
@@ -20,14 +19,14 @@ class NormPdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `x`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("NormCdf")
 class NormCdf(OpDef):
     """Operation for calculating the cumulative distribution function (CDF) of a normal distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the normal CDF operation.
 
         Args:
@@ -36,14 +35,14 @@ class NormCdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `x`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("GammaPdf")
 class GammaPdf(OpDef):
     """Operation for calculating the probability density function (PDF) of a gamma distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the gamma PDF operation.
 
         Args:
@@ -52,14 +51,14 @@ class GammaPdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `x`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("GammaCdf")
 class GammaCdf(OpDef):
     """Operation for calculating the cumulative distribution function (CDF) of a gamma distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the gamma CDF operation.
 
         Args:
@@ -68,14 +67,14 @@ class GammaCdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `x`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("BetaPdf")
 class BetaPdf(OpDef):
     """Operation for calculating the probability density function (PDF) of a beta distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the beta PDF operation.
 
         Args:
@@ -84,14 +83,14 @@ class BetaPdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `x`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("BetaCdf")
 class BetaCdf(OpDef):
     """Operation for calculating the cumulative distribution function (CDF) of a beta distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the beta CDF operation.
 
         Args:
@@ -100,14 +99,14 @@ class BetaCdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `x`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("PoissonPmf")
 class PoissonPmf(OpDef):
     """Operation for calculating the probability mass function (PMF) of a Poisson distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the Poisson PMF operation.
 
         Args:
@@ -116,14 +115,14 @@ class PoissonPmf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `k`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("PoissonCdf")
 class PoissonCdf(OpDef):
     """Operation for calculating the cumulative distribution function (CDF) of a Poisson distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the Poisson CDF operation.
 
         Args:
@@ -132,14 +131,14 @@ class PoissonCdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `k`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("BinomPmf")
 class BinomPmf(OpDef):
     """Operation for calculating the probability mass function (PMF) of a binomial distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the binomial PMF operation.
 
         Args:
@@ -148,14 +147,14 @@ class BinomPmf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `k`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("BinomCdf")
 class BinomCdf(OpDef):
     """Operation for calculating the cumulative distribution function (CDF) of a binomial distribution."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the binomial CDF operation.
 
         Args:
@@ -164,10 +163,10 @@ class BinomCdf(OpDef):
 
         Returns: Tensor: The inferred shape, matching the shape of the input tensor `k`.
         """
-        return args[0].shape
+        return extract_shape(args[0])
 
 
-def norm_pdf(x: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorOrScalar:
+def norm_pdf(x: OpValue, loc: float = 0.0, scale: float = 1.0) -> OpValue:
     """Calculate the probability density function (PDF) for a normal distribution.
 
     Args:
@@ -180,7 +179,7 @@ def norm_pdf(x: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorO
     return get_op("NormPdf")()(x, loc, scale)
 
 
-def norm_cdf(x: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorOrScalar:
+def norm_cdf(x: OpValue, loc: float = 0.0, scale: float = 1.0) -> OpValue:
     """Calculate the cumulative distribution function (CDF) for a normal distribution.
 
     Args:
@@ -193,7 +192,7 @@ def norm_cdf(x: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorO
     return get_op("NormCdf")()(x, loc, scale)
 
 
-def gamma_pdf(x: TensorOrScalar, a: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorOrScalar:
+def gamma_pdf(x: OpValue, a: OpValue, loc: float = 0.0, scale: float = 1.0) -> OpValue:
     """Calculate the probability density function (PDF) for a gamma distribution.
 
     Args:
@@ -207,7 +206,7 @@ def gamma_pdf(x: TensorOrScalar, a: TensorOrScalar, loc: float = 0.0, scale: flo
     return get_op("GammaPdf")()(x, a, loc, scale)
 
 
-def gamma_cdf(x: TensorOrScalar, a: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorOrScalar:
+def gamma_cdf(x: OpValue, a: OpValue, loc: float = 0.0, scale: float = 1.0) -> OpValue:
     """Calculate the cumulative distribution function (CDF) for a gamma distribution.
 
     Args:
@@ -221,7 +220,7 @@ def gamma_cdf(x: TensorOrScalar, a: TensorOrScalar, loc: float = 0.0, scale: flo
     return get_op("GammaCdf")()(x, a, loc, scale)
 
 
-def beta_pdf(x: TensorOrScalar, a: TensorOrScalar, b: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorOrScalar:
+def beta_pdf(x: OpValue, a: OpValue, b: OpValue, loc: float = 0.0, scale: float = 1.0) -> OpValue:
     """Calculate the probability density function (PDF) for a beta distribution.
 
     Args:
@@ -236,7 +235,7 @@ def beta_pdf(x: TensorOrScalar, a: TensorOrScalar, b: TensorOrScalar, loc: float
     return get_op("BetaPdf")()(x, a, b, loc, scale)
 
 
-def beta_cdf(x: TensorOrScalar, a: TensorOrScalar, b: TensorOrScalar, loc: float = 0.0, scale: float = 1.0) -> TensorOrScalar:
+def beta_cdf(x: OpValue, a: OpValue, b: OpValue, loc: float = 0.0, scale: float = 1.0) -> OpValue:
     """Calculate the cumulative distribution function (CDF) for a beta distribution.
 
     Args:
@@ -251,7 +250,7 @@ def beta_cdf(x: TensorOrScalar, a: TensorOrScalar, b: TensorOrScalar, loc: float
     return get_op("BetaCdf")()(x, a, b, loc, scale)
 
 
-def poisson_pmf(k: TensorOrScalar, mu: TensorOrScalar, loc: float = 0.0) -> TensorOrScalar:
+def poisson_pmf(k: OpValue, mu: OpValue, loc: float = 0.0) -> OpValue:
     """Calculate the probability mass function (PMF) for a Poisson distribution.
 
     Args:
@@ -264,7 +263,7 @@ def poisson_pmf(k: TensorOrScalar, mu: TensorOrScalar, loc: float = 0.0) -> Tens
     return get_op("PoissonPmf")()(k, mu, loc)
 
 
-def poisson_cdf(k: TensorOrScalar, mu: TensorOrScalar, loc: float = 0.0) -> TensorOrScalar:
+def poisson_cdf(k: OpValue, mu: OpValue, loc: float = 0.0) -> OpValue:
     """Calculate the cumulative distribution function (CDF) for a Poisson distribution.
 
     Args:
@@ -277,7 +276,7 @@ def poisson_cdf(k: TensorOrScalar, mu: TensorOrScalar, loc: float = 0.0) -> Tens
     return get_op("PoissonCdf")()(k, mu, loc)
 
 
-def binom_pmf(k: TensorOrScalar, n: TensorOrScalar, p: TensorOrScalar, loc: float = 0.0) -> TensorOrScalar:
+def binom_pmf(k: OpValue, n: OpValue, p: OpValue, loc: float = 0.0) -> OpValue:
     """Calculate the probability mass function (PMF) for a binomial distribution.
 
     Args:
@@ -291,7 +290,7 @@ def binom_pmf(k: TensorOrScalar, n: TensorOrScalar, p: TensorOrScalar, loc: floa
     return get_op("BinomPmf")()(k, n, p, loc)
 
 
-def binom_cdf(k: TensorOrScalar, n: TensorOrScalar, p: TensorOrScalar, loc: float = 0.0) -> TensorOrScalar:
+def binom_cdf(k: OpValue, n: OpValue, p: OpValue, loc: float = 0.0) -> OpValue:
     """Calculate the cumulative distribution function (CDF) for a binomial distribution.
 
     Args:

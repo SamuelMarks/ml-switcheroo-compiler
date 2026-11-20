@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import clone_logical_node
 
 
 @typing.runtime_checkable
@@ -203,13 +203,6 @@ def _optimize_cond_node(
     return False, False
 
 
-@typing.runtime_checkable
-class _NodeOpTypeProtocol(typing.Protocol):
-    """Protocol for nodes exposing an `op_type` string."""
-
-    op_type: str
-
-
 def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:
     """Run control flow optimizations on Cond/If nodes: branch pruning and invariant hoisting.
 
@@ -223,8 +216,7 @@ def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:
     modified = False
 
     for node_id, node in graph.nodes.items():
-        raw_node: AttributeValue | IRNode = node
-        if isinstance(raw_node, _NodeOpTypeProtocol) and node.op_type in ("Cond", "If"):
+        if node.op_type in ("Cond", "If"):
             cond_mod, inlined = _optimize_cond_node(graph, node_id, node, new_nodes)
             modified = modified or cond_mod
             if inlined:

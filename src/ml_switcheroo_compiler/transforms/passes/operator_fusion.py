@@ -2,1073 +2,125 @@
 
 from __future__ import annotations
 
-import glob
-import logging
 import os
-import typing
-from collections.abc import Mapping
 
-import yaml
-from ml_switcheroo_ir import SymInt, SymNode
+import yaml as yaml
+from ml_switcheroo_ir import IRGraph
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _SCALAR_EXPR_TEMPLATES as _SCALAR_EXPR_TEMPLATES,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    ELEMENTWISE_OPS as ELEMENTWISE_OPS,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _count_consumers as _count_consumers,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _extract_node_ops_and_expr as _extract_node_ops_and_expr,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _fuse_single_edge as _fuse_single_edge,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _get_scalar_expression_snippet as _get_scalar_expression_snippet,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _has_graph_nodes as _has_graph_nodes,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _is_fusable_elementwise_node as _is_fusable_elementwise_node,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    _try_fuse_cluster_step as _try_fuse_cluster_step,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_clusters import (
+    fuse_elementwise_clusters as fuse_elementwise_clusters,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    DeclarativeTargetFusionRule as DeclarativeTargetFusionRule,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    MemoryAwareCostModel as MemoryAwareCostModel,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    YamlFusionRule as YamlFusionRule,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    _discover_fusion_patterns as _discover_fusion_patterns,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    _load_global_fusion_patterns as _load_global_fusion_patterns,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    _load_pass_config as _load_pass_config,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_cost_yaml import (
+    _load_yaml_fusion_dir as _load_yaml_fusion_dir,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    HorizontalFusionPass as HorizontalFusionPass,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    VerticalFusionPass as VerticalFusionPass,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    _find_conv_and_bias_inputs as _find_conv_and_bias_inputs,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    _try_fuse_conv_bias_act_node as _try_fuse_conv_bias_act_node,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    _try_fuse_elem_act_node as _try_fuse_elem_act_node,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    fuse_conv_bias_relu as fuse_conv_bias_relu,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    fuse_elementwise_activation as fuse_elementwise_activation,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_passes import (
+    fuse_horizontal_patterns as fuse_horizontal_patterns,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    FusionRule as FusionRule,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    MatchMapType as MatchMapType,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    NodePattern as NodePattern,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    PatternMatchingEngine as PatternMatchingEngine,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _DynamicShapeNodeProtocol as _DynamicShapeNodeProtocol,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _GraphInputsProtocol as _GraphInputsProtocol,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _GraphNodesProtocol as _GraphNodesProtocol,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _GraphOutputsProtocol as _GraphOutputsProtocol,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _is_fusion_num as _is_fusion_num,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _match_node_inputs as _match_node_inputs,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    _to_fusion_int as _to_fusion_int,
+)
+from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import (
+    match_pattern as match_pattern,
+)
 from ml_switcheroo_compiler.transforms.passes.config_models import (
-    ComputeCosts,
-    CostModelConfig,
-    FusionPatternConfig,
-    NodePatternConfig,
     PassConfig,
 )
-
-MatchMapType = dict[str, typing.Union[str, IRNode, int, float, "None"]]
-
-
-def _is_fusion_num(
-    val: Mapping[str, float | int | dict[str, float | int]] | Mapping[str, float | int] | float | int | str | SymNode | SymInt | None,
-) -> typing.TypeGuard[int | float]:
-    """Type guard narrowing a configuration or shape value to `int | float`.
-
-    Args:
-        val: Candidate numeric value.
-
-    Returns:
-        bool: True if val is an int or float.
-    """
-    return isinstance(val, (int, float))
-
-
-def _to_fusion_int(
-    val: Mapping[str, float | int | dict[str, float | int]] | Mapping[str, float | int] | float | int | str | SymNode | SymInt | None,
-    default: int = 0,
-) -> int:
-    """Coerce a configuration or shape value to int.
-
-    Args:
-        val: Raw numeric value.
-        default (int): Fallback value if not convertible.
-
-    Returns:
-        int: Coerced integer value.
-    """
-    _ = default
-    assert _is_fusion_num(val)
-    return int(val)
-
-
-@typing.runtime_checkable
-class _GraphInputsProtocol(typing.Protocol):
-    """Protocol for graphs exposing an `inputs` list."""
-
-    inputs: list[str]
-
-
-@typing.runtime_checkable
-class _GraphOutputsProtocol(typing.Protocol):
-    """Protocol for graphs exposing an `outputs` list."""
-
-    outputs: list[str]
-
-
-@typing.runtime_checkable
-class _GraphNodesProtocol(typing.Protocol):
-    """Protocol for graphs exposing a `nodes` mapping."""
-
-    nodes: Mapping[str, IRNode]
-
-
-@typing.runtime_checkable
-class _DynamicShapeNodeProtocol(typing.Protocol):
-    """Protocol for nodes exposing an `is_dynamic_shape` boolean attribute."""
-
-    is_dynamic_shape: bool
-
-
-class NodePattern:
-    """Provide a declarative pattern for matching a single node and its inputs in an IRGraph."""
-
-    def __init__(
-        self,
-        op_type: str | None = None,
-        capture: str | None = None,
-        inputs: list[NodePattern] | None = None,
-        wildcard: bool = False,
-        commutative: bool = False,
-        broadcast_dims: bool = False,
-    ) -> None:
-        """Initialize NodePattern.
-
-        Args:
-            op_type (str, optional): The expected operation type.
-            capture (str, optional): The key to store the matched node in the capture map.
-            inputs (list[NodePattern], optional): Patterns for the expected inputs.
-            wildcard (bool): Allow matching any operation type.
-            commutative (bool): Match inputs in any permutation.
-            broadcast_dims (bool): Match tensors with broadcast compatible dimensions.
-        """
-        self.op_type: str | None = op_type
-        self.capture: str | None = capture
-        self.inputs: list[NodePattern] | None = inputs
-        self.wildcard: bool = wildcard or op_type in ("*", "any")
-        self.commutative: bool = commutative
-        self.broadcast_dims: bool = broadcast_dims
-
-
-def _match_node_inputs(
-    graph: IRGraph,
-    node: IRNode,
-    pattern: NodePattern,
-    capture_map: dict[str, str | IRNode],
-) -> bool:
-    """Match the inputs of a node against a pattern supporting commutativity.
-
-    Args:
-        graph (IRGraph): Input `graph` argument (graph).
-        node (IRNode): Input `node` argument (node).
-        pattern (NodePattern): Input `pattern` argument (pattern).
-        capture_map (dict): Input `capture_map` argument (capture map).
-
-    Returns:
-        bool: True if inputs match, False otherwise.
-    """
-    p_inputs: list[NodePattern] = pattern.inputs or []
-    if len(node.inputs) != len(p_inputs):
-        return False
-
-    if pattern.commutative and len(p_inputs) == 2:
-        orig_map = dict(capture_map)
-        if match_pattern(graph, node.inputs[0], p_inputs[0], capture_map) and match_pattern(graph, node.inputs[1], p_inputs[1], capture_map):
-            return True
-        capture_map.clear()
-        capture_map.update(orig_map)
-        if match_pattern(graph, node.inputs[1], p_inputs[0], capture_map) and match_pattern(graph, node.inputs[0], p_inputs[1], capture_map):
-            return True
-        return False
-
-    for i, inp_pat in enumerate(p_inputs):
-        inp_id: str = node.inputs[i]
-        if not match_pattern(graph, inp_id, inp_pat, capture_map):
-            return False
-    return True
-
-
-def match_pattern(
-    graph: IRGraph,
-    node_id: str | IRNode | None,
-    pattern: NodePattern,
-    capture_map: dict[str, str | IRNode],
-) -> bool:
-    """Recursively match a pattern starting from a specific node ID or value in the graph.
-
-    Args:
-        graph (IRGraph): The IRGraph.
-        node_id (str | IRNode | None): The ID of the node to match, or a raw value.
-        pattern (NodePattern): The pattern to match against.
-        capture_map (dict): A dictionary to store captured nodes or values.
-
-    Returns:
-        bool: True if the pattern matches, False otherwise.
-    """
-    is_wildcard = pattern.wildcard or pattern.op_type in ("*", "any")
-    if not isinstance(node_id, str):
-        if (pattern.op_type is not None and not is_wildcard) or pattern.inputs is not None:
-            return False
-        if pattern.capture is not None and node_id is not None:
-            capture_map[pattern.capture] = node_id
-        return True
-    node: IRNode | None = graph.nodes.get(node_id)
-    if not node:
-        return False
-    if not is_wildcard and pattern.op_type is not None and node.op_type != pattern.op_type:
-        return False
-    if pattern.capture is not None:
-        capture_map[pattern.capture] = node
-    if pattern.inputs is not None:
-        return _match_node_inputs(graph, node, pattern, capture_map)
-    return True
-
-
-class FusionRule:
-    """Define base class for a fusion rule."""
-
-    def __init__(self, name: str, pattern: NodePattern) -> None:
-        """Initialize FusionRule.
-
-        Args:
-            name (str): The name of the fusion rule.
-            pattern (NodePattern): The root pattern of the fusion rule.
-        """
-        self.name: str = name
-        self.pattern: NodePattern = pattern
-
-    def apply(self, graph: IRGraph, match: MatchMapType) -> dict[str, IRNode] | None:
-        """Apply the fusion rule using standard graph transformation.
-
-        Args:
-            graph (IRGraph): The target IR computation graph.
-            match (MatchMapType): Mapping of captured pattern names to IR nodes or node IDs.
-
-        Returns:
-            dict[str, IRNode] | None: Mapping of replaced node IDs to fused replacement nodes, or None if match is empty or invalid.
-        """
-        if not match:
-            return None
-        root_node: IRNode | None = None
-        target = match.get("root")
-        if isinstance(target, IRNode):
-            root_node = target
-        else:
-            for val in match.values():
-                if isinstance(val, IRNode):
-                    root_node = val
-                    break
-        if not isinstance(root_node, IRNode):
-            return None
-
-        new_id = f"{root_node.id}_fused"
-        fused_node = clone_logical_node(root_node)
-        fused_node.id = new_id
-        fused_node.op_type = f"Fused_{self.name}" if not self.name.startswith("Fused_") else self.name
-        fused_node.attributes["fused_pattern"] = self.name
-        return {root_node.id: fused_node}
-
-
-class PatternMatchingEngine:
-    """Engine that applies fusion rules over a graph."""
-
-    def __init__(
-        self,
-        rules: list[FusionRule],
-        cost_model: MemoryAwareCostModel | None = None,
-    ) -> None:
-        """Initialize PatternMatchingEngine.
-
-        Args:
-            rules (list[FusionRule]): List of fusion rules to apply.
-            cost_model (MemoryAwareCostModel, optional): The cost model to validate fusions.
-        """
-        self.rules: list[FusionRule] = rules
-        self.cost_model: MemoryAwareCostModel | None = cost_model
-
-    def _try_match_rules(
-        self,
-        graph: IRGraph,
-        node_id: str,
-        new_nodes: dict[str, IRNode],
-        id_map: dict[str, str],
-    ) -> bool:
-        """Try applying matching rules to a single node.
-
-        Args:
-            graph (IRGraph): Input `graph` argument (graph).
-            node_id (str): Input `node_id` argument (node id).
-            new_nodes (dict): Input `new_nodes` argument (new nodes).
-            id_map (dict): Input `id_map` argument (id map).
-
-        Returns:
-            bool: True if a rule matched and was applied, False otherwise.
-        """
-        for rule in self.rules:
-            capture_map: dict[str, str | IRNode] = {}
-            if match_pattern(graph, node_id, rule.pattern, capture_map):
-                match_dict: MatchMapType = dict(capture_map)
-                replacements: dict[str, IRNode] | None = rule.apply(graph, match_dict)
-                if replacements:
-                    if self.cost_model and not self.cost_model.is_fusion_valid(replacements):
-                        continue
-                    for old_id, new_node in replacements.items():
-                        new_nodes[new_node.id] = new_node
-                        if old_id != new_node.id:
-                            id_map[old_id] = new_node.id
-                    return True
-        return False
-
-    @staticmethod
-    def _rewire_replaced_ids(
-        graph: IRGraph,
-        new_nodes: dict[str, IRNode],
-        id_map: dict[str, str],
-    ) -> None:
-        """Update node inputs and graph I/O references using the replaced node ID map.
-
-        Args:
-            graph (IRGraph): The target IRGraph being mutated.
-            new_nodes (dict[str, IRNode]): Updated dictionary of IRNodes.
-            id_map (dict[str, str]): Mapping from old node IDs to fused node IDs.
-        """
-        for n in new_nodes.values():
-            n.inputs = [id_map.get(in_id, in_id) for in_id in n.inputs]
-
-        raw_graph: _GraphInputsProtocol | str = graph
-        if isinstance(raw_graph, _GraphInputsProtocol) and raw_graph.inputs is not None:
-            raw_graph.inputs = [id_map.get(in_id, in_id) for in_id in raw_graph.inputs]
-        graph.outputs = [id_map.get(out_id, out_id) for out_id in graph.outputs]
-
-        graph.nodes.clear()
-        graph.nodes.update(new_nodes)
-
-    def apply_passes(self, graph: IRGraph) -> bool:
-        """Apply the pattern matching rules to the graph.
-
-        Args:
-            graph (IRGraph): The IRGraph to optimize.
-
-        Returns:
-            bool: True if the graph was modified, False otherwise.
-        """
-        optimized: bool = False
-        new_nodes: dict[str, IRNode] = {}
-        id_map: dict[str, str] = {}
-
-        for node_id, node in graph.nodes.items():
-            if self._try_match_rules(graph, node_id, new_nodes, id_map):
-                optimized = True
-            elif node_id not in new_nodes:
-                new_nodes[node_id] = node
-
-        if optimized:
-            self._rewire_replaced_ids(graph, new_nodes, id_map)
-        return optimized
-
-
-def _load_pass_config() -> PassConfig:
-    """Load pass configuration from YAML file.
-
-    Returns:
-        PassConfig: The loaded pass config object.
-    """
-    yaml_path: str = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
-    if os.path.exists(yaml_path):
-        with open(yaml_path) as f:
-            res = yaml.safe_load(f)
-        if isinstance(res, dict):
-            return PassConfig(**res)
-    return PassConfig(
-        execution_order=[],
-        cost_model=CostModelConfig(
-            memory_sizes={},
-            compute_costs=ComputeCosts(
-                heavy_ops=[],
-                light_ops=[],
-                heavy_cost=1000,
-                light_cost=10,
-                default_cost=50,
-            ),
-            compute_heavy_threshold=100,
-            heavy_interleave_penalty=500,
-            light_interleave_penalty=100,
-        ),
-        fusion_patterns={},
-    )
-
-
-def _load_yaml_fusion_dir(patterns_dir: str) -> list[FusionRule]:
-    """Load declarative YAML fusion rules from a directory.
-
-    Args:
-        patterns_dir (str): Directory containing fusion pattern YAML files.
-
-    Returns:
-        list[FusionRule]: List of parsed YamlFusionRule instances.
-    """
-    rules: list[FusionRule] = []
-    if not os.path.isdir(patterns_dir):
-        return rules
-
-    for yf in sorted(glob.glob(os.path.join(patterns_dir, "*.yaml"))):
-        try:
-            with open(yf) as f:
-                data = yaml.safe_load(f)
-            if isinstance(data, dict):
-                for rule_name, rule_data in data.items():
-                    if isinstance(rule_data, dict) and "pattern" in rule_data and "replacement" in rule_data:
-                        rules.append(YamlFusionRule(rule_name, FusionPatternConfig(**rule_data)))
-        except Exception:
-            continue
-    return rules
-
-
-def _load_global_fusion_patterns(global_yaml: str) -> list[FusionRule]:
-    """Load global declarative target fusion rules from fusion_patterns.yaml.
-
-    Args:
-        global_yaml (str): Path to the global fusion_patterns.yaml file.
-
-    Returns:
-        list[FusionRule]: List of parsed DeclarativeTargetFusionRule instances.
-    """
-    rules: list[FusionRule] = []
-    if not os.path.exists(global_yaml):
-        return rules
-
-    try:
-        with open(global_yaml) as f:
-            g_data = yaml.safe_load(f)
-        if isinstance(g_data, dict) and isinstance(g_data.get("patterns"), list):
-            for pat in g_data["patterns"]:
-                targets = pat.get("target", [])
-                if targets:
-                    curr_pat = NodePattern(
-                        op_type=targets[-1],
-                        capture="root",
-                        commutative=bool(pat.get("commutative", False)),
-                        wildcard=bool(pat.get("wildcard", False)),
-                        broadcast_dims=bool(pat.get("broadcast_dims", False)),
-                    )
-                    rules.append(
-                        DeclarativeTargetFusionRule(
-                            str(pat.get("name", "pattern")),
-                            curr_pat,
-                            str(pat.get("fused_op", "FusedOp")),
-                        )
-                    )
-    except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-        logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-    return rules
-
-
-def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRule]:
-    """Automatically discover and load all fusion pattern YAMLs from fusion_patterns directory.
-
-    Args:
-        patterns_dir (str, optional): Directory containing fusion pattern YAML files.
-
-    Returns:
-        list[FusionRule]: Loaded fusion rules from declarative pattern files.
-    """
-    load_defaults = patterns_dir is None
-    resolved_dir = patterns_dir or os.path.join(os.path.dirname(__file__), "fusion_patterns")
-    rules = _load_yaml_fusion_dir(resolved_dir)
-
-    if load_defaults:
-        global_yaml = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fusion_patterns.yaml")
-        rules.extend(_load_global_fusion_patterns(global_yaml))
-
-    return rules
-
-
-class DeclarativeTargetFusionRule(FusionRule):
-    """Fusion rule constructed from target sequence in fusion_patterns.yaml."""
-
-    def __init__(self, name: str, pattern: NodePattern, fused_op: str) -> None:
-        """Initialize DeclarativeTargetFusionRule.
-
-        Args:
-            name (str): Rule name.
-            pattern (NodePattern): Pattern to match.
-            fused_op (str): Fused operation type name to emit.
-        """
-        super().__init__(name, pattern)
-        self.fused_op: str = fused_op
-
-    def apply(self, graph: IRGraph, match: MatchMapType) -> dict[str, IRNode] | None:
-        """Apply fusion rule emitting fused operator node.
-
-        Args:
-            graph (IRGraph): IR graph to mutate.
-            match (MatchMapType): Matched nodes mapping.
-
-        Returns:
-            dict[str, IRNode] | None: Replacement mapping or None.
-        """
-        root_node = match.get("root")
-        if not isinstance(root_node, IRNode):
-            return None
-        new_id = f"{root_node.id}_fused"
-        fused_node = clone_logical_node(root_node)
-        fused_node.id = new_id
-        fused_node.op_type = self.fused_op
-        fused_node.attributes["fused_pattern"] = self.name
-        return {root_node.id: fused_node}
-
-
-class YamlFusionRule(FusionRule):
-    """YAML-based fusion rule."""
-
-    def __init__(self, name: str, config: FusionPatternConfig) -> None:
-        """Initialize YAML fusion rule.
-
-        Args:
-            name (str): Rule name.
-            config (FusionPatternConfig): Rule config.
-        """
-        self.config: FusionPatternConfig = config
-        pattern: NodePattern = self._build_pattern(config.pattern)
-        super().__init__(name, pattern)
-
-    def _build_pattern(self, p: NodePatternConfig) -> NodePattern:
-        """Build pattern from pydantic model.
-
-        Args:
-            p (NodePatternConfig): Pattern config.
-
-        Returns:
-            NodePattern: Built pattern.
-        """
-        inputs: list[NodePattern] | None = None
-        if p.inputs is not None:
-            inputs = [self._build_pattern(ip) for ip in p.inputs]
-        return NodePattern(op_type=p.op_type, capture=p.capture, inputs=inputs)
-
-    def apply(self, graph: IRGraph, match: MatchMapType) -> dict[str, IRNode] | None:
-        """Apply fusion rule.
-
-        Args:
-            graph (IRGraph): The IR graph.
-            match (MatchMapType): Matched dictionary.
-
-        Returns:
-            dict[str, IRNode] | None: Replaced nodes or None.
-        """
-        replacement = self.config.replacement
-        target: str | IRNode | int | float | None = match.get(replacement.capture_to_replace)
-        if not isinstance(target, IRNode):
-            return None
-
-        new_inputs: list[str] = []
-        for inp in replacement.inputs:
-            val: str | IRNode | int | float | None = match.get(inp)
-            if isinstance(val, IRNode):
-                new_inputs.append(val.id)
-            elif isinstance(val, str):
-                new_inputs.append(val)
-
-        new_node: IRNode = clone_logical_node(target, inputs=new_inputs)
-        new_node.op_type = replacement.op_type
-        return {target.id: new_node}
-
-
-class MemoryAwareCostModel:
-    """A memory-aware cost model for validating operator fusion."""
-
-    def __init__(
-        self,
-        config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int | None] | None,
-    ) -> None:
-        """Initialize the memory-aware cost model.
-
-        Args:
-            config (dict, optional): Cost model configuration mapping.
-        """
-        self.config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int | None] | None = config
-
-    def is_fusion_valid(self, replacements: dict[str, IRNode]) -> bool:
-        """Check if fusion is valid by checking max memory thresholds.
-
-        Args:
-            replacements (dict[str, IRNode]): Mapping of candidate replacement nodes.
-
-        Returns:
-            bool: True if fusion is permitted by memory budget, False otherwise.
-        """
-        if not self.config:
-            return True
-
-        if "max_fusion_memory_bytes" in self.config:
-            max_memory: int = _to_fusion_int(self.config["max_fusion_memory_bytes"], 1024 * 1024 * 512)
-        elif "compute_intensity_metrics" in self.config and isinstance(self.config["compute_intensity_metrics"], dict):
-            max_memory = _to_fusion_int(self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512), 1024 * 1024 * 512)
-        else:
-            max_memory = 1024 * 1024 * 512
-
-        total_mem: int = 0
-        memory_sizes = self.config.get("memory_sizes", {})
-
-        for node in replacements.values():
-            shape = node.shape_metadata
-            is_dyn = bool(node.is_dynamic_shape) if isinstance(node, _DynamicShapeNodeProtocol) else False
-            if shape and not is_dyn:
-                if any(isinstance(d, str) for d in shape):
-                    continue
-
-                elements: int = 1
-                for dim in shape:
-                    elements *= max(1, _to_fusion_int(dim, 1))
-
-                dtype: str = str(node.attributes.get("dtype", "float32"))
-                dtype_size: int = 4
-                if isinstance(memory_sizes, dict):
-                    dtype_size = _to_fusion_int(memory_sizes.get(dtype, 4), 4)
-                total_mem += elements * dtype_size
-
-        return bool(total_mem <= max_memory)
-
-
-ELEMENTWISE_OPS: set[str] = {
-    "Add",
-    "Sub",
-    "Mul",
-    "Div",
-    "TrueDivide",
-    "Relu",
-    "Sigmoid",
-    "Neg",
-    "Abs",
-    "Exp",
-    "Log",
-    "Sqrt",
-    "Gelu",
-    "Silu",
-    "Tanh",
-    "Pow",
-    "Maximum",
-    "Minimum",
-}
-
-
-_SCALAR_EXPR_TEMPLATES: dict[str, str] = {
-    "add": "({a} + {b})",
-    "sub": "({a} - {b})",
-    "mul": "({a} * {b})",
-    "div": "({a} / {b})",
-    "truedivide": "({a} / {b})",
-    "relu": "fmaxf(0.0f, {a})",
-    "sigmoid": "(1.0f / (1.0f + expf(-{a})))",
-    "neg": "(-{a})",
-    "abs": "fabsf({a})",
-    "exp": "expf({a})",
-    "log": "logf({a})",
-    "sqrt": "sqrtf({a})",
-    "tanh": "tanhf({a})",
-    "gelu": "(0.5f * {a} * (1.0f + tanhf(0.79788456f * ({a} + 0.044715f * {a} * {a} * {a}))))",
-    "silu": "({a} / (1.0f + expf(-{a})))",
-    "maximum": "fmaxf({a}, {b})",
-    "minimum": "fminf({a}, {b})",
-}
-
-
-def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:
-    """Generate scalar expression snippet for an elementwise op.
-
-    Args:
-        op_type (str): Operation name.
-        args (list[str]): Input argument identifiers.
-
-    Returns:
-        str: C/C++ style scalar expression.
-    """
-    a = args[0] if args else "0.0f"
-    b = args[1] if len(args) > 1 else "0.0f"
-    template = _SCALAR_EXPR_TEMPLATES.get(op_type.lower())
-    return template.format(a=a, b=b) if template is not None else a
-
-
-def _extract_node_ops_and_expr(node: IRNode) -> tuple[list[str], str]:
-    """Extract the list of fused ops and scalar expression for an elementwise or fused node.
-
-    Args:
-        node (IRNode): Elementwise or FusedElementwise IR node.
-
-    Returns:
-        tuple[list[str], str]: List of constituent op names and scalar C expression string.
-    """
-    if node.op_type == "FusedElementwise":
-        raw_ops = node.attributes.get("fused_ops", [])
-        ops_list = [str(op) for op in raw_ops] if isinstance(raw_ops, (list, tuple)) else []
-        return ops_list, str(node.attributes.get("scalar_expr", "0.0f"))
-    args = [f"in_{k}" for k in range(len(node.inputs))]
-    return [node.op_type], _get_scalar_expression_snippet(node.op_type, args)
-
-
-def _fuse_single_edge(
-    graph: IRGraph,
-    node: IRNode,
-    inp_id: str,
-    inp_index: int,
-    producer: IRNode,
-) -> None:
-    """Fuse a single producer node into a consumer node.
-
-    Args:
-        graph (IRGraph): Target computation graph.
-        node (IRNode): Consumer node to fuse into.
-        inp_id (str): Producer node id to remove.
-        inp_index (int): Input slot index being replaced.
-        producer (IRNode): Producer node being inlined.
-    """
-    p_ops, p_expr = _extract_node_ops_and_expr(producer)
-    n_ops, n_expr = _extract_node_ops_and_expr(node)
-    fused_ops = p_ops + n_ops
-
-    new_inputs = list(node.inputs[:inp_index]) + list(producer.inputs) + list(node.inputs[inp_index + 1 :])
-    unique_inputs: list[str] = list(dict.fromkeys(new_inputs))
-
-    for k, p_in in enumerate(producer.inputs):
-        p_expr = p_expr.replace(f"in_{k}", f"in{unique_inputs.index(p_in)}")
-
-    for idx_in, inp in enumerate(node.inputs):
-        replacement = p_expr if idx_in == inp_index else f"in{unique_inputs.index(inp)}"
-        n_expr = n_expr.replace(f"in_{idx_in}", replacement)
-
-    fused_node = IRNode(
-        id=node.id,
-        op_type="FusedElementwise",
-        inputs=unique_inputs,
-        shape_metadata=node.shape_metadata,
-    )
-    fused_node.attributes = {
-        "fused_ops": fused_ops,
-        "scalar_expr": n_expr,
-    }
-
-    del graph.nodes[inp_id]
-    graph.nodes[node.id] = fused_node
-
-
-def _count_consumers(graph: IRGraph) -> dict[str, int]:
-    """Compute the number of downstream consumers for each node in the graph.
-
-    Args:
-        graph (IRGraph): The IR computation graph.
-
-    Returns:
-        dict[str, int]: Mapping from node ID to consumer reference count.
-    """
-    consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
-    for node in graph.nodes.values():
-        for inp in node.inputs:
-            if inp in consumer_counts:
-                consumer_counts[inp] += 1
-    graph_outputs = list(graph.outputs or [])
-    for out_id in graph_outputs:
-        if out_id in consumer_counts:
-            consumer_counts[out_id] += 1
-    return consumer_counts
-
-
-def _is_fusable_elementwise_node(node: IRNode | None) -> bool:
-    """Check whether a node is an elementwise or FusedElementwise operation.
-
-    Args:
-        node (IRNode | None): Node to check.
-
-    Returns:
-        bool: True if the node can participate in elementwise cluster fusion.
-    """
-    return node is not None and (node.op_type in ELEMENTWISE_OPS or node.op_type == "FusedElementwise")
-
-
-def _try_fuse_cluster_step(graph: IRGraph, consumer_counts: dict[str, int]) -> bool:
-    """Perform a single elementwise cluster fusion step if a valid edge exists.
-
-    Args:
-        graph (IRGraph): The computation graph to mutate.
-        consumer_counts (dict[str, int]): Reference counts per node ID.
-
-    Returns:
-        bool: True if a producer-consumer pair was fused, False otherwise.
-    """
-    for node in list(graph.nodes.values()):
-        if not _is_fusable_elementwise_node(node):
-            continue
-        for i, inp_id in enumerate(list(node.inputs)):
-            producer = graph.nodes.get(inp_id)
-            if not _is_fusable_elementwise_node(producer) or consumer_counts.get(inp_id, 0) != 1:
-                continue
-            assert producer is not None
-            p_shape = producer.shape_metadata
-            n_shape = node.shape_metadata
-            if p_shape and n_shape and p_shape != n_shape:
-                continue
-            _fuse_single_edge(graph, node, inp_id, i, producer)
-            return True
-    return False
-
-
-def _has_graph_nodes(graph: IRGraph) -> bool:
-    """Check if `graph` has a non-empty `nodes` mapping.
-
-    Args:
-        graph (IRGraph): Candidate IRGraph.
-
-    Returns:
-        bool: True if `graph.nodes` exists and is non-empty.
-    """
-    raw_graph: TensorOrScalar = graph
-    return isinstance(raw_graph, _GraphNodesProtocol) and bool(raw_graph.nodes)
-
-
-def fuse_elementwise_clusters(graph: IRGraph) -> bool:
-    """Fuse elementwise DAG clusters into composite FusedElementwise IR nodes.
-
-    Args:
-        graph (IRGraph): The IR computation graph to optimize.
-
-    Returns:
-        bool: True if any elementwise DAG clusters were fused, False otherwise.
-    """
-    if not _has_graph_nodes(graph):
-        return False
-
-    modified: bool = False
-    while _try_fuse_cluster_step(graph, _count_consumers(graph)):
-        modified = True
-
-    return modified
-
-
-def _find_conv_and_bias_inputs(
-    graph: IRGraph,
-    bias_node: IRNode,
-) -> tuple[str | None, str | None]:
-    """Identify the convolution input ID and bias tensor ID from a binary Add/BiasAdd node.
-
-    Args:
-        graph (IRGraph): The computation graph.
-        bias_node (IRNode): The binary Add or BiasAdd node.
-
-    Returns:
-        tuple[str | None, str | None]: (conv_node_id, bias_value_id) or (None, None).
-    """
-    for b_in in bias_node.inputs:
-        cand = graph.nodes.get(b_in)
-        if cand is not None and cand.op_type in ("Conv2D", "Conv", "Conv3D"):
-            remaining = [x for x in bias_node.inputs if x != b_in]
-            return b_in, (remaining[0] if remaining else None)
-    return None, None
-
-
-def _try_fuse_conv_bias_act_node(
-    graph: IRGraph,
-    act_node: IRNode,
-    consumer_counts: dict[str, int],
-) -> bool:
-    """Try fusing a single activation node with its preceding BiasAdd and Conv nodes.
-
-    Args:
-        graph (IRGraph): Target computation graph.
-        act_node (IRNode): Candidate activation node.
-        consumer_counts (dict[str, int]): Consumer counts map.
-
-    Returns:
-        bool: True if the Conv+Bias+Activation chain was fused, False otherwise.
-    """
-    if act_node.op_type not in ("Relu", "Gelu", "Silu", "Sigmoid", "Tanh") or len(act_node.inputs) != 1:
-        return False
-
-    bias_id = act_node.inputs[0]
-    bias_node = graph.nodes.get(bias_id)
-    if bias_node is None or bias_node.op_type not in ("Add", "BiasAdd") or len(bias_node.inputs) != 2:
-        return False
-    if consumer_counts.get(bias_id, 0) != 1:
-        return False
-
-    conv_id, bias_val_id = _find_conv_and_bias_inputs(graph, bias_node)
-    if conv_id is None or bias_val_id is None or consumer_counts.get(conv_id, 0) != 1:
-        return False
-
-    conv_node = graph.nodes[conv_id]
-    fused_attrs = dict(conv_node.attributes)
-    fused_attrs["activation"] = act_node.op_type
-    fused_attrs["has_bias"] = True
-
-    fused_node = IRNode(
-        id=act_node.id,
-        op_type=f"Fused{conv_node.op_type}Bias{act_node.op_type}",
-        inputs=list(conv_node.inputs) + [bias_val_id],
-        shape_metadata=act_node.shape_metadata,
-    )
-    fused_node.attributes = fused_attrs
-
-    del graph.nodes[conv_id]
-    del graph.nodes[bias_id]
-    graph.nodes[act_node.id] = fused_node
-    return True
-
-
-def fuse_conv_bias_relu(graph: IRGraph) -> bool:
-    """Fuse Conv2D/Conv + Add/BiasAdd + Relu/Activation sequences into FusedConv2DBiasRelu nodes.
-
-    Args:
-        graph (IRGraph): Target computation graph to optimize.
-
-    Returns:
-        bool: True if any Conv-Bias-Activation sequences were fused, False otherwise.
-    """
-    if not _has_graph_nodes(graph):
-        return False
-
-    modified: bool = False
-    changed: bool = True
-
-    while changed:
-        changed = False
-        consumer_counts = _count_consumers(graph)
-        for act_node in list(graph.nodes.values()):
-            if _try_fuse_conv_bias_act_node(graph, act_node, consumer_counts):
-                changed = True
-                modified = True
-                break
-
-    return modified
-
-
-def _try_fuse_elem_act_node(
-    graph: IRGraph,
-    act_node: IRNode,
-    consumer_counts: dict[str, int],
-) -> bool:
-    """Try fusing a single activation node with its preceding single-consumer elementwise node.
-
-    Args:
-        graph (IRGraph): Target computation graph.
-        act_node (IRNode): Candidate activation node.
-        consumer_counts (dict[str, int]): Consumer counts map.
-
-    Returns:
-        bool: True if fused, False otherwise.
-    """
-    if act_node.op_type not in ("Relu", "Gelu", "Silu", "Sigmoid", "Tanh") or len(act_node.inputs) != 1:
-        return False
-
-    elem_id = act_node.inputs[0]
-    elem_node = graph.nodes.get(elem_id)
-    if elem_node is None or elem_node.op_type not in ELEMENTWISE_OPS or consumer_counts.get(elem_id, 0) != 1:
-        return False
-
-    fused_node = IRNode(
-        id=act_node.id,
-        op_type=f"{elem_node.op_type}{act_node.op_type}",
-        inputs=list(elem_node.inputs),
-        shape_metadata=act_node.shape_metadata,
-    )
-    fused_node.attributes = {
-        "fused_ops": [elem_node.op_type, act_node.op_type],
-        "activation": act_node.op_type,
-    }
-    del graph.nodes[elem_id]
-    graph.nodes[act_node.id] = fused_node
-    return True
-
-
-def fuse_elementwise_activation(graph: IRGraph) -> bool:
-    """Fuse elementwise operations followed by single-consumer activations into fused nodes.
-
-    Args:
-        graph (IRGraph): Target computation graph to optimize.
-
-    Returns:
-        bool: True if any elementwise-activation patterns were fused, False otherwise.
-    """
-    if not _has_graph_nodes(graph):
-        return False
-
-    modified: bool = False
-    changed: bool = True
-
-    while changed:
-        changed = False
-        consumer_counts = _count_consumers(graph)
-        for act_node in list(graph.nodes.values()):
-            if _try_fuse_elem_act_node(graph, act_node, consumer_counts):
-                changed = True
-                modified = True
-                break
-
-    return modified
-
-
-class VerticalFusionPass:
-    """Vertical fusion pass merging sequential producer-consumer operation chains."""
-
-    def __init__(self) -> None:
-        """Initialize VerticalFusionPass."""
-        pass
-
-    def run(self, graph: IRGraph) -> bool:
-        """Run vertical fusion passes on the target graph.
-
-        Args:
-            graph (IRGraph): Target computation graph.
-
-        Returns:
-            bool: True if any vertical fusions were applied, False otherwise.
-        """
-        c_mod = fuse_conv_bias_relu(graph)
-        e_mod = fuse_elementwise_activation(graph)
-        return c_mod or e_mod
-
-
-def fuse_horizontal_patterns(graph: IRGraph) -> bool:
-    """Fuse sibling operations with identical inputs and compatible shapes into horizontal fused nodes.
-
-    Args:
-        graph (IRGraph): Target computation graph.
-
-    Returns:
-        bool: True if horizontal fusions were performed, False otherwise.
-    """
-    if not _has_graph_nodes(graph):
-        return False
-
-    modified: bool = False
-    changed: bool = True
-
-    while changed:
-        changed = False
-        groups: dict[tuple[str, ...], list[IRNode]] = {}
-        for node in graph.nodes.values():
-            if node.op_type in ("Input", "Constant", "HorizontalFusedOps", "TupleGetItem"):
-                continue
-            if node.inputs:
-                key = tuple(node.inputs)
-                groups.setdefault(key, []).append(node)
-
-        for _key, siblings in groups.items():
-            if len(siblings) >= 2:
-                first_shape = siblings[0].shape_metadata
-                compatible = [s for s in siblings if s.shape_metadata == first_shape and (s.op_type == siblings[0].op_type or (s.op_type in ELEMENTWISE_OPS and siblings[0].op_type in ELEMENTWISE_OPS))]
-                if len(compatible) >= 2:
-                    fused_id = f"horizontal_{'_'.join(s.id for s in compatible)}"
-                    fused_ops = [s.op_type for s in compatible]
-                    sibling_ids = [s.id for s in compatible]
-
-                    h_node = IRNode(
-                        id=fused_id,
-                        op_type="HorizontalFusedOps",
-                        inputs=list(compatible[0].inputs),
-                        shape_metadata=first_shape,
-                    )
-                    h_node.attributes = {
-                        "fused_ops": fused_ops,
-                        "sibling_ids": sibling_ids,
-                    }
-                    graph.nodes[fused_id] = h_node
-
-                    for idx, s in enumerate(compatible):
-                        extract_node = IRNode(
-                            id=s.id,
-                            op_type="TupleGetItem",
-                            inputs=[fused_id],
-                            shape_metadata=s.shape_metadata,
-                        )
-                        extract_node.attributes = {"index": idx}
-                        graph.nodes[s.id] = extract_node
-
-                    changed = True
-                    modified = True
-                    break
-
-    return modified
-
-
-class HorizontalFusionPass:
-    """Horizontal fusion pass merging sibling operations sharing identical inputs."""
-
-    def __init__(self) -> None:
-        """Initialize HorizontalFusionPass."""
-        pass
-
-    def run(self, graph: IRGraph) -> bool:
-        """Run horizontal fusion passes on the target graph.
-
-        Args:
-            graph (IRGraph): Target computation graph.
-
-        Returns:
-            bool: True if horizontal fusions were applied, False otherwise.
-        """
-        return fuse_horizontal_patterns(graph)
 
 
 def operator_fusion_pass(graph: IRGraph) -> bool:

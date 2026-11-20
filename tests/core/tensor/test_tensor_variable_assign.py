@@ -8,10 +8,10 @@ from unittest import mock
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import ArrayAt, ArrayAtIndexer, Parameter, Tensor, TensorConfig, Variable
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_array_at() -> None:
@@ -98,18 +98,18 @@ def test_parameter_index() -> None:
     """Test Parameter.__index__."""
     t_cfg = TensorConfig((), "int32", "cpu", False, True)
 
-    class MockData:
+    class MockData(MockTestStub):
         """Test class MockData."""
 
-        def numpy(self) -> EagerValue:
+        def numpy(self) -> BackendArg:
             """Test function numpy.
 
             Returns:
-                EagerValue: Computed output value from `numpy`.
+                BackendArg: Computed output value from `numpy`.
             """
             return 42
 
-    param = ensure_callable(Parameter)(ensure_callable(MockData)(), t_cfg)
+    param = Parameter(MockData(), t_cfg)
     # The __index__ calls self.numpy(), we need to mock numpy() for Parameter since it inherits from Tensor
     with mock.patch.object(param, "numpy", return_value=42):
         assert operator.index(param) == 42
@@ -126,12 +126,12 @@ def test_tensor_eval_not_tracing() -> None:
     """Test eval when not tracing but has proxy data."""
     t_cfg = TensorConfig((2, 2), "float32", "cpu", False, True)
 
-    class MockData:
+    class MockData(MockTestStub):
         """Test class MockData."""
 
         id = "mock_id"
 
-    t = ensure_callable(Tensor)(ensure_callable(MockData)(), t_cfg)
+    t = Tensor(MockData(), t_cfg)
 
     orig = config.eager_mode
     try:

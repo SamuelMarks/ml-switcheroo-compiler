@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import _needs_cast, type_promotion_explicitizer_pass
+from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
+    _needs_cast,
+    type_promotion_explicitizer_pass,
+)
 
 
 def test_type_promotion_explicitizer_mixed_types() -> None:

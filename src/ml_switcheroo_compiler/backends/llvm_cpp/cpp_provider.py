@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.llvm_cpp.config_models import CppOpConfig, CppTemplateConfig, CppTemplatesConfig
 
 _CPP_CONFIG: CppTemplatesConfig | None = None
@@ -107,7 +107,7 @@ def load_cpp_config() -> CppTemplatesConfig:
     return _CPP_CONFIG
 
 
-def get_cpp_template(template_name: str) -> dict[str, str | EagerValue]:
+def get_cpp_template(template_name: str) -> dict[str, str | BackendArg]:
     """Retrieve template dictionary by template identifier.
 
     Args:

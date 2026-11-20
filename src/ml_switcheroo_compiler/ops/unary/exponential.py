@@ -1,4 +1,4 @@
-"""Implementation of exponential operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.exponential`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.unary.exponential`."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.ops.base import register_op
 from .base import UnaryMathOp
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import TensorOrScalar
+    from ml_switcheroo_compiler.core.shape import OpValue
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
@@ -82,16 +82,16 @@ class NanToNum(UnaryMathOp):
 
     def __call__(
         self,
-        x: TensorOrScalar = None,
-        *args: TensorOrScalar,
-        **kwargs: TensorOrScalar,
+        x: OpValue = None,
+        *args: OpValue,
+        **kwargs: OpValue,
     ) -> Tensor:
         """Call NanToNum, filtering out the copy kwarg.
 
         Args:
-            x (TensorOrScalar): Input `input` argument (input).
-            *args (TensorOrScalar): Extra positional arguments.
-            **kwargs (TensorOrScalar): Keyword args.
+            x (OpValue): Input `input` argument (input).
+            *args (OpValue): Extra positional arguments.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             Tensor: Computed `Tensor` output.

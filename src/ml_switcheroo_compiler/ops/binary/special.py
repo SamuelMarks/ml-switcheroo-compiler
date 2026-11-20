@@ -1,36 +1,40 @@
-"""Define special binary operations for the ml_switcheroo_compiler framework, including element-wise trigonometric, division, and comparison operations."""
+"""Define special binary operations for the ml_switcheroo_compiler framework, including element-wise.
+
+trigonometric, division, and comparison operations.
+"""
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import ensure_shape
+from ml_switcheroo_compiler.backends.registry import coerce_shape
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.core.shape import extract_shape
-from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
-from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
+from ml_switcheroo_compiler.ops.base import MultiOutputOpDef, OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 
 
-def _infer_broadcast_shape(shapes: tuple[OpArgValue, ...]) -> tuple[int, ...]:
+def _infer_broadcast_shape(shapes: tuple[OpArgValue, ...]) -> tuple[int, ...] | None:
     """Infer broadcasted shape across input shapes or objects.
 
     Args:
         shapes: Tuple of input shape tuples or tensor-like objects.
 
     Returns:
-        tuple[int, ...]: Broadcasted output shape tuple.
+        tuple[int, ...] | None: Broadcasted output shape tuple, or `None` if any shape is unknown.
     """
+    if not shapes or any(s is None for s in shapes):
+        return None
     if all(isinstance(s, tuple) for s in shapes):
-        return _bs(*[ensure_shape(s) for s in shapes])
+        return _bs(*[coerce_shape(s) for s in shapes])
 
-    return extract_shape(shapes[0], ensure_shape(shapes[0]))
+    return extract_shape(shapes[0], coerce_shape(shapes[0]))
 
 
 @register_op("Atan2")
 class Atan2(OpDef):
     """Provide an operation class for computing the element-wise arc tangent of x/y."""
 
-    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
         """Infer the output shape of the Atan2 operation.
 
         Args:
@@ -38,17 +42,17 @@ class Atan2(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The broadcasted output shape.
+            tuple[int, ...] | None: The broadcasted output shape.
         """
         del kwargs
         return _infer_broadcast_shape(shapes)
 
 
 @register_op("Divmod")
-class Divmod(OpDef):
+class Divmod(MultiOutputOpDef):
     """Provide an operation class for computing element-wise quotient and remainder."""
 
-    def __call__(self, *args: OpArgValue, **kwargs: OpArgValue) -> Tensor:
+    def __call__(self, *args: OpArgValue, **kwargs: OpArgValue) -> OpArgValue:
         """Call Divmod.
 
         Args:
@@ -56,16 +60,16 @@ class Divmod(OpDef):
             **kwargs: Keyword arguments.
 
         Returns:
-            Tensor: Tuple of (quotient, remainder) tensors.
+            OpArgValue: Tuple of ``(quotient, remainder)`` tensors.
         """
         if config.eager_mode:
-            return ensure_tensor(EagerEvaluator.evaluate("Divmod", *args, **kwargs))
+            return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
 
         from ml_switcheroo_compiler.ops.binary import floor_divide, remainder
 
-        return ensure_tensor((floor_divide(*args, **kwargs), remainder(*args, **kwargs)))
+        return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
 
-    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
         """Infer the output shape of the Divmod operation.
 
         Args:
@@ -73,7 +77,7 @@ class Divmod(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The broadcasted output shape.
+            tuple[int, ...] | None: The broadcasted output shape.
         """
         del kwargs
         return _infer_broadcast_shape(shapes)
@@ -101,7 +105,7 @@ class Allclose(OpDef):
 class Isclose(OpDef):
     """Provide an operation class for checking element-wise equality within a tolerance."""
 
-    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...]:
+    def infer_shape(self, *shapes: OpArgValue, **kwargs: OpArgValue) -> tuple[int, ...] | None:
         """Infer the output shape of the Isclose operation.
 
         Args:
@@ -109,7 +113,7 @@ class Isclose(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The broadcasted output shape.
+            tuple[int, ...] | None: The broadcasted output shape.
         """
         del kwargs
         return _infer_broadcast_shape(shapes)

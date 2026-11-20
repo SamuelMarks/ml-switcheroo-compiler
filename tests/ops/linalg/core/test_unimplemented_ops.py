@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.ops.linalg as mod
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
 def test_linalg_dummy_ops_infer_shape() -> None:
     """Test function test_linalg_dummy_ops_infer_shape."""
 
-    class MockTensor:
+    class MockTensor(MockTestStub):
         """Test class MockTensor."""
 
         def __init__(self, shape: tuple[int, ...]) -> None:
@@ -31,9 +31,9 @@ def test_linalg_dummy_ops_infer_shape() -> None:
     vec = MockTensor((2, 3))
 
     # Test infer_shape with args
-    assert ensure_callable(mod.Vecdot)().infer_shape(t1, t2) == (2,)
-    assert ensure_callable(mod.CustomLinearSolve)().infer_shape(mat, vec) == (2, 3)
-    assert ensure_callable(mod.CustomRoot)().infer_shape(None, t1) == (2, 3)
+    assert mod.Vecdot().infer_shape(t1, t2) == (2,)
+    assert mod.CustomLinearSolve().infer_shape(mat, vec) == (2, 3)
+    assert mod.CustomRoot().infer_shape(None, t1) == (2, 3)
 
     # Test infer_shape without args (the missing branches)
     assert mod.Vecdot().infer_shape() == ()

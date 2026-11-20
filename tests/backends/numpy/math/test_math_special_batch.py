@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_adv
-from tests.testing_utils import ensure_eager_tensor
+import tests.backends.numpy.eager._math_advanced_test_ns as math_adv
 
 
 def test_math_misc_batch_1() -> None:
     """Verify numerical outputs of segment reductions, bit operations, and logsumexp."""
-    np_mod = ensure_eager_tensor(np)
+    np_mod = np
     seg = math_adv._np_segment_sum(np_mod, np.array([1.0, 2.0, 3.0, 4.0]), np.array([0, 0, 1, 1]))
     assert np.allclose(np.asarray(seg), np.array([3.0, 7.0]))
 

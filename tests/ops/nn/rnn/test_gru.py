@@ -1,110 +1,92 @@
-"""Tests for test_gru."""
+"""Behavioral tests for GRU cell arithmetic, shape inference, eager dispatch, and IR tracing."""
 
 from __future__ import annotations
 
-# ruff: noqa: E501
-import sys
-import typing
+import importlib
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.nn.gru import Gru, _sigmoid, gru, gru_cell
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
+from tests.testing_utils import ensure_tensor
 
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
+def test_gru_cell_sigmoid_and_shape_inference() -> None:
+    """Verify `gru_cell` gate computation (with and without bias), `_sigmoid`, and `Gru.infer_shape`."""
+    with ConfigContext(backend="numpy", eager_mode=True):
+        x = Tensor(np.zeros((2, 3), dtype=np.float32), TensorConfig((2, 3), DType.Float32, Device("cpu")))
+        state = Tensor(np.zeros((2, 2), dtype=np.float32), TensorConfig((2, 2), DType.Float32, Device("cpu")))
+        w = Tensor(np.zeros((3, 6), dtype=np.float32), TensorConfig((3, 6), DType.Float32, Device("cpu")))
+        rw = Tensor(np.zeros((2, 6), dtype=np.float32), TensorConfig((2, 6), DType.Float32, Device("cpu")))
+        b = Tensor(np.zeros((6,), dtype=np.float32), TensorConfig((6,), DType.Float32, Device("cpu")))
+
+        res_bias = gru_cell(x, state, w, rw, b)
+        assert isinstance(res_bias, tuple)
+        out_bias = ensure_tensor(res_bias[0])
+        st_bias = ensure_tensor(res_bias[1])
+        assert out_bias.shape == (2, 2)
+        np.testing.assert_allclose(np.asarray(out_bias.data), np.zeros((2, 2), dtype=np.float32))
+        assert st_bias is out_bias
+
+        res_nobias = gru_cell(x, state, w, rw)
+        assert isinstance(res_nobias, tuple)
+        out_nobias = ensure_tensor(res_nobias[0])
+        st_nobias = ensure_tensor(res_nobias[1])
+        assert out_nobias.shape == (2, 2)
+        np.testing.assert_allclose(np.asarray(out_nobias.data), np.zeros((2, 2), dtype=np.float32))
+        assert st_nobias is out_nobias
+
+        sig_zero = _sigmoid(x)
+        np.testing.assert_allclose(np.asarray(sig_zero.data), np.full((2, 3), 0.5, dtype=np.float32))
+
+    gru_op = Gru()
+    assert gru_op.infer_shape(x) is x
+    assert gru_op.infer_shape() == ()
 
 
-def test_gru_coverage() -> None:
-    """Test function test_gru_coverage."""
-    config.eager_mode = True
-    t_in = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-    t_state = Tensor(np.ones((1, 4)), TensorConfig(shape=(1, 4), dtype=DType("float32"), device=Device("cpu")))
-    w = Tensor(np.ones((2, 12)), TensorConfig(shape=(2, 12), dtype=DType("float32"), device=Device("cpu")))
-    rw = Tensor(np.ones((4, 12)), TensorConfig(shape=(4, 12), dtype=DType("float32"), device=Device("cpu")))
-    b = Tensor(np.ones((12,)), TensorConfig(shape=(12,), dtype=DType("float32"), device=Device("cpu")))
+def test_gru_eager_and_symbolic_tracing_ir_emission() -> None:
+    """Verify `gru` dispatches eagerly and emits canonical `Gru` `LogicalNode`s when traced."""
+    t_in = Tensor(np.ones((2, 3), dtype=np.float32), TensorConfig((2, 3), DType.Float32, Device("cpu")))
 
-    def mock_matmul(*args: EagerValue) -> EagerValue:
-        """Test function mock_matmul.
+    gru_module = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
+    backend = MagicMock()
+    backend.execute_op.return_value = np.ones((2, 3), dtype=np.float32)
+    with (
+        ConfigContext(eager_mode=True),
+        patch.object(gru_module, "get_active_backend", return_value=backend),
+    ):
+        eager_res = gru(t_in)
+        np.testing.assert_allclose(np.asarray(eager_res), np.ones((2, 3), dtype=np.float32))
+        assert backend.execute_op.call_count == 1
+        assert backend.execute_op.call_args[0][0] == "Gru"
+        assert backend.execute_op.call_args[0][1] is t_in.data
 
-        Args:
-            args: Test parameter `args`.
+    t_sym = Tensor(
+        ProxyTensor("gru_in", (2, 3), "float64"),
+        TensorConfig((2, 3), DType.Float64, Device("cpu")),
+    )
+    with ConfigContext(eager_mode=False):
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("gru_trace")
+        try:
+            out_tensor = gru(t_sym)
+            out_scalar = gru("raw_non_tensor")
+        finally:
+            tape.stop_tracing()
 
-        Returns:
-            EagerValue: Computed output value from `mock_matmul`.
-        """
-        return Tensor(np.ones((1, 12)), TensorConfig(shape=(1, 12), dtype=DType("float32"), device=Device("cpu")))
+    assert isinstance(out_tensor, Tensor)
+    assert out_tensor.shape == (2, 3)
+    assert out_tensor.dtype == DType.Float64
 
-    def mock_gates(*args: EagerValue) -> EagerValue:
-        """Test function mock_gates.
+    out_scalar_t = ensure_tensor(out_scalar)
+    assert out_scalar_t.shape == ()
+    assert out_scalar_t.dtype == DType.Float32
 
-        Args:
-            args: Test parameter `args`.
-
-        Returns:
-            EagerValue: Computed output value from `mock_gates`.
-        """
-        return "hidden"
-
-    orig_matmul = gru_mod.matmul
-    orig_gates = gru_mod._compute_gru_gates
-    ensure_mutable(gru_mod).matmul = ensure_eager_tensor(mock_matmul)
-    ensure_mutable(gru_mod)._compute_gru_gates = ensure_eager_tensor(mock_gates)
-    try:
-        res = gru_mod.gru_cell(t_in, t_state, w, rw, b)
-        assert res == ("hidden", "hidden")
-        res = gru_mod.gru_cell(t_in, t_state, w, rw)
-        assert res == ("hidden", "hidden")
-    finally:
-        ensure_mutable(gru_mod).matmul = ensure_eager_tensor(orig_matmul)
-        ensure_mutable(gru_mod)._compute_gru_gates = ensure_eager_tensor(orig_gates)
-
-    assert gru_mod.Gru().infer_shape(t_in) is t_in
-    assert gru_mod.Gru().infer_shape() == ()
-
-    class MockBackend:
-        """Test class MockBackend."""
-
-        def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-            """Test function execute_op.
-
-            Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
-
-            Returns:
-                EagerValue: Computed output value from `execute_op`.
-            """
-            return "gru_res"
-
-    orig_backend = gru_mod.get_active_backend
-    ensure_mutable(gru_mod).get_active_backend = ensure_eager_tensor(lambda: MockBackend())
-    try:
-        assert gru_mod.gru(t_in) == "gru_res"
-    finally:
-        ensure_mutable(gru_mod).get_active_backend = ensure_eager_tensor(orig_backend)
-
-    config.eager_mode = False
-    orig_emit = gru_mod._emit_shape_node
-
-    def dummy_emit(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function dummy_emit.
-
-        Args:
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-
-        Returns:
-            EagerValue: Computed output value from `dummy_emit`.
-        """
-        return "emitted"
-
-    ensure_mutable(gru_mod)._emit_shape_node = ensure_eager_tensor(dummy_emit)
-    try:
-        assert gru_mod.gru(t_in) == "emitted"
-    finally:
-        ensure_mutable(gru_mod)._emit_shape_node = ensure_eager_tensor(orig_emit)
-        config.eager_mode = True
+    gru_nodes = [n for n in traced_graph.nodes.values() if n.op_type == "Gru"]
+    assert len(gru_nodes) == 2
+    assert any(n.inputs == ["gru_in"] and n.shape_metadata == (2, 3) for n in gru_nodes)

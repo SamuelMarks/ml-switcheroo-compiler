@@ -6,18 +6,10 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.ir.shape_system import (
-    SymBinaryOp,
-    SymConst,
-    SymNode,
-    SymPiecewise,
-    SymUnaryOp,
-    SymVar,
-)
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.ir.shape_system import SymBinaryOp, SymConst, SymNode, SymPiecewise, SymUnaryOp, SymVar
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 def test_non_polynomial_operators_evaluation() -> None:
@@ -135,32 +127,34 @@ def test_unary_operations_and_piecewise() -> None:
         SymUnaryOp("invalid_op", SymConst(1)).eval({})
 
     # SymPiecewise conditional nodes
-    def cond_1(env: EagerValue) -> EagerValue:
+    from collections.abc import Mapping
+
+    def cond_1(env: Mapping[str, int]) -> bool:
         """Check if x > 10.
 
         Args:
             env: Test parameter `env`.
 
         Returns:
-            EagerValue: Computed output value from `cond_1`.
+            bool: Computed output value from `cond_1`.
         """
-        return ensure_eager_tensor(ensure_eager_tensor(env)["x"] > 10)
+        return env["x"] > 10
 
-    def cond_2(env: EagerValue) -> EagerValue:
+    def cond_2(env: Mapping[str, int]) -> bool:
         """Check if x > 0.
 
         Args:
             env: Test parameter `env`.
 
         Returns:
-            EagerValue: Computed output value from `cond_2`.
+            bool: Computed output value from `cond_2`.
         """
-        return ensure_eager_tensor(ensure_eager_tensor(env)["x"] > 0)
+        return env["x"] > 0
 
-    piecewise = ensure_callable(SymPiecewise)(
+    piecewise = SymPiecewise(
         cases=[
-            (cond_1, ensure_callable(SymConst)(100)),
-            (cond_2, ensure_callable(SymConst)(50)),
+            (cond_1, SymConst(100)),
+            (cond_2, SymConst(50)),
         ],
         default=SymConst(0),
     )

@@ -15,7 +15,6 @@ from ml_switcheroo_compiler.ops.control_flow.tracing import while_loop_tracing
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, set_loop_options
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -23,16 +22,16 @@ if typing.TYPE_CHECKING:
 
 def test_loop_options_init_and_context_manager() -> None:
     """Test LoopOptions initialization and context manager state restoration."""
-    opts1 = ensure_callable(LoopOptions)(
+    opts1 = LoopOptions(
         parallel_iterations=8,
         swap_memory=True,
         maximum_iterations=64,
         shape_invariants=[(10, 20)],
     )
-    assert ensure_eager_tensor(opts1.parallel_iterations) == 8
+    assert opts1.parallel_iterations == 8
     assert bool(opts1.swap_memory) is True
-    assert ensure_eager_tensor(opts1.maximum_iterations) == 64
-    assert ensure_eager_tensor(opts1.shape_invariants) == [(10, 20)]
+    assert opts1.maximum_iterations == 64
+    assert opts1.shape_invariants == [(10, 20)]
 
     opts2 = LoopOptions(
         parallel_iterations=4,
@@ -41,31 +40,40 @@ def test_loop_options_init_and_context_manager() -> None:
         shape_invariants=None,
     )
 
-    assert ensure_eager_tensor(global_tracing_state.current_loop_options) is None
+    def cur_opts() -> LoopOptions | None:
+        """Read current loop options from global tracing state.
+
+        Returns:
+            LoopOptions | None: Active loop options.
+        """
+        opts_cur = global_tracing_state.current_loop_options
+        return opts_cur if isinstance(opts_cur, LoopOptions) else None
+
+    assert cur_opts() is None
 
     with opts1:
-        assert ensure_eager_tensor(global_tracing_state.current_loop_options) is opts1
+        assert cur_opts() is opts1
         with opts2:
-            assert global_tracing_state.current_loop_options is opts2
-        assert ensure_eager_tensor(global_tracing_state.current_loop_options) is opts1
+            assert cur_opts() is opts2
+        assert cur_opts() is opts1
 
-    assert global_tracing_state.current_loop_options is None
+    assert cur_opts() is None
 
 
 def test_set_loop_options_injection_on_active_graph() -> None:
     """Test that set_loop_options injects options into active LogicalGraph."""
     graph = global_tracing_state.start_tracing("test_loop_options_graph")
     try:
-        ensure_mutable(graph).metadata = ensure_eager_tensor({})
-        opts = ensure_callable(set_loop_options)(
+        graph.metadata = {}
+        opts = set_loop_options(
             parallel_iterations=16,
             swap_memory=True,
             maximum_iterations=128,
             shape_invariants=[(32, 64)],
         )
         assert id(global_tracing_state.current_loop_options) == id(opts)
-        assert ensure_eager_tensor(graph).loop_options is opts
-        assert ensure_eager_tensor(ensure_eager_tensor(graph).metadata)["loop_options"] is opts
+        assert graph.loop_options is opts
+        assert graph.metadata["loop_options"] is opts
 
         loop_node = LogicalNode(
             id="while_loop_1",
@@ -79,14 +87,14 @@ def test_set_loop_options_injection_on_active_graph() -> None:
         assert loop_node.attributes["swap_memory"] is True
         assert loop_node.attributes["maximum_iterations"] == 128
         assert loop_node.attributes["shape_invariants"] == [(32, 64)]
-        assert id(ensure_eager_tensor(loop_node.attributes["loop_options"])) == id(opts)
+        assert id(loop_node.attributes["loop_options"]) == id(opts)
 
         with LoopOptions(parallel_iterations=32, maximum_iterations=256) as inner_opts:
-            assert id(ensure_eager_tensor(graph).loop_options) == id(inner_opts)
-            assert id(ensure_eager_tensor(ensure_eager_tensor(graph).metadata)["loop_options"]) == id(inner_opts)
+            assert id(graph.loop_options) == id(inner_opts)
+            assert id(graph.metadata["loop_options"]) == id(inner_opts)
 
-        assert id(ensure_eager_tensor(graph).loop_options) == id(opts)
-        assert id(ensure_eager_tensor(ensure_eager_tensor(graph).metadata)["loop_options"]) == id(opts)
+        assert id(graph.loop_options) == id(opts)
+        assert id(graph.metadata["loop_options"]) == id(opts)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -96,7 +104,8 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     graph_no_meta = global_tracing_state.start_tracing("test_no_meta")
     try:
         with LoopOptions(parallel_iterations=2):
-            assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(graph_no_meta).loop_options).parallel_iterations) == 2
+            assert isinstance(graph_no_meta.loop_options, LoopOptions)
+            assert graph_no_meta.loop_options.parallel_iterations == 2
     finally:
         global_tracing_state.stop_tracing()
 
@@ -105,7 +114,7 @@ def test_while_loop_tracing_with_loop_options() -> None:
     """Test that while_loop_tracing attaches active loop options to the resulting Loop node."""
     global_tracing_state.start_tracing("test_while_loop_trace")
     try:
-        ensure_callable(set_loop_options)(
+        set_loop_options(
             parallel_iterations=4,
             swap_memory=True,
             maximum_iterations=50,

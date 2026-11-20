@@ -1,4 +1,4 @@
-"""Tests for test_solvers."""
+"""Tests for consolidated linear solver operations (`ml_switcheroo_compiler.ops.linalg.solvers`)."""
 
 from __future__ import annotations
 
@@ -9,33 +9,36 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.linalg.solvers as mod
 from ml_switcheroo_compiler.core.config import config
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.ops.linalg.decompositions.inv import Pinv
+from ml_switcheroo_compiler.ops.linalg.decompositions.norms import MatrixNorm, Svdvals, VectorNorm
+from ml_switcheroo_compiler.ops.linalg.products import EighTridiagonal, Sqrtm
+from tests.testing_utils import EagerTensorProtocol, MockTensorStub, coerce_int_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
 
 
-class DummyTensor:
-    """Test class DummyTensor."""
+class DummyTensor(MockTensorStub):
+    """Lightweight mock tensor with shape, data, dtype, and device attributes."""
 
-    def __init__(self, shape: EagerValue) -> None:
-        """Test function __init__.
+    def __init__(self, shape: BackendArg) -> None:
+        """Initialize dummy tensor.
 
         Args:
-            shape: Test parameter `shape`.
+            shape: Shape tuple for the mock tensor.
         """
         self.shape = shape
-        self.data = ensure_callable(np.zeros)(shape)
+        self.data = np.zeros(coerce_int_list(shape))
         self.dtype = "float32"
         self.device = None
 
 
 @patch("ml_switcheroo_compiler.ops.linalg.solvers._emit_linalg_node")
 def test_solvers_tracing(mock_emit: EagerTensorProtocol) -> None:
-    """Test function test_solvers_tracing.
+    """Verify symbolic graph emission across all consolidated solver functions.
 
     Args:
-        mock_emit: Test parameter `mock_emit`.
+        mock_emit: Mocked `_emit_linalg_node` callable.
     """
     config.eager_mode = False
 
@@ -44,42 +47,40 @@ def test_solvers_tracing(mock_emit: EagerTensorProtocol) -> None:
     c = DummyTensor((2,))
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.CholeskySolve.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.cholesky_solve)(a, b)
+        mod.cholesky_solve(a, b)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.BandedTriangularSolve.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.banded_triangular_solve)(a, b)
+        mod.banded_triangular_solve(a, b)
 
-    ensure_callable(mod.conjugate_gradient)(a, b)
+    assert mod.conjugate_gradient(a, b) is b
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.Lstsq.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.lstsq)(a, b)
-
-    ensure_callable(mod.lu)(a)
+        mod.lstsq(a, b)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.LuMatrixInverse.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.lu_matrix_inverse)(a, b)
+        mod.lu_matrix_inverse(a, b)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.LuReconstruct.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.lu_reconstruct)(a, b)
+        mod.lu_reconstruct(a, b)
 
-    ensure_callable(mod.lu_solve)(a, b, c)
+    mod.lu_solve((a, b), c)
 
-    with patch("ml_switcheroo_compiler.ops.linalg.decompositions.solvers.TriangularSolve.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.triangular_solve)(a, b)
+    with patch("ml_switcheroo_compiler.ops.linalg.solvers.TriangularSolve.infer_shape", return_value=(2, 2)):
+        mod.triangular_solve(a, b)
 
-    ensure_callable(mod.tridiagonal_solve)(a, b)
+    mod.tridiagonal_solve(c, c, c, c)
 
-    ensure_callable(mod.tensorinv)(a)
-    ensure_callable(mod.tensorsolve)(a, b)
+    mod.tensorinv(a)
+    mod.tensorsolve(a, b)
     assert c.shape == (2,)
 
 
 @patch("ml_switcheroo_compiler.ops.linalg.solvers.get_active_backend")
 def test_solvers_eager(mock_get_backend: EagerTensorProtocol) -> None:
-    """Test function test_solvers_eager.
+    """Verify eager backend dispatch across consolidated solver functions.
 
     Args:
-        mock_get_backend: Test parameter `mock_get_backend`.
+        mock_get_backend: Mocked `get_active_backend` callable.
     """
     config.eager_mode = True
 
@@ -87,84 +88,76 @@ def test_solvers_eager(mock_get_backend: EagerTensorProtocol) -> None:
     mock_backend.execute_op.return_value = np.zeros((2, 2))
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
-    ensure_mutable(mock_get_backend).return_value = ensure_eager_tensor(mock_backend)
+    mock_get_backend.return_value = mock_backend
 
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
     c = DummyTensor((2,))
 
-    ensure_callable(mod.cholesky_solve)(a, b)
-    ensure_callable(mod.banded_triangular_solve)(a, b)
+    mod.cholesky_solve(a, b)
+    mod.banded_triangular_solve(a, b)
 
-    ensure_callable(mod.lstsq)(a, b)
+    mod.lstsq(a, b)
     mock_backend.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-    ensure_callable(mod.lstsq)(a, b)
+    mod.lstsq(a, b)
     mock_backend.execute_op.return_value = np.zeros((2, 2))
 
-    ensure_callable(mod.lu_matrix_inverse)(a, b)
-    ensure_callable(mod.lu_reconstruct)(a, b)
-    ensure_callable(mod.triangular_solve)(a, b)
-    ensure_callable(mod.tensorinv)(a)
-    ensure_callable(mod.tensorsolve)(a, b)
+    mod.lu_matrix_inverse(a, b)
+    mod.lu_reconstruct(a, b)
+    mod.triangular_solve(a, b)
+    mod.tensorinv(a)
+    mod.tensorsolve(a, b)
 
     config.eager_mode = False
     assert c.shape == (2,)
 
 
 def test_solvers_opdefs() -> None:
-    # Lstsq
-    """Test function test_solvers_opdefs."""
+    """Verify `infer_shape` across solver, inverse, norm, and eigensolver `OpDef` classes."""
     op1 = mod.Lstsq()
-    assert ensure_callable(op1.infer_shape)(ensure_callable(DummyTensor)((2, 2)), ensure_callable(DummyTensor)((2,))) == (2,)
-    assert ensure_callable(op1.infer_shape)(ensure_callable(DummyTensor)((2, 2)), ensure_callable(DummyTensor)((2, 2))) == (2, 2)
+    assert op1.infer_shape(DummyTensor((2, 2)), DummyTensor((2,))) == (2,)
+    assert op1.infer_shape(DummyTensor((2, 2)), DummyTensor((2, 2))) == (2, 2)
 
-    # Pinv
-    op2 = mod.Pinv()
-    assert ensure_callable(op2.infer_shape)(ensure_callable(DummyTensor)((2, 3))) == (3, 2)
-    assert ensure_callable(op2.infer_shape)(ensure_callable(DummyTensor)((2,))) == (2,)
-    assert ensure_callable(op2.infer_shape)("not_tensor") == ()
+    op2 = Pinv()
+    assert op2.infer_shape(DummyTensor((2, 3))) == (3, 2)
+    assert op2.infer_shape(DummyTensor((2,))) == (2,)
+    assert op2.infer_shape("not_tensor") == ()
 
-    # Sqrtm
-    op3 = mod.Sqrtm()
-    assert ensure_callable(op3.infer_shape)(ensure_callable(DummyTensor)((2, 2))) == (2, 2)
+    op3 = Sqrtm()
+    assert op3.infer_shape(DummyTensor((2, 2))) == (2, 2)
 
-    # CholeskySolve
     op4 = mod.CholeskySolve()
-    assert ensure_callable(op4.infer_shape)(ensure_callable(DummyTensor)((2, 2)), ensure_callable(DummyTensor)((2,))) == (2,)
+    assert op4.infer_shape(DummyTensor((2, 2)), DummyTensor((2,))) == (2,)
 
-    # BandedTriangularSolve
     op5 = mod.BandedTriangularSolve()
-    assert ensure_callable(op5.infer_shape)(ensure_callable(DummyTensor)((2, 2)), ensure_callable(DummyTensor)((2,))) == (2,)
+    assert op5.infer_shape(DummyTensor((2, 2)), DummyTensor((2,))) == (2,)
 
-    # EighTridiagonal
-    op6 = mod.EighTridiagonal()
-    assert ensure_callable(op6.infer_shape)(ensure_callable(DummyTensor)((2,)), ensure_callable(DummyTensor)((1,))) == ((2,), [2, 2])
+    op6 = EighTridiagonal()
+    assert op6.infer_shape(DummyTensor((2,)), DummyTensor((1,))) == (
+        (2,),
+        [2, 2],
+    )
 
-    # MatrixNorm
-    op7 = mod.MatrixNorm()
-    assert ensure_callable(op7.infer_shape)(ensure_callable(DummyTensor)((2, 2))) == ()
+    op7 = MatrixNorm()
+    assert op7.infer_shape(DummyTensor((2, 2))) == ()
+    assert op7.infer_shape() == ()
 
-    # VectorNorm
-    op8 = mod.VectorNorm()
-    assert ensure_callable(op8.infer_shape)(ensure_callable(DummyTensor)((2,))) == ()
+    op8 = VectorNorm()
+    assert op8.infer_shape(DummyTensor((2,))) == ()
+    assert op8.infer_shape() == ()
 
-    # Svdvals
-    op9 = mod.Svdvals()
-    assert ensure_callable(op9.infer_shape)(ensure_callable(DummyTensor)((2, 2))) == (2,)
-    assert ensure_callable(op9.infer_shape)(ensure_callable(DummyTensor)((2,))) == ()
+    op9 = Svdvals()
+    assert op9.infer_shape(DummyTensor((2, 2))) == (2,)
+    assert op9.infer_shape(DummyTensor((2,))) == ()
 
-    # Tensorinv
     op10 = mod.Tensorinv()
-    assert ensure_callable(op10.infer_shape)(ensure_callable(DummyTensor)((2, 2))) == (2, 2)
+    assert op10.infer_shape(DummyTensor((2, 2))) == (2, 2)
 
-    # Tensorsolve
     op11 = mod.Tensorsolve()
-    assert ensure_callable(op11.infer_shape)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(DummyTensor)((2,))) == (2, 2)
+    assert op11.infer_shape(DummyTensor((2, 2, 2)), DummyTensor((2,))) == (2, 2)
 
-    # LuMatrixInverse
     op12 = mod.LuMatrixInverse()
-    assert ensure_callable(op12.infer_shape)(ensure_callable(DummyTensor)((2, 2)), ensure_callable(DummyTensor)((2,))) == (2, 2)
+    assert op12.infer_shape(DummyTensor((2, 2)), DummyTensor((2,))) == (2, 2)
 
-    # LuReconstruct
     op13 = mod.LuReconstruct()
-    assert ensure_callable(op13.infer_shape)(ensure_callable(DummyTensor)((2, 2)), ensure_callable(DummyTensor)((2,))) == (2, 2)
+    assert op13.infer_shape(DummyTensor((2, 2)), DummyTensor((2,))) == (2, 2)

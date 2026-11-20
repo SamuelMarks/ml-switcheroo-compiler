@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockNodeStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -14,19 +14,23 @@ def test_loop_unrolling_missing_coverage() -> None:
     """Test function test_loop_unrolling_missing_coverage."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_ir import IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.transforms.passes.loop_unrolling import _load_config, detect_static_bound, unroll_loops
 
     with patch("os.path.exists", return_value=False):
         assert _load_config() == {}
 
-    class MockNode:
+    class MockNode(MockNodeStub):
         """Test class MockNode."""
 
-        op_type = "Add"
-        id = "mock"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.op_type = "Add"
+            self.id = "mock"
 
-    assert ensure_callable(detect_static_bound)(ensure_callable(MockNode)(), []) is None
+    assert detect_static_bound(MockNode(), []) is None
 
     g = IRGraph()
     n1 = LogicalNode(id="n1", op_type="Add")
@@ -37,7 +41,8 @@ def test_loop_unrolling_missing_coverage() -> None:
 
 def test_clone_subgraph_coverage() -> None:
     """Test function test_clone_subgraph_coverage."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_ir import IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.transforms.passes.loop_unrolling import clone_subgraph
 
     g = IRGraph()

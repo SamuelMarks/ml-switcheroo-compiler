@@ -5,17 +5,17 @@ from __future__ import annotations
 import os
 import struct
 import typing
+from pathlib import Path
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def test_export_mlirbc(tmp_path: EagerTensorProtocol) -> None:
+def test_export_mlirbc(tmp_path: Path) -> None:
     """Test function test_export_mlirbc.
 
     Args:

@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import typing
+from collections.abc import Mapping
 
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 def test_base_format() -> None:
@@ -18,31 +14,31 @@ def test_base_format() -> None:
     class DummyLoader(WeightLoader):
         """Test class DummyLoader."""
 
-        def load(self, filepath: EagerValue) -> dict[str, TensorLike]:
+        def load(self, filepath: str) -> Mapping[str, OpValue]:
             """Test function load.
 
             Args:
                 filepath: Test parameter `filepath`.
 
             Returns:
-                dict[str, TensorLike]: Computed output value from `load`.
+                Mapping[str, OpValue]: Computed output value from `load`.
             """
-            return ensure_tensor_dict(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).load))(filepath))
+            return WeightLoader.load(self, filepath)
 
     class DummySaver(WeightSaver):
         """Test class DummySaver."""
 
-        def save(self, weights_np: EagerValue, filepath: EagerValue) -> None:
+        def save(self, weights_np: Mapping[str, OpValue], filepath: str) -> None:
             """Test function save.
 
             Args:
                 weights_np: Test parameter `weights_np`.
                 filepath: Test parameter `filepath`.
             """
-            _ = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).save))(weights_np, filepath)
+            WeightSaver.save(self, weights_np, filepath)
 
     assert DummyLoader().load("dummy") is None
-    assert ensure_callable(DummySaver)().save({}, "dummy") is None
+    DummySaver().save({}, "dummy")
 
 
 def test_base_format_coverage() -> None:
@@ -51,28 +47,28 @@ def test_base_format_coverage() -> None:
     class DummyLoader(WeightLoader):
         """Test class DummyLoader."""
 
-        def load(self, filepath: EagerValue) -> dict[str, TensorLike]:
+        def load(self, filepath: str) -> Mapping[str, OpValue]:
             """Test function load.
 
             Args:
                 filepath: Test parameter `filepath`.
 
             Returns:
-                dict[str, TensorLike]: Computed output value from `load`.
+                Mapping[str, OpValue]: Computed output value from `load`.
             """
-            return ensure_tensor_dict(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).load))(filepath))
+            return WeightLoader.load(self, filepath)
 
     class DummySaver(WeightSaver):
         """Test class DummySaver."""
 
-        def save(self, weights_np: EagerValue, filepath: EagerValue) -> None:
+        def save(self, weights_np: Mapping[str, OpValue], filepath: str) -> None:
             """Test function save.
 
             Args:
                 weights_np: Test parameter `weights_np`.
                 filepath: Test parameter `filepath`.
             """
-            _ = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).save))(weights_np, filepath)
+            WeightSaver.save(self, weights_np, filepath)
 
-    assert ensure_callable(DummySaver)().save({}, "test.txt") is None
+    DummySaver().save({}, "test.txt")
     assert DummyLoader().load("test.txt") is None

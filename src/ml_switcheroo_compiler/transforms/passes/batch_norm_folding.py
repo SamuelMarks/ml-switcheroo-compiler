@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import uuid
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 

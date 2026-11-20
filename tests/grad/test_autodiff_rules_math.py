@@ -11,14 +11,13 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 # Helper to avoid repetitive tensor creation
-def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
+def make_tensor(val: BackendArg, shape: tuple[int, ...] | None = None) -> Tensor:
     """Test function make_tensor.
 
     Args:
@@ -26,22 +25,52 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
         shape: Test parameter `shape`.
 
     Returns:
-        EagerValue: Computed output value from `make_tensor`.
+        Tensor: Computed output value from `make_tensor`.
     """
-    val = np.array(val, dtype=np.float32)
-    if shape is None:
-        shape = val.shape
-    return ensure_callable(Tensor)(val, ensure_callable(TensorConfig)(shape, DType.Float32, ensure_callable(Device)("cpu")))
+    arr = np.array(val, dtype=np.float32)
+    resolved_shape: tuple[int, ...] = shape if shape is not None else arr.shape
+    return Tensor(arr, TensorConfig(resolved_shape, DType.Float32, Device("cpu")))
 
 
 def test_unary_math_rules() -> None:
     """Test function test_unary_math_rules."""
-    ops = ["Abs", "Acos", "Acosh", "Asin", "Asinh", "Atan", "Atanh", "BitwiseNot", "Ceil", "Cos", "Cosh", "Erf", "Exp", "Expm1", "Floor", "IsInf", "IsNaN", "Log", "Log1p", "LogicalNot", "Negative", "Round", "Rsqrt", "Sign", "Sin", "Sinh", "Sqrt", "Square", "Tan", "Tanh"]
+    ops = [
+        "Abs",
+        "Acos",
+        "Acosh",
+        "Asin",
+        "Asinh",
+        "Atan",
+        "Atanh",
+        "BitwiseNot",
+        "Ceil",
+        "Cos",
+        "Cosh",
+        "Erf",
+        "Exp",
+        "Expm1",
+        "Floor",
+        "IsInf",
+        "IsNaN",
+        "Log",
+        "Log1p",
+        "LogicalNot",
+        "Negative",
+        "Round",
+        "Rsqrt",
+        "Sign",
+        "Sin",
+        "Sinh",
+        "Sqrt",
+        "Square",
+        "Tan",
+        "Tanh",
+    ]
 
     # We just want to make sure the registry has a rule and it executes without crashing
     for op in ops:
 
-        def f(x: EagerValue, op_bound: EagerValue = op) -> EagerValue:
+        def f(x: BackendArg, op_bound: str = op) -> BackendArg:
             """Test function f.
 
             Args:
@@ -49,16 +78,16 @@ def test_unary_math_rules() -> None:
                 op_bound: Test parameter `op_bound`.
 
             Returns:
-                EagerValue: Computed output value from `f`.
+                BackendArg: Computed output value from `f`.
             """
-            return ensure_callable(dispatch_op)(op_bound, x)
+            return dispatch_op(op_bound, x)
 
         x = make_tensor([0.5, 0.5])
         cot = make_tensor([1.0, 1.0])
         try:
-            out, vjp_fn = ensure_callable(vjp)(f, x)
-            grads = ensure_callable(vjp_fn)(cot)
-            assert ensure_callable(len)(grads) == 1
+            out, vjp_fn = vjp(f, x)
+            grads = vjp_fn(cot)
+            assert len(grads) == 1
         except Exception as e:
             # Catching exceptions allows us to see which ones are actually missing vs which crash
             print(f"Failed {op}: {e}")
@@ -95,7 +124,7 @@ def test_binary_math_rules() -> None:
 
     for op in ops:
 
-        def f(x: EagerValue, y: EagerValue, op_bound: EagerValue = op) -> EagerValue:
+        def f(x: BackendArg, y: BackendArg, op_bound: str = op) -> BackendArg:
             """Test function f.
 
             Args:
@@ -104,16 +133,16 @@ def test_binary_math_rules() -> None:
                 op_bound: Test parameter `op_bound`.
 
             Returns:
-                EagerValue: Computed output value from `f`.
+                BackendArg: Computed output value from `f`.
             """
-            return ensure_callable(dispatch_op)(op_bound, x, y)
+            return dispatch_op(op_bound, x, y)
 
         x = make_tensor([0.5, 0.5])
         y = make_tensor([0.2, 0.2])
         cot = make_tensor([1.0, 1.0])
         try:
-            out, vjp_fn = ensure_callable(vjp)(f, x, y)
-            grads = ensure_callable(vjp_fn)(cot)
-            assert ensure_callable(len)(grads) == 2
+            out, vjp_fn = vjp(f, x, y)
+            grads = vjp_fn(cot)
+            assert len(grads) == 2
         except Exception as e:
             print(f"Failed {op}: {e}")

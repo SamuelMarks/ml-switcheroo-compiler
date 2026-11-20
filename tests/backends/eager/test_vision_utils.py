@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 import pytest
 
@@ -30,10 +28,8 @@ from ml_switcheroo_compiler.backends.eager.vision_utils import (
     _np_map_coordinates,
     _prepare_eager_transform,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import coerce_operand_list, extract_test_shape, unpack_pair
 
 
 def test_prepare_eager_transform() -> None:
@@ -41,7 +37,7 @@ def test_prepare_eager_transform() -> None:
     # None images returns safe zero-dimension context
     ctx_none = _prepare_eager_transform(None, None, seed=42, data_format=None)
     assert ctx_none.B == 0
-    assert ensure_eager_tensor(ctx_none.imgs).shape == (0, 0, 0, 0)
+    assert extract_test_shape(ctx_none.imgs) == (0, 0, 0, 0)
     assert ctx_none.rng is not None
 
     # 2D image (H, W)
@@ -84,14 +80,14 @@ def test_prepare_eager_transform() -> None:
 def test_collinear_check_and_perspective_matrix() -> None:
     """Test homography estimation, DLT solver, collinearity detection, and projective invariance."""
     # None inputs
-    assert _compute_perspective_matrix(ensure_mod(None), None, None) == 0
+    assert _compute_perspective_matrix(None, None, None) == 0
 
     # Unit square mapping to 2x scaled square
     src_pts = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
     dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
 
-    h_mat = _compute_perspective_matrix(ensure_eager_tensor(np), src_pts, dst_pts)
-    assert ensure_eager_tensor(h_mat).shape == (3, 3)
+    h_mat = _compute_perspective_matrix(np, src_pts, dst_pts)
+    assert extract_test_shape(h_mat) == (3, 3)
 
     # Validate projective mapping: p_dst ~ H @ p_src
     for s_pt, d_pt in zip(src_pts, dst_pts):
@@ -103,8 +99,8 @@ def test_collinear_check_and_perspective_matrix() -> None:
     # Batched point correspondences (B=2, 4, 2)
     src_batch = np.stack([src_pts, src_pts], axis=0)
     dst_batch = np.stack([dst_pts, dst_pts], axis=0)
-    h_batch = _compute_perspective_matrix(ensure_eager_tensor(np), src_batch, dst_batch)
-    assert ensure_eager_tensor(h_batch).shape == (2, 3, 3)
+    h_batch = _compute_perspective_matrix(np, src_batch, dst_batch)
+    assert extract_test_shape(h_batch) == (2, 3, 3)
 
     # Collinear points rejection
     collinear_src = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [0.0, 1.0]], dtype=np.float32)
@@ -112,51 +108,52 @@ def test_collinear_check_and_perspective_matrix() -> None:
     assert _check_collinear_quad(src_pts) is False
 
     with pytest.raises(ValueError, match="Collinear points detected"):
-        _compute_perspective_matrix(ensure_eager_tensor(np), collinear_src, dst_pts)
+        _compute_perspective_matrix(np, collinear_src, dst_pts)
 
     with pytest.raises(ValueError, match="Collinear points detected"):
-        _compute_perspective_matrix(ensure_eager_tensor(np), src_pts, collinear_src)
+        _compute_perspective_matrix(np, src_pts, collinear_src)
 
-    # Mock SVD singular matrix branch
-    class MockSingularLinalg:
-        """Test class MockSingularLinalg."""
+    def _singular_svd(
+        _a: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    ) -> tuple[
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    ]:
+        """Return rank-deficient singular values to verify singular homography detection.
 
-        @staticmethod
-        def svd(a: EagerValue) -> EagerValue:
-            """Test function svd.
+        Args:
+            _a: Input DLT matrix.
 
-            Args:
-                a: Test parameter `a`.
+        Returns:
+            tuple[
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+                np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+            ]: Degenerate SVD factors.
+        """
+        return (
+            np.eye(8, dtype=np.float64),
+            np.zeros(8, dtype=np.float64),
+            np.eye(9, dtype=np.float64),
+        )
 
-            Returns:
-                EagerValue: Computed output value from `svd`.
-            """
-            return np.eye(8), np.zeros(8), np.eye(9)
-
-    class MockNP:
-        """Test class MockNP."""
-
-        zeros = np.zeros
-        float64 = np.float64
-        float32 = np.float32
-        asarray = staticmethod(np.asarray)
-        stack = staticmethod(np.stack)
-        linalg = MockSingularLinalg
-
-    with pytest.raises(ValueError, match="Singular matrix encountered"):
-        _compute_perspective_matrix(ensure_mod(MockNP), src_pts, dst_pts)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(np.linalg, "svd", _singular_svd)
+        with pytest.raises(ValueError, match="Singular matrix encountered"):
+            _compute_perspective_matrix(np, src_pts, dst_pts)
 
 
 def test_perspective_grid_and_coords() -> None:
     """Test perspective grid creation and backward coordinate mapping."""
     # Degenerate grid sizes
-    assert _generate_perspective_grid(ensure_mod(None), 0, 0) == 0
-    assert _generate_perspective_grid(ensure_eager_tensor(np), -2, 5) == 0
+    assert _generate_perspective_grid(None, 0, 0) == 0
+    assert _generate_perspective_grid(np, -2, 5) == 0
 
-    grid = _generate_perspective_grid(ensure_eager_tensor(np), 4, 6)
-    assert ensure_eager_tensor(grid).shape == (4, 6, 3)
-    assert ensure_callable(np.all)(
-        ensure_eager_tensor(grid)[
+    grid = _generate_perspective_grid(np, 4, 6)
+    assert extract_test_shape(grid) == (4, 6, 3)
+    assert np.all(
+        ensure_ndarray(grid)[
             (
                 ...,
                 2,
@@ -165,7 +162,7 @@ def test_perspective_grid_and_coords() -> None:
         == 1.0
     )
     assert (
-        ensure_eager_tensor(grid)[
+        ensure_ndarray(grid)[
             (
                 0,
                 0,
@@ -173,7 +170,7 @@ def test_perspective_grid_and_coords() -> None:
             )
         ]
         == 0.0
-        and ensure_eager_tensor(grid)[
+        and ensure_ndarray(grid)[
             (
                 0,
                 0,
@@ -183,7 +180,7 @@ def test_perspective_grid_and_coords() -> None:
         == 0.0
     )
     assert (
-        ensure_eager_tensor(grid)[
+        ensure_ndarray(grid)[
             (
                 3,
                 5,
@@ -191,7 +188,7 @@ def test_perspective_grid_and_coords() -> None:
             )
         ]
         == 5.0
-        and ensure_eager_tensor(grid)[
+        and ensure_ndarray(grid)[
             (
                 3,
                 5,
@@ -202,53 +199,43 @@ def test_perspective_grid_and_coords() -> None:
     )
 
     # Coordinate mapping with None inputs
-    assert _generate_perspective_coords(ensure_mod(None), None, None) == 0
+    assert _generate_perspective_coords(None, None, None) == 0
 
     # Identity 2D homography
     h_eye = np.eye(3, dtype=np.float32)
-    ys, xs = ensure_callable(_generate_perspective_coords)(np, h_eye, grid)
-    assert ensure_eager_tensor(ys).shape == (4, 6)
-    assert ensure_eager_tensor(xs).shape == (4, 6)
-    assert ensure_callable(np.allclose)(
-        ys,
-        ensure_eager_tensor(grid)[
-            (
-                ...,
-                1,
-            )
-        ],
+    ys, xs = unpack_pair(_generate_perspective_coords(np, h_eye, grid))
+    assert extract_test_shape(ys) == (4, 6)
+    assert extract_test_shape(xs) == (4, 6)
+    assert np.allclose(
+        ensure_ndarray(ys),
+        ensure_ndarray(grid)[..., 1],
     )
-    assert ensure_callable(np.allclose)(
-        xs,
-        ensure_eager_tensor(grid)[
-            (
-                ...,
-                0,
-            )
-        ],
+    assert np.allclose(
+        ensure_ndarray(xs),
+        ensure_ndarray(grid)[..., 0],
     )
 
     # Batched homography
     h_batch = np.stack([h_eye, h_eye], axis=0)
-    ys_b, xs_b = ensure_callable(_generate_perspective_coords)(np, h_batch, grid)
-    assert ensure_eager_tensor(ys_b).shape == (2, 4, 6)
-    assert ensure_eager_tensor(xs_b).shape == (2, 4, 6)
+    ys_b, xs_b = unpack_pair(_generate_perspective_coords(np, h_batch, grid))
+    assert extract_test_shape(ys_b) == (2, 4, 6)
+    assert extract_test_shape(xs_b) == (2, 4, 6)
 
 
 def test_map_coordinates_and_cubic_kernel() -> None:
     """Test nearest, bilinear, and bicubic coordinate mapping and cubic interpolation kernel."""
     # None inputs
-    assert ensure_callable(_map_coords_nearest)(None) == 0
-    assert ensure_callable(_map_coords_bilinear)(None) == 0
-    assert ensure_callable(_map_coords_bicubic)(None) == 0
-    assert _np_map_coordinates(ensure_mod(None), None, None) == 0
+    assert _map_coords_nearest(None) == 0
+    assert _map_coords_bilinear(None) == 0
+    assert _map_coords_bicubic(None) == 0
+    assert _np_map_coordinates(None, None, None) == 0
 
     # Cubic kernel evaluation
     t_vals = np.array([0.0, 0.5, 1.0, 1.5, 2.5])
     w = _cubic_kernel(t_vals, a=-0.5)
-    assert ensure_callable(np.isclose)(ensure_eager_tensor(w)[0], 1.0)
-    assert ensure_callable(np.isclose)(ensure_eager_tensor(w)[2], 0.0)
-    assert ensure_callable(np.isclose)(ensure_eager_tensor(w)[4], 0.0)
+    assert np.isclose(w[0], 1.0)
+    assert np.isclose(w[2], 0.0)
+    assert np.isclose(w[4], 0.0)
 
     # 4x4 image
     img = np.arange(16, dtype=np.float32).reshape(4, 4)
@@ -258,34 +245,34 @@ def test_map_coordinates_and_cubic_kernel() -> None:
     x_coords = np.array([0.0, 1.5, -2.0])
 
     # Nearest neighbor (order=0)
-    res_nearest = _np_map_coordinates(ensure_eager_tensor(np), img, (y_coords, x_coords), order=0, fill_value=-1.0)
-    assert ensure_eager_tensor(res_nearest)[0] == img[0, 0]
-    assert ensure_eager_tensor(res_nearest)[2] == -1.0
+    res_nearest = _np_map_coordinates(np, img, (y_coords, x_coords), order=0, fill_value=-1.0)
+    assert ensure_ndarray(res_nearest)[0] == ensure_ndarray(img)[0, 0]
+    assert ensure_ndarray(res_nearest)[2] == -1.0
 
     # Bilinear (order=1)
-    res_bilinear = _np_map_coordinates(ensure_eager_tensor(np), img, (y_coords, x_coords), order=1, fill_value=99.0)
+    res_bilinear = _np_map_coordinates(np, img, (y_coords, x_coords), order=1, fill_value=99.0)
     expected_mid = (img[1, 1] + img[1, 2] + img[2, 1] + img[2, 2]) / 4.0
-    assert ensure_callable(np.isclose)(ensure_eager_tensor(res_bilinear)[1], expected_mid)
-    assert ensure_eager_tensor(res_bilinear)[2] == 99.0
+    assert np.isclose(ensure_ndarray(coerce_operand_list(res_bilinear)[1]), expected_mid)
+    assert ensure_ndarray(res_bilinear)[2] == 99.0
 
     # Bicubic (order=3)
-    res_bicubic = _np_map_coordinates(ensure_eager_tensor(np), img, (y_coords, x_coords), order=3, fill_value=0.0)
-    assert ensure_eager_tensor(res_bicubic).shape == (3,)
-    assert ensure_callable(np.isclose)(ensure_eager_tensor(res_bicubic)[0], img[0, 0], atol=1e-4)
+    res_bicubic = _np_map_coordinates(np, img, (y_coords, x_coords), order=3, fill_value=0.0)
+    assert extract_test_shape(res_bicubic) == (3,)
+    assert np.isclose(ensure_ndarray(coerce_operand_list(res_bicubic)[0]), ensure_ndarray(img)[0, 0], atol=1e-4)
 
 
 def test_perspective_apply_batch() -> None:
     """Test applying perspective transformation over channels and batches."""
-    assert ensure_callable(_apply_perspective_channel)(None) == 0
-    assert ensure_callable(_apply_perspective_batch)(None, None, None, None) == 0
+    assert _apply_perspective_channel(None) == 0
+    assert _apply_perspective_batch(None, None, None, None) == 0
 
     imgs = np.ones((2, 8, 8, 3), dtype=np.float32)
     h_eye = np.eye(3, dtype=np.float32)
     cfg = PerspectiveConfig(interpolation="bilinear", fill_value=0.0)
 
-    out = _apply_perspective_batch(ensure_eager_tensor(np), imgs, h_eye, cfg)
-    assert ensure_eager_tensor(out).shape == (2, 8, 8, 3)
-    assert ensure_callable(np.allclose)(out, imgs)
+    out = _apply_perspective_batch(np, imgs, h_eye, cfg)
+    assert extract_test_shape(out) == (2, 8, 8, 3)
+    assert np.allclose(ensure_ndarray(out), imgs)
 
 
 def test_dataclasses_repr() -> None:
@@ -296,7 +283,7 @@ def test_dataclasses_repr() -> None:
     c2 = GeometricGridConfig(H=5, W=5)
     assert c2.H == 5
 
-    c3 = EagerTransformContext(B=1, H=4, W=4, C=3, name="test", np_mod=ensure_eager_tensor(np))
+    c3 = EagerTransformContext(B=1, H=4, W=4, C=3, name="test", np_mod=np)
     assert c3.B == 1
 
     c4 = TransformInterpolationConfig(order=1, fill_value=0.0)
@@ -336,33 +323,45 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx_no_valid = MapCoordsContext(np_mod=np, image=img_2d, y=y_coords, x=x_coords, valid=None)
 
     out_nearest = _map_coords_nearest(ctx_no_valid)
-    assert ensure_eager_tensor(out_nearest).shape == (2,)
+    assert extract_test_shape(out_nearest) == (2,)
 
     out_bilinear = _map_coords_bilinear(ctx_no_valid)
-    assert ensure_eager_tensor(out_bilinear).shape == (2,)
+    assert extract_test_shape(out_bilinear) == (2,)
 
     out_bicubic = _map_coords_bicubic(ctx_no_valid)
-    assert ensure_eager_tensor(out_bicubic).shape == (2,)
+    assert extract_test_shape(out_bicubic) == (2,)
 
     # 3. Homography estimation when abs(h[-1]) <= 1e-12
     orig_svd = np.linalg.svd
 
-    def mock_svd(a: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def mock_svd(
+        a: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    ) -> tuple[
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+        np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    ]:
         """Test function mock_svd.
 
         Args:
             a: Test parameter `a`.
 
         Returns:
-            tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from `mock_svd`.
+            tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...],
+                np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Computed output value from
+                `mock_svd`.
         """
-        u, s, vh = ensure_callable(orig_svd)(a)
+        u, s, vh = orig_svd(a)
         vh_mod = vh.copy()
         vh_mod[-1, -1] = 0.0
-        return (np.asarray(u), np.asarray(s), np.asarray(vh_mod))
+        return (
+            np.asarray(u, dtype=np.float64),
+            np.asarray(s, dtype=np.float64),
+            np.asarray(vh_mod, dtype=np.float64),
+        )
 
     monkeypatch.setattr(np.linalg, "svd", mock_svd)
     src_pts = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
     dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
-    h_out = _compute_perspective_matrix(ensure_eager_tensor(np), src_pts, dst_pts)
-    assert ensure_eager_tensor(h_out).shape == (3, 3)
+    h_out = _compute_perspective_matrix(np, src_pts, dst_pts)
+    assert extract_test_shape(h_out) == (3, 3)

@@ -6,22 +6,18 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager.optimizers import (
-    apply_adagrad,
-    apply_adam,
-    apply_ftrl,
-    apply_rmsprop,
-)
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager.optimizers import apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import MockTestStub, coerce_numeric, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class MockBackend:
+class MockBackend(MockTestStub):
     """Mock backend for optimizers."""
 
-    def add(self, a: EagerValue, b: EagerValue) -> EagerValue:
+    def add(self, a: BackendArg, b: BackendArg) -> BackendArg:
         """Test function add.
 
         Args:
@@ -29,11 +25,11 @@ class MockBackend:
             b: Test parameter `b`.
 
         Returns:
-            EagerValue: Computed output value from `add`.
+            BackendArg: Computed output value from `add`.
         """
-        return ensure_eager_tensor(a) + ensure_eager_tensor(b)
+        return coerce_numeric(a) + coerce_numeric(b)
 
-    def subtract(self, a: EagerValue, b: EagerValue) -> EagerValue:
+    def subtract(self, a: BackendArg, b: BackendArg) -> BackendArg:
         """Test function subtract.
 
         Args:
@@ -41,11 +37,11 @@ class MockBackend:
             b: Test parameter `b`.
 
         Returns:
-            EagerValue: Computed output value from `subtract`.
+            BackendArg: Computed output value from `subtract`.
         """
-        return ensure_eager_tensor(a) - ensure_eager_tensor(b)
+        return coerce_numeric(a) - coerce_numeric(b)
 
-    def multiply(self, a: EagerValue, b: EagerValue) -> EagerValue:
+    def multiply(self, a: BackendArg, b: BackendArg) -> BackendArg:
         """Test function multiply.
 
         Args:
@@ -53,11 +49,11 @@ class MockBackend:
             b: Test parameter `b`.
 
         Returns:
-            EagerValue: Computed output value from `multiply`.
+            BackendArg: Computed output value from `multiply`.
         """
-        return ensure_eager_tensor(a) * ensure_eager_tensor(b)
+        return coerce_numeric(a) * coerce_numeric(b)
 
-    def divide(self, a: EagerValue, b: EagerValue) -> EagerValue:
+    def divide(self, a: BackendArg, b: BackendArg) -> BackendArg:
         """Test function divide.
 
         Args:
@@ -65,20 +61,20 @@ class MockBackend:
             b: Test parameter `b`.
 
         Returns:
-            EagerValue: Computed output value from `divide`.
+            BackendArg: Computed output value from `divide`.
         """
-        return ensure_eager_tensor(a) / ensure_eager_tensor(b)
+        return coerce_numeric(a) / coerce_numeric(b)
 
-    def sqrt(self, a: EagerValue) -> EagerValue:
+    def sqrt(self, a: BackendArg) -> BackendArg:
         """Test function sqrt.
 
         Args:
             a: Test parameter `a`.
 
         Returns:
-            EagerValue: Computed output value from `sqrt`.
+            BackendArg: Computed output value from `sqrt`.
         """
-        return ensure_eager_tensor(ensure_callable(np.sqrt)(a))
+        return np.sqrt(ensure_ndarray(a))
 
 
 def test_apply_adam() -> None:
@@ -90,10 +86,10 @@ def test_apply_adam() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, m_new, v_new = ensure_callable(apply_adam)(backend, param, m, v, grad, lr)
-    assert ensure_eager_tensor(p_new).shape == (2,)
-    assert ensure_eager_tensor(m_new).shape == (2,)
-    assert ensure_eager_tensor(v_new).shape == (2,)
+    p_new, m_new, v_new = apply_adam(backend, param, m, v, grad, lr)
+    assert extract_test_shape(p_new) == (2,)
+    assert extract_test_shape(m_new) == (2,)
+    assert extract_test_shape(v_new) == (2,)
 
 
 def test_apply_adagrad() -> None:
@@ -104,9 +100,9 @@ def test_apply_adagrad() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, accum_new = ensure_callable(apply_adagrad)(backend, param, accum, grad, lr)
-    assert ensure_eager_tensor(p_new).shape == (2,)
-    assert ensure_eager_tensor(accum_new).shape == (2,)
+    p_new, accum_new = apply_adagrad(backend, param, accum, grad, lr)
+    assert extract_test_shape(p_new) == (2,)
+    assert extract_test_shape(accum_new) == (2,)
 
 
 def test_apply_ftrl() -> None:
@@ -118,10 +114,10 @@ def test_apply_ftrl() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, accum_new, linear_new = ensure_callable(apply_ftrl)(backend, param, accum, linear, grad, lr)
-    assert ensure_eager_tensor(p_new).shape == (2,)
-    assert ensure_eager_tensor(accum_new).shape == (2,)
-    assert ensure_eager_tensor(linear_new).shape == (2,)
+    p_new, accum_new, linear_new = apply_ftrl(backend, param, accum, linear, grad, lr)
+    assert extract_test_shape(p_new) == (2,)
+    assert extract_test_shape(accum_new) == (2,)
+    assert extract_test_shape(linear_new) == (2,)
 
 
 def test_apply_rmsprop() -> None:
@@ -133,7 +129,7 @@ def test_apply_rmsprop() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, ms_new, mom_new = ensure_callable(apply_rmsprop)(backend, param, ms, mom, grad, lr)
-    assert ensure_eager_tensor(p_new).shape == (2,)
-    assert ensure_eager_tensor(ms_new).shape == (2,)
-    assert ensure_eager_tensor(mom_new).shape == (2,)
+    p_new, ms_new, mom_new = apply_rmsprop(backend, param, ms, mom, grad, lr)
+    assert extract_test_shape(p_new) == (2,)
+    assert extract_test_shape(ms_new) == (2,)
+    assert extract_test_shape(mom_new) == (2,)

@@ -11,7 +11,9 @@ from ml_switcheroo_compiler.backends.edge.config_models import WebrtcTopologyCon
 
 def test_webrtc_topology() -> None:
     """Validate webrtc_topology.yaml against WebrtcTopologyConfig schema."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/webrtc_topology.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/webrtc_topology.yaml"
+    )
     assert os.path.exists(yaml_path)
 
     with open(yaml_path, encoding="utf-8") as f:

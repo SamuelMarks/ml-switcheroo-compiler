@@ -6,11 +6,11 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_device,
     extract_dtype,
@@ -41,7 +41,7 @@ class DropoutConfig(pydantic.BaseModel):
 class Dropout(OpDef):
     """Operation definition for standard dropout regularization."""
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, **kwargs: OpValue) -> OpValue:
         """Determine the output shape of the dropout operation based on the input.
 
         Args:
@@ -51,7 +51,7 @@ class Dropout(OpDef):
         Returns:
             The inferred shape, which matches the input shape.
         """
-        return x.shape
+        return extract_shape(x)
 
 
 @dispatch_eager("Dropout")
@@ -59,7 +59,7 @@ def dropout(
     x: Tensor,
     rate: float = 0.5,
     config: DropoutConfig | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Apply standard dropout regularization to the input tensor.
 
     Randomly zeroes out elements of the input tensor with the specified probability
@@ -80,7 +80,7 @@ def dropout(
 class AlphaDropout(OpDef):
     """Operation definition for alpha dropout regularization."""
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, **kwargs: OpValue) -> OpValue:
         """Determine the output shape for alpha dropout based on the input.
 
         Args:
@@ -90,7 +90,7 @@ class AlphaDropout(OpDef):
         Returns:
             The inferred shape, which matches the input shape.
         """
-        return x.shape
+        return extract_shape(x)
 
 
 @dispatch_eager("AlphaDropout")
@@ -98,7 +98,7 @@ def alpha_dropout(
     x: Tensor,
     rate: float = 0.5,
     config: DropoutConfig | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Apply alpha dropout regularization to the input tensor.
 
     Alpha dropout is a type of dropout that maintains the mean and variance
@@ -119,7 +119,7 @@ def alpha_dropout(
 class ActivityRegularization(OpDef):
     """Operation definition for applying activity regularization."""
 
-    def infer_shape(self, x: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, **kwargs: OpValue) -> OpValue:
         """Determine the output shape for activity regularization based on the input.
 
         Args:
@@ -131,7 +131,7 @@ class ActivityRegularization(OpDef):
         """
         if isinstance(x, (tuple, list)):
             return x
-        _typed_ret_1: TensorOrScalar = extract_shape(x)
+        _typed_ret_1: OpValue = extract_shape(x)
         return _typed_ret_1
 
 
@@ -140,7 +140,7 @@ def activity_regularization(
     x: Tensor,
     l1: float = 0.0,
     l2: float = 0.0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Apply L1 and L2 activity regularization to the given input tensor.
 
     Adds regularization penalties based on the magnitude of the tensor's values.
@@ -162,7 +162,7 @@ class Dropout1d(OpDef):
 
     op_name = "Dropout1d"
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, **kwargs: OpValue) -> OpValue:
         """Determine the output shape of the 1D dropout operation.
 
         Args:
@@ -172,11 +172,11 @@ class Dropout1d(OpDef):
         Returns:
             The inferred shape, matching the input.
         """
-        _typed_ret_2: TensorOrScalar = extract_shape(x)
+        _typed_ret_2: OpValue = extract_shape(x)
         return _typed_ret_2
 
 
-def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScalar:
+def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> OpValue:
     """Apply 1D spatial dropout to the input tensor.
 
     Randomly zeroes out entire channels (1D feature maps) of the input tensor.
@@ -210,7 +210,7 @@ class Dropout2d(OpDef):
 
     op_name = "Dropout2d"
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, **kwargs: OpValue) -> OpValue:
         """Determine the output shape of the 2D dropout operation.
 
         Args:
@@ -220,11 +220,11 @@ class Dropout2d(OpDef):
         Returns:
             The inferred shape, matching the input shape.
         """
-        _typed_ret_3: TensorOrScalar = extract_shape(x)
+        _typed_ret_3: OpValue = extract_shape(x)
         return _typed_ret_3
 
 
-def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScalar:
+def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> OpValue:
     """Apply 2D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 2D feature maps (channels) of the input tensor.
@@ -264,7 +264,7 @@ class Dropout3d(OpDef):
 
     op_name = "Dropout3d"
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, **kwargs: OpValue) -> OpValue:
         """Determine the output shape of the 3D dropout operation.
 
         Args:
@@ -274,11 +274,11 @@ class Dropout3d(OpDef):
         Returns:
             The inferred shape, matching the input shape.
         """
-        _typed_ret_4: TensorOrScalar = extract_shape(x)
+        _typed_ret_4: OpValue = extract_shape(x)
         return _typed_ret_4
 
 
-def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScalar:
+def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> OpValue:
     """Apply 3D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 3D feature maps (channels) of the input tensor.

@@ -6,7 +6,7 @@ import typing
 
 import pytest
 
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -14,15 +14,15 @@ if typing.TYPE_CHECKING:
 
 def test_frontend_utils_missing() -> None:
     """Test function test_frontend_utils_missing."""
-    from ml_switcheroo_compiler.ops.creation.frontend_utils import Geometric, frompyfunc
+    from ml_switcheroo_compiler.ops.creation.api_utils import Geometric, frompyfunc
 
     _multinomial_shape = Geometric().infer_shape
 
-    class MockTensor:
+    class MockTensor(MockTestStub):
         """Test class MockTensor."""
 
         shape = (10,)
 
-    assert ensure_callable(_multinomial_shape)(ensure_callable(MockTensor)(), size=5) == (5,)
+    assert _multinomial_shape(MockTensor(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import NodeDict
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.poly_lower import polyfill_lowering_pass
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_in_top_k_lowering() -> None:
@@ -91,7 +91,7 @@ def test_rest_poly_lowering() -> None:
     assert g.nodes["ero"].op_type == "MinPool2D"
 
 
-def test_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
+def test_missing_yaml(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_missing_yaml.
 
     Args:
@@ -106,7 +106,7 @@ def test_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
     assert not poly_lower.polyfill_lowering_pass(g)
 
 
-def test_poly_lower_edge_rules(monkeypatch: EagerTensorProtocol) -> None:
+def test_poly_lower_edge_rules(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_poly_lower_edge_rules.
 
     Args:

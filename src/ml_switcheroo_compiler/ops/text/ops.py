@@ -7,11 +7,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, coerce_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_shape,
 )
 from ml_switcheroo_compiler.core.tensor import (
@@ -25,7 +25,7 @@ from ml_switcheroo_compiler.ops.base import (
 )
 
 
-def _extract_shape(arg: TensorOrScalar) -> tuple[int, ...]:
+def _extract_shape(arg: OpValue) -> tuple[int, ...]:
     """Extract shape tuple from tensor or shape metadata.
 
     Args:
@@ -38,20 +38,20 @@ def _extract_shape(arg: TensorOrScalar) -> tuple[int, ...]:
         return ()
     extracted = extract_shape(arg)
     if extracted:
-        return tuple(int(ensure_int(d)) for d in extracted)
+        return tuple(int(coerce_int(d)) for d in extracted)
     if isinstance(arg, (tuple, list)):
-        return tuple(int(ensure_int(d)) for d in arg)
+        return tuple(int(coerce_int(d)) for d in arg)
     return ()
 
 
-def _first_arg_shape(args: Sequence[EagerTensorProtocol | TensorOrScalar]) -> TensorOrScalar:
+def _first_arg_shape(args: Sequence[EagerTensorProtocol | OpValue]) -> OpValue:
     """Return `.shape` of the first argument if it implements `ShapeProtocol`, else `()`.
 
     Args:
-        args (Sequence[EagerTensorProtocol | TensorOrScalar]): Positional arguments.
+        args (Sequence[EagerTensorProtocol | OpValue]): Positional arguments.
 
     Returns:
-        TensorOrScalar: Shape tuple or empty tuple.
+        OpValue: Shape tuple or empty tuple.
     """
     return extract_shape(args[0]) if args and isinstance(args[0], ShapeProtocol) else ()
 
@@ -60,12 +60,12 @@ def _first_arg_shape(args: Sequence[EagerTensorProtocol | TensorOrScalar]) -> Te
 class StringToHash(OpDef):
     """Operation that computes a hash value for a given string tensor."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the output shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape matching input tensor.
@@ -78,12 +78,12 @@ class StringToHash(OpDef):
 class RegexReplace(OpDef):
     """Operation that replaces matches of a regular expression in a string tensor."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the regular expression replacement.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple[int, ...]: Output shape matching input string tensor.
@@ -96,12 +96,12 @@ class RegexReplace(OpDef):
 class StringSplit(OpDef):
     """Operation that splits string elements based on a given delimiter."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after splitting strings in the input tensor.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple: Output shape with trailing token dimension.
@@ -123,12 +123,12 @@ class StringSplit(OpDef):
 class Lookup(OpDef):
     """Operation that retrieves values from a table based on given keys."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the table lookup.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple[int, ...]: Output shape matching input keys.
@@ -141,12 +141,12 @@ class Lookup(OpDef):
 class Hashing(OpDef):
     """Operation that applies a hashing algorithm to map inputs to bins."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the hashing operation.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple[int, ...]: Output shape matching inputs.
@@ -159,12 +159,12 @@ class Hashing(OpDef):
 class StringLookup(OpDef):
     """Operation that translates strings into integer indices using a vocabulary."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after applying the string lookup operation.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple[int, ...]: Output shape matching inputs.
@@ -177,7 +177,7 @@ class StringLookup(OpDef):
 class IntegerLookup(OpDef):
     """Operation that translates integer indices into other integers or strings using a vocabulary."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after applying the integer lookup operation.
 
         Args:
@@ -194,12 +194,12 @@ class IntegerLookup(OpDef):
 class TextVectorization(OpDef):
     """Operation that maps text features to integer sequences or dense vectors."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after applying the text vectorization operation.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple: Vectorized sequence or feature shape.
@@ -212,10 +212,10 @@ class TextVectorization(OpDef):
             return ()
         output_sequence_length = kwargs.get("output_sequence_length")
         if output_sequence_length is not None:
-            return s + (int(ensure_int(output_sequence_length)),)
+            return s + (int(coerce_int(output_sequence_length)),)
         max_tokens = kwargs.get("max_tokens")
         if max_tokens is not None and kwargs.get("output_mode") in ("count", "tf_idf", "multi_hot"):
-            return s[:-1] + (int(ensure_int(max_tokens)),) if s else (int(ensure_int(max_tokens)),)
+            return s[:-1] + (int(coerce_int(max_tokens)),) if s else (int(coerce_int(max_tokens)),)
         return s + (SymVar("seq_len"),)
 
 
@@ -223,7 +223,7 @@ class TextVectorization(OpDef):
 class StringToNumber(OpDef):
     """Operation that converts strings to numeric values."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after converting strings to numbers.
 
         Args:
@@ -240,7 +240,7 @@ class StringToNumber(OpDef):
 class StringLower(OpDef):
     """Operation that converts string characters to lowercase."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after applying the lowercase conversion.
 
         Args:
@@ -257,7 +257,7 @@ class StringLower(OpDef):
 class StringUpper(OpDef):
     """Operation that converts string characters to uppercase."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after applying the uppercase conversion.
 
         Args:
@@ -274,12 +274,12 @@ class StringUpper(OpDef):
 class StringJoin(OpDef):
     """Operation that joins an iterable of strings into a single string using a separator."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after joining the strings.
 
         Args:
-            *args (EagerTensorProtocol): Variable length argument list including input tensors.
-            **kwargs (EagerTensorProtocol): Arbitrary keyword arguments configuring the operation.
+            *args (OpValue): Variable length argument list including input tensors.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the operation.
 
         Returns:
             tuple[int, ...]: Output shape after join.
@@ -294,7 +294,7 @@ class StringJoin(OpDef):
         s = list(_extract_shape(inp))
         axis = kwargs.get("axis")
         if axis is not None and s:
-            ax = int(ensure_int(axis))
+            ax = int(coerce_int(axis))
             if ax < 0:
                 ax += len(s)
             if 0 <= ax < len(s):
@@ -307,7 +307,7 @@ class StringJoin(OpDef):
 class StringLength(OpDef):
     """Operation that computes the length of each string in the input tensor."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after computing the string lengths.
 
         Args:
@@ -324,7 +324,7 @@ class StringLength(OpDef):
 class StringSubstr(OpDef):
     """Operation that extracts substrings from a tensor of strings."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after extracting substrings.
 
         Args:
@@ -341,7 +341,7 @@ class StringSubstr(OpDef):
 class RegexFullMatch(OpDef):
     """Operation that checks if the input strings fully match a given regular expression."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the resulting shape after checking for full regular expression matches.
 
         Args:
@@ -354,7 +354,7 @@ class RegexFullMatch(OpDef):
         return _first_arg_shape(args)
 
 
-def string_to_hash(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
+def string_to_hash(inputs: Tensor, **kwargs: OpValue) -> Tensor:
     """Apply a hashing algorithm to map input string tensors to hash representations.
 
     Args:
@@ -376,7 +376,7 @@ def string_to_hash(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
     return get_op("Hashing")()(inputs, **kwargs)
 
 
-def lookup(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
+def lookup(inputs: Tensor, **kwargs: OpValue) -> Tensor:
     """Map the given input strings or numbers into corresponding vocabulary indices or strings.
 
     Args:
@@ -398,7 +398,7 @@ def lookup(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
     return get_op("StringLookup")()(inputs, **kwargs)
 
 
-def text_vectorization(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
+def text_vectorization(inputs: Tensor, **kwargs: OpValue) -> Tensor:
     """Transform textual data into numerical tensor sequences based on pre-computed vocabularies.
 
     Args:
@@ -424,13 +424,13 @@ def text_vectorization(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 class EditDistance(OpDef):
     """Operation that computes the Levenshtein distance between two sequences."""
 
-    def infer_shape(self, hypothesis: EagerTensorProtocol, truth: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, hypothesis: OpValue, truth: OpValue = None, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after computing the edit distance.
 
         Args:
-            hypothesis (EagerTensorProtocol): The predicted or generated sequence tensor.
-            truth (TensorOrScalar): The ground truth or reference sequence tensor.
-            **kwargs (TensorOrScalar): Arbitrary keyword arguments configuring the distance calculation.
+            hypothesis (OpValue): The predicted or generated sequence tensor.
+            truth (OpValue): The ground truth or reference sequence tensor.
+            **kwargs (OpValue): Arbitrary keyword arguments configuring the distance calculation.
 
         Returns:
             tuple[int, ...]: Reduced output batch shape.
@@ -443,12 +443,12 @@ class EditDistance(OpDef):
 class AsString(OpDef):
     """Operation that converts elements of a tensor into string representations."""
 
-    def infer_shape(self, input_tensor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, input_tensor: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer the resulting shape after formatting the input elements as strings.
 
         Args:
-            input_tensor (EagerTensorProtocol): The tensor containing the elements to be cast to strings.
-            **kwargs (TensorOrScalar): Arbitrary keyword arguments for formatting the output strings.
+            input_tensor (OpValue): The tensor containing the elements to be cast to strings.
+            **kwargs (OpValue): Arbitrary keyword arguments for formatting the output strings.
 
         Returns:
             tuple[int, ...]: Output shape matching input tensor.
@@ -462,12 +462,12 @@ class ArrayRepr(OpDef):
 
     op_name = "ArrayRepr"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -481,12 +481,12 @@ class ArrayStr(OpDef):
 
     op_name = "ArrayStr"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

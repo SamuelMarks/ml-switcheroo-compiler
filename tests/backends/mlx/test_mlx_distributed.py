@@ -9,22 +9,25 @@ import pytest
 
 from ml_switcheroo_compiler.backends.mlx.eager import _mlx_reduce_scatter
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
+from tests.testing_utils import MockTestStub, NumpyTestArray, adapt_backend_module, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+
+    _SliceIndex: typing.TypeAlias = slice[int | None, int | None, int | None]
 
 
-class MockMLXArray:
+class MockMLXArray(MockTestStub):
     """Mock MLX array mimicking mlx.core.array behavior."""
 
-    def __init__(self, data: EagerValue) -> None:
+    def __init__(self, data: BackendArg) -> None:
         """Initialize mock MLX array.
 
         Args:
-            data (np.ndarray): Underlying numerical buffer.
+            data (BackendArg): Underlying numerical buffer.
         """
-        self._data = np.asarray(data)
+        super().__init__()
+        self._data: NumpyTestArray = np.asarray(data, dtype=np.float32)
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -44,49 +47,49 @@ class MockMLXArray:
         """
         return self._data.ndim
 
-    def __getitem__(self, item: EagerValue) -> MockMLXArray:
+    def __getitem__(self, item: int | _SliceIndex | tuple[int | _SliceIndex, ...]) -> MockMLXArray:
         """Slice mock array.
 
         Args:
-            item: Test parameter `item`.
+            item (int | _SliceIndex | tuple[int | _SliceIndex, ...]): Slice or index specification.
 
         Returns:
             MockMLXArray: Computed output value from `__getitem__`.
         """
-        return MockMLXArray(ensure_eager_tensor(self._data)[item])
+        return MockMLXArray(self._data[item])
 
     def __add__(self, other: MockMLXArray) -> MockMLXArray:
         """Elementwise addition.
 
         Args:
-            other: Test parameter `other`.
+            other (MockMLXArray): Right-hand operand.
 
         Returns:
             MockMLXArray: Computed output value from `__add__`.
         """
-        return MockMLXArray(ensure_eager_tensor(self._data) + ensure_eager_tensor(other._data))
+        return MockMLXArray(self._data + other._data)
 
     def __mul__(self, other: MockMLXArray) -> MockMLXArray:
         """Elementwise multiplication.
 
         Args:
-            other: Test parameter `other`.
+            other (MockMLXArray): Right-hand operand.
 
         Returns:
             MockMLXArray: Computed output value from `__mul__`.
         """
-        return MockMLXArray(ensure_eager_tensor(self._data) * ensure_eager_tensor(other._data))
+        return MockMLXArray(self._data * other._data)
 
-    def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    def to_numpy(self) -> NumpyTestArray:
         """Extract NumPy view.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `to_numpy`.
+            NumpyTestArray: Computed output value from `to_numpy`.
         """
         return self._data
 
 
-class MockMLXModule:
+class MockMLXModule(MockTestStub):
     """Mock MLX core module."""
 
     @staticmethod
@@ -153,7 +156,7 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
 
     # Rank 0 should get chunk 0 reduced: 1 + 2 + 3 = 6
     res0 = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         r0,
         all_ranks_data=all_ranks,
         scatter_dim=0,
@@ -162,19 +165,19 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
     )
     assert isinstance(res0, MockMLXArray)
     assert res0.shape == (2, 4)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(res0.to_numpy)(), 6.0)
+    np.testing.assert_allclose(res0.to_numpy(), 6.0)
 
     # Rank 1 should get chunk 1 reduced
     res1 = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         r1,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="SUM",
         rank=1,
     )
-    assert ensure_eager_tensor(res1).shape == (2, 4)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res1).to_numpy))(), 6.0)
+    assert extract_test_shape(res1) == (2, 4)
+    np.testing.assert_allclose(adapt_backend_module(res1).require_symbol("to_numpy")(), 6.0)
 
 
 def test_mlx_ring_reduce_scatter_ops() -> None:
@@ -185,47 +188,47 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
 
     # PROD on rank 0 (gets row 0: [2*10, 3*20] = [20, 60])
     res_prod = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         r0,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="PROD",
         rank=0,
     )
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_prod).to_numpy))(), [[20.0, 60.0]])
+    np.testing.assert_allclose(adapt_backend_module(res_prod).require_symbol("to_numpy")(), [[20.0, 60.0]])
 
     # MAX on rank 1 (gets row 1: [max(4, 30), max(5, 40)] = [30, 40])
     res_max = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         r1,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="MAX",
         rank=1,
     )
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_max).to_numpy))(), [[30.0, 40.0]])
+    np.testing.assert_allclose(adapt_backend_module(res_max).require_symbol("to_numpy")(), [[30.0, 40.0]])
 
     # MIN on rank 1 (gets row 1: [min(4, 30), min(5, 40)] = [4, 5])
     res_min = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         r1,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="MIN",
         rank=1,
     )
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_min).to_numpy))(), [[4.0, 5.0]])
+    np.testing.assert_allclose(adapt_backend_module(res_min).require_symbol("to_numpy")(), [[4.0, 5.0]])
 
     # Fallback op (else branch) defaults to SUM
     res_fallback = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         r0,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="UNKNOWN_OP",
         rank=0,
     )
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_fallback).to_numpy))(), [[12.0, 23.0]])
+    np.testing.assert_allclose(adapt_backend_module(res_fallback).require_symbol("to_numpy")(), [[12.0, 23.0]])
 
 
 def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
@@ -234,23 +237,23 @@ def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
 
     # World size 3, rank 1 gets rows 2:4
     res = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         tensor,
         world_size=3,
         rank=1,
         scatter_dim=0,
     )
-    assert ensure_eager_tensor(res).shape == (2, 2)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).to_numpy))(), [[4.0, 5.0], [6.0, 7.0]])
+    assert extract_test_shape(res) == (2, 2)
+    np.testing.assert_allclose(adapt_backend_module(res).require_symbol("to_numpy")(), [[4.0, 5.0], [6.0, 7.0]])
 
     # World size 1 returns tensor unchanged
     res_1 = _mlx_reduce_scatter(
-        ensure_mod(MockMLXModule()),
+        MockMLXModule(),
         tensor,
         world_size=1,
         rank=0,
     )
-    res_obj: EagerValue = res_1
+    res_obj: BackendArg = res_1
     assert res_obj is tensor
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Cross
+from ml_switcheroo_compiler.ops.linalg.decompositions.norms import Cross
 
 
 def test_cross_shape() -> None:

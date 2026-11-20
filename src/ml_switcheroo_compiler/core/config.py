@@ -18,7 +18,7 @@ import pydantic
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import IRAttrValue, OpValue
 
 
 class ExecutionConfig(pydantic.BaseModel):
@@ -41,8 +41,8 @@ class EnvironmentConfig(pydantic.BaseModel):
     default_float_dtype: DType = DType.Float32
     default_int_dtype: DType = DType.Int64
     default_device: Device = pydantic.Field(default_factory=lambda: Device(DeviceType.CPU, 0))
-    jax_enable_x64: bool = False
-    layout_map: TensorOrScalar = None
+    enable_x64: bool = True
+    layout_map: OpValue = None
     interactive_logging: bool = True
     seed: int | None = None
 
@@ -101,7 +101,7 @@ class Config:
         """Set the global random seed.
 
         Args:
-            value (int, optional): The random seed value.
+            value (int | None): The random seed value.
         """
         self._state.env.seed = value
 
@@ -205,40 +205,40 @@ class Config:
         self._state.execution.current_stream = value
 
     @property
-    def layout_map(self) -> TensorOrScalar:
+    def layout_map(self) -> OpValue:
         """Get the layout map.
 
         Returns:
-            TensorOrScalar: The layout map.
+            OpValue: The layout map.
         """
         return self._state.env.layout_map
 
     @layout_map.setter
-    def layout_map(self, value: TensorOrScalar) -> None:
+    def layout_map(self, value: OpValue) -> None:
         """Set the layout map.
 
         Args:
-            value (TensorOrScalar): The layout map.
+            value (OpValue): The layout map.
         """
         self._state.env.layout_map = value
 
     @property
-    def jax_enable_x64(self) -> bool:
-        """Get whether JAX x64 is enabled.
+    def enable_x64(self) -> bool:
+        """Get whether 64-bit scalar precision (Float64/Int64/Complex128) is enabled.
 
         Returns:
-            bool: True if JAX x64 is enabled.
+            bool: True if 64-bit scalar precision is enabled.
         """
-        return self._state.env.jax_enable_x64
+        return self._state.env.enable_x64
 
-    @jax_enable_x64.setter
-    def jax_enable_x64(self, value: bool) -> None:
-        """Set whether JAX x64 is enabled.
+    @enable_x64.setter
+    def enable_x64(self, value: bool) -> None:
+        """Set whether 64-bit scalar precision (Float64/Int64/Complex128) is enabled.
 
         Args:
-            value (bool): True to enable x64.
+            value (bool): True to retain 64-bit precision; False to clamp to 32-bit.
         """
-        self._state.env.jax_enable_x64 = value
+        self._state.env.enable_x64 = value
 
     @property
     def op_determinism(self) -> bool:
@@ -320,11 +320,11 @@ config = Config()
 
 
 @contextmanager
-def ConfigContext(**kwargs: AttrValue) -> Iterator[None]:
+def ConfigContext(**kwargs: IRAttrValue) -> Iterator[None]:
     """Provide context manager for temporarily overriding global configuration values.
 
     Args:
-        **kwargs (AttrValue): Configuration keys and the values to temporarily set.
+        **kwargs (IRAttrValue): Configuration keys and the values to temporarily set.
 
     Yields:
         None: Yields control to the enclosed block with the overridden configuration.

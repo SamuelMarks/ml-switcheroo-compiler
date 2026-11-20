@@ -13,7 +13,7 @@ import yaml
 from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 DEPRECATED_APIS: set[str] = {
     "torch.rfft",
@@ -51,10 +51,10 @@ def test_no_deprecated_functions_in_mappings() -> None:
         if not isinstance(data, dict):
             continue
 
-        raw_ops: EagerValue = data.get("operations", data)
+        raw_ops: BackendArg = data.get("operations", data)
         if not isinstance(raw_ops, dict):
             continue
-        ops: dict[EagerValue, EagerValue] = raw_ops
+        ops: dict[BackendArg, BackendArg] = raw_ops
 
         for op_name, spec in ops.items():
             if not isinstance(spec, dict):

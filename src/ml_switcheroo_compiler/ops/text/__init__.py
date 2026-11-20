@@ -1,13 +1,11 @@
-# ruff: noqa: E402
 """Public package exports and initialization for `ml_switcheroo_compiler.ops.text`."""
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.text import ops
-from ml_switcheroo_compiler.ops.text.frontend import (
+from ml_switcheroo_compiler.ops.text.api import (
     AsStringConfig,
     as_string,
     edit_distance,
@@ -25,24 +23,7 @@ from ml_switcheroo_compiler.ops.text.frontend import (
     text_vectorization,
 )
 
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.ir.core import IRNode
-
 _ = ops
-
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
-
-
-def _is_ir_node_res(val: TensorOrScalar) -> typing.TypeGuard[IRNode]:
-    """Type guard narrowing `val` to `IRNode`.
-
-    Args:
-        val (TensorOrScalar): Candidate node result.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
 
 
 @register_op("CreateToken")
@@ -51,12 +32,12 @@ class CreateToken(OpDef):
 
     op_name = "CreateToken"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Shape tuple.
@@ -72,7 +53,7 @@ class CreateToken(OpDef):
 def create_token(
     *args: str | int | float | bool,
     **kwargs: str | int | float | bool | None,
-) -> IRNode:
+) -> OpValue:
     """Create token.
 
     Args:
@@ -80,13 +61,11 @@ def create_token(
         **kwargs (str | int | float | bool | None): Keyword args.
 
     Returns:
-        IRNode: Resulting graph node.
+        OpValue: Resulting token tensor or graph node.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
-    raw_res: TensorOrScalar = get_op("CreateToken")()(*args, **kwargs)
-    assert _is_ir_node_res(raw_res)
-    return raw_res
+    return get_op("CreateToken")()(*args, **kwargs)
 
 
 __all__ = [

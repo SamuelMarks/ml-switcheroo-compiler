@@ -61,7 +61,9 @@ class MLPlaygroundDirective(Directive):
         """
         wheel_assets = get_wheel_assets()
         wheels_csv = ",".join(wheel_assets)
-        wheel_links_html = "".join(f'\n            <a href="_static/{w}" class="pg-wheel-link" download>{w}</a>' for w in wheel_assets)
+        wheel_links_html = "".join(
+            f'\n            <a href="_static/{w}" class="pg-wheel-link" download>{w}</a>' for w in wheel_assets
+        )
 
         # We output a section with an id that our JS will hydrate
         html = """
@@ -72,7 +74,8 @@ class MLPlaygroundDirective(Directive):
             <span class="slider round"></span>
         </label>
         <span class="theme-label" data-i18n="darkMode">Dark Mode</span>
-        <nav class="pg-wheel-links" aria-label="Wheel Assets" data-wheels="{wheels_attr}"><!-- WHEEL_LINKS_PLACEHOLDER -->
+        <nav class="pg-wheel-links" aria-label="Wheel Assets"
+             data-wheels="{wheels_attr}"><!-- WHEEL_LINKS_PLACEHOLDER -->
         </nav>
     </header>
     <div class="pg-split-pane">
@@ -153,7 +156,9 @@ var require = { paths: { 'vs':
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/" +
                      "0.45.0/min/vs/editor/editor.main.js"></script>
 """
-        rendered_html = html.replace("{wheels_attr}", wheels_csv).replace("<!-- WHEEL_LINKS_PLACEHOLDER -->", wheel_links_html)
+        rendered_html = html.replace("{wheels_attr}", wheels_csv).replace(
+            "<!-- WHEEL_LINKS_PLACEHOLDER -->", wheel_links_html
+        )
         return [nodes.raw("", rendered_html, format="html")]
 
 

@@ -5,14 +5,16 @@ from __future__ import annotations
 
 import os
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, require_callable
 from ml_switcheroo_compiler.backends.keras.eager import execute_op as _keras_execute_op
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, StaticEagerBackendAdapter
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.shape import ShapeMetadataProtocol, extract_data
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
 
@@ -31,8 +33,12 @@ class KerasSignatureBuilder:
         Returns:
             str: The code string for the Keras Input tensor.
         """
-        raw_node: EagerValue = node
-        shape_str: str = str(raw_node.shape_metadata) if isinstance(raw_node, ShapeMetadataProtocol) and raw_node.shape_metadata else "(None,)"
+        raw_node: BackendArg = node
+        shape_str: str = (
+            str(raw_node.shape_metadata)
+            if isinstance(raw_node, ShapeMetadataProtocol) and raw_node.shape_metadata
+            else "(None,)"
+        )
         return f"{var_name} = keras.Input(shape={shape_str}, name='{node.id or ''}')"
 
     @staticmethod
@@ -55,7 +61,7 @@ class KerasTensorManipulator:
     """Help for tensor manipulations."""
 
     @staticmethod
-    def format_zeros_like(op: str, kwargs: dict[str, EagerValue]) -> str:
+    def format_zeros_like(op: str, kwargs: dict[str, BackendArg]) -> str:
         """Execute format zeros like for compiler processing.
 
         Args:
@@ -71,7 +77,7 @@ class KerasTensorManipulator:
         return res
 
     @staticmethod
-    def format_full(kwargs: dict[str, EagerValue]) -> str:
+    def format_full(kwargs: dict[str, BackendArg]) -> str:
         """Execute format full for compiler processing.
 
         Args:
@@ -86,7 +92,7 @@ class KerasTensorManipulator:
         return res
 
     @staticmethod
-    def format_transpose(kwargs: dict[str, EagerValue]) -> str:
+    def format_transpose(kwargs: dict[str, BackendArg]) -> str:
         """Execute format transpose for compiler processing.
 
         Args:
@@ -108,21 +114,23 @@ class KerasCodeGenerator(BaseGenerator):
     keras_output_vars: list[str] = []
 
     @classmethod
-    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute an operation eagerly on the Keras backend.
 
         Args:
             op_type (str): Canonical operation name.
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Evaluated operation result.
+            BackendArg: Evaluated operation result.
         """
         return _keras_execute_op(cls, op_type, *args, **kwargs)
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
+    def load(
+        cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"
+    ) -> BackendArg:
         """Load a serialized object.
 
         Args:
@@ -132,15 +140,16 @@ class KerasCodeGenerator(BaseGenerator):
             encoding (str): The encoding.
 
         Returns:
-            EagerValue: The loaded object.
+            BackendArg: The loaded object.
         """
         import pickle
 
         with open(filepath, "rb") as f:
-            return ensure_eager_tensor(pickle.load(f))
+            loaded: BackendArg = pickle.load(f)
+            return loaded
 
     @classmethod
-    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: BackendArg, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save an array to a file.
 
         Args:
@@ -155,7 +164,7 @@ class KerasCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Save multiple arrays into a single file.
 
         Args:
@@ -165,13 +174,13 @@ class KerasCodeGenerator(BaseGenerator):
         """
         import pickle
 
-        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, BackendArg] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with open(file, "wb") as f:
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez_compressed(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Save multiple arrays into a single compressed file.
 
         Args:
@@ -182,7 +191,7 @@ class KerasCodeGenerator(BaseGenerator):
         import gzip
         import pickle
 
-        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, BackendArg] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with gzip.open(file, "wb") as f:
             pickle.dump(data, f)
@@ -207,7 +216,7 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
-    def visit_ConvTranspose(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_ConvTranspose(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Visit a ConvTranspose node.
 
         Args:
@@ -220,7 +229,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_conv_transpose({input_vars[0]}, {input_vars[1]})"
 
-    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Visit a RaggedDot node.
 
         Args:
@@ -242,7 +251,7 @@ class KerasCodeGenerator(BaseGenerator):
         self.code = [self.header]
         self.code.extend(self._resolve_imports())
         self._generate_function_signature()
-        if not self.graph or not self.graph.nodes:
+        if not self.graph.nodes:
             self.add_line("pass")
             return "\n".join(self.code)
         self._generate_body("input_")
@@ -262,7 +271,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras.ops"
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, BackendArg] | None = None) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -327,7 +336,7 @@ class KerasCodeGenerator(BaseGenerator):
 
         tmpl_path: str = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
         with open(tmpl_path) as f:
-            data: dict[str, EagerValue] = yaml.safe_load(f)
+            data: dict[str, BackendArg] = yaml.safe_load(f)
 
         lines: list[str] = ["import keras\n"]
         if "imports" in data and data["imports"]:
@@ -346,44 +355,54 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_output_vars = []
         self.indent_level = self.indent_level + 1
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into ahead-of-time Keras executable artifact.
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options.
+            **kwargs (BackendArg): Compiler options.
 
         Returns:
-            EagerValue: Executable compiled artifact.
+            BackendArg: Executable compiled artifact.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
         source_code = self.generate()
-        scope: dict[str, AttributeValue] = {}
         model_obj = None
         try:
-            exec(source_code, scope)
+            scope = load_generated_code(source_code)
             if "get_model" in scope:
-                model_obj = ensure_callable(scope["get_model"])()
-        except Exception:
+                model_obj = require_callable(scope["get_model"])()
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             model_obj = None
 
-        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
+        def runner(*args: BackendArg, **runner_kwargs: BackendArg) -> BackendArg:
             """Execute compiled Keras artifact using instantiated model or graph fallback.
 
             Args:
-                *args (EagerValue): Input tensor arguments.
-                **runner_kwargs (EagerValue): Optional execution options.
+                *args (BackendArg): Input tensor arguments.
+                **runner_kwargs (BackendArg): Optional execution options.
 
             Returns:
-                EagerValue: Model execution output or evaluated graph output.
+                BackendArg: Model execution output or evaluated graph output.
             """
             if model_obj is not None:
-                return ensure_callable(model_obj)(*args, **runner_kwargs)
+                return require_callable(model_obj)(*args, **runner_kwargs)
 
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            feed_dict: dict[str, EagerValue] = {}
+            feed_dict: dict[str, BackendArg] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = extract_data(arg)
@@ -401,5 +420,53 @@ class KerasCodeGenerator(BaseGenerator):
             metadata={"backend": "keras", "model": model_obj, "options": kwargs},
         )
 
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for Keras (`keras.ops`).
 
-from ml_switcheroo_ir import AttributeValue
+        Returns:
+            EagerBackendAdapter: Concrete Keras eager backend adapter.
+        """
+        import keras
+
+        return StaticEagerBackendAdapter(
+            backend_name="keras",
+            ops={
+                "abs": keras.ops.abs,
+                "add": keras.ops.add,
+                "subtract": keras.ops.subtract,
+                "multiply": keras.ops.multiply,
+                "divide": keras.ops.divide,
+                "sin": keras.ops.sin,
+                "cos": keras.ops.cos,
+                "tanh": keras.ops.tanh,
+                "exp": keras.ops.exp,
+                "log": keras.ops.log,
+                "sqrt": keras.ops.sqrt,
+                "matmul": keras.ops.matmul,
+                "sum": keras.ops.sum,
+                "mean": keras.ops.mean,
+                "reshape": keras.ops.reshape,
+                "transpose": keras.ops.transpose,
+                "asarray": keras.ops.convert_to_tensor,
+                "array": keras.ops.convert_to_tensor,
+                "zeros": keras.ops.zeros,
+                "ones": keras.ops.ones,
+                "empty": keras.ops.empty,
+            },
+            dtypes={
+                "float16": "float16",
+                "float32": "float32",
+                "float64": "float64",
+                "int32": "int32",
+                "int64": "int64",
+                "bool": "bool",
+            },
+            submodules={
+                "ops": keras.ops,
+                "linalg": keras.ops.linalg,
+                "nn": keras.ops.nn,
+                "image": keras.ops.image,
+            },
+            module=keras,
+        )

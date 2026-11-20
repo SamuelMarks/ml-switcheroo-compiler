@@ -26,8 +26,25 @@ def test_pass_config_model() -> None:
     """Verify PassConfig and cost model construction."""
     data = {
         "execution_order": ["test_pass"],
-        "cost_model": {"memory_sizes": {"MatMul": 10}, "compute_costs": {"heavy_ops": ["MatMul"], "light_ops": [], "heavy_cost": 20, "light_cost": 1, "default_cost": 2}, "compute_heavy_threshold": 1, "heavy_interleave_penalty": 1, "light_interleave_penalty": 1},
-        "fusion_patterns": {"p1": {"pattern": {"op_type": "Add", "capture": "c"}, "replacement": {"op_type": "Sub", "inputs": ["c"], "capture_to_replace": "c"}}},
+        "cost_model": {
+            "memory_sizes": {"MatMul": 10},
+            "compute_costs": {
+                "heavy_ops": ["MatMul"],
+                "light_ops": [],
+                "heavy_cost": 20,
+                "light_cost": 1,
+                "default_cost": 2,
+            },
+            "compute_heavy_threshold": 1,
+            "heavy_interleave_penalty": 1,
+            "light_interleave_penalty": 1,
+        },
+        "fusion_patterns": {
+            "p1": {
+                "pattern": {"op_type": "Add", "capture": "c"},
+                "replacement": {"op_type": "Sub", "inputs": ["c"], "capture_to_replace": "c"},
+            }
+        },
     }
     config = PassConfig.model_validate(data)
     assert config.execution_order == ["test_pass"]
@@ -41,7 +58,15 @@ def test_pass_config_model() -> None:
     assert n1.op_type is None
     n2 = NodePatternConfig(op_type="A", capture="a", inputs=[])
     assert n2.inputs == []
-    c1 = CostModelConfig.model_validate({"memory_sizes": {}, "compute_costs": {"heavy_ops": [], "light_ops": [], "heavy_cost": 1, "light_cost": 1, "default_cost": 1}, "compute_heavy_threshold": 1, "heavy_interleave_penalty": 1, "light_interleave_penalty": 1})
+    c1 = CostModelConfig.model_validate(
+        {
+            "memory_sizes": {},
+            "compute_costs": {"heavy_ops": [], "light_ops": [], "heavy_cost": 1, "light_cost": 1, "default_cost": 1},
+            "compute_heavy_threshold": 1,
+            "heavy_interleave_penalty": 1,
+            "light_interleave_penalty": 1,
+        }
+    )
     assert c1.compute_heavy_threshold == 1
 
 
@@ -99,14 +124,14 @@ def test_load_bundled_pass_pipeline_yaml() -> None:
 def test_load_shape_learning_protocol() -> None:
     """Test load_shape_learning_protocol loader function."""
     cfg = load_shape_learning_protocol()
-    assert cfg is not None
+    assert type(cfg).__name__ == "ShapeLearningProtocolConfig"
 
     yaml_path = os.path.join(
         os.path.dirname(__file__),
         "../../../src/ml_switcheroo_compiler/transforms/passes/shape_learning_protocol.yaml",
     )
     cfg_custom = load_shape_learning_protocol(path=yaml_path)
-    assert cfg_custom is not None
+    assert type(cfg_custom).__name__ == "ShapeLearningProtocolConfig"
 
 
 def test_device_mesh_partitioning_config_custom_path() -> None:
@@ -116,4 +141,4 @@ def test_device_mesh_partitioning_config_custom_path() -> None:
 
     real_path = os.path.join(os.path.dirname(cm.__file__), "spmd_mappings", "mesh_partitioning.yaml")
     cfg = load_mesh_partitioning(path=real_path)
-    assert cfg is not None
+    assert type(cfg).__name__ == "DeviceMeshPartitioningConfig"

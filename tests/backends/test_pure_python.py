@@ -6,13 +6,13 @@ import math
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.pure_python.eager import execute_op
 from ml_switcheroo_compiler.backends.pure_python.generator import PurePythonGenerator
 from ml_switcheroo_compiler.backends.pure_python.types import PurePythonTensor
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 if typing.TYPE_CHECKING:
     pass

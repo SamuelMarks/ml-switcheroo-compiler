@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -12,15 +12,15 @@ class Fromfile(OpDef):
 
     op_name = "Fromfile"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D output shape for Fromfile based on `count`.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (TensorOrScalar): Keyword attributes including `count`.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword attributes including `count`.
 
         Returns:
-            TensorOrScalar: Inferred 1-tuple shape.
+            OpValue: Inferred 1-tuple shape.
         """
         _ = args
         count = kwargs.get("count", -1)
@@ -33,15 +33,15 @@ class Fromstring(OpDef):
 
     op_name = "Fromstring"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D output shape for Fromstring based on `count`.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (TensorOrScalar): Keyword attributes including `count`.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword attributes including `count`.
 
         Returns:
-            TensorOrScalar: Inferred 1-tuple shape.
+            OpValue: Inferred 1-tuple shape.
         """
         _ = args
         count = kwargs.get("count", -1)
@@ -54,15 +54,15 @@ class Fromiter(OpDef):
 
     op_name = "Fromiter"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D output shape for Fromiter based on `count`.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (TensorOrScalar): Keyword attributes including `count`.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword attributes including `count`.
 
         Returns:
-            TensorOrScalar: Inferred 1-tuple shape.
+            OpValue: Inferred 1-tuple shape.
         """
         _ = args
         count = kwargs.get("count", -1)
@@ -75,41 +75,41 @@ class Fromfunction(OpDef):
 
     op_name = "Fromfunction"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for Fromfunction from `shape` argument.
 
         Args:
-            *args (TensorOrScalar): Positional arguments (function, shape).
-            **kwargs (TensorOrScalar): Keyword attributes.
+            *args (OpValue): Positional arguments (function, shape).
+            **kwargs (OpValue): Keyword attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
         return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
 
 
 def fromfile(
-    file: TensorOrScalar,
-    dtype: TensorOrScalar = float,
+    file: OpValue,
+    dtype: OpValue = float,
     count: int = -1,
     sep: str = "",
     offset: int = 0,
     *,
-    like: TensorOrScalar = None,
-) -> TensorOrScalar:
+    like: OpValue = None,
+) -> OpValue:
     """Construct an array from data in a text or binary file.
 
     Args:
-        file (TensorOrScalar): Open file object or filename path.
-        dtype (TensorOrScalar): Data type of the returned array.
+        file (OpValue): Open file object or filename path.
+        dtype (OpValue): Data type of the returned array.
         count (int): Number of items to read (-1 means all items).
         sep (str): Separator between items if file is a text file.
         offset (int): Byte offset from the file's current position.
-        like (TensorOrScalar): Reference array prototype.
+        like (OpValue): Reference array prototype.
 
     Returns:
-        TensorOrScalar: Array constructed from the file contents.
+        OpValue: Array constructed from the file contents.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -118,23 +118,23 @@ def fromfile(
 
 def fromstring(
     string: str,
-    dtype: TensorOrScalar = float,
+    dtype: OpValue = float,
     count: int = -1,
     sep: str = "",
     *,
-    like: TensorOrScalar = None,
-) -> TensorOrScalar:
+    like: OpValue = None,
+) -> OpValue:
     """Construct a 1-D array initialized from text data in a string.
 
     Args:
         string (str): Input string containing the data.
-        dtype (TensorOrScalar): Data type of the resulting array.
+        dtype (OpValue): Data type of the resulting array.
         count (int): Number of items to read (-1 means all data).
         sep (str): String separating numbers in the input data.
-        like (TensorOrScalar): Reference array prototype.
+        like (OpValue): Reference array prototype.
 
     Returns:
-        TensorOrScalar: 1-D tensor constructed from the parsed string.
+        OpValue: 1-D tensor constructed from the parsed string.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -142,22 +142,22 @@ def fromstring(
 
 
 def fromiter(
-    iterable: TensorOrScalar,
-    dtype: TensorOrScalar,
+    iterable: OpValue,
+    dtype: OpValue,
     count: int = -1,
     *,
-    like: TensorOrScalar = None,
-) -> TensorOrScalar:
+    like: OpValue = None,
+) -> OpValue:
     """Create a 1-dimensional array from an iterable object.
 
     Args:
-        iterable (TensorOrScalar): Iterable object providing data for the array.
-        dtype (TensorOrScalar): Data type of the returned array.
+        iterable (OpValue): Iterable object providing data for the array.
+        dtype (OpValue): Data type of the returned array.
         count (int): Number of items to read from `iterable` (-1 means all data).
-        like (TensorOrScalar): Reference array prototype.
+        like (OpValue): Reference array prototype.
 
     Returns:
-        TensorOrScalar: 1-D tensor populated from `iterable`.
+        OpValue: 1-D tensor populated from `iterable`.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -165,24 +165,24 @@ def fromiter(
 
 
 def fromfunction(
-    function: TensorOrScalar,
-    shape: TensorOrScalar,
+    function: OpValue,
+    shape: OpValue,
     *,
-    dtype: TensorOrScalar = float,
-    like: TensorOrScalar = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    dtype: OpValue = float,
+    like: OpValue = None,
+    **kwargs: OpValue,
+) -> OpValue:
     """Construct an array by executing a function over each coordinate.
 
     Args:
-        function (TensorOrScalar): Callable invoked with coordinate arrays.
-        shape (TensorOrScalar): Output array shape tuple.
-        dtype (TensorOrScalar): Data type of the coordinate grid passed to `function`.
-        like (TensorOrScalar): Reference array prototype.
-        **kwargs (TensorOrScalar): Additional keyword arguments passed to `function`.
+        function (OpValue): Callable invoked with coordinate arrays.
+        shape (OpValue): Output array shape tuple.
+        dtype (OpValue): Data type of the coordinate grid passed to `function`.
+        like (OpValue): Reference array prototype.
+        **kwargs (OpValue): Additional keyword arguments passed to `function`.
 
     Returns:
-        TensorOrScalar: Tensor result of evaluating `function` on the coordinate grid.
+        OpValue: Tensor result of evaluating `function` on the coordinate grid.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

@@ -5,12 +5,12 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch  # noqa: F401
 
-import pytest  # noqa: F401, I001
+import pytest
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_grounding_engine_broken_import() -> None:
@@ -20,7 +20,7 @@ def test_grounding_engine_broken_import() -> None:
         assert engine._grounding_engine is None
 
 
-def test_grounding_engine_unreadable_dir(monkeypatch: EagerTensorProtocol) -> None:
+def test_grounding_engine_unreadable_dir(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test unreadable snapshot directory handling.
 
     Args:

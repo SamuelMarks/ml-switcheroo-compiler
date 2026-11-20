@@ -66,3 +66,14 @@ __all__ = [
     "random_split",
     "resize_eager",
 ]
+from . import (  # noqa: E402, F401
+    audio_dct_ops,
+    control_flow_ops,
+    lookup_ops,
+    nn_ops,
+    reference_math,
+    sparse_ops,
+    string_ops,
+    variable_ops,
+    vision_ops,
+)

@@ -9,11 +9,11 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import MockGraphStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -35,7 +35,19 @@ def test_load_from_config() -> None:
                 read_data=yaml.dump(
                     {
                         "execution_order": ["dead_code_elimination", "invalid_pass_name"],
-                        "cost_model": {"memory_sizes": {}, "compute_costs": {"heavy_ops": [], "light_ops": [], "heavy_cost": 1, "light_cost": 1, "default_cost": 1}, "compute_heavy_threshold": 1, "heavy_interleave_penalty": 1, "light_interleave_penalty": 1},
+                        "cost_model": {
+                            "memory_sizes": {},
+                            "compute_costs": {
+                                "heavy_ops": [],
+                                "light_ops": [],
+                                "heavy_cost": 1,
+                                "light_cost": 1,
+                                "default_cost": 1,
+                            },
+                            "compute_heavy_threshold": 1,
+                            "heavy_interleave_penalty": 1,
+                            "light_interleave_penalty": 1,
+                        },
                         "fusion_patterns": {},
                     }
                 )
@@ -54,7 +66,7 @@ def test_dag_cycle() -> None:
     """Test the dag cycle behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = IRGraph()
     node_a = IRNode(id="A", op_type="dummy", inputs=["B"])
@@ -69,7 +81,7 @@ def test_check_cycles() -> None:
     """Test the check cycles behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = IRGraph()
     node_a = IRNode(id="A", op_type="dummy", inputs=["B"])
@@ -84,7 +96,7 @@ def test_check_shapes() -> None:
     """Test the check shapes behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = IRGraph()
     node_a = IRNode(id="A", op_type="dummy", inputs=[])
@@ -100,7 +112,7 @@ def test_graph_hash() -> None:
     """Test the graph hash behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = IRGraph()
     node_a = IRNode(id="A", op_type="dummy", inputs=[])
@@ -120,7 +132,7 @@ def test_pass_manager_run() -> None:
     """Test the pass manager run behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     pm = PassManager()
     graph = IRGraph()
@@ -151,7 +163,7 @@ def test_pass_manager_run_until_converged() -> None:
     """Test the pass manager run until converged behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     pm = PassManager()
     graph = IRGraph()
@@ -186,7 +198,7 @@ def test_pass_manager_run_until_converged_max_iters() -> None:
     """Test the pass manager run until converged max iters behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     pm = PassManager()
     graph = IRGraph()
@@ -217,23 +229,24 @@ def test_pass_manager_run_until_converged_max_iters() -> None:
 
 def test_pass_manager_nodes_list() -> None:
     """Test function test_pass_manager_nodes_list."""
-    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_ir import IRNode
+
     from ml_switcheroo_compiler.transforms.pass_manager import IRValidator, _graph_hash
 
-    class MockGraph:
+    class MockGraph(MockGraphStub):
         """Test class MockGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
             n = IRNode(id="n1", op_type="Exp")
             n.shape_metadata = ()
-            self.nodes = [n]
+            pytest.MonkeyPatch().setattr(self, "nodes", [n], raising=False)
 
     IRValidator()
     mock_g = MockGraph()
-    ensure_callable(IRValidator.check_shapes)(mock_g)
-    h = ensure_callable(_graph_hash)(mock_g)
-    assert isinstance(ensure_eager_tensor(h), str)
+    IRValidator.check_shapes(mock_g)
+    h = _graph_hash(mock_g)
+    assert isinstance(h, str)
 
 
 def test_pass_pipeline_load_and_prerequisites() -> None:
@@ -250,7 +263,11 @@ def test_pass_pipeline_missing_prerequisite_raises() -> None:
 
     import yaml
 
-    invalid_pipeline = {"execution_order": ["pass_b", "pass_a"], "convergence_criteria": {"max_iterations": 5}, "prerequisites": {"pass_b": ["pass_a"]}}
+    invalid_pipeline = {
+        "execution_order": ["pass_b", "pass_a"],
+        "convergence_criteria": {"max_iterations": 5},
+        "prerequisites": {"pass_b": ["pass_a"]},
+    }
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         yaml.dump(invalid_pipeline, f)
         temp_path = f.name
@@ -298,22 +315,24 @@ def test_pass_manager_coverage_branches() -> None:
 
     g_list = IRGraph()
     n_item = IRNode(id="n1", op_type="Input")
-    ensure_mutable(g_list).nodes = ensure_eager_tensor([n_item])
+    pytest.MonkeyPatch().setattr(g_list, "nodes", [n_item], raising=False)
     snap = _snapshot_graph(g_list)
     assert "n1" in snap["nodes"]
     _restore_graph(g_list, snap)
     assert len(g_list.nodes) == 1
 
-    class DummyGraphWithoutIO:
+    class DummyGraphWithoutIO(MockGraphStub):
         """Test class DummyGraphWithoutIO."""
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            from ml_switcheroo_ir import NodeDict
+
+            self.nodes = NodeDict()
 
     dg = DummyGraphWithoutIO()
-    ensure_callable(_restore_graph)(dg, snap)
-    ensure_callable(_restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
+    _restore_graph(dg, snap)
+    _restore_graph(dg, {"nodes": [], "inputs": [], "outputs": []})
     from ml_switcheroo_ir import LogicalGraph
 
     lg = LogicalGraph("test_lg")
@@ -342,7 +361,7 @@ def test_pass_manager_coverage_branches() -> None:
 
         max_iterations = 2
 
-    ensure_mutable(pm_conv).convergence_criteria = ensure_eager_tensor(MockConvergence())
+    pytest.MonkeyPatch().setattr(pm_conv, "convergence_criteria", MockConvergence(), raising=False)
     g_conv = IRGraph()
     g_conv.nodes["n"] = IRNode(id="n", op_type="Input", shape_metadata=())
     res_conv = pm_conv.run_until_converged(g_conv)

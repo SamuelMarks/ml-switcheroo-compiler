@@ -6,11 +6,16 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from pytest_mock import MockerFixture
 
-from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import _inject_cast_node, _needs_cast, type_promotion_explicitizer_pass
+from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
+    _inject_cast_node,
+    _needs_cast,
+    type_promotion_explicitizer_pass,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_inject_cast_node() -> None:
@@ -28,18 +33,18 @@ def test_needs_cast() -> None:
     """Test function test_needs_cast."""
     from ml_switcheroo_compiler.core.config import config
 
-    old_jax = config.jax_enable_x64
-    config.jax_enable_x64 = False
+    old_jax = config.enable_x64
+    config.enable_x64 = False
     try:
         assert _needs_cast(None, "float32") is None
         assert _needs_cast("float32", "float32") is None
         assert _needs_cast("int32", "float32") == "float32"
         assert _needs_cast("unknown", "float32") is None
     finally:
-        config.jax_enable_x64 = old_jax
+        config.enable_x64 = old_jax
 
 
-def test_type_promotion_explicitizer_pass(mocker: EagerTensorProtocol) -> None:
+def test_type_promotion_explicitizer_pass(mocker: MockerFixture) -> None:
     """Test function test_type_promotion_explicitizer_pass.
 
     Args:

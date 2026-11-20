@@ -4,35 +4,34 @@ from __future__ import annotations
 
 import logging
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, require_callable
 
 
 def jax_all_reduce(
-    tensor: EagerValue,
+    tensor: BackendArg,
     op: str = "SUM",
     axis_name: str = "data",
-) -> EagerValue:
+) -> BackendArg:
     """Execute native JAX psum/pmax/pmin collective reduction.
 
     Args:
-        tensor (EagerValue): JAX Array or compatible buffer.
+        tensor (BackendArg): JAX Array or compatible buffer.
         op (str): Reduction operator.
         axis_name (str): Named pmapped mesh axis.
 
     Returns:
-        EagerValue: Reduced tensor array.
+        BackendArg: Reduced tensor array.
     """
     try:
         import jax.lax as lax
 
-        lax_mod = ensure_mod(lax)
+        lax_mod = lax
         if op.upper() in ("SUM", "ADD"):
-            return ensure_eager_tensor(lax_mod.psum(tensor, axis_name=axis_name))
+            return require_callable(lax_mod.psum)(tensor, axis_name=axis_name)
         elif op.upper() == "MAX":
-            return ensure_eager_tensor(lax_mod.pmax(tensor, axis_name=axis_name))
+            return require_callable(lax_mod.pmax)(tensor, axis_name=axis_name)
         elif op.upper() == "MIN":
-            return ensure_eager_tensor(lax_mod.pmin(tensor, axis_name=axis_name))
+            return require_callable(lax_mod.pmin)(tensor, axis_name=axis_name)
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -40,24 +39,24 @@ def jax_all_reduce(
 
 
 def jax_all_gather(
-    tensor: EagerValue,
+    tensor: BackendArg,
     axis_name: str = "data",
     axis: int = 0,
-) -> EagerValue:
+) -> BackendArg:
     """Execute native JAX all_gather along a named axis.
 
     Args:
-        tensor (EagerValue): JAX Array or compatible buffer.
+        tensor (BackendArg): JAX Array or compatible buffer.
         axis_name (str): Named pmapped mesh axis.
         axis (int): Output concatenation axis.
 
     Returns:
-        EagerValue: Gathered global tensor.
+        BackendArg: Gathered global tensor.
     """
     try:
         import jax.lax as lax
 
-        return ensure_eager_tensor(ensure_mod(lax).all_gather(tensor, axis_name=axis_name, axis=axis))
+        return require_callable(lax.all_gather)(tensor, axis_name=axis_name, axis=axis)
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -65,16 +64,16 @@ def jax_all_gather(
 
 
 def jax_broadcast(
-    tensor: EagerValue,
+    tensor: BackendArg,
     src: int = 0,
-) -> EagerValue:
+) -> BackendArg:
     """Execute native JAX broadcast.
 
     Args:
-        tensor (EagerValue): JAX Array.
+        tensor (BackendArg): JAX Array.
         src (int): Source root rank.
 
     Returns:
-        EagerValue: Broadcasted tensor.
+        BackendArg: Broadcasted tensor.
     """
     return tensor

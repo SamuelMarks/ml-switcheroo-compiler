@@ -1,18 +1,16 @@
-"""Implementation of matmul operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.matmul`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.linalg.matmul`."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import (
-    ensure_callable,
-    ensure_eager_list,
-    ensure_eager_tensor,
+    coerce_operand_list,
     get_active_backend,
 )
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_device,
     extract_dtype,
@@ -24,11 +22,11 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-from .einsum_frontend import _infer_dot_general_shape
+from .einsum_api import _infer_dot_general_shape
 from .utils import _emit_linalg_node, _extract_linalg_dtype
 
 
-def matmul(input: Tensor, other: Tensor) -> TensorOrScalar:
+def matmul(input: Tensor, other: Tensor) -> OpValue:
     """Compute the matrix product of two tensors.
 
     Args:
@@ -47,13 +45,15 @@ def matmul(input: Tensor, other: Tensor) -> TensorOrScalar:
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(extract_shape(backend.array(data)), _extract_linalg_dtype(input, None), extract_device(input, None)),
+            TensorConfig(
+                extract_shape(backend.array(data)), _extract_linalg_dtype(input, None), extract_device(input, None)
+            ),
         )
     out_shape = matmul_shape(input.shape, other.shape)
     return _emit_linalg_node("Matmul", [input, other], {}, [out_shape], [_extract_linalg_dtype(input, None)])
 
 
-def dot(input: Tensor, other: Tensor) -> TensorOrScalar:
+def dot(input: Tensor, other: Tensor) -> OpValue:
     """Compute the dot product of two tensors.
 
     Args:
@@ -81,7 +81,7 @@ def dot(input: Tensor, other: Tensor) -> TensorOrScalar:
     return _emit_linalg_node("Dot", [input, other], {}, [()], [_extract_linalg_dtype(input, None)])
 
 
-def vdot(input: Tensor, other: Tensor) -> TensorOrScalar:
+def vdot(input: Tensor, other: Tensor) -> OpValue:
     """Compute the dot product of two vectors, conjugating the first argument.
 
     Args:
@@ -109,7 +109,7 @@ def vdot(input: Tensor, other: Tensor) -> TensorOrScalar:
     return _emit_linalg_node("Vdot", [input, other], {}, [()], [_extract_linalg_dtype(input, None)])
 
 
-def inner(input: Tensor, other: Tensor) -> TensorOrScalar:
+def inner(input: Tensor, other: Tensor) -> OpValue:
     """Compute the inner product of two tensors.
 
     Args:
@@ -137,7 +137,7 @@ def inner(input: Tensor, other: Tensor) -> TensorOrScalar:
     return _emit_linalg_node("Inner", [input, other], {}, [()], [_extract_linalg_dtype(input, None)])
 
 
-def outer(input: Tensor, other: Tensor) -> TensorOrScalar:
+def outer(input: Tensor, other: Tensor) -> OpValue:
     """Compute the outer product of two vectors.
 
     Args:
@@ -169,13 +169,14 @@ def dot_general(
     lhs: Tensor,
     rhs: Tensor,
     dimension_numbers: tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]],
-) -> TensorOrScalar:
+) -> OpValue:
     """General dot product with support for batching and contracting arbitrary dimensions.
 
     Args:
         lhs (Tensor): The left-hand side tensor.
         rhs (Tensor): The right-hand side tensor.
-        dimension_numbers (tuple): A tuple containing contracting dimensions and batch dimensions.
+        dimension_numbers (tuple[tuple[Sequence[int], Sequence[int]], tuple[Sequence[int], Sequence[int]]]):
+            A tuple containing contracting dimensions and batch dimensions.
 
     Returns:
         Tensor: The result of the generalized dot product.
@@ -190,21 +191,25 @@ def dot_general(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(extract_shape(backend.array(data)), _extract_linalg_dtype(lhs, None), extract_device(lhs, None)),
+            TensorConfig(
+                extract_shape(backend.array(data)), _extract_linalg_dtype(lhs, None), extract_device(lhs, None)
+            ),
         )
     attributes = {"dimension_numbers": dimension_numbers}
     out_shape = []
     if lhs.shape and rhs.shape:
-        out_shape = list(_infer_dot_general_shape(lhs.shape, rhs.shape, dimension_numbers))
-    return ensure_eager_tensor(ensure_callable(_emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [_extract_linalg_dtype(lhs, None)]))
+        out_shape = list(_infer_dot_general_shape(extract_shape(lhs), extract_shape(rhs), dimension_numbers))
+    return _emit_linalg_node(
+        "DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [_extract_linalg_dtype(lhs, None)]
+    )
 
 
-def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> TensorOrScalar:
+def convolve(a: OpValue, v: OpValue, mode: str = "full") -> OpValue:
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
-        a (TensorOrScalar): Input `a` argument (a).
-        v (TensorOrScalar): Input `v` argument (v).
+        a (OpValue): Input `a` argument (a).
+        v (OpValue): Input `v` argument (v).
         mode (str): Input `mode` argument (mode).
 
     Returns:
@@ -224,15 +229,21 @@ def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> Tensor
     return _emit_linalg_node("Convolve", [a, v], {"mode": mode}, [(None,)], [extract_dtype(a, "float32")])
 
 
-def matvec(a: TensorOrScalar, b: TensorOrScalar, transpose_a: TensorOrScalar = False, adjoint_a: TensorOrScalar = False, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def matvec(
+    a: OpValue,
+    b: OpValue,
+    transpose_a: OpValue = False,
+    adjoint_a: OpValue = False,
+    **kwargs: OpValue,
+) -> OpValue:
     """Matrix-vector multiplication.
 
     Args:
-        a (TensorOrScalar): Input `a` argument (a).
-        b (TensorOrScalar): Input `b` argument (b).
-        transpose_a (TensorOrScalar): Input `transpose_a` argument (transpose a).
-        adjoint_a (TensorOrScalar): Input `adjoint_a` argument (adjoint a).
-        **kwargs (TensorOrScalar): Keyword args.
+        a (OpValue): Input `a` argument (a).
+        b (OpValue): Input `b` argument (b).
+        transpose_a (OpValue): Input `transpose_a` argument (transpose a).
+        adjoint_a (OpValue): Input `adjoint_a` argument (adjoint a).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -240,33 +251,38 @@ def matvec(a: TensorOrScalar, b: TensorOrScalar, transpose_a: TensorOrScalar = F
     return a
 
 
-def multi_dot(arrays: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
+def multi_dot(arrays: OpValue, name: OpValue = None) -> OpValue:
     """Compute the multi dot tensor operation.
 
     Args:
-        arrays (TensorOrScalar): Input `arrays` argument (arrays).
-        name (TensorOrScalar): Input `name` argument (name).
+        arrays (OpValue): Input `arrays` argument (arrays).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    arr_list = ensure_eager_list(arrays)
+    arr_list = coerce_operand_list(arrays)
     first_arr = arr_list[0]
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("MultiDot", [(extract_data(a) if type(a).__name__ == "Tensor" else a) for a in arr_list])
-        return Tensor(data, TensorConfig(extract_shape(data), _extract_linalg_dtype(first_arr, None), extract_device(first_arr, None)))
-    return ensure_eager_tensor(ensure_callable(_emit_linalg_node)("MultiDot", arrays, {}, [()], [_extract_linalg_dtype(first_arr, None)]))
+        data = backend.execute_op(
+            "MultiDot", [(extract_data(a) if type(a).__name__ == "Tensor" else a) for a in arr_list]
+        )
+        return Tensor(
+            data,
+            TensorConfig(extract_shape(data), _extract_linalg_dtype(first_arr, None), extract_device(first_arr, None)),
+        )
+    return _emit_linalg_node("MultiDot", arr_list, {}, [()], [_extract_linalg_dtype(first_arr, None)])
 
 
-def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:
+def vecdot(x: OpValue, y: OpValue, axis: OpValue = -1, name: OpValue = None) -> OpValue:
     """Compute the vecdot tensor operation.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        y (TensorOrScalar): Input `y` argument (y).
-        axis (TensorOrScalar): Input `axis` argument (axis).
-        name (TensorOrScalar): Input `name` argument (name).
+        x (OpValue): Input `x` argument (x).
+        y (OpValue): Input `y` argument (y).
+        axis (OpValue): Input `axis` argument (axis).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -290,7 +306,7 @@ def addmm(
     *,
     beta: (float | int) = 1.0,
     alpha: (float | int) = 1.0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Perform a matrix multiplication of the matrices mat1 and mat2.
 
     Args:
@@ -319,13 +335,13 @@ class BlockMaskedMm(OpDef):
 
     op_name = "BlockMaskedMm"
 
-    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, b: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): Input `a` argument (a).
-            b (EagerTensorProtocol): Input `b` argument (b).
-            **kwargs (TensorOrScalar): Keyword args.
+            a (OpValue): Input `a` argument (a).
+            b (OpValue): Input `b` argument (b).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -333,13 +349,13 @@ class BlockMaskedMm(OpDef):
         if isinstance(a, tuple) and isinstance(b, tuple):
             try:
                 return matmul_shape(a, b)
-            except (ValueError, TypeError, Exception):
+            except (ValueError, TypeError, RuntimeError):
                 return None
-        _typed_ret_1: TensorOrScalar = extract_shape(a)
+        _typed_ret_1: OpValue = extract_shape(a)
         return _typed_ret_1
 
 
-def _unwrap(x: Tensor | None) -> TensorOrScalar | None:
+def _unwrap(x: Tensor | None) -> OpValue | None:
     """Unwrap a Tensor to its underlying data if it's a Tensor.
 
     Args:
@@ -355,7 +371,7 @@ def block_masked_mm(
     b: Tensor,
     block_size: int = 64,
     masks: dict[str, Tensor | None] | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Block masked matrix multiplication.
 
     Args:
@@ -369,7 +385,7 @@ def block_masked_mm(
     """
     masks = masks or {}
 
-    kwargs: dict[str, TensorOrScalar] = {"block_size": block_size}
+    kwargs: dict[str, OpValue] = {"block_size": block_size}
     if config.eager_mode:
         backend = get_active_backend()
         for k in ("mask_out", "mask_lhs", "mask_rhs"):
@@ -381,7 +397,7 @@ def block_masked_mm(
             TensorConfig(extract_shape(backend.array(data)), _extract_linalg_dtype(a, None), extract_device(a, None)),
         )
     out_shape = matmul_shape(a.shape, b.shape)
-    inputs: list[TensorOrScalar] = [a, b]
+    inputs: list[OpValue] = [a, b]
     for k in ("mask_out", "mask_lhs", "mask_rhs"):
         if masks.get(k) is not None:
             kwargs[k] = len(inputs)
@@ -397,30 +413,30 @@ class GatherMm(OpDef):
 
     def infer_shape(
         self,
-        a: TensorOrScalar,
-        b: TensorOrScalar,
-        lhs_indices: TensorOrScalar = None,
-        rhs_indices: TensorOrScalar = None,
-        **kwargs: TensorOrScalar,
-    ) -> TensorOrScalar:
+        a: OpValue,
+        b: OpValue,
+        lhs_indices: OpValue = None,
+        rhs_indices: OpValue = None,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): Input `a` argument (a).
-            b (EagerTensorProtocol): Input `b` argument (b).
-            lhs_indices (TensorOrScalar): Input `lhs_indices` argument (lhs indices).
-            rhs_indices (TensorOrScalar): Input `rhs_indices` argument (rhs indices).
-            **kwargs (TensorOrScalar): Keyword args.
+            a (OpValue): Input `a` argument (a).
+            b (OpValue): Input `b` argument (b).
+            lhs_indices (OpValue): Input `lhs_indices` argument (lhs indices).
+            rhs_indices (OpValue): Input `rhs_indices` argument (rhs indices).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not (isinstance(a, tuple) and isinstance(b, tuple)):
-            _typed_ret_3: TensorOrScalar = extract_shape(a)
+            _typed_ret_3: OpValue = extract_shape(a)
             return _typed_ret_3
         try:
             mm_shape = matmul_shape(a, b)
-        except (ValueError, TypeError, Exception):
+        except (ValueError, TypeError, RuntimeError):
             return None
         if isinstance(lhs_indices, tuple):
             return (lhs_indices[0],) + mm_shape[-2:]
@@ -429,14 +445,14 @@ class GatherMm(OpDef):
         return mm_shape
 
 
-def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: TensorOrScalar = None, rhs_indices: TensorOrScalar = None) -> TensorOrScalar:
+def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: OpValue = None, rhs_indices: OpValue = None) -> OpValue:
     """Infer shape for gather_mm operation.
 
     Args:
         a (Tensor): Input `a` argument (a).
         b (Tensor): Input `b` argument (b).
-        lhs_indices (Tensor): Input `lhs_indices` argument (lhs indices).
-        rhs_indices (Tensor): Input `rhs_indices` argument (rhs indices).
+        lhs_indices (OpValue): Input `lhs_indices` argument (lhs indices).
+        rhs_indices (OpValue): Input `rhs_indices` argument (rhs indices).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -454,23 +470,23 @@ def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: TensorOrScalar = N
 def gather_mm(
     a: Tensor,
     b: Tensor,
-    lhs_indices: TensorOrScalar = None,
-    rhs_indices: TensorOrScalar = None,
+    lhs_indices: OpValue = None,
+    rhs_indices: OpValue = None,
     sorted_indices: bool = False,
-) -> TensorOrScalar:
+) -> OpValue:
     """Gather matrix multiplication.
 
     Args:
         a (Tensor): Input `a` argument (a).
         b (Tensor): Input `b` argument (b).
-        lhs_indices (Tensor): Input `lhs_indices` argument (lhs indices).
-        rhs_indices (Tensor): Input `rhs_indices` argument (rhs indices).
+        lhs_indices (OpValue): Input `lhs_indices` argument (lhs indices).
+        rhs_indices (OpValue): Input `rhs_indices` argument (rhs indices).
         sorted_indices (bool): Input `sorted_indices` argument (sorted indices).
 
     Returns:
         Tensor: Computed `Tensor` output.
     """
-    kwargs: dict[str, TensorOrScalar] = {"sorted_indices": sorted_indices}
+    kwargs: dict[str, OpValue] = {"sorted_indices": sorted_indices}
     if config.eager_mode:
         backend = get_active_backend()
         for k, v in (("lhs_indices", lhs_indices), ("rhs_indices", rhs_indices)):
@@ -482,7 +498,7 @@ def gather_mm(
             TensorConfig(extract_shape(backend.array(data)), _extract_linalg_dtype(a, None), extract_device(a, None)),
         )
     out_shape = _gather_mm_infer_shape(a, b, lhs_indices, rhs_indices)
-    inputs: list[TensorOrScalar] = [a, b]
+    inputs: list[OpValue] = [a, b]
     for k, v in (("lhs_indices", lhs_indices), ("rhs_indices", rhs_indices)):
         if v is not None:
             kwargs[k] = len(inputs)
@@ -496,14 +512,14 @@ class SegmentedMm(OpDef):
 
     op_name = "SegmentedMm"
 
-    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, segments: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, b: OpValue, segments: OpValue = None, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): Input `a` argument (a).
-            b (EagerTensorProtocol): Input `b` argument (b).
-            segments (TensorOrScalar): Input `segments` argument (segments).
-            **kwargs (TensorOrScalar): Keyword args.
+            a (OpValue): Input `a` argument (a).
+            b (OpValue): Input `b` argument (b).
+            segments (OpValue): Input `segments` argument (segments).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -512,11 +528,11 @@ class SegmentedMm(OpDef):
             if segments is not None and isinstance(segments, tuple):
                 return segments[0] - 1, a[-2], b[-1]
             return 1, a[-2], b[-1]
-        _typed_ret_2: TensorOrScalar = extract_shape(a)
+        _typed_ret_2: OpValue = extract_shape(a)
         return _typed_ret_2
 
 
-def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> TensorOrScalar:
+def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> OpValue:
     """Segmented matrix multiplication.
 
     Args:

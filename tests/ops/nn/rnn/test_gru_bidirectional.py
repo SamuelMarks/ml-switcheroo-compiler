@@ -4,65 +4,70 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+
 from ml_switcheroo_compiler.ops.nn.gru import _compute_gru_gates, _sigmoid
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTensorStub, Tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_gru_extras() -> None:
     """Test function test_gru_extras."""
 
-    class DummyTensor:
+    class DummyTensor(MockTensorStub):
         """Test class DummyTensor."""
 
-        id = "t1"
-        shape_metadata = None
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.id = "t1"
+            self.shape_metadata = None
 
-        def __add__(self, other: EagerValue) -> EagerValue:
+        def __add__(self, other: BackendArg) -> Tensor:
             """Test function __add__.
 
             Args:
                 other: Test parameter `other`.
 
             Returns:
-                EagerValue: Computed output value from `__add__`.
+                Tensor: Computed output value from `__add__`.
             """
-            return ensure_eager_tensor(self)
+            return self
 
-        def __mul__(self, other: EagerValue) -> EagerValue:
+        def __mul__(self, other: BackendArg) -> Tensor:
             """Test function __mul__.
 
             Args:
                 other: Test parameter `other`.
 
             Returns:
-                EagerValue: Computed output value from `__mul__`.
+                Tensor: Computed output value from `__mul__`.
             """
-            return ensure_eager_tensor(self)
+            return self
 
-        def __sub__(self, other: EagerValue) -> EagerValue:
+        def __sub__(self, other: BackendArg) -> Tensor:
             """Test function __sub__.
 
             Args:
                 other: Test parameter `other`.
 
             Returns:
-                EagerValue: Computed output value from `__sub__`.
+                Tensor: Computed output value from `__sub__`.
             """
-            return ensure_eager_tensor(self)
+            return self
 
-        def __rsub__(self, other: EagerValue) -> EagerValue:
+        def __rsub__(self, other: BackendArg) -> Tensor:
             """Test function __rsub__.
 
             Args:
                 other: Test parameter `other`.
 
             Returns:
-                EagerValue: Computed output value from `__rsub__`.
+                Tensor: Computed output value from `__rsub__`.
             """
-            return ensure_eager_tensor(self)
+            return self
 
     from ml_switcheroo_compiler.core.config import config
 
@@ -73,16 +78,16 @@ def test_gru_extras() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
     try:
-        ensure_callable(_compute_gru_gates)(
-            [ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)()],
-            [ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)()],
-            ensure_callable(DummyTensor)(),
+        _compute_gru_gates(
+            [DummyTensor(), DummyTensor(), DummyTensor()],
+            [DummyTensor(), DummyTensor(), DummyTensor()],
+            DummyTensor(),
         )
-        ensure_callable(_sigmoid)(ensure_callable(DummyTensor)())
+        _sigmoid(DummyTensor())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
-    assert ensure_eager_tensor(state.global_tracing_state).add_node == orig_add_node
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
+    assert state.global_tracing_state.add_node == orig_add_node

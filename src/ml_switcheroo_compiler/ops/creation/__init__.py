@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .frontend_basic import (
+from .api_basic import (
     array,
     asarray,
     convert_to_numpy,
@@ -17,9 +17,9 @@ from .frontend_basic import (
     zeros,
     zeros_like,
 )
-from .frontend_matrix import diag, eye, identity
-from .frontend_random import manual_seed, rand, randint, randn
-from .frontend_sequence import arange, linspace
+from .api_matrix import diag, eye, identity
+from .api_random import manual_seed, rand, randint, randn
+from .api_sequence import arange, linspace
 
 __all__ = [
     "eye",

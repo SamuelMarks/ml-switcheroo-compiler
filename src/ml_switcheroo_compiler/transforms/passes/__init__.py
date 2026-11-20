@@ -18,11 +18,6 @@ from ml_switcheroo_compiler.transforms.passes.graph_scheduling import (
     GraphSchedulingPass,
     graph_scheduling_pass,
 )
-from ml_switcheroo_compiler.transforms.passes.lift_state import (
-    lift_module_state,
-    lift_state,
-    lift_state_pass,
-)
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 from ml_switcheroo_compiler.transforms.passes.mixed_precision import mixed_precision_pass
@@ -39,6 +34,11 @@ from ml_switcheroo_compiler.transforms.passes.spmd import (
     inject_spmd_communication_pass,
     propagate_sharding,
     spmd_partitioning_pass,
+)
+from ml_switcheroo_compiler.transforms.passes.state_lifting import (
+    lift_module_state,
+    lift_state,
+    lift_state_pass,
 )
 from ml_switcheroo_compiler.transforms.passes.state_lowering import (
     StateLoweringPass,

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import numpy as np
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 
 
 def test_webgl_slice_codegen() -> None:
@@ -114,11 +113,15 @@ def test_webgl_starts_and_dynamic_conv_edge_branches() -> None:
     slice_1 = IRNode("slice_1", "Slice", inputs=["in"], shape_metadata=[16, 16], attributes={"starts": ["str_dim"]})
 
     # 3. starts as list of len >= 2 with non-ints
-    slice_2 = IRNode("slice_2", "Slice", inputs=["in"], shape_metadata=[16, 16], attributes={"starts": ["str_y", "str_x"]})
+    slice_2 = IRNode(
+        "slice_2", "Slice", inputs=["in"], shape_metadata=[16, 16], attributes={"starts": ["str_y", "str_x"]}
+    )
 
     # 3b. starts as empty list and non-int/non-sequence
     slice_empty = IRNode("slice_empty", "Slice", inputs=["in"], shape_metadata=[16, 16], attributes={"starts": []})
-    slice_str = IRNode("slice_str", "Slice", inputs=["in"], shape_metadata=[16, 16], attributes={"starts": "str_starts"})
+    slice_str = IRNode(
+        "slice_str", "Slice", inputs=["in"], shape_metadata=[16, 16], attributes={"starts": "str_starts"}
+    )
 
     # 4. Conv2D with non-int dimension in eff_shape[:-1]
     in_dyn = IRNode("in_dyn", "Input", shape_metadata=["dynamic_batch", 16, 16])
@@ -206,4 +209,4 @@ def test_webgl_slice_and_concat_runner() -> None:
 
     inp = np.arange(16, dtype=np.float32).reshape(4, 4)
     res = artifact(inp)
-    ensure_callable(np.testing.assert_allclose)(res, inp[0:2, :])
+    np.testing.assert_allclose(ensure_ndarray(res), inp[0:2, :])

@@ -1,19 +1,18 @@
-"""Implementation of generator operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.generator`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.numpy.generator`."""
 
 from __future__ import annotations
 
 from types import ModuleType
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_shape
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_shape
 from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
-from ml_switcheroo_compiler.backends.protocols import get_backend_member
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, adapt_backend_module
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .numpy_mixins import NumpyScatterVisitor
 
@@ -35,28 +34,28 @@ class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
     @classmethod
-    def _format_kwargs(cls, kwargs: dict[str, EagerValue]) -> str:
+    def _format_kwargs(cls, kwargs: dict[str, BackendArg]) -> str:
         """Format keyword arguments for NumPy code emission.
 
         Args:
-            kwargs (dict[str, EagerValue]): Keyword arguments dictionary.
+            kwargs (dict[str, BackendArg]): Keyword arguments dictionary.
 
         Returns:
             str: Comma-separated key=value formatting string.
         """
-        filtered_kwargs: dict[str, EagerValue] = {k: v for k, v in kwargs.items() if k not in ("equation", "dimension")}
+        filtered_kwargs: dict[str, BackendArg] = {k: v for k, v in kwargs.items() if k not in ("equation", "dimension")}
         if "dimension" in kwargs:
             filtered_kwargs["axis"] = kwargs["dimension"]
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
 
     @classmethod
-    def visit_Parameter(cls, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Parameter(cls, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Visit parameter node.
 
         Args:
             node (LogicalNode): Parameter IR node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Keyword arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
             str: Parameter comment assignment line.
@@ -65,13 +64,13 @@ class NumpyASTVisitor:
         return f"{node.id} = None # Parameter"
 
     @classmethod
-    def visit_Return(cls, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Return(cls, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Visit return node.
 
         Args:
             node (LogicalNode): Return IR node.
             input_vars (list[str]): Input variable names to return.
-            **kwargs (EagerValue): Keyword arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
             str: Python return statement line.
@@ -84,20 +83,20 @@ class NumpyASTVisitor:
         return "return " + ", ".join(input_vars)
 
     @classmethod
-    def generic_visit(cls, node: EagerValue, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def generic_visit(cls, node: BackendArg, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate default NumPy code.
 
         Args:
-            node (EagerValue): The IR node.
+            node (BackendArg): The IR node.
             input_vars (list[str]): The names of the input variables.
-            **kwargs (EagerValue): Additional keyword arguments.
+            **kwargs (BackendArg): Additional keyword arguments.
 
         Returns:
             str: The generated default NumPy code string for the node.
         """
+        op_type = str(adapt_backend_module(node).get_symbol("op_type", ""))
         if "dimension" in kwargs:
-            return f"np.{get_backend_member(node, 'op_type').lower()}({input_vars[0]}, axis={kwargs['dimension']})"
-        op_type = str(get_backend_member(node, "op_type", ""))
+            return f"np.{op_type.lower()}({input_vars[0]}, axis={kwargs['dimension']})"
         op_spec = load_backend_mappings("numpy").operations.get(op_type)
         np_func = (op_spec.ast_template if op_spec and op_spec.ast_template else None) or f"np.{op_type.lower()}"
         args_str = ", ".join(input_vars)
@@ -132,16 +131,16 @@ class NumpyGenerator(
         )
 
     @classmethod
-    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute an operation eagerly using NumPy eager registry.
 
         Args:
             op_type (str): The operation type name.
-            *args (EagerValue): Positional arguments for the operation.
-            **kwargs (EagerValue): Keyword arguments for the operation.
+            *args (BackendArg): Positional arguments for the operation.
+            **kwargs (BackendArg): Keyword arguments for the operation.
 
         Returns:
-            EagerValue: Computed result.
+            BackendArg: Computed result.
         """
         from ml_switcheroo_compiler.backends.numpy.eager import execute_op as numpy_execute_op
 
@@ -170,74 +169,92 @@ class NumpyGenerator(
 
         Returns:
             ModuleType: The requested scipy submodule.
+
+        Raises:
+            ValueError: If input arguments, shapes, or configuration values in `get_scipy_module` are invalid.
         """
         import importlib
+        from collections.abc import Callable
 
-        return importlib.import_module(f"scipy.{submodule}")
+        loaders: dict[str, Callable[[], ModuleType]] = {
+            "special": lambda: importlib.import_module("scipy.special"),
+            "linalg": lambda: importlib.import_module("scipy.linalg"),
+            "stats": lambda: importlib.import_module("scipy.stats"),
+            "signal": lambda: importlib.import_module("scipy.signal"),
+            "fft": lambda: importlib.import_module("scipy.fft"),
+            "ndimage": lambda: importlib.import_module("scipy.ndimage"),
+            "sparse": lambda: importlib.import_module("scipy.sparse"),
+            "optimize": lambda: importlib.import_module("scipy.optimize"),
+            "integrate": lambda: importlib.import_module("scipy.integrate"),
+        }
+        loader = loaders.get(submodule)
+        if loader is None:
+            raise ValueError(f"Unsupported SciPy submodule: {submodule!r}")
+        return loader()
 
     @classmethod
-    def get_numpy_rng(cls, *args: EagerValue, **kwargs: EagerValue) -> TensorLike:
+    def get_numpy_rng(cls, *args: BackendArg, **kwargs: BackendArg) -> TensorLike:
         """Get a numpy random generator.
 
         Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns: np.ndarray: The rng.
         """
         import numpy as np
 
-        return ensure_eager_tensor(get_backend_member(np.random, "default_rng")(*args, **kwargs))
+        return adapt_backend_module(np.random).require_symbol("default_rng")(*args, **kwargs)
 
     @classmethod
-    def load(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def load(cls, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Load data using NumPy's load function.
 
         Args:
-            *args (EagerValue): Positional arguments for np.load.
-            **kwargs (EagerValue): Keyword arguments for np.load.
+            *args (BackendArg): Positional arguments for np.load.
+            **kwargs (BackendArg): Keyword arguments for np.load.
 
         Returns: np.ndarray: The loaded NumPy data.
         """
         import numpy as np
 
-        return ensure_eager_tensor(get_backend_member(np, "load")(*args, **kwargs))
+        return adapt_backend_module(np).require_op("load")(*args, **kwargs)
 
     @classmethod
-    def save(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def save(cls, *args: BackendArg, **kwargs: BackendArg) -> None:
         """Save data using NumPy's save function.
 
         Args:
-            *args (EagerValue): Positional arguments for np.save.
-            **kwargs (EagerValue): Keyword arguments for np.save.: This function does not return a value.
+            *args (BackendArg): Positional arguments for np.save.
+            **kwargs (BackendArg): Keyword arguments for np.save.: This function does not return a value.
         """
         import numpy as np
 
-        get_backend_member(np, "save")(*args, **kwargs)
+        adapt_backend_module(np).require_op("save")(*args, **kwargs)
 
     @classmethod
-    def savez(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def savez(cls, *args: BackendArg, **kwargs: BackendArg) -> None:
         """Save multiple arrays into a single file in uncompressed .npz format.
 
         Args:
-            *args (EagerValue): Positional arguments for np.savez.
-            **kwargs (EagerValue): Keyword arguments for np.savez.: This function does not return a value.
+            *args (BackendArg): Positional arguments for np.savez.
+            **kwargs (BackendArg): Keyword arguments for np.savez.: This function does not return a value.
         """
         import numpy as np
 
-        get_backend_member(np, "savez")(*args, **kwargs)
+        adapt_backend_module(np).require_op("savez")(*args, **kwargs)
 
     @classmethod
-    def savez_compressed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
+    def savez_compressed(cls, *args: BackendArg, **kwargs: BackendArg) -> None:
         """Save multiple arrays into a single file in compressed .npz format.
 
         Args:
-            *args (EagerValue): Positional arguments for np.savez_compressed.
-            **kwargs (EagerValue): Keyword arguments for np.savez_compressed.: This function does not return a value.
+            *args (BackendArg): Positional arguments for np.savez_compressed.
+            **kwargs (BackendArg): Keyword arguments for np.savez_compressed.: This function does not return a value.
         """
         import numpy as np
 
-        get_backend_member(np, "savez_compressed")(*args, **kwargs)
+        adapt_backend_module(np).require_op("savez_compressed")(*args, **kwargs)
 
     def _get_backend_prefix(self) -> str:
         """Retrieve the backend prefix property or mapping.
@@ -258,13 +275,13 @@ class NumpyGenerator(
         schema = load_backend_mappings("numpy")
         return schema.helpers or []
 
-    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate Python code for executing power iteration on a matrix.
 
         Args:
             node (IRNode): The IR node representing the PowerIteration operation.
             input_vars (list[str]): The names of the input variables.
-            **kwargs (EagerValue): Additional keyword arguments.
+            **kwargs (BackendArg): Additional keyword arguments.
 
         Returns:
             str: The generated NumPy code string for power iteration.
@@ -281,32 +298,34 @@ class NumpyGenerator(
         """
         return NumpyTypeTranslator.get_fallback_prefix()
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into an executable callable wrapper for NumPy.
 
         Args:
             graph (IRGraph): The target computation graph.
-            **kwargs (EagerValue): Compiler options.
+            **kwargs (BackendArg): Compiler options.
 
         Returns:
-            EagerValue: Callable execution wrapper.
+            BackendArg: Callable execution wrapper.
         """
         import ml_switcheroo_compiler.interpreter.evaluator as evaluator_module
         from ml_switcheroo_compiler.core.dtype import DType
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-        def callable_aot(*w_args: EagerValue, **w_kw: EagerValue) -> EagerValue:
+        def callable_aot(*w_args: BackendArg, **w_kw: BackendArg) -> BackendArg:
             """Execute ahead-of-time compiled graph on inputs.
 
             Args:
-                *w_args (EagerValue): Positional input tensors.
-                **w_kw (EagerValue): Keyword arguments.
+                *w_args (BackendArg): Positional input tensors.
+                **w_kw (BackendArg): Keyword arguments.
 
             Returns:
-                EagerValue: Computed tensor or collection of tensors.
+                BackendArg: Computed tensor or collection of tensors.
             """
             input_map = {}
-            input_nodes = [n for n in graph.nodes.values() if get_backend_member(n, "op_type", "") == "Input"]
+            input_nodes = [
+                n for n in graph.nodes.values() if adapt_backend_module(n).get_symbol("op_type", "") == "Input"
+            ]
             for i, inp_node in enumerate(input_nodes):
                 if i < len(w_args):
                     arg_val = w_args[i]
@@ -315,18 +334,114 @@ class NumpyGenerator(
             res_map = evaluator_module.evaluate_graph(graph, input_map)
             if graph.outputs:
                 if len(graph.outputs) == 1:
-                    out_val: EagerValue = res_map[graph.outputs[0]]
+                    out_val: BackendArg = res_map[graph.outputs[0]]
                     if isinstance(out_val, Tensor):
                         return out_val
-                    return Tensor(out_val, TensorConfig(ensure_shape(get_backend_member(out_val, "shape", ())), DType.Float32, "cpu"))
-                outs: list[EagerValue] = []
+                    return Tensor(
+                        out_val,
+                        TensorConfig(
+                            coerce_shape(adapt_backend_module(out_val).get_symbol("shape", ())), DType.Float32, "cpu"
+                        ),
+                    )
+                outs: list[BackendArg] = []
                 for out_id in graph.outputs:
                     out_val = res_map[out_id]
                     if isinstance(out_val, Tensor):
                         outs.append(out_val)
                     else:
-                        outs.append(Tensor(out_val, TensorConfig(ensure_shape(get_backend_member(out_val, "shape", ())), DType.Float32, "cpu")))
+                        outs.append(
+                            Tensor(
+                                out_val,
+                                TensorConfig(
+                                    coerce_shape(adapt_backend_module(out_val).get_symbol("shape", ())),
+                                    DType.Float32,
+                                    "cpu",
+                                ),
+                            )
+                        )
                 return outs
             return None
 
         return callable_aot
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for NumPy.
+
+        Returns:
+            EagerBackendAdapter: Concrete NumPy eager backend adapter.
+        """
+        import numpy as np
+
+        from ml_switcheroo_compiler.backends.protocols import StaticEagerBackendAdapter
+
+        return StaticEagerBackendAdapter(
+            backend_name="numpy",
+            ops={
+                "abs": np.abs,
+                "add": np.add,
+                "subtract": np.subtract,
+                "multiply": np.multiply,
+                "divide": np.divide,
+                "sin": np.sin,
+                "cos": np.cos,
+                "tanh": np.tanh,
+                "exp": np.exp,
+                "log": np.log,
+                "sqrt": np.sqrt,
+                "matmul": np.matmul,
+                "sum": np.sum,
+                "mean": np.mean,
+                "reshape": np.reshape,
+                "transpose": np.transpose,
+                "asarray": np.asarray,
+                "array": np.array,
+                "zeros": np.zeros,
+                "ones": np.ones,
+                "empty": np.empty,
+                "copy": np.copy,
+                "convolve": np.convolve,
+                "correlate": np.correlate,
+                "diagflat": np.diagflat,
+                "issubdtype": np.issubdtype,
+                "atleast_1d": np.atleast_1d,
+                "nonzero": np.nonzero,
+                "vstack": np.vstack,
+                "hstack": np.hstack,
+                "concatenate": np.concatenate,
+                "ravel_multi_index": np.ravel_multi_index,
+                "unravel_index": np.unravel_index,
+                "argsort": np.argsort,
+                "unique": np.unique,
+                "intersect1d": np.intersect1d,
+                "promote_types": np.promote_types,
+                "where": np.where,
+                "broadcast_to": np.broadcast_to,
+                "outer": np.outer,
+            },
+            dtypes={
+                "float16": np.float16,
+                "float32": np.float32,
+                "float64": np.float64,
+                "int8": np.int8,
+                "int16": np.int16,
+                "int32": np.int32,
+                "int64": np.int64,
+                "uint8": np.uint8,
+                "bool": np.bool_,
+                "bool_": np.bool_,
+                "complex64": np.complex64,
+                "complex128": np.complex128,
+                "integer": np.integer,
+                "number": np.number,
+                "ndarray": np.ndarray,
+                "inf": np.inf,
+                "nan": np.nan,
+            },
+            submodules={
+                "linalg": np.linalg,
+                "fft": np.fft,
+                "random": np.random,
+            },
+            module=np,
+        )

@@ -8,20 +8,29 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPropertiesMixin
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_tensor_obj
+from tests.testing_utils import MockTestStub, coerce_int_list, ensure_tensor, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 class DummyTensor(TensorIndexingMixin, TensorConversionMixin, TensorPropertiesMixin):
     """Test class DummyTensor."""
 
-    def __init__(self, shape: EagerValue, dtype: EagerValue, device: EagerValue, requires_grad: EagerValue, data: EagerValue = None) -> None:
+    def __init__(
+        self,
+        shape: BackendArg,
+        dtype: BackendArg,
+        device: BackendArg,
+        requires_grad: BackendArg,
+        data: BackendArg = None,
+    ) -> None:
         """Test function __init__.
 
         Args:
@@ -31,10 +40,10 @@ class DummyTensor(TensorIndexingMixin, TensorConversionMixin, TensorPropertiesMi
             requires_grad: Test parameter `requires_grad`.
             data: Test parameter `data`.
         """
-        ensure_mutable(self)._shape = ensure_eager_tensor(shape)
-        ensure_mutable(self)._dtype = ensure_eager_tensor(dtype)
-        ensure_mutable(self)._device = ensure_eager_tensor(device)
-        ensure_mutable(self)._requires_grad = ensure_eager_tensor(requires_grad)
+        pytest.MonkeyPatch().setattr(self, "_shape", shape, raising=False)
+        pytest.MonkeyPatch().setattr(self, "_dtype", dtype, raising=False)
+        pytest.MonkeyPatch().setattr(self, "_device", device, raising=False)
+        pytest.MonkeyPatch().setattr(self, "_requires_grad", requires_grad, raising=False)
         self._data = data
         self.config = self
 
@@ -45,12 +54,12 @@ def test_tensor_properties() -> None:
 
     config.eager_mode = True
     t = DummyTensor((2, 3), DType.Float32, "cpu", True)
-    assert ensure_eager_tensor(ensure_eager_tensor(t).ndim) == 2
-    assert ensure_eager_tensor(ensure_eager_tensor(t).size) == 6
-    assert ensure_eager_tensor(t).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(t).dtype) == DType.Float32
-    assert ensure_eager_tensor(ensure_eager_tensor(t).device) == "cpu"
-    assert bool(ensure_eager_tensor(ensure_eager_tensor(t).requires_grad)) is True
+    assert t.ndim == 2
+    assert t.size == 6
+    assert t.shape == (2, 3)
+    assert t.dtype == DType.Float32
+    assert t.device == "cpu"
+    assert bool(t.requires_grad) is True
 
     DummyTensor((2, "None"), DType.Float32, "cpu", True)
     pass
@@ -77,20 +86,20 @@ def test_tensor_conversion() -> None:
     class DummyBk:
         """Test class DummyBk."""
 
-        def zeros(self, s: EagerValue) -> EagerValue:
+        def zeros(self, s: BackendArg) -> BackendArg:
             """Test function zeros.
 
             Args:
                 s: Test parameter `s`.
 
             Returns:
-                EagerValue: Computed output value from `zeros`.
+                BackendArg: Computed output value from `zeros`.
             """
             import numpy as np
 
-            return ensure_callable(np.zeros)(s)
+            return np.zeros(coerce_int_list(s))
 
-        def item(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def item(self, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function item.
 
             Args:
@@ -98,11 +107,11 @@ def test_tensor_conversion() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `item`.
+                BackendArg: Computed output value from `item`.
             """
             return 42.0
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBk())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBk(), raising=False)
 
     pass
     pass
@@ -111,31 +120,35 @@ def test_tensor_conversion() -> None:
     # Eager mode
     config.eager_mode = True
     t2 = DummyTensor((2, 3), DType.Float32, "cpu", True, data=[1, 2])
-    assert ensure_eager_tensor(ensure_eager_tensor(t2).numpy)().tolist() == [1, 2]
+    assert ensure_ndarray(t2.numpy()).tolist() == [1, 2]
 
     # Exception path
-    class BadData:
+    class BadData(MockTestStub):
         """Test class BadData."""
 
         def __array__(self) -> None:
-            """Test function __array__."""
-            raise Exception("no")
+            """Test function __array__.
 
-        def tolist(self) -> EagerValue:
+            Raises:
+                Exception: When raised during `__array__` (no).
+            """
+            raise RuntimeError("no")
+
+        def tolist(self) -> BackendArg:
             """Test function tolist.
 
             Returns:
-                EagerValue: Computed output value from `tolist`.
+                BackendArg: Computed output value from `tolist`.
             """
             return [1]
 
-    t3 = ensure_callable(DummyTensor)((1,), DType.Float32, "cpu", True, data=ensure_callable(BadData)())
+    t3 = DummyTensor((1,), DType.Float32, "cpu", True, data=BadData())
     pass
 
-    ensure_mutable(t3)._data = ensure_eager_tensor(ensure_callable(np.array)([42.0]))
-    ensure_mutable(t3).eval = ensure_eager_tensor(lambda: t3)
+    t3._data = np.array([42.0])
+    pytest.MonkeyPatch().setattr(t3, "eval", lambda: t3, raising=False)
     type(t3).__name__ = "Tensor"
-    assert ensure_eager_tensor(ensure_eager_tensor(t3).item)() == 42.0
+    assert t3.item() == 42.0
 
 
 def test_tensor_indexing() -> None:
@@ -150,7 +163,7 @@ def test_tensor_indexing() -> None:
     class DummyFrontend:
         """Test class DummyFrontend."""
 
-        def __call__(self, x: EagerValue, idx: EagerValue) -> EagerValue:
+        def __call__(self, x: BackendArg, idx: BackendArg) -> BackendArg:
             """Test function __call__.
 
             Args:
@@ -158,24 +171,26 @@ def test_tensor_indexing() -> None:
                 idx: Test parameter `idx`.
 
             Returns:
-                EagerValue: Computed output value from `__call__`.
+                BackendArg: Computed output value from `__call__`.
             """
             return (x, idx)
 
+    import pytest
+
     from ml_switcheroo_compiler.ops.registry import _FRONTEND_REGISTRY
 
-    ensure_eager_tensor(_FRONTEND_REGISTRY)["getitem"] = ensure_eager_tensor(DummyFrontend())
+    pytest.MonkeyPatch().setitem(_FRONTEND_REGISTRY, "getitem", DummyFrontend())
 
     config.eager_mode = True
-    ensure_mutable(t).__array__ = ensure_eager_tensor(lambda: np.zeros((2, 3)))
-    assert ensure_eager_tensor(t)[0].shape == (3,)
+    t._data = np.zeros((2, 3))
+    assert t[0].shape == (3,)
 
     import pytest
 
     with pytest.raises(IndexError):
-        ensure_eager_tensor(t)[10]
+        t[10]
 
-    at = ensure_eager_tensor(ensure_eager_tensor(t).at)
+    at = t.at
     assert id(at.tensor) == id(t)
 
 
@@ -188,32 +203,32 @@ def test_tensor_conversion_tracing() -> None:
 
     config.eager_mode = False
 
-    class PData:
+    class PData(MockTestStub):
         """Test class PData."""
 
         id = "id"
 
-    t = ensure_callable(DummyTensor)((2, 3), DType.Float32, "cpu", True, data=ensure_callable(PData)())
+    t = DummyTensor((2, 3), DType.Float32, "cpu", True, data=PData())
 
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBk:
         """Test class DummyBk."""
 
-        def zeros(self, s: EagerValue) -> EagerValue:
+        def zeros(self, s: BackendArg) -> BackendArg:
             """Test function zeros.
 
             Args:
                 s: Test parameter `s`.
 
             Returns:
-                EagerValue: Computed output value from `zeros`.
+                BackendArg: Computed output value from `zeros`.
             """
             import numpy as np
 
-            return ensure_callable(np.zeros)(s)
+            return np.zeros(coerce_int_list(s))
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBk())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBk(), raising=False)
 
     assert t.shape == (2, 3)
 
@@ -231,17 +246,17 @@ def test_tensor_indexing_tracing() -> None:
     class DummyGraph:
         """Test class DummyGraph."""
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: LogicalNode) -> None:
             """Test function add_node.
 
             Args:
                 node: Test parameter `node`.
             """
-            ensure_eager_tensor(ensure_eager_tensor(self).nodes)[ensure_eager_tensor(node).id] = node
+            self.nodes[node.id] = node
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
     state.global_tracing_state.start_tracing("test_indexing")
     from ml_switcheroo_compiler.core.config import config
@@ -249,19 +264,20 @@ def test_tensor_indexing_tracing() -> None:
     config.eager_mode = False
 
     t = DummyTensor((2, 3), DType.Float32, "cpu", True)
-    ensure_mutable(t).__array__ = ensure_eager_tensor(lambda: np.zeros((2, 3)))
 
     class DummyData:
         """Test class DummyData."""
 
         id = "data_id"
+        shape = (2, 3)
+        dtype = "float32"
 
-    ensure_mutable(t)._data = ensure_eager_tensor(DummyData())
+    t._data = DummyData()
 
-    assert ensure_eager_tensor(t)[0] is not None
+    assert tuple(t[0].shape) == ()
 
 
-def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> None:
+def test_tensor_conversion_mixin_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_tensor_conversion_mixin_missing.
 
     Args:
@@ -271,7 +287,7 @@ def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> No
     class MockMixin(TensorConversionMixin):
         """Test class MockMixin."""
 
-        def __init__(self, data: EagerValue) -> None:
+        def __init__(self, data: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -280,11 +296,11 @@ def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> No
             self._data = data
 
         @property
-        def data(self) -> EagerValue:
+        def data(self) -> BackendArg:
             """Test function data.
 
             Returns:
-                EagerValue: Computed output value from `data`.
+                BackendArg: Computed output value from `data`.
             """
             return self._data
 
@@ -295,10 +311,10 @@ def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> No
             Returns:
                 Tensor: Computed output value from `eval`.
             """
-            return ensure_tensor_obj(self._data)
+            return ensure_tensor(self._data)
 
     m = MockMixin(np.array([1, 2]))
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(m.numpy)(), ensure_callable(np.array)([1, 2]))
+    np.testing.assert_array_equal(ensure_ndarray(m.numpy()), np.array([1, 2]))
 
     # Test __array__
     np.testing.assert_array_equal(np.array(m), np.array([1, 2]))
@@ -334,12 +350,12 @@ def test_tensor_mixins_array_with_id() -> None:
     """Test function test_tensor_mixins_array_with_id."""
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    class DataWithId:
+    class DataWithId(MockTestStub):
         """Test class DataWithId."""
 
         id = "dummy_id"
 
-    t = ensure_callable(Tensor)(data=ensure_callable(DataWithId)(), config=ensure_callable(TensorConfig)(dtype="int32", shape=(1,), device=None))
+    t = Tensor(data=DataWithId(), config=TensorConfig(dtype="int32", shape=(1,), device=None))
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
         mock_backend = MagicMock()
@@ -348,7 +364,7 @@ def test_tensor_mixins_array_with_id() -> None:
         mock_get_backend.return_value = mock_backend
 
         arr = t.to_backend_array()
-        assert arr is not None
+        assert type(arr).__name__ == "MagicMock"
 
 
 def test_tensor_mixins_bool() -> None:
@@ -427,11 +443,11 @@ def test_tensor_mixins_setitem() -> None:
     config.eager_mode = True
 
     t[0] = 5
-    assert ensure_eager_tensor(t.data)[0] == 5
+    assert ensure_ndarray(t.data)[0] == 5
 
     t_val = Tensor(data=np.array(7), config=TensorConfig(dtype="int32", shape=(), device=None))
     t[1] = t_val
-    assert ensure_eager_tensor(t.data)[1] == 7
+    assert ensure_ndarray(t.data)[1] == 7
 
     config.eager_mode = False
     with pytest.raises(TypeError, match="does not support item assignment in tracing mode"):
@@ -455,10 +471,17 @@ def test_tensor_mixins_add_node_error() -> None:
     class FakeKey:
         """Test class FakeKey."""
 
-        pass
+        def __call__(self, *args: BackendArg, **kwargs: BackendArg) -> None:
+            """No-op callable satisfying `OpValue`.
+
+            Args:
+                *args: Unused args.
+                **kwargs: Unused kwargs.
+            """
+            del args, kwargs
 
     with pytest.raises(RuntimeError, match="not currently tracing"):
-        ensure_eager_tensor(t)[ensure_eager_tensor(FakeKey())]
+        t[FakeKey()]
 
     # Force IndexError with "too many indices for array"
     t_0d = Tensor(data=np.array(5), config=TensorConfig(dtype="int32", shape=(), device=None))
@@ -485,12 +508,12 @@ def test_tensor_mixins_properties_and_conversions() -> None:
         mock_backend.numpy.return_value = np.array([1, 2])
         mock_get_backend.return_value = mock_backend
 
-        assert ensure_callable(np.array_equal)(ensure_callable(t.numpy)(), ensure_callable(np.array)([1, 2]))
+        assert np.array_equal(ensure_ndarray(t.numpy()), np.array([1, 2]))
 
         # fallback to asarray
-        mock_backend.numpy.side_effect = Exception("No numpy")
+        mock_backend.numpy.side_effect = RuntimeError("No numpy")
         mock_backend.asarray.return_value = np.array([1, 2])
-        assert ensure_callable(np.array_equal)(ensure_callable(t.numpy)(), ensure_callable(np.array)([1, 2]))
+        assert np.array_equal(ensure_ndarray(t.numpy()), np.array([1, 2]))
 
 
 def test_tensor_mixins_array_exceptions() -> None:
@@ -501,12 +524,12 @@ def test_tensor_mixins_array_exceptions() -> None:
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
         mock_backend = MagicMock()
-        mock_backend.asarray.side_effect = Exception("No asarray")
+        mock_backend.asarray.side_effect = RuntimeError("No asarray")
         mock_backend.array.return_value = np.array([1, 2])
         mock_get_backend.return_value = mock_backend
 
         arr = t.to_backend_array()
-        assert arr is not None
+        assert tuple(extract_test_shape(arr)) == (2,)
 
 
 def test_tensor_mixins_int() -> None:
@@ -572,6 +595,9 @@ def test_tensor_mixins_item_fallback() -> None:
             mock_backend.item.return_value = 5.0
             mock_get_backend.return_value = mock_backend
             assert t.item() == 5.0
+    with patch.object(t, "eval", return_value=7.5):
+        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=np):
+            assert t.item() == 7.5
 
 
 def test_tensor_mixins_iter_loop() -> None:
@@ -592,26 +618,32 @@ def test_tensor_mixins_getitem_tracing() -> None:
     config.eager_mode = False
     global_tracing_state.is_tracing = True
 
-    class FakeData:
+    class FakeData(MockTestStub):
         """Test class FakeData."""
 
         id = "dummy"
 
-    class MockDtype:
+    class MockDtype(MockTestStub):
         """Test class MockDtype."""
 
         value = "int32"
 
-    t = ensure_callable(Tensor)(data=ensure_callable(FakeData)(), config=ensure_callable(TensorConfig)(dtype=ensure_callable(MockDtype)(), shape=(2,), device=None))
+    t = Tensor(
+        data=FakeData(),
+        config=TensorConfig(dtype=MockDtype(), shape=(2,), device=None),
+    )
 
     class FakeArray:
         """Test class FakeArray."""
 
-        def __getitem__(self, key: EagerValue) -> None:
+        def __getitem__(self, key: BackendArg) -> None:
             """Test function __getitem__.
 
             Args:
                 key: Test parameter `key`.
+
+            Raises:
+                IndexError: When raised during `__getitem__` (Simulated failure).
             """
             raise IndexError("Simulated failure")
 

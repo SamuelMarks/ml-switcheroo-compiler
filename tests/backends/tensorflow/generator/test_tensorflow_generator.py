@@ -3,21 +3,23 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Mapping
+from pathlib import Path
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import AttributeValue, IRGraph, NodeDict
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockNodeStub, ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    pass
 
 
-class DummyNode:
+class DummyNode(MockNodeStub):
     """Test class DummyNode."""
 
-    def __init__(self, attrs: EagerValue = None, op_type: EagerValue = "Unknown") -> None:
+    def __init__(self, attrs: dict[str, AttributeValue] | None = None, op_type: str = "Unknown") -> None:
         """Test function __init__.
 
         Args:
@@ -29,7 +31,7 @@ class DummyNode:
         self.id = "n1"
 
 
-def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
+def test_tf_generator_basics(tmp_path: Path) -> None:
     """Test function test_tf_generator_basics.
 
     Args:
@@ -44,12 +46,13 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     file_npy = tmp_path / "test.npy"
     TensorFlowCodeGenerator.save(str(file_npy), arr)
     res_npy = TensorFlowCodeGenerator.load(str(file_npy))
-    ensure_callable(np.testing.assert_array_equal)(res_npy, arr)
+    np.testing.assert_array_equal(ensure_ndarray(res_npy), arr)
 
     file_npz = tmp_path / "test.npz"
     TensorFlowCodeGenerator.savez(str(file_npz), a=arr)
     res_npz = TensorFlowCodeGenerator.load(str(file_npz))
-    ensure_callable(np.testing.assert_array_equal)(ensure_eager_tensor(res_npz)["a"], arr)
+    assert isinstance(res_npz, Mapping)
+    np.testing.assert_array_equal(ensure_ndarray(res_npz["a"]), arr)
 
     file_comp = tmp_path / "test_comp.npz"
     TensorFlowCodeGenerator.savez_compressed(str(file_comp), a=arr)
@@ -69,8 +72,8 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     assert gen._format_transpose({}) == "tf.transpose({0})"
     assert gen._format_transpose({"axes": [0, 1]}) == "tf.transpose({0}, perm={axes})"
 
-    assert ensure_callable(gen.visit_RaggedDot)(ensure_callable(DummyNode)(), ["x", "y"]) == "tf_ragged_dot(x, y)"
-    assert ensure_callable(gen.visit_Einsum)(ensure_callable(DummyNode)(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
+    assert gen.visit_RaggedDot(DummyNode(), ["x", "y"]) == "tf_ragged_dot(x, y)"
+    assert gen.visit_Einsum(DummyNode(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
 
     assert gen.get_fallback_prefix() == "tf.math"
     assert "Zeros" in gen._get_creation_ops({})
@@ -93,10 +96,10 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     from unittest.mock import MagicMock, patch
 
     import numpy as np
+    from ml_switcheroo_ir import IRGraph, IRNode
 
     from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     n_in = IRNode(id="x", op_type="Input", shape_metadata=[2, 2], attributes={"dtype": "float32"})
@@ -120,7 +123,11 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     mock_tf = MagicMock()
     mock_tf.nn.relu.side_effect = lambda x: np.maximum(x, 0.0)
     mock_tf.convert_to_tensor.side_effect = lambda x: np.asarray(x)
-    ctx = patch.dict(sys.modules, {"tensorflow": mock_tf}) if importlib.util.find_spec("tensorflow") is None else MagicMock()
+    ctx = (
+        patch.dict(sys.modules, {"tensorflow": mock_tf})
+        if importlib.util.find_spec("tensorflow") is None
+        else MagicMock()
+    )
 
     with ctx:
         with patch("tensorflow.function", side_effect=lambda fn, **kw: fn):
@@ -128,7 +135,9 @@ def test_tf_generator_pure_tf_and_aot() -> None:
             x_val = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
             cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
             out = runner(Tensor(x_val, cfg_2x2))
-            ensure_callable(np.testing.assert_allclose)(out, ensure_callable(np.maximum)(x_val, 0.0))
+            np.testing.assert_allclose(ensure_ndarray(out), np.maximum(x_val, 0.0))
+            rel_out = TensorFlowCodeGenerator.execute_op("Relu", x_val)
+            np.testing.assert_allclose(ensure_ndarray(ensure_tensor(rel_out).numpy()), np.maximum(x_val, 0.0))
 
 
 def test_tf_generator_aot_fallback() -> None:
@@ -138,13 +147,17 @@ def test_tf_generator_aot_fallback() -> None:
     from unittest.mock import MagicMock, patch
 
     import numpy as np
+    from ml_switcheroo_ir import IRGraph, IRNode
 
     from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     mock_tf = MagicMock()
-    ctx = patch.dict(sys.modules, {"tensorflow": mock_tf}) if importlib.util.find_spec("tensorflow") is None else MagicMock()
+    ctx = (
+        patch.dict(sys.modules, {"tensorflow": mock_tf})
+        if importlib.util.find_spec("tensorflow") is None
+        else MagicMock()
+    )
 
     g_multi = IRGraph()
     n_a = IRNode(id="a", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
@@ -171,7 +184,7 @@ def test_tf_generator_aot_fallback() -> None:
 
                 g_multi.outputs = ["add"]
                 res_single = fb_runner(a_val)
-                ensure_callable(np.testing.assert_allclose)(res_single, [2.0, 4.0])
+                np.testing.assert_allclose(ensure_ndarray(res_single), [2.0, 4.0])
 
                 g_multi.outputs = []
                 res_dict = fb_runner(a_val)

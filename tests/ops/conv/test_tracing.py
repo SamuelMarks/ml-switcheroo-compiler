@@ -17,7 +17,7 @@ def test_conv_tracing() -> None:
     """Test the conv tracing behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with pytest.raises(ValueError):
         device = Device(DeviceType.CPU, 0)

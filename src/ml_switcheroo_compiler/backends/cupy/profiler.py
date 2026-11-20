@@ -6,16 +6,18 @@ import logging
 import resource
 import sys
 import time
+from collections.abc import Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
-from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, require_callable
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 
 try:
     import cupy as cp
 except ImportError:
     cp = None
 
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_ir import IRGraph
 
 
 def _get_process_memory_mb() -> float:
@@ -42,12 +44,25 @@ def _is_cupy_available() -> bool:
     if type(cp).__name__ == "MagicMock":
         return True
     try:
-        if resolve_backend_member(cp, "cuda")[0]:
-            if resolve_backend_member(cp.cuda, "is_available")[0] and not cp.cuda.is_available():
+        if adapt_backend_module(cp).resolve_symbol("cuda")[0]:
+            if adapt_backend_module(cp.cuda).resolve_symbol("is_available")[0] and not cp.cuda.is_available():
                 return False
-            if resolve_backend_member(cp.cuda, "runtime")[0] and resolve_backend_member(cp.cuda.runtime, "getDeviceCount")[0]:
+            if (
+                adapt_backend_module(cp.cuda).resolve_symbol("runtime")[0]
+                and adapt_backend_module(cp.cuda.runtime).resolve_symbol("getDeviceCount")[0]
+            ):
                 return bool(cp.cuda.runtime.getDeviceCount() > 0)
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return False
     return True
 
@@ -61,7 +76,7 @@ def _get_cupy_peak_memory_mb() -> float:
     if cp is None or not _is_cupy_available():
         return _get_process_memory_mb()
     peak_mem: float = 0.0
-    if resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Device")[0]:
+    if adapt_backend_module(cp).resolve_symbol("cuda")[0] and adapt_backend_module(cp.cuda).resolve_symbol("Device")[0]:
         try:
             mem_info = cp.cuda.Device().mem_info
             if isinstance(mem_info, (tuple, list)) and len(mem_info) == 2:
@@ -72,10 +87,20 @@ def _get_cupy_peak_memory_mb() -> float:
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if peak_mem <= 0.0:
-        if resolve_backend_member(cp, "get_default_memory_pool")[0]:
+        if adapt_backend_module(cp).resolve_symbol("get_default_memory_pool")[0]:
             try:
                 peak_mem = float(cp.get_default_memory_pool().used_bytes() / (1024.0 * 1024.0))
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 peak_mem = _get_process_memory_mb()
         else:
             peak_mem = _get_process_memory_mb()
@@ -89,12 +114,19 @@ class CupyProfiler:
         """Synchronize execution using CUDA stream synchronization."""
         if cp is None or not _is_cupy_available():
             return
-        if resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Stream")[0] and resolve_backend_member(cp.cuda.Stream, "null")[0]:
+        if (
+            adapt_backend_module(cp).resolve_symbol("cuda")[0]
+            and adapt_backend_module(cp.cuda).resolve_symbol("Stream")[0]
+            and adapt_backend_module(cp.cuda.Stream).resolve_symbol("null")[0]
+        ):
             try:
                 cp.cuda.Stream.null.synchronize()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        if resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Device")[0]:
+        if (
+            adapt_backend_module(cp).resolve_symbol("cuda")[0]
+            and adapt_backend_module(cp.cuda).resolve_symbol("Device")[0]
+        ):
             try:
                 cp.cuda.Device().synchronize()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -102,12 +134,12 @@ class CupyProfiler:
 
     def _prepare_cupy_inputs(
         self,
-        inputs: dict[str, list[float] | list[list[float]] | cp.ndarray],
+        inputs: Mapping[str, list[float] | list[list[float]] | cp.ndarray],
     ) -> tuple[dict[str, cp.ndarray], list[cp.ndarray]]:
         """Convert input dictionary values into CuPy float32 arrays.
 
         Args:
-            inputs (dict[str, Union[list[float], list[list[float]], cp.ndarray]]): Raw input buffers.
+            inputs: Raw input buffers.
 
         Returns:
             tuple[dict[str, cp.ndarray], list[cp.ndarray]]: Dictionary and list of CuPy arrays.
@@ -122,13 +154,13 @@ class CupyProfiler:
 
     def _measure_single_step_ms(
         self,
-        step_fn: EagerValue,
+        step_fn: BackendArg,
         has_cuda_events: bool,
     ) -> float:
         """Measure execution time of a single step in milliseconds using CUDA events or host timer.
 
         Args:
-            step_fn (EagerValue): Zero-argument callable executing the graph step.
+            step_fn (BackendArg): Zero-argument callable executing the graph step.
             has_cuda_events (bool): Whether CuPy CUDA Event timing is available.
 
         Returns:
@@ -139,7 +171,7 @@ class CupyProfiler:
                 start_event = cp.cuda.Event()
                 end_event = cp.cuda.Event()
                 start_event.record()
-                _ = ensure_callable(step_fn)()
+                _ = require_callable(step_fn)()
                 end_event.record()
                 end_event.synchronize()
                 return float(cp.cuda.get_elapsed_time(start_event, end_event))
@@ -147,7 +179,7 @@ class CupyProfiler:
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         self._sync()
         start = time.perf_counter()
-        _ = ensure_callable(step_fn)()
+        _ = require_callable(step_fn)()
         self._sync()
         end = time.perf_counter()
         return (end - start) * 1000.0
@@ -156,7 +188,7 @@ class CupyProfiler:
         self,
         latencies: list[float],
         warmup_iters: int,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Compute latency percentiles and peak memory metrics from collected samples.
 
         Args:
@@ -164,7 +196,7 @@ class CupyProfiler:
             warmup_iters (int): Number of warmup iterations executed.
 
         Returns:
-            dict[str, Union[list[float], float]]: Aggregated profiling metrics dictionary.
+            ProfileMetricsDict: Aggregated profiling metrics dictionary.
         """
         sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
         mean_lat: float = float(sum(latencies) / len(latencies)) if latencies else 0.0
@@ -185,22 +217,22 @@ class CupyProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | cp.ndarray],
+        inputs: Mapping[str, list[float] | list[list[float]] | cp.ndarray],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on CuPy GPU backend with stream synchronization.
 
         Args:
             graph (IRGraph): The IR computation graph to execute.
-            inputs (dict[str, Union[list[float], list[list[float]], cp.ndarray]]): Named input tensors or buffers.
+            inputs: Named input tensors or buffers.
             device (Optional[str]): Device target ('cuda').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and memory metrics.
+            ProfileMetricsDict: Latency and memory metrics.
         """
         del device
 
@@ -240,6 +272,12 @@ class CupyProfiler:
             _ = _execute_step()
             self._sync()
 
-        has_cuda_events: bool = bool(resolve_backend_member(cp, "cuda")[0] and resolve_backend_member(cp.cuda, "Event")[0] and resolve_backend_member(cp.cuda, "get_elapsed_time")[0])
-        latencies: list[float] = [self._measure_single_step_ms(_execute_step, has_cuda_events) for _ in range(max(1, num_iters))]
+        has_cuda_events: bool = bool(
+            adapt_backend_module(cp).resolve_symbol("cuda")[0]
+            and adapt_backend_module(cp.cuda).resolve_symbol("Event")[0]
+            and adapt_backend_module(cp.cuda).resolve_symbol("get_elapsed_time")[0]
+        )
+        latencies: list[float] = [
+            self._measure_single_step_ms(_execute_step, has_cuda_events) for _ in range(max(1, num_iters))
+        ]
         return self._summarize_latencies(latencies, warmup_iters)

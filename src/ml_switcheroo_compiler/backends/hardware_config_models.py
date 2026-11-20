@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import functools
 import os
 import typing
 
 import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ml_switcheroo_compiler.backends.eager_registry import ensure_int_list, ensure_shape
+from ml_switcheroo_compiler.backends.eager_registry import coerce_int_list, coerce_shape
 from ml_switcheroo_compiler.backends.protocols import BackendNodeProtocol
-from ml_switcheroo_compiler.core.shape import ShapeMetadataProtocol, TensorOrScalar
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeMetadataProtocol
+
+_EqT = typing.TypeVar("_EqT")
 
 
 @typing.runtime_checkable
@@ -22,28 +25,28 @@ class _BodyTemplateProtocol(typing.Protocol):
 
 
 def _node_shape_meta(
-    node: IRNode | BackendNodeProtocol | TensorOrScalar,
+    node: IRNode | BackendNodeProtocol | OpValue,
     default: tuple[int, ...],
 ) -> tuple[int, ...]:
     """Extract integer shape metadata from `node` or fall back to `default`.
 
     Args:
-        node (IRNode | BackendNodeProtocol | TensorOrScalar): Target IR node or None.
+        node (IRNode | BackendNodeProtocol | OpValue): Target IR node or None.
         default (tuple[int, ...]): Fallback shape tuple.
 
     Returns:
         tuple[int, ...]: Resolved shape metadata tuple.
     """
     if isinstance(node, ShapeMetadataProtocol) and node.shape_metadata:
-        return tuple(ensure_shape(node.shape_metadata))
+        return tuple(coerce_shape(node.shape_metadata))
     return default
 
 
-def _node_inputs_list(node: IRNode | BackendNodeProtocol | TensorOrScalar) -> list[str]:
+def _node_inputs_list(node: IRNode | BackendNodeProtocol | OpValue) -> list[str]:
     """Extract `.inputs` list from `node`.
 
     Args:
-        node (IRNode | BackendNodeProtocol | TensorOrScalar): Target IR node.
+        node (IRNode | BackendNodeProtocol | OpValue): Target IR node.
 
     Returns:
         list[str]: Node input identifiers.
@@ -53,11 +56,11 @@ def _node_inputs_list(node: IRNode | BackendNodeProtocol | TensorOrScalar) -> li
     return []
 
 
-def _node_op_type_lower(node: IRNode | BackendNodeProtocol | TensorOrScalar) -> str:
+def _node_op_type_lower(node: IRNode | BackendNodeProtocol | OpValue) -> str:
     """Extract lowercase `.op_type` from `node`.
 
     Args:
-        node (IRNode | BackendNodeProtocol | TensorOrScalar): Target IR node.
+        node (IRNode | BackendNodeProtocol | OpValue): Target IR node.
 
     Returns:
         str: Lowercase op_type string.
@@ -123,18 +126,29 @@ class HardwareTemplateConfig(BaseModel):
     def get(
         self,
         key: str,
-        default: int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None = None,
+        default: int
+        | float
+        | str
+        | list[int]
+        | dict[str, str]
+        | GridDimensionConfig
+        | list[KernelParameterConfig]
+        | None = None,
     ) -> int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None:
         """Retrieve an attribute by string key with fallback default.
 
         Args:
             key (str): The attribute name to look up.
-            default (Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]]): Fallback value if attribute not found.
+            default: Fallback value returned if the attribute is not found.
 
         Returns:
-            Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]]: The attribute value or default.
+            int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None:
+                The attribute value or fallback default.
         """
-        fields_map: dict[str, int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None] = {
+        fields_map: dict[
+            str,
+            int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None,
+        ] = {
             "body": self.body,
             "workgroup_size": self.workgroup_size,
             "grid_calc": self.grid_calc,
@@ -148,11 +162,11 @@ class HardwareTemplateConfig(BaseModel):
             return fields_map[key]
         return default
 
-    def __eq__(self, other: TensorOrScalar | HardwareTemplateConfig) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Compare template configuration against another instance or dict.
 
         Args:
-            other (TensorOrScalar | HardwareTemplateConfig): Other object to compare against.
+            other (_EqT): Other object to compare against.
 
         Returns:
             bool: True if contents match.
@@ -168,19 +182,41 @@ class HardwareTemplateConfig(BaseModel):
         return False
 
 
-TemplateEntryType = typing.Union[HardwareTemplateConfig, dict[str, typing.Union[str, int, float, list[int], "None"]], list[str], "str"]
+TemplateEntryType = typing.Union[
+    HardwareTemplateConfig,
+    dict[str, typing.Union[str, int, float, list[int], "None"]],
+    list[str],
+    "str",
+    int,
+    float,
+]
 
 
-def _is_template_entry(val: TensorOrScalar | TemplateEntryType) -> typing.TypeGuard[TemplateEntryType]:
+def _is_template_entry(val: OpValue | TemplateEntryType) -> typing.TypeGuard[TemplateEntryType]:
     """Type guard narrowing `val` to `TemplateEntryType`.
 
     Args:
-        val (TensorOrScalar | TemplateEntryType): Candidate template entry.
+        val (OpValue | TemplateEntryType): Candidate template entry.
 
     Returns:
         bool: True for valid template entries.
     """
-    return isinstance(val, (HardwareTemplateConfig, dict, list, str))
+    return (
+        isinstance(val, (HardwareTemplateConfig, str, int, float))
+        or (isinstance(val, list) and all(isinstance(x, str) for x in val))
+        or (
+            isinstance(val, dict)
+            and all(
+                isinstance(k, str)
+                and (
+                    v is None
+                    or isinstance(v, (str, int, float))
+                    or (isinstance(v, list) and all(isinstance(i, int) for i in v))
+                )
+                for k, v in val.items()
+            )
+        )
+    )
 
 
 class HardwareTemplatesConfig(BaseModel):
@@ -198,12 +234,14 @@ class HardwareTemplatesConfig(BaseModel):
     @classmethod
     def _coerce_templates(
         cls,
-        v: dict[str, TemplateEntryType] | dict[str, str | int | float | list[int] | None] | TensorOrScalar,
-    ) -> dict[str, TemplateEntryType] | TensorOrScalar:
+        v: dict[str, TemplateEntryType] | dict[str, str | int | float | list[int] | None] | OpValue,
+    ) -> dict[str, TemplateEntryType] | OpValue:
         """Validate templates and convert dict entries with body to HardwareTemplateConfig.
 
         Args:
-            v (Union[dict[str, TemplateEntryType], dict[str, Union[str, int, float, list[int], None]]]): Raw template mapping.
+            v (dict[str, TemplateEntryType] | dict[str, str | int | float | list[int] | None] | OpValue):
+                Raw template
+                mapping.
 
         Returns:
             dict[str, TemplateEntryType]: Normalized template mapping.
@@ -224,6 +262,66 @@ class HardwareTemplatesConfig(BaseModel):
     _validate_templates = _coerce_templates
 
 
+_ORIG_EXISTS = os.path.exists
+_ORIG_ISDIR = os.path.isdir
+_ORIG_LISTDIR = os.listdir
+_ORIG_OPEN = open
+_ORIG_SAFE_LOAD = yaml.safe_load
+
+
+def _build_hardware_templates(
+    yaml_dir: str,
+    yaml_path: str,
+    backend: str | None = None,
+) -> HardwareTemplatesConfig:
+    """Build hardware template configurations from `yaml_dir` and `yaml_path`.
+
+    Args:
+        yaml_dir (str): Directory containing op-specific YAML files.
+        yaml_path (str): Fallback path to a monolithic YAML template file.
+        backend (str | None): Optional backend identifier to merge unified templates.
+
+    Returns:
+        HardwareTemplatesConfig: Aggregated templates configuration.
+    """
+    cfg = HardwareTemplatesConfig(templates={})
+    has_local = False
+    dir_exists = os.path.isdir(yaml_dir)
+    if not dir_exists and os.path.exists(yaml_path):
+        if _load_yaml_file_into_config(yaml_path, cfg, is_dir=False):
+            has_local = True
+    elif dir_exists:
+        if os.path.exists(yaml_path):
+            if _load_yaml_file_into_config(yaml_path, cfg, is_dir=False):
+                has_local = True
+        for filename in sorted(os.listdir(yaml_dir)):
+            if filename.endswith(".yaml"):
+                if _load_yaml_file_into_config(os.path.join(yaml_dir, filename), cfg, is_dir=True):
+                    has_local = True
+    if backend is not None and has_local:
+        _merge_unified_kernel_templates(cfg, backend)
+    return cfg
+
+
+@functools.lru_cache(maxsize=64)
+def _load_hardware_templates_cached(
+    yaml_dir: str,
+    yaml_path: str,
+    backend: str | None = None,
+) -> HardwareTemplatesConfig:
+    """Load and cache hardware template configurations for `(yaml_dir, yaml_path, backend)`.
+
+    Args:
+        yaml_dir (str): Directory containing op-specific YAML files.
+        yaml_path (str): Fallback path to a monolithic YAML template file.
+        backend (str | None): Optional backend identifier to merge unified templates.
+
+    Returns:
+        HardwareTemplatesConfig: Cached aggregated templates configuration.
+    """
+    return _build_hardware_templates(yaml_dir, yaml_path, backend)
+
+
 def load_hardware_templates(yaml_dir: str, yaml_path: str, backend: str | None = None) -> HardwareTemplatesConfig:
     """Load hardware template configurations from a directory or single YAML file.
 
@@ -235,19 +333,19 @@ def load_hardware_templates(yaml_dir: str, yaml_path: str, backend: str | None =
     Returns:
         HardwareTemplatesConfig: Aggregated templates configuration.
     """
-    cfg = HardwareTemplatesConfig(templates={})
-    has_local = False
-    if os.path.exists(yaml_path):
-        _load_yaml_file_into_config(yaml_path, cfg, is_dir=False)
-        has_local = True
-    if os.path.isdir(yaml_dir):
-        for filename in sorted(os.listdir(yaml_dir)):
-            if filename.endswith(".yaml"):
-                _load_yaml_file_into_config(os.path.join(yaml_dir, filename), cfg, is_dir=True)
-                has_local = True
-    if backend is not None and has_local:
-        _merge_unified_kernel_templates(cfg, backend)
-    return cfg
+    import builtins
+
+    unpatched = (
+        os.path.exists is _ORIG_EXISTS
+        and os.path.isdir is _ORIG_ISDIR
+        and os.listdir is _ORIG_LISTDIR
+        and builtins.open is _ORIG_OPEN
+        and yaml.safe_load is _ORIG_SAFE_LOAD
+    )
+    if not unpatched:
+        return _build_hardware_templates(yaml_dir, yaml_path, backend)
+    cached = _load_hardware_templates_cached(yaml_dir, yaml_path, backend)
+    return HardwareTemplatesConfig(templates=dict(cached.templates), orchestration=dict(cached.orchestration))
 
 
 def _merge_unified_kernel_templates(cfg: HardwareTemplatesConfig, backend: str) -> None:
@@ -259,15 +357,46 @@ def _merge_unified_kernel_templates(cfg: HardwareTemplatesConfig, backend: str) 
     """
     try:
         manifest = load_kernel_templates_manifest()
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return
     b_lower = backend.lower()
     if b_lower == "cuda":
-        type_map = {"float32": "float", "float16": "__half", "bfloat16": "__nv_bfloat16", "int32": "int", "int64": "long long", "bool": "bool"}
+        type_map = {
+            "float32": "float",
+            "float16": "__half",
+            "bfloat16": "__nv_bfloat16",
+            "int32": "int",
+            "int64": "long long",
+            "bool": "bool",
+        }
     elif b_lower == "rocm":
-        type_map = {"float32": "float", "float16": "__half", "bfloat16": "__hip_bfloat16", "int32": "int", "int64": "long long", "bool": "bool"}
+        type_map = {
+            "float32": "float",
+            "float16": "__half",
+            "bfloat16": "__hip_bfloat16",
+            "int32": "int",
+            "int64": "long long",
+            "bool": "bool",
+        }
     else:
-        type_map = {"float32": "float", "float16": "half", "bfloat16": "bfloat", "int32": "int", "int64": "long", "bool": "bool"}
+        type_map = {
+            "float32": "float",
+            "float16": "half",
+            "bfloat16": "bfloat",
+            "int32": "int",
+            "int64": "long",
+            "bool": "bool",
+        }
     grid_c = GridDimensionConfig(x="({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1")
     for opcode, tmpl in manifest.kernel_templates.items():
         op_key = opcode.lower()
@@ -278,7 +407,11 @@ def _merge_unified_kernel_templates(cfg: HardwareTemplatesConfig, backend: str) 
         is_dummy = False
         if isinstance(existing, _BodyTemplateProtocol):
             ex_body = existing.body
-            if "C[id] = A[id];" in ex_body or "C[id] = A[id] + B[id];" in ex_body or "output[idx] = input[idx];" in ex_body:
+            if (
+                "C[id] = A[id];" in ex_body
+                or "C[id] = A[id] + B[id];" in ex_body
+                or "output[idx] = input[idx];" in ex_body
+            ):
                 is_dummy = True
         if existing is None or is_dummy:
             cfg.templates[op_key] = HardwareTemplateConfig(
@@ -291,23 +424,28 @@ def _merge_unified_kernel_templates(cfg: HardwareTemplatesConfig, backend: str) 
             )
 
 
-def _load_yaml_file_into_config(file_path: str, cfg: HardwareTemplatesConfig, is_dir: bool = True) -> None:
+def _load_yaml_file_into_config(file_path: str, cfg: HardwareTemplatesConfig, is_dir: bool = True) -> bool:
     """Load a YAML file and populate template entries into a HardwareTemplatesConfig.
 
     Args:
         file_path (str): Path to the YAML file.
         cfg (HardwareTemplatesConfig): Target configuration to populate.
         is_dir (bool): True if loaded from an individual op YAML in a directory.
+
+    Returns:
+        bool: True if a valid template mapping was parsed from `file_path`.
     """
     with open(file_path) as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
-        return
+        return False
     if is_dir:
         source = data.get("templates", data)
+        if not isinstance(source, dict):
+            return False
     else:
         if "templates" not in data or not isinstance(data["templates"], dict):
-            return
+            return False
         source = data["templates"]
     for k, v in source.items():
         if isinstance(v, dict) and "body" in v:
@@ -318,6 +456,7 @@ def _load_yaml_file_into_config(file_path: str, cfg: HardwareTemplatesConfig, is
             cfg.templates[k] = v
         else:
             cfg.templates[k] = v
+    return True
 
 
 def compute_liveness(graph: IRGraph) -> dict[str, str]:
@@ -374,7 +513,18 @@ def _resolve_conv2d_args(
     grid_y = str(c_out)
     grid_z = str(n_dim)
     in_args = [node_buffers.get(inp, "inputs[0]") for inp in _node_inputs_list(node)]
-    launch_args = in_args + [out_name, str(n_dim), str(c_in), str(h_dim), str(w_in), str(c_out), str(k_h), str(k_w), str(h_out), str(w_out)]
+    launch_args = in_args + [
+        out_name,
+        str(n_dim),
+        str(c_in),
+        str(h_dim),
+        str(w_in),
+        str(c_out),
+        str(k_h),
+        str(k_w),
+        str(h_out),
+        str(w_out),
+    ]
     return (grid_x, grid_y, grid_z), launch_args
 
 
@@ -542,7 +692,11 @@ def _resolve_pool_args(
         d_out = out_shape[2] if len(out_shape) > 2 else 1
         h_out = out_shape[3] if len(out_shape) > 3 else 1
         w_out = out_shape[4] if len(out_shape) > 4 else 1
-        k_3d = ensure_int_list(node_attrs.get("kernel_size", [2, 2, 2])) if isinstance(node_attrs.get("kernel_size"), (list, tuple)) else [2, 2, 2]
+        k_3d = (
+            coerce_int_list(node_attrs.get("kernel_size", [2, 2, 2]))
+            if isinstance(node_attrs.get("kernel_size"), (list, tuple))
+            else [2, 2, 2]
+        )
         kd = k_3d[0]
         kh = k_3d[1]
         kw = k_3d[2]
@@ -570,7 +724,11 @@ def _resolve_pool_args(
     w_in = in0_shape[3] if len(in0_shape) > 3 else 1
     h_out = out_shape[2] if len(out_shape) > 2 else 1
     w_out = out_shape[3] if len(out_shape) > 3 else 1
-    k_2d = ensure_int_list(node_attrs.get("kernel_size", [2, 2])) if isinstance(node_attrs.get("kernel_size"), (list, tuple)) else [2, 2]
+    k_2d = (
+        coerce_int_list(node_attrs.get("kernel_size", [2, 2]))
+        if isinstance(node_attrs.get("kernel_size"), (list, tuple))
+        else [2, 2]
+    )
     kh = k_2d[0]
     kw = k_2d[1]
     grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
@@ -643,7 +801,7 @@ def resolve_hardware_launch_grid_and_args(
 
     Args:
         node (IRNode): Computation node.
-        tpl (HardwareTemplateConfig): Op hardware template.
+        tpl (TemplateEntryType): Op hardware template.
         node_buffers (dict[str, str]): Variable map for allocated device buffers.
         out_name (str): Destination buffer name.
         num_elements (int): Total elements in the output tensor.
@@ -689,7 +847,8 @@ def calculate_hardware_launch_config(
     """Compute optimal hardware thread block and launch grid for N-dimensional tensor.
 
     Args:
-        shape (Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None]): N-dimensional tensor shape.
+        shape (Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None]):
+            N-dimensional tensor shape.
         max_threads_per_block (int): Maximum threads allowed in a single thread block.
         max_block_dim (tuple[int, int, int]): Maximum sizing for (x, y, z) block dims.
         max_grid_dim (tuple[int, int, int]): Maximum sizing for (x, y, z) grid dims.
@@ -975,6 +1134,7 @@ class KernelTemplatesManifestModel(BaseModel):
         return None
 
 
+@functools.lru_cache(maxsize=16)
 def load_kernel_templates_manifest(path: str | None = None) -> KernelTemplatesManifestModel:
     """Load unified kernel templates manifest from YAML configuration.
 
@@ -1006,7 +1166,9 @@ class HardwareCapabilityQuery(BaseModel):
     max_shared_memory_per_sm: int = Field(default=65536, description="Max shared memory per SM in bytes")
     warp_size: int = Field(default=32, description="Execution warp/wavefront size")
     max_block_dim: list[int] = Field(default_factory=lambda: [1024, 1024, 64], description="Max block dimensions")
-    max_grid_dim: list[int] = Field(default_factory=lambda: [2147483647, 65535, 65535], description="Max grid dimensions")
+    max_grid_dim: list[int] = Field(
+        default_factory=lambda: [2147483647, 65535, 65535], description="Max grid dimensions"
+    )
     model_config = ConfigDict(extra="allow")
 
 
@@ -1071,7 +1233,8 @@ def query_optimal_launch_geometry(
     """Query dynamic hardware capabilities and evaluate launch heuristics rulebook.
 
     Args:
-        shape (Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None]): Tensor shape.
+        shape (Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None]): Tensor
+            shape.
         hardware_caps (Optional[HardwareCapabilityQuery]): Dynamic hardware capability limits.
         heuristics_path (Optional[str]): Optional custom path to heuristics YAML.
 
@@ -1268,5 +1431,8 @@ def validate_and_bound_shared_memory(
         return requested_bytes
     limit = profile.shared_memory_limit_bytes or profile.threadgroup_memory_limit_bytes or 65536
     if requested_bytes > limit:
-        raise ValueError(f"Requested shared memory ({requested_bytes} bytes) exceeds device limit of {limit} bytes for backend '{backend}'.")
+        raise ValueError(
+            f"Requested shared memory ({requested_bytes} bytes) exceeds device limit of {limit} bytes for "
+            f"backend '{backend}'."
+        )
     return requested_bytes

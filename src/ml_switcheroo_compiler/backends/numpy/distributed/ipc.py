@@ -8,20 +8,31 @@ from multiprocessing.connection import Client, Listener
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.protocols import get_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 import numpy.typing as npt
 
 # A generic payload type that could be transmitted via IPC
-IpcPayload = typing.Union[npt.NDArray[np.float64], str, int, float, list[int], tuple[int, typing.Union[npt.NDArray[np.float64], str, int, float, bool, "bytes"]], bool, "bytes"]
+IpcPayload = typing.Union[
+    npt.NDArray[np.float64],
+    str,
+    int,
+    float,
+    list[int],
+    tuple[int, typing.Union[npt.NDArray[np.float64], str, int, float, bool, "bytes"]],
+    bool,
+    "bytes",
+]
 
 
 BASE_PORT = 15200
 
 
-def _exchange_ipc_data_coordinator(size: int, tensor_data: IpcPayload, timeout: float, retry_interval: float) -> list[IpcPayload]:
+def _exchange_ipc_data_coordinator(
+    size: int, tensor_data: IpcPayload, timeout: float, retry_interval: float
+) -> list[IpcPayload]:
     """Exchange IPC data as coordinator.
 
     Args:
@@ -63,18 +74,40 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: IpcPayload, timeout: 
                     with Client(r_address, authkey=b"ml_switcheroo") as conn:
                         conn.send(gathered_sorted)
                     break
-                except Exception:
+                except (
+                    AttributeError,
+                    ImportError,
+                    LookupError,
+                    OSError,
+                    ArithmeticError,
+                    RuntimeError,
+                    SyntaxError,
+                    TypeError,
+                    ValueError,
+                ):
                     if time.time() - start_time > timeout:
                         break
                     time.sleep(retry_interval)
 
         return gathered_sorted
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         # Fallback if port is in use or listener fails
         return [tensor_data] * size
 
 
-def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: IpcPayload, timeout: float, retry_interval: float) -> list[IpcPayload]:
+def _exchange_ipc_data_worker(
+    rank: int, size: int, tensor_data: IpcPayload, timeout: float, retry_interval: float
+) -> list[IpcPayload]:
     """Exchange IPC data as worker.
 
     Args:
@@ -102,7 +135,17 @@ def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: IpcPayload, tim
                     with Client(("localhost", BASE_PORT), authkey=b"ml_switcheroo") as conn:
                         conn.send((rank, tensor_data))
                     break
-                except Exception as e:
+                except (
+                    AttributeError,
+                    ImportError,
+                    LookupError,
+                    OSError,
+                    ArithmeticError,
+                    RuntimeError,
+                    SyntaxError,
+                    TypeError,
+                    ValueError,
+                ) as e:
                     if time.time() - start_time > timeout:
                         raise TimeoutError("Timeout connecting to coordinator") from e
                     time.sleep(retry_interval)
@@ -112,7 +155,17 @@ def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: IpcPayload, tim
                 res: list[IpcPayload] = conn.recv()
             out_res = res
         return out_res
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         # Fallback if connection fails
         return [tensor_data] * size
 
@@ -152,9 +205,9 @@ def _ipc_all_gather(tensor: IpcPayload, axis: int | None, mesh: DeviceMesh | Non
         return tensor
 
     t: npt.NDArray[np.float64] = np.asarray(tensor)
-    if mesh is not None and get_backend_member(mesh, "size", 1) > 1:
+    if mesh is not None and adapt_backend_module(mesh).get_symbol("size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
-        size: int = get_backend_member(mesh, "size", 1)
+        size: int = adapt_backend_module(mesh).get_symbol("size", 1)
 
         # Execute real IPC data exchange
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
@@ -179,9 +232,9 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
         return tensor
 
     t: npt.NDArray[np.float64] = np.asarray(tensor)
-    if mesh is not None and get_backend_member(mesh, "size", 1) > 1:
+    if mesh is not None and adapt_backend_module(mesh).get_symbol("size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
-        size: int = get_backend_member(mesh, "size", 1)
+        size: int = adapt_backend_module(mesh).get_symbol("size", 1)
 
         # Gather all tensors via IPC
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
@@ -189,13 +242,17 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
 
         # Perform reduction
         if op == "sum":
-            reduced = np.asarray(get_backend_member(np.add, "reduce")(arr_exchanged), dtype=np.float64)
+            reduced = np.asarray(adapt_backend_module(np.add).require_symbol("reduce")(arr_exchanged), dtype=np.float64)
         elif op == "max":
-            reduced = np.asarray(get_backend_member(np.maximum, "reduce")(arr_exchanged), dtype=np.float64)
+            reduced = np.asarray(
+                adapt_backend_module(np.maximum).require_symbol("reduce")(arr_exchanged), dtype=np.float64
+            )
         elif op == "min":
-            reduced = np.asarray(get_backend_member(np.minimum, "reduce")(arr_exchanged), dtype=np.float64)
+            reduced = np.asarray(
+                adapt_backend_module(np.minimum).require_symbol("reduce")(arr_exchanged), dtype=np.float64
+            )
         else:
-            reduced = np.asarray(get_backend_member(np.add, "reduce")(arr_exchanged), dtype=np.float64)
+            reduced = np.asarray(adapt_backend_module(np.add).require_symbol("reduce")(arr_exchanged), dtype=np.float64)
 
         # Scatter (slice and return own chunk)
         sub_arrays: list[npt.NDArray[np.float64]] = np.array_split(reduced, size, axis=axis if axis is not None else 0)
@@ -219,9 +276,9 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
         return tensor
 
     t: npt.NDArray[np.float64] = np.asarray(tensor)
-    if mesh is not None and get_backend_member(mesh, "size", 1) > 1:
+    if mesh is not None and adapt_backend_module(mesh).get_symbol("size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
-        size: int = get_backend_member(mesh, "size", 1)
+        size: int = adapt_backend_module(mesh).get_symbol("size", 1)
 
         # Gather all tensors via IPC
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
@@ -229,12 +286,12 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
 
         # Perform reduction and return same result on all workers
         if op == "sum":
-            return np.asarray(get_backend_member(np.add, "reduce")(arrs))
+            return np.asarray(adapt_backend_module(np.add).require_symbol("reduce")(arrs))
         elif op == "max":
-            return np.asarray(get_backend_member(np.maximum, "reduce")(arrs))
+            return np.asarray(adapt_backend_module(np.maximum).require_symbol("reduce")(arrs))
         elif op == "min":
-            return np.asarray(get_backend_member(np.minimum, "reduce")(arrs))
+            return np.asarray(adapt_backend_module(np.minimum).require_symbol("reduce")(arrs))
         else:
-            return np.asarray(get_backend_member(np.add, "reduce")(arrs))
+            return np.asarray(adapt_backend_module(np.add).require_symbol("reduce")(arrs))
 
     return t

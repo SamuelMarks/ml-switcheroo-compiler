@@ -8,13 +8,17 @@ import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 import yaml
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.backends.hardware_config_models import HardwareTemplatesConfig
+from ml_switcheroo_compiler.backends.hardware_config_models import (
+    HardwareTemplateConfig,
+    HardwareTemplatesConfig,
+)
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import adapt_backend_module, coerce_operand_list
 
 if typing.TYPE_CHECKING:
     pass
@@ -22,7 +26,17 @@ if typing.TYPE_CHECKING:
 
 def test_msl_templates_consolidation() -> None:
     """Test that msl_templates.yaml covers all core math, reduction, and vision operations."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "src", "ml_switcheroo_compiler", "backends", "metal", "msl_templates.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "..",
+        "src",
+        "ml_switcheroo_compiler",
+        "backends",
+        "metal",
+        "msl_templates.yaml",
+    )
     assert os.path.exists(yaml_path)
 
     with open(yaml_path) as f:
@@ -34,23 +48,25 @@ def test_msl_templates_consolidation() -> None:
     # Unary ops
     for op in ("abs", "cos", "exp", "gelu", "log", "neg", "relu", "sigmoid", "silu", "sin", "sqrt", "tanh"):
         assert op in templates
-        assert "kernel void" in ensure_eager_tensor(ensure_eager_tensor(templates)[op].body)
-        assert len(ensure_eager_tensor(ensure_eager_tensor(templates)[op].workgroup_size)) == 3
+        tmpl = templates[op]
+        assert isinstance(tmpl, HardwareTemplateConfig)
+        assert "kernel void" in adapt_backend_module(tmpl).require_symbol("body")
+        assert len(tmpl.workgroup_size) == 3
 
     # Binary ops
     for op in ("add", "sub", "mul", "div", "pow", "maximum", "minimum"):
         assert op in templates
-        assert "kernel void" in ensure_eager_tensor(ensure_eager_tensor(templates)[op].body)
+        assert "kernel void" in adapt_backend_module(templates[op]).require_symbol("body")
 
     # Reductions
     for op in ("reducesum", "reducemean", "reducemax", "reducemin", "sum"):
         assert op in templates
-        assert "kernel void" in ensure_eager_tensor(ensure_eager_tensor(templates)[op].body)
+        assert "kernel void" in adapt_backend_module(templates[op]).require_symbol("body")
 
     # Matrix multiplication and vision
     for op in ("matmul", "batchmatmul", "conv2d", "depthwise_conv2d", "maxpool2d", "avgpool2d", "multihead_attention"):
         assert op in templates
-        assert "kernel void" in ensure_eager_tensor(ensure_eager_tensor(templates)[op].body)
+        assert "kernel void" in adapt_backend_module(templates[op]).require_symbol("body")
 
 
 def test_metal_code_generator_comprehensive() -> None:
@@ -85,7 +101,7 @@ def test_metal_runner_ctypes_availability() -> None:
         with patch("ctypes.cdll.LoadLibrary", return_value=mock_empty_lib):
             assert MetalRunner.is_available() is False
 
-        with patch("ctypes.cdll.LoadLibrary", side_effect=Exception("load failed")):
+        with patch("ctypes.cdll.LoadLibrary", side_effect=RuntimeError("load failed")):
             assert MetalRunner.is_available() is False
 
 
@@ -121,8 +137,8 @@ def test_metal_runner_ctypes_buffer_and_execution() -> None:
         in_b = np.array([4.0, 5.0, 6.0], dtype=np.float32)
         res = runner.execute_kernel("kernel_source", "add_kernel", in_a, in_b)
 
-        assert ensure_callable(len)(res) == 3
-        assert ensure_callable(np.allclose)(res, [10.0, 20.0, 30.0])
+        assert len(coerce_operand_list(res)) == 3
+        assert np.allclose(ensure_ndarray(res), [10.0, 20.0, 30.0])
         assert mock_enc.dispatchThreads_threadsPerThreadgroup_.called
         assert mock_cmd.commit.called
         assert mock_cmd.waitUntilCompleted.called
@@ -193,8 +209,6 @@ def test_metal_reduce_sum_mock_multipass_dispatch() -> None:
 
 def test_metal_generator_unsupported_op_error() -> None:
     """Verify MetalCodeGenerator raises BackendNotSupportedError on unsupported op_type."""
-    import pytest
-
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     g = IRGraph()

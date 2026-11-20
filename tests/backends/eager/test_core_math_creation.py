@@ -16,11 +16,11 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation import (
     _np_frompyfunc,
     _ogrid,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, global_eager_registry
+from tests.testing_utils import MockTestStub, coerce_operand_list, extract_test_shape, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_math_creation_coverage() -> None:
@@ -30,10 +30,10 @@ def test_math_creation_coverage() -> None:
         None
     """
 
-    class MockBackend:
+    class MockBackend(MockTestStub):
         """Mock backend providing creation functions."""
 
-        def fromfunction(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def fromfunction(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock fromfunction.
 
             Args:
@@ -45,7 +45,7 @@ def test_math_creation_coverage() -> None:
             """
             return "fromfunction_res"
 
-        def from_dlpack(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def from_dlpack(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock from_dlpack.
 
             Args:
@@ -57,7 +57,7 @@ def test_math_creation_coverage() -> None:
             """
             return "from_dlpack_res"
 
-        def fromiter(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def fromiter(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock fromiter.
 
             Args:
@@ -69,7 +69,7 @@ def test_math_creation_coverage() -> None:
             """
             return "fromiter_res"
 
-        def frompyfunc(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def frompyfunc(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock frompyfunc.
 
             Args:
@@ -81,7 +81,7 @@ def test_math_creation_coverage() -> None:
             """
             return "frompyfunc_res"
 
-        def geomspace(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def geomspace(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock geomspace.
 
             Args:
@@ -93,7 +93,7 @@ def test_math_creation_coverage() -> None:
             """
             return "geomspace_res"
 
-        def mgrid(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def mgrid(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock mgrid.
 
             Args:
@@ -105,7 +105,7 @@ def test_math_creation_coverage() -> None:
             """
             return "mgrid_res"
 
-        def ogrid(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def ogrid(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock ogrid.
 
             Args:
@@ -118,35 +118,35 @@ def test_math_creation_coverage() -> None:
             return "ogrid_res"
 
     backend = MockBackend()
-    assert _fromfunction(ensure_mod(backend), lambda i: i, (3,)) == "fromfunction_res"
-    assert _from_dlpack(ensure_mod(backend), None) == "from_dlpack_res"
-    assert _fromiter(ensure_mod(backend), [1, 2], float) == "fromiter_res"
-    assert _frompyfunc(ensure_mod(backend), lambda x: x, 1, 1) == "frompyfunc_res"
-    assert _geomspace(ensure_mod(backend), 1, 1000, 4) == "geomspace_res"
-    assert _mgrid(ensure_mod(backend), slice(0, 5)) == "mgrid_res"
-    assert _ogrid(ensure_mod(backend), slice(0, 5)) == "ogrid_res"
+    assert _fromfunction(backend, lambda i: i, (3,)) == "fromfunction_res"
+    assert _from_dlpack(backend, None) == "from_dlpack_res"
+    assert _fromiter(backend, [1, 2], float) == "fromiter_res"
+    assert _frompyfunc(backend, lambda x: x, 1, 1) == "frompyfunc_res"
+    assert _geomspace(backend, 1, 1000, 4) == "geomspace_res"
+    assert _mgrid(backend, slice(0, 5)) == "mgrid_res"
+    assert _ogrid(backend, slice(0, 5)) == "ogrid_res"
 
     # Test _np_fromfunction, _np_fromiter, _np_frompyfunc
     # When backend has the function
-    assert _np_fromfunction(ensure_mod(backend), lambda i: i, (3,)) == "fromfunction_res"
-    assert _np_fromiter(ensure_mod(backend), [1, 2], float) == "fromiter_res"
-    assert _np_frompyfunc(ensure_mod(backend), lambda x: x, 1, 1) == "frompyfunc_res"
+    assert _np_fromfunction(backend, lambda i: i, (3,)) == "fromfunction_res"
+    assert _np_fromiter(backend, [1, 2], float) == "fromiter_res"
+    assert _np_frompyfunc(backend, lambda x: x, 1, 1) == "frompyfunc_res"
 
     # When backend lacks the function -> fallbacks to numpy
-    class EmptyBackend:
+    class EmptyBackend(MockTestStub):
         """Empty backend lacking creation methods."""
 
         pass
 
     empty_backend = EmptyBackend()
-    fn_res = _np_fromfunction(ensure_mod(empty_backend), lambda i, j: i + j, (2, 2), dtype=int)
-    assert ensure_eager_tensor(fn_res).shape == (2, 2)
+    fn_res = _np_fromfunction(empty_backend, lambda i, j: i + j, (2, 2), dtype=int)
+    assert extract_test_shape(fn_res) == (2, 2)
 
-    it_res = _np_fromiter(ensure_mod(empty_backend), ensure_eager_tensor(x * 2 for x in range(3)), dtype=int)
-    assert ensure_callable(list)(it_res) == [0, 2, 4]
+    it_res = _np_fromiter(empty_backend, [x * 2 for x in range(3)], dtype=int)
+    assert coerce_operand_list(it_res) == [0, 2, 4]
 
-    pyf = _np_frompyfunc(ensure_mod(empty_backend), lambda x: x * 3, 1, 1)
-    assert ensure_callable(pyf)(5) == 15
+    pyf = _np_frompyfunc(empty_backend, lambda x: x * 3, 1, 1)
+    assert require_callable(pyf)(5) == 15
 
     # Registry verification
     for op_name in [

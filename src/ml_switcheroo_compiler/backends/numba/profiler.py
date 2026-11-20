@@ -6,29 +6,31 @@ import resource
 import sys
 import time
 import typing
+from collections.abc import Mapping
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_ir import IRGraph
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.numba import kernels
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 from ml_switcheroo_compiler.core.shape import (
     ShapeProtocol,
     TypedVariadicCallable,
 )
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-def _has_numba_shape(val: EagerValue) -> typing.TypeGuard[ShapeProtocol]:
+def _has_numba_shape(val: BackendArg) -> typing.TypeGuard[ShapeProtocol]:
     """Check whether `val` exposes a `shape` attribute.
 
     Args:
-        val (EagerValue): Candidate array.
+        val (BackendArg): Candidate array.
 
     Returns:
         bool: True if `val` has `shape`.
     """
-    return has_backend_member(val, "shape")
+    return isinstance(val, ShapeProtocol)
 
 
 numba: ModuleType | None = None
@@ -59,20 +61,20 @@ class NumbaProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> list[EagerValue]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> list[BackendArg]:
         """Convert input payloads into topologically ordered array buffers.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, list[float] | list[list[float]] | EagerValue]): Input mapping.
+            inputs: Input mapping.
 
         Returns:
-            list[EagerValue]: Ordered list of array buffers.
+            list[BackendArg]: Ordered list of array buffers.
         """
-        nb_inputs_dict: dict[str, EagerValue] = {}
+        nb_inputs_dict: dict[str, BackendArg] = {}
         for k, val in inputs.items():
-            raw_val: EagerValue = val
+            raw_val: BackendArg = val
             if _has_numba_shape(raw_val) and not isinstance(val, (list, tuple)):
                 nb_inputs_dict[k] = val
             else:
@@ -84,61 +86,71 @@ class NumbaProfiler:
             return [nb_inputs_dict[k] for k in input_keys]
         return list(nb_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[BackendArg] | None:
         """Compile an IRGraph into an executable Numba JIT function.
 
         Args:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            TypedVariadicCallable[EagerValue] | None: JIT-compiled evaluate function.
+            TypedVariadicCallable[BackendArg] | None: JIT-compiled evaluate function.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
         from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 
         gen = NumbaGenerator(graph)
         code: str = gen.generate()
-        ns: dict[str, EagerValue] = {}
-        exec(code, ns)
+        ns = load_generated_code(code)
         fn = ns.get(gen._func_name)
         return fn if callable(fn) else None
 
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on Numba backend.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, list[float] | list[list[float]] | EagerValue]): Named input structures.
+            inputs: Named input structures.
             device (str | None): Device identifier ('cpu').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, list[float] | float]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         del device
 
         nb_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
+        compiled_fn: TypedVariadicCallable[BackendArg] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 compiled_fn = None
 
-        def _execute_step() -> EagerValue:
+        def _execute_step() -> BackendArg:
             """Execute a single evaluation step on Numba backend.
 
             Returns:
-                EagerValue: Evaluated output array.
+                BackendArg: Evaluated output array.
             """
             if has_ops and compiled_fn is not None:
                 return compiled_fn(tuple(nb_inputs))

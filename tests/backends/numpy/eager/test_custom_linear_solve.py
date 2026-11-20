@@ -6,27 +6,27 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customlinearsolve
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.backends.numpy.eager._math_advanced_test_ns import _np_customlinearsolve
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_custom_linear_solve_fallback() -> None:
     # If no solve, return args[1]
     """Test function test_custom_linear_solve_fallback."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return x
 
-    res = _np_customlinearsolve(ensure_eager_tensor(np), f, np.array([1, 2]))
-    assert ensure_callable(np.array_equal)(res, ensure_callable(np.array)([1, 2]))
+    res = _np_customlinearsolve(np, f, np.array([1, 2]))
+    assert np.array_equal(ensure_ndarray(res), np.array([1, 2]))

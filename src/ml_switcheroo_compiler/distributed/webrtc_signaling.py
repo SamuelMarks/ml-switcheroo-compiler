@@ -126,7 +126,13 @@ class SignalingHandler(BaseHTTPRequestHandler):
     def _send_json(
         self,
         status: int,
-        data: dict[str, str | int | float | bool | list[str] | dict[str, str] | None] | list[str] | str | int | float | bool | None,
+        data: dict[str, str | int | float | bool | list[str] | dict[str, str] | None]
+        | list[str]
+        | str
+        | int
+        | float
+        | bool
+        | None,
     ) -> None:
         """Send a JSON formatted HTTP response.
 
@@ -156,7 +162,7 @@ class SignalingHandler(BaseHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         try:
             data = json.loads(post_data.decode("utf-8"))
-        except Exception:
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
             self._send_json(400, {"error": "Invalid JSON"})
             return
 

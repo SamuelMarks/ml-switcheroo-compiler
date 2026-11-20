@@ -6,18 +6,32 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, BinaryMathOp, Digitize, Lcm, Polyadd, Polyder, Polydiv, Polyint, Polymul, Polysub, Roots, Xlog1py, Xlogy
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.ops.binary.math import (
+    ArrayEquiv,
+    BinaryMathOp,
+    Digitize,
+    Lcm,
+    Polyadd,
+    Polyder,
+    Polydiv,
+    Polyint,
+    Polymul,
+    Polysub,
+    Roots,
+    Xlog1py,
+    Xlogy,
+)
+from tests.testing_utils import MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_binary_math_op_infer_shape() -> None:
     """Test function test_binary_math_op_infer_shape."""
     op = BinaryMathOp()
     assert op.infer_shape() == ()
-    assert ensure_callable(op.infer_shape)((2, 2)) == (2, 2)
+    assert op.infer_shape((2, 2)) == (2, 2)
 
 
 def test_digitize_infer_shape() -> None:
@@ -25,12 +39,12 @@ def test_digitize_infer_shape() -> None:
     op = Digitize()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)()) == (2, 2)
+    assert op.infer_shape(Dummy()) == (2, 2)
 
 
 def test_polyder_infer_shape() -> None:
@@ -38,13 +52,13 @@ def test_polyder_infer_shape() -> None:
     op = Polyder()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polyint_infer_shape() -> None:
@@ -52,13 +66,13 @@ def test_polyint_infer_shape() -> None:
     op = Polyint()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polysub_infer_shape() -> None:
@@ -66,13 +80,13 @@ def test_polysub_infer_shape() -> None:
     op = Polysub()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polyadd_infer_shape() -> None:
@@ -80,13 +94,13 @@ def test_polyadd_infer_shape() -> None:
     op = Polyadd()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polymul_infer_shape() -> None:
@@ -94,13 +108,13 @@ def test_polymul_infer_shape() -> None:
     op = Polymul()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polydiv_infer_shape() -> None:
@@ -108,13 +122,13 @@ def test_polydiv_infer_shape() -> None:
     op = Polydiv()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_poly_infer_shape() -> None:
@@ -124,13 +138,13 @@ def test_poly_infer_shape() -> None:
     op = Poly()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polyval_infer_shape() -> None:
@@ -140,13 +154,13 @@ def test_polyval_infer_shape() -> None:
     op = Polyval()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polyfit_infer_shape() -> None:
@@ -156,13 +170,13 @@ def test_polyfit_infer_shape() -> None:
     op = Polyfit()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_roots_infer_shape() -> None:
@@ -170,13 +184,13 @@ def test_roots_infer_shape() -> None:
     op = Roots()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_lcm_infer_shape() -> None:
@@ -184,13 +198,13 @@ def test_lcm_infer_shape() -> None:
     op = Lcm()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
-    assert ensure_callable(op.infer_shape)(1) == 1
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_array_equiv_infer_shape() -> None:
@@ -204,12 +218,12 @@ def test_xlogy_infer_shape() -> None:
     op = Xlogy()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
 
 
 def test_xlog1py_infer_shape() -> None:
@@ -217,12 +231,12 @@ def test_xlog1py_infer_shape() -> None:
     op = Xlog1py()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(op.infer_shape)(ensure_callable(Dummy)(), ensure_callable(Dummy)())).shape) == (2, 2)
+    assert extract_test_shape(op.infer_shape(Dummy(), Dummy())) == (2, 2)
 
 
 def test_clip_eager() -> None:
@@ -233,39 +247,41 @@ def test_clip_eager() -> None:
     op = Clip()
     assert op.infer_shape() == ()
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (2, 2)
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(Dummy)()) == (2, 2)
+    assert op.infer_shape(Dummy()) == (2, 2)
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
         import numpy as np
 
+        from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        class MockBackend:
+        class MockBackend(BaseGenerator):
             """Test class MockBackend."""
 
             @classmethod
-            def execute_op(cls, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function execute_op.
 
                 Args:
-                    op_name: Test parameter `op_name`.
+                    op_type: Test parameter `op_type`.
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `execute_op`.
+                    BackendArg: Computed output value from `execute_op`.
                 """
+                del op_type, args, kwargs
                 return "eager_clip"
 
         orig_backend = config.backend
         config.backend = "mock_clip"
-        ensure_callable(BackendRegistry.register)("mock_clip", MockBackend)
+        BackendRegistry.register("mock_clip", MockBackend)
         assert clip(np.array([1.0]), 0.0, 2.0) == "eager_clip"
         config.eager_mode = False
         clip(np.array([1.0]), 0.0, 2.0)

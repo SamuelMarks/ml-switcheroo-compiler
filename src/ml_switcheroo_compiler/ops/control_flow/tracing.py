@@ -6,14 +6,13 @@ import typing
 import uuid
 from collections.abc import Callable
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRNode, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
-    TracedDataProtocol,
+    OpValue,
     extract_data,
     extract_device,
     extract_dtype,
@@ -21,75 +20,54 @@ from ml_switcheroo_compiler.core.shape import (
     is_traced_data,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRNode, ensure_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 _StateT = typing.TypeVar("_StateT")
 
 
-def _as_traced_data(val: TensorOrScalar) -> TracedDataProtocol:
-    """Narrow `val` to `TracedDataProtocol` for `.id` access.
+@typing.runtime_checkable
+class _TracedIdProtocol(typing.Protocol):
+    """Protocol for traced proxy payloads exposing an ``id`` string."""
 
-    Args:
-        val (TensorOrScalar): Traced tensor data or proxy.
-
-    Returns:
-        TracedDataProtocol: Narrowed traced data object.
-    """
-
-    def _guard(cand: TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
-        """Type guard narrowing `cand` to `TracedDataProtocol`.
-
-        Args:
-            cand (TensorOrScalar): Candidate value.
+    @property
+    def id(self) -> str:
+        """Return traced node identifier.
 
         Returns:
-            bool: True for traced data payloads.
+            str: Traced node ID.
         """
-        return not isinstance(cand, type(Ellipsis))
-
-    assert _guard(val)
-    return val
+        ...
 
 
-def _as_state_val(val: TensorOrScalar, ref: _StateT) -> _StateT:
-    """Narrow `val` to `_StateT`.
+def _extract_traced_id(val: OpValue) -> str:
+    """Extract ``.id`` from a traced tensor payload or raise ``AttributeError``.
 
     Args:
-        val (TensorOrScalar): Traced state value.
-        ref (_StateT): Reference state value for type inference.
+        val (OpValue): Traced tensor data or proxy.
 
     Returns:
-        _StateT: Narrowed state value.
+        str: Traced node identifier.
+
+    Raises:
+        AttributeError: If ``val`` does not expose an ``id`` attribute.
     """
-    del ref
-
-    def _guard(cand: TensorOrScalar) -> typing.TypeGuard[_StateT]:
-        """Type guard narrowing `cand` to `_StateT`.
-
-        Args:
-            cand (TensorOrScalar): Candidate value.
-
-        Returns:
-            bool: True for state values.
-        """
-        return not isinstance(cand, type(Ellipsis))
-
-    assert _guard(val)
-    return val
+    if isinstance(val, _TracedIdProtocol):
+        return str(val.id)
+    raise AttributeError(f"'{type(val).__name__}' object has no attribute 'id'")
 
 
-def cond_tracing(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) -> TensorOrScalar:
+def cond_tracing(pred: Tensor, true_fn: OpValue, false_fn: OpValue) -> Tensor:
     """Emit a symbolic `If` control-flow node for `cond`.
 
     Args:
         pred (Tensor): Input `pred` argument (pred).
-        true_fn (TensorOrScalar): Input `true_fn` argument (true fn).
-        false_fn (TensorOrScalar): Input `false_fn` argument (false fn).
+        true_fn (OpValue): Input `true_fn` argument (true fn).
+        false_fn (OpValue): Input `false_fn` argument (false fn).
 
     Returns:
-        TensorOrScalar: Traced output tensor.
+        Tensor: Traced output tensor.
 
     Raises:
         TracingError: If called outside a tracing context.
@@ -104,7 +82,7 @@ def cond_tracing(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar
     node = LogicalNode(
         id=out_id,
         op_type="If",
-        inputs=[_as_traced_data(pred.data).id],
+        inputs=[_extract_traced_id(pred.data)],
         attributes=ensure_attrs({"then_branch": true_graph, "else_branch": false_graph}),
         subgraphs={"then_branch": true_graph, "else_branch": false_graph},
         shape_metadata=(),
@@ -114,20 +92,36 @@ def cond_tracing(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar
     return Tensor(proxy, TensorConfig((), DType.Float32, pred.device))
 
 
+@typing.overload
 def while_loop_tracing(
-    cond_fn: Callable[[_StateT], bool | Tensor],
+    cond_fn: Callable[[Tensor], OpValue],
+    body_fn: Callable[[Tensor], Tensor],
+    init_val: Tensor,
+) -> Tensor: ...
+
+
+@typing.overload
+def while_loop_tracing(
+    cond_fn: Callable[[_StateT], OpValue],
     body_fn: Callable[[_StateT], _StateT],
     init_val: _StateT,
-) -> _StateT:
+) -> _StateT | Tensor: ...
+
+
+def while_loop_tracing(
+    cond_fn: Callable[[_StateT], OpValue],
+    body_fn: Callable[[_StateT], _StateT],
+    init_val: _StateT,
+) -> _StateT | Tensor:
     """Emit a symbolic `Loop` node for `while_loop`.
 
     Args:
-        cond_fn (Callable[[_StateT], bool | Tensor]): Input `cond_fn` argument (cond fn).
+        cond_fn (Callable[[_StateT], OpValue]): Input `cond_fn` argument (cond fn).
         body_fn (Callable[[_StateT], _StateT]): Input `body_fn` argument (body fn).
         init_val (_StateT): Input `init_val` argument (init val).
 
     Returns:
-        _StateT: Traced loop state output.
+        _StateT | Tensor: Traced loop state output.
 
     Raises:
         TracingError: If called outside a tracing context.
@@ -136,15 +130,15 @@ def while_loop_tracing(
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit While node outside of a tracing context.")
-    raw_init: TensorOrScalar = init_val if isinstance(init_val, (Tensor, list, tuple)) else []
-    args: tuple[TensorOrScalar, ...] = (init_val,) if isinstance(init_val, Tensor) else tuple(ensure_eager_list(raw_init))
+    raw_init: OpValue = init_val if isinstance(init_val, (Tensor, list, tuple)) else []
+    args: tuple[OpValue, ...] = (init_val,) if isinstance(init_val, Tensor) else tuple(coerce_operand_list(raw_init))
     cond_graph = _trace_function(cond_fn, args, "cond")
     body_graph = _trace_function(body_fn, args, "body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Loop",
-        inputs=[_as_traced_data(extract_data(a)).id for a in args],
+        inputs=[_extract_traced_id(extract_data(a)) for a in args],
         attributes=ensure_attrs({"body": body_graph, "cond": cond_graph}),
         subgraphs={"body": body_graph, "cond": cond_graph},
         shape_metadata=(),
@@ -152,21 +146,21 @@ def while_loop_tracing(
     global_tracing_state.add_node(node)
     if isinstance(init_val, Tensor):
         proxy = ProxyTensor(id=out_id, shape=init_val.shape, dtype=init_val.dtype.value)
-        return _as_state_val(Tensor(proxy, TensorConfig(init_val.shape, init_val.dtype, init_val.device)), init_val)
+        return Tensor(proxy, TensorConfig(init_val.shape, init_val.dtype, init_val.device))
     return init_val
 
 
-def _flatten_inputs(obj: TensorOrScalar) -> list[str]:
+def _flatten_inputs(obj: OpValue) -> list[str]:
     """Flatten nested tensor arguments into a list of node IDs.
 
     Args:
-        obj (TensorOrScalar): Input `obj` argument (obj).
+        obj (OpValue): Input `obj` argument (obj).
 
     Returns:
         list[str]: Flattened node IDs.
     """
     if isinstance(obj, Tensor):
-        return [_as_traced_data(obj.data).id]
+        return [_extract_traced_id(obj.data)]
     elif isinstance(obj, (list, tuple)):
         res = []
         for item in obj:
@@ -176,21 +170,21 @@ def _flatten_inputs(obj: TensorOrScalar) -> list[str]:
 
 
 def scan_tracing(
-    f: TensorOrScalar,
-    init: TensorOrScalar,
-    xs: TensorOrScalar,
+    f: OpValue,
+    init: OpValue,
+    xs: OpValue,
     length: int | None = None,
-) -> TensorOrScalar:
+) -> tuple[OpValue, Tensor]:
     """Emit a symbolic `Scan` node for `scan`.
 
     Args:
-        f (TensorOrScalar): Input `f` argument (f).
-        init (TensorOrScalar): Input `init` argument (init).
-        xs (TensorOrScalar): Input `xs` argument (xs).
+        f (OpValue): Input `f` argument (f).
+        init (OpValue): Input `init` argument (init).
+        xs (OpValue): Input `xs` argument (xs).
         length (int | None): Input `length` argument (length).
 
     Returns:
-        TensorOrScalar: Tuple of `(carry, stacked_outputs)`.
+        tuple[OpValue, Tensor]: Tuple of `(carry, stacked_outputs)`.
 
     Raises:
         TracingError: If called outside a tracing context.
@@ -207,15 +201,14 @@ def scan_tracing(
     x_shape = xs_shape[1:] if xs is not None and len(xs_shape) > 0 else ()
     proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=xs_dtype_str)
     proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, xs_dtype, xs_device))
-    from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor
 
-    body_graph = _trace_function(ensure_eager_tensor(f), (ensure_eager_tensor(init), proxy_x_tensor), "scan_body")
+    body_graph = _trace_function(f, (init, proxy_x_tensor), "scan_body")
     init_ids = _flatten_inputs(init)
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Scan",
-        inputs=init_ids + [_as_traced_data(extract_data(xs)).id],
+        inputs=init_ids + [_extract_traced_id(extract_data(xs))],
         attributes=ensure_attrs({"body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
@@ -223,19 +216,19 @@ def scan_tracing(
     global_tracing_state.add_node(node)
     proxy = ProxyTensor(id=out_id, shape=xs_shape, dtype=xs_dtype_str)
     out_tensor = Tensor(proxy, TensorConfig(xs_shape, xs_dtype, xs_device))
-    return ensure_eager_tensor(init), out_tensor
+    return init, out_tensor
 
 
-def map_fn_tracing(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:
+def map_fn_tracing(fn: OpValue, elems: Tensor, dtype: DType | None = None) -> Tensor:
     """Emit a symbolic `Map` node for `map_fn`.
 
     Args:
-        fn (TensorOrScalar): Input `fn` argument (fn).
+        fn (OpValue): Input `fn` argument (fn).
         elems (Tensor): Input `elems` argument (elems).
         dtype (DType | None): Input `dtype` argument (dtype).
 
     Returns:
-        TensorOrScalar: Mapped output tensor.
+        Tensor: Mapped output tensor.
 
     Raises:
         TracingError: If called outside a tracing context.
@@ -252,7 +245,7 @@ def map_fn_tracing(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None
     node = LogicalNode(
         id=out_id,
         op_type="Map",
-        inputs=[_as_traced_data(elems.data).id],
+        inputs=[_extract_traced_id(elems.data)],
         attributes=ensure_attrs({"body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
@@ -264,25 +257,25 @@ def map_fn_tracing(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, elems.device))
 
 
-def pmap_tracing(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrScalar:
+def pmap_tracing(func: OpValue, axis_name: str | None = None) -> OpValue:
     """Create a symbolic `Pmap` wrapper for `func`.
 
     Args:
-        func (TensorOrScalar): Input `func` argument (func).
+        func (OpValue): Input `func` argument (func).
         axis_name (str | None): Input `axis_name` argument (axis name).
 
     Returns:
-        TensorOrScalar: Wrapped parallel-map callable.
+        OpValue: Wrapped parallel-map callable.
     """
 
-    def wrapped(*args: TensorOrScalar) -> TensorOrScalar:
+    def wrapped(*args: OpValue) -> OpValue:
         """Trace `func` and emit a `Pmap` node.
 
         Args:
-            *args (TensorOrScalar): Positional args.
+            *args (OpValue): Positional args.
 
         Returns:
-            TensorOrScalar: Traced output tensor.
+            OpValue: Traced output tensor.
 
         Raises:
             TracingError: If called outside a tracing context.
@@ -291,7 +284,7 @@ def pmap_tracing(func: TensorOrScalar, axis_name: str | None = None) -> TensorOr
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError("Cannot emit Pmap outside of a tracing context.")
-        proxy_args: list[TensorOrScalar] = []
+        proxy_args: list[OpValue] = []
         for a in args:
             if isinstance(a, Tensor):
                 new_shape = a.shape[1:] if len(a.shape) > 0 else ()
@@ -320,36 +313,54 @@ def pmap_tracing(func: TensorOrScalar, axis_name: str | None = None) -> TensorOr
     return wrapped
 
 
-def stop_gradient_tracing(x: _StateT) -> _StateT:
-    """Compute the stop gradient tracing tensor operation.
+@typing.overload
+def stop_gradient_tracing(x: Tensor) -> Tensor: ...
+
+
+@typing.overload
+def stop_gradient_tracing(x: ProxyTensor) -> ProxyTensor: ...
+
+
+@typing.overload
+def stop_gradient_tracing(x: _StateT) -> _StateT | Tensor | ProxyTensor: ...
+
+
+def stop_gradient_tracing(x: _StateT) -> _StateT | Tensor | ProxyTensor:
+    """Emit a symbolic ``StopGradient`` node when tracing, otherwise return ``x`` unchanged.
 
     Args:
-        x (_StateT): Input `x` argument (x).
+        x (_StateT): Input tensor, proxy tensor, or state value.
 
     Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
+        _StateT | Tensor | ProxyTensor: Stop-gradient wrapped tensor/proxy or ``x``.
     """
     if not global_tracing_state.is_tracing:
         return x
+    from ml_switcheroo_compiler.ir.core import normalize_shape_metadata
+
     if isinstance(x, Tensor) and isinstance(x.data, ProxyTensor):
         out_id = str(uuid.uuid4())
-        node = IRNode(id=out_id, op_type="StopGradient", inputs=[x.data.id], shape_metadata=x.shape)
+        node = IRNode(
+            id=out_id, op_type="StopGradient", inputs=[x.data.id], shape_metadata=normalize_shape_metadata(x.shape)
+        )
         global_tracing_state.add_node(node)
         proxy = ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype.value)
-        return _as_state_val(Tensor(proxy, TensorConfig(x.shape, x.dtype, x.device)), x)
+        return Tensor(proxy, TensorConfig(x.shape, x.dtype, x.device))
     if isinstance(x, ProxyTensor):
         out_id = str(uuid.uuid4())
-        node = IRNode(id=out_id, op_type="StopGradient", inputs=[x.id], shape_metadata=x.shape)
+        node = IRNode(
+            id=out_id, op_type="StopGradient", inputs=[x.id], shape_metadata=normalize_shape_metadata(x.shape)
+        )
         global_tracing_state.add_node(node)
-        return _as_state_val(ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype), x)
+        return ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype)
     return x
 
 
-def assert_value_tracing(condition: TensorOrScalar, message: str = "") -> None:
+def assert_value_tracing(condition: OpValue, message: str = "") -> None:
     """Compute the assert value tracing tensor operation.
 
     Args:
-        condition (TensorOrScalar): Input `condition` argument (condition).
+        condition (OpValue): Input `condition` argument (condition).
         message (str): Input `message` argument (message).
 
     Returns:
@@ -358,7 +369,7 @@ def assert_value_tracing(condition: TensorOrScalar, message: str = "") -> None:
     if not global_tracing_state.is_tracing:
         record_assertion(condition, message)
         return
-    inp_id = _as_traced_data(condition.data if isinstance(condition, Tensor) else condition).id
+    inp_id = _extract_traced_id(condition.data if isinstance(condition, Tensor) else condition)
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,

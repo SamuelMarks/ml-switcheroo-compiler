@@ -20,11 +20,7 @@ from .math_arithmetic import (
     _ravelmultiindex,
     _true_divide,
 )
-from .math_bitwise import (
-    _np_packbits,
-    _np_unpackbits,
-    _signbit,
-)
+from .math_bitwise import _np_packbits, _np_unpackbits, _signbit
 from .math_creation import (
     _from_dlpack,
     _fromfunction,
@@ -118,13 +114,7 @@ from .math_general import (
     _unwrap,
     _vectorize,
 )
-from .math_internal import (
-    _copysign,
-    _getprintoptions,
-    _np_tensorarrayread,
-    _np_tensorarraywrite,
-    _np_topk,
-)
+from .math_internal import _copysign, _getprintoptions, _np_tensorarrayread, _np_tensorarraywrite, _np_topk
 from .math_linalg import (
     _cholesky,
     _cholesky_ex,
@@ -149,15 +139,7 @@ from .math_linalg import (
     _tensorinv,
     _vander,
 )
-from .math_log_exp import (
-    _expm1,
-    _float_power,
-    _frexp,
-    _ldexp,
-    _np_xlog1py,
-    _np_xlogy,
-    _slogdet,
-)
+from .math_log_exp import _expm1, _float_power, _frexp, _ldexp, _np_xlog1py, _np_xlogy, _slogdet
 from .math_logical import (
     _axis_index,
     _divide_no_nan,
@@ -253,16 +235,8 @@ from .math_nn import (
     _global_adaptive_pool,
     _np_fractionalavgpool,
 )
-from .math_polynomial import (
-    _np_polyint,
-    _polyval,
-)
-from .math_random_sampling import (
-    _np_gumbel,
-    _np_rnguniform,
-    _np_wald,
-    _pshuffle,
-)
+from .math_polynomial import _np_polyint, _polyval
+from .math_random_sampling import _np_gumbel, _np_rnguniform, _np_wald, _pshuffle
 from .math_reduction import (
     _adaptive_log_softmax_with_loss,
     _adaptive_max_pool2d,
@@ -286,30 +260,18 @@ from .math_reduction import (
     _psumscatter,
     _segment_sum,
 )
-from .math_set import (
-    _intersect1d,
-    _np_union1d,
-    _np_unique,
-    _np_uniqueall,
-    _np_uniquecounts,
-    _np_uniquevalues,
-)
-from .math_signal import (
-    _correlate,
-    _np_windowhann,
-)
-from .math_sort import (
-    _argsort,
-    _lexsort,
-    _searchsorted,
-    _sortcomplex,
-)
+from .math_set import _intersect1d, _np_union1d, _np_unique, _np_uniqueall, _np_uniquecounts, _np_uniquevalues
+from .math_signal import _correlate, _np_windowhann
 from .math_sorting import (
     _argpartition,
+    _argsort,
+    _lexsort,
     _median,
     _np_partition,
     _percentile,
     _quantile,
+    _searchsorted,
+    _sortcomplex,
 )
 from .math_special import (
     _bessel_i0,
@@ -351,26 +313,8 @@ from .math_string_io import (
     _np_textvectorization,
     _np_writefile,
 )
-from .math_testing import (
-    _allclose,
-    _array_equiv,
-    _assert,
-    _promotetypes,
-    _resulttype,
-)
-from .math_trig import (
-    _acos,
-    _acosh,
-    _asin,
-    _asinh,
-    _atan,
-    _atan2,
-    _atanh,
-    _isin,
-    _isinf,
-    _isposinf,
-    _sinc,
-)
+from .math_testing import _allclose, _array_equiv, _assert, _promotetypes, _resulttype
+from .math_trig import _acos, _acosh, _asin, _asinh, _atan, _atan2, _atanh, _isin, _isinf, _isposinf, _sinc
 
 __all__ = [
     "_accumulate_n",

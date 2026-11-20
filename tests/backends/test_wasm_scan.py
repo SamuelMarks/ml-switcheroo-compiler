@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 
 
 def test_wasm_scan_generation() -> None:
@@ -14,13 +15,21 @@ def test_wasm_scan_generation() -> None:
 
     body_graph = IRGraph()
     body_in = IRNode(id="body_in", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=[3])
-    body_add = IRNode(id="body_add", op_type="Add", inputs=["body_in", "body_in"], attributes={"dtype": "float32"}, shape_metadata=[3])
+    body_add = IRNode(
+        id="body_add", op_type="Add", inputs=["body_in", "body_in"], attributes={"dtype": "float32"}, shape_metadata=[3]
+    )
     body_graph.nodes["body_in"] = body_in
     body_graph.nodes["body_add"] = body_add
     body_graph.outputs = ["body_add"]
     body_graph.inputs = ["body_in"]
 
-    node_scan = IRNode(id="node_scan", op_type="Scan", inputs=["node_in"], attributes=ensure_attrs({"dtype": "float32", "body_graph": body_graph}), shape_metadata=[3])
+    node_scan = IRNode(
+        id="node_scan",
+        op_type="Scan",
+        inputs=["node_in"],
+        attributes=ensure_attrs({"dtype": "float32", "body_graph": body_graph}),
+        shape_metadata=[3],
+    )
 
     graph.nodes["node_in"] = node_in
     graph.nodes["node_scan"] = node_scan

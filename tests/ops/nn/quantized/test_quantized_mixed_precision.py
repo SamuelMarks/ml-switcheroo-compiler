@@ -2,19 +2,33 @@
 
 from __future__ import annotations
 
+import types
 import typing
+
+import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import EagerBoundCallable, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def _test_quantized_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestQuantizedOpsState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_quantized_ops` split helpers."""
+
+    np: types.ModuleType
+    orig: bool
+    orig_add_node: EagerBoundCallable
+    orig_tracing: bool
+    q_ops: types.ModuleType
+    state: types.ModuleType
+
+
+def _test_quantized_ops_part_1(_state: _TestQuantizedOpsState) -> None:
     """Execute part 1 of test_quantized_ops.
 
     Args:
@@ -30,18 +44,25 @@ def _test_quantized_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
-    _state.update(ensure_tensor_dict({"np": np, "orig": orig, "orig_add_node": orig_add_node, "orig_tracing": orig_tracing}))
-    _state.update(ensure_tensor_dict({"q_ops": q_ops, "state": state}))
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
+    _state.update(
+        {"np": np, "orig": orig, "orig_add_node": require_callable(orig_add_node), "orig_tracing": orig_tracing}
+    )
+    _state.update({"q_ops": q_ops, "state": state})
 
 
-def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_quantized_ops_part_2(_state: _TestQuantizedOpsState) -> None:
     """Execute part 2 of test_quantized_ops.
 
     Args:
         _state: Shared test state dictionary.
     """
-    np, orig, orig_add_node, orig_tracing = _state["np"], _state["orig"], _state["orig_add_node"], _state["orig_tracing"]
+    np, orig, orig_add_node, orig_tracing = (
+        _state["np"],
+        _state["orig"],
+        _state["orig_add_node"],
+        _state["orig_tracing"],
+    )
     q_ops, state = _state["q_ops"], _state["state"]
     try:
         t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
@@ -74,7 +95,7 @@ def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         from unittest.mock import patch
 
         with patch("ml_switcheroo_compiler.ops.nn.linear_ops.linear", return_value=t):
-            with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.zeros_like", return_value=t):
+            with patch("ml_switcheroo_compiler.ops.creation.api_basic.zeros_like", return_value=t):
                 q_ops.fake_quant_with_min_max_vars(t, t, t)
                 q_ops.quantize_and_dequantize(t, t, t, qp)
                 q_ops.abs_max_quantize(t)
@@ -99,14 +120,14 @@ def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         assert q_ops.ComputeFloat8ScaleOp().infer_shape(DummyShape()) == (1, 2)
 
     finally:
-        ensure_mutable(config).eager_mode = ensure_eager_tensor(orig)
-        ensure_mutable(state.global_tracing_state).is_tracing = ensure_eager_tensor(orig_tracing)
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(config, "eager_mode", orig, raising=False)
+        state.global_tracing_state.is_tracing = orig_tracing
+        state.global_tracing_state.add_node = orig_add_node
 
 
 def test_quantized_ops() -> None:
     """Test function test_quantized_ops."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestQuantizedOpsState = {}
     _test_quantized_ops_part_1(_state)
     _test_quantized_ops_part_2(_state)
     assert len(_state) > 0

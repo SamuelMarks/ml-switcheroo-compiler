@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list, get_active_backend
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     DTypeHolderProtocol,
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_device,
     extract_dtype,
@@ -21,8 +21,8 @@ from ml_switcheroo_compiler.core.shape import (
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
-from ml_switcheroo_compiler.ops.creation.frontend import asarray
-from ml_switcheroo_compiler.ops.shape.frontend import reshape
+from ml_switcheroo_compiler.ops.creation.api import asarray
+from ml_switcheroo_compiler.ops.shape.api import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -30,7 +30,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class _NameHolderProtocol(typing.Protocol):
     """Protocol for dtype descriptors exposing `.name`."""
 
-    name: TensorOrScalar
+    name: OpValue
 
 
 @typing.runtime_checkable
@@ -44,29 +44,34 @@ class _DunderNameProtocol(typing.Protocol):
 class _ValueHolderProtocol(typing.Protocol):
     """Protocol for dtype descriptors exposing `.value`."""
 
-    value: TensorOrScalar
+    value: OpValue
 
 
-def _resolve_stack_dtype_str(first_tensor: TensorOrScalar) -> str:
+def _resolve_stack_dtype_str(first_tensor: OpValue) -> str:
     """Resolve stacked tensor dtype string from the first input tensor.
 
     Args:
-        first_tensor (TensorOrScalar): First input tensor.
+        first_tensor (OpValue): First input tensor.
 
     Returns:
         str: Lowercase dtype name string.
     """
-    out_dtype: TensorOrScalar = first_tensor.dtype if isinstance(first_tensor, DTypeHolderProtocol) and first_tensor.dtype is not None else "float32"
-    out_dtype_val: TensorOrScalar = out_dtype
-    if isinstance(out_dtype, _NameHolderProtocol):
-        return str(out_dtype.name).lower()
-    if isinstance(out_dtype, _DunderNameProtocol):
-        return str(out_dtype.__name__)
+    out_dtype: OpValue = (
+        first_tensor.dtype
+        if isinstance(first_tensor, DTypeHolderProtocol) and first_tensor.dtype is not None
+        else "float32"
+    )
+    cand_out_dt: OpValue | _NameHolderProtocol | _DunderNameProtocol = out_dtype
+    out_dtype_val: OpValue | _ValueHolderProtocol = out_dtype
+    if isinstance(cand_out_dt, _NameHolderProtocol):
+        return str(cand_out_dt.name).lower()
+    if isinstance(cand_out_dt, _DunderNameProtocol):
+        return str(cand_out_dt.__name__)
     val = out_dtype_val.value if isinstance(out_dtype_val, _ValueHolderProtocol) else out_dtype_val
     return str(val).split(".")[-1].lower()
 
 
-def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
+def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> OpValue:
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
@@ -92,7 +97,9 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     rank = len(base_shape)
     norm_axis = axis if axis >= 0 else axis + rank
     if rank > 0:
-        out_shape = tuple(sum(t.shape[norm_axis] for t in tensors) if i == norm_axis else base_shape[i] for i in range(rank))
+        out_shape = tuple(
+            sum(extract_shape(t)[norm_axis] for t in tensors) if i == norm_axis else base_shape[i] for i in range(rank)
+        )
     else:
         out_shape = ()
     return _emit_shape_node(
@@ -104,7 +111,7 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     )
 
 
-def stack(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
+def stack(tensors: Sequence[Tensor], axis: int = 0) -> OpValue:
     """Stack a sequence of tensors along a new dimension.
 
     Args:
@@ -148,7 +155,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
     )
 
 
-def vstack(tup: Sequence[Tensor]) -> TensorOrScalar:
+def vstack(tup: Sequence[Tensor]) -> OpValue:
     """Stack arrays in sequence vertically (row wise).
 
     Args:
@@ -162,11 +169,11 @@ def vstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(extract_shape(data), tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = get_op("Vstack")().infer_shape([t.shape for t in inputs])
+    out_shape = get_op("Vstack")().dispatch_infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
+def hstack(tup: Sequence[Tensor]) -> OpValue:
     """Stack arrays in sequence horizontally (column wise).
 
     Args:
@@ -180,11 +187,11 @@ def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(extract_shape(data), tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = get_op("Hstack")().infer_shape([t.shape for t in inputs])
+    out_shape = get_op("Hstack")().dispatch_infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
+def dstack(tup: Sequence[Tensor]) -> OpValue:
     """Stack arrays in sequence depth wise (along third axis).
 
     Args:
@@ -198,16 +205,16 @@ def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(extract_shape(data), tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = get_op("Dstack")().infer_shape([t.shape for t in inputs])
+    out_shape = get_op("Dstack")().dispatch_infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def append(arr: TensorOrScalar, values: TensorOrScalar, axis: int | None = None) -> TensorOrScalar:
+def append(arr: OpValue, values: OpValue, axis: int | None = None) -> OpValue:
     """Append values to the end of an array.
 
     Args:
-        arr (TensorOrScalar): Values are appended to a copy of this array.
-        values (TensorOrScalar): These values are appended to a copy of arr.
+        arr (OpValue): Values are appended to a copy of this array.
+        values (OpValue): These values are appended to a copy of arr.
         axis (int | None, optional): The axis along which values are appended.
             If axis is not given, both arr and values are flattened before use.
 
@@ -232,16 +239,16 @@ def append(arr: TensorOrScalar, values: TensorOrScalar, axis: int | None = None)
     return concatenate([arr_t, values_t], axis=axis)
 
 
-def column_stack(tup: TensorOrScalar) -> TensorOrScalar:
+def column_stack(tup: OpValue) -> OpValue:
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
-        tup (Sequence[TensorOrScalar]): Sequence of 1-D or 2-D arrays.
+        tup (OpValue): Sequence of 1-D or 2-D arrays.
 
     Returns:
         Tensor: The array formed by stacking the given arrays.
     """
-    tensors = [asarray(t) for t in ensure_eager_list(tup)]
+    tensors = [asarray(t) for t in coerce_operand_list(tup)]
     arrays = []
     for a in tensors:
         if len(a.shape) < MATRIX_RANK:

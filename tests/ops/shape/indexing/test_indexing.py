@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+from pytest_mock import MockerFixture
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -36,16 +39,16 @@ from ml_switcheroo_compiler.ops.shape.indexing import (
     where,
 )
 from ml_switcheroo_compiler.ops.shape.indexing import PutAlongAxis as PutAlongAxisClass
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub, coerce_operand_list, ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class MockTensor:
+class MockTensor(MockTestStub):
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -57,7 +60,7 @@ class MockTensor:
         self.data = [1, 2]
 
 
-def test_gather(mocker: EagerTensorProtocol) -> None:
+def test_gather(mocker: MockerFixture) -> None:
     """Test function test_gather.
 
     Args:
@@ -70,13 +73,13 @@ def test_gather(mocker: EagerTensorProtocol) -> None:
     assert gather(t, 0, idx) == "gather"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((1, 3)))
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((1, 3)), raising=False)
     res = gather(t, 0, idx)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).config).shape == (1, 3)
+    assert ensure_tensor(res).config.shape == (1, 3)
 
 
-def test_gather_nd(mocker: EagerTensorProtocol) -> None:
+def test_gather_nd(mocker: MockerFixture) -> None:
     """Test function test_gather_nd.
 
     Args:
@@ -89,12 +92,12 @@ def test_gather_nd(mocker: EagerTensorProtocol) -> None:
     assert gather_nd(t, idx) == "gather_nd"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((1,)))
-    assert ensure_eager_tensor(ensure_eager_tensor(gather_nd(t, idx)).config).shape == (1,)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((1,)), raising=False)
+    assert ensure_tensor(gather_nd(t, idx)).config.shape == (1,)
 
 
-def test_take(mocker: EagerTensorProtocol) -> None:
+def test_take(mocker: MockerFixture) -> None:
     """Test function test_take.
 
     Args:
@@ -107,12 +110,12 @@ def test_take(mocker: EagerTensorProtocol) -> None:
     assert take(t, idx) == "take"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((1,)))
-    assert ensure_eager_tensor(ensure_eager_tensor(take(t, idx)).config).shape == (1,)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((1,)), raising=False)
+    assert ensure_tensor(take(t, idx)).config.shape == (1,)
 
 
-def test_take_along_axis(mocker: EagerTensorProtocol) -> None:
+def test_take_along_axis(mocker: MockerFixture) -> None:
     """Test function test_take_along_axis.
 
     Args:
@@ -121,11 +124,11 @@ def test_take_along_axis(mocker: EagerTensorProtocol) -> None:
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
     assert take_along_axis(t, idx, 0) == "res"
 
 
-def test_searchsorted(mocker: EagerTensorProtocol) -> None:
+def test_searchsorted(mocker: MockerFixture) -> None:
     """Test function test_searchsorted.
 
     Args:
@@ -138,12 +141,12 @@ def test_searchsorted(mocker: EagerTensorProtocol) -> None:
     assert searchsorted(a, v) == "searchsorted"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((1,)))
-    assert ensure_eager_tensor(ensure_eager_tensor(searchsorted(a, v)).config).shape == (1,)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((1,)), raising=False)
+    assert ensure_tensor(searchsorted(a, v)).config.shape == (1,)
 
 
-def test_where(mocker: EagerTensorProtocol) -> None:
+def test_where(mocker: MockerFixture) -> None:
     """Test function test_where.
 
     Args:
@@ -156,12 +159,12 @@ def test_where(mocker: EagerTensorProtocol) -> None:
     assert where(c, t, t) == "where"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(where(c, t, t)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(where(c, t, t)).config.shape == (2, 3)
 
 
-def test_select(mocker: EagerTensorProtocol) -> None:
+def test_select(mocker: MockerFixture) -> None:
     """Test function test_select.
 
     Args:
@@ -174,7 +177,7 @@ def test_select(mocker: EagerTensorProtocol) -> None:
     assert select(c, t, t) == "where"
 
 
-def test_boolean_mask(mocker: EagerTensorProtocol) -> None:
+def test_boolean_mask(mocker: MockerFixture) -> None:
     """Test function test_boolean_mask.
 
     Args:
@@ -187,12 +190,12 @@ def test_boolean_mask(mocker: EagerTensorProtocol) -> None:
     assert boolean_mask(t, c) == "mask"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(boolean_mask(t, c)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(boolean_mask(t, c)).config.shape == (2, 3)
 
 
-def test_invert_permutation(mocker: EagerTensorProtocol) -> None:
+def test_invert_permutation(mocker: MockerFixture) -> None:
     """Test function test_invert_permutation.
 
     Args:
@@ -204,12 +207,12 @@ def test_invert_permutation(mocker: EagerTensorProtocol) -> None:
     assert invert_permutation(t) == "invert"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).return_value = ensure_eager_tensor(MockTensor((2,)))
-    assert ensure_eager_tensor(ensure_eager_tensor(invert_permutation(t)).config).shape == (2,)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "return_value", MockTensor((2,)), raising=False)
+    assert ensure_tensor(invert_permutation(t)).config.shape == (2,)
 
 
-def test_put_along_axis(mocker: EagerTensorProtocol) -> None:
+def test_put_along_axis(mocker: MockerFixture) -> None:
     """Test function test_put_along_axis.
 
     Args:
@@ -223,51 +226,57 @@ def test_put_along_axis(mocker: EagerTensorProtocol) -> None:
     assert put_along_axis(arr, idx, val, 0) == "put"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2,)))
-    assert ensure_eager_tensor(ensure_eager_tensor(put_along_axis(arr, idx, val, 0)).config).shape == (2,)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2,)), raising=False)
+    assert ensure_tensor(put_along_axis(arr, idx, val, 0)).config.shape == (2,)
 
 
 def test_classes_infer_shape() -> None:
     """Test function test_classes_infer_shape."""
     assert Extract().infer_shape() == (None,)
-    assert ensure_callable(DynamicPartition)().infer_shape(None, None, 2) == ()
-    assert ensure_callable(DynamicStitch)().infer_shape(None, None) == ()
-    assert ensure_callable(TensorScatterSub)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
-    assert ensure_callable(ExtractVolumePatches)().infer_shape(None, [1], [1], "VALID") == ()
-    assert ensure_callable(UnravelIndex)().infer_shape(None, None) == ()
-    assert ensure_callable(DynamicSliceInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, 1, axis=0) == (1, 3)
-    assert ensure_callable(DynamicSliceInDim)().infer_shape(None, None, 1) == ()
-    assert ensure_callable(DynamicUpdateSliceInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
-    assert ensure_callable(DynamicIndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, axis=0, keepdims=True) == (1, 3)
-    assert ensure_callable(DynamicIndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, axis=0, keepdims=False) == (3,)
-    assert ensure_callable(DynamicIndexInDim)().infer_shape(None, None) == ()
-    assert ensure_callable(DynamicUpdateIndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
+    assert DynamicPartition().infer_shape(None, None, 2) == ()
+    assert DynamicStitch().infer_shape(None, None) == ()
+    assert TensorScatterSub().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+    assert ExtractVolumePatches().infer_shape(None, [1], [1], "VALID") == ()
+    assert UnravelIndex().infer_shape(None, None) == ()
+    assert DynamicSliceInDim().infer_shape(MockTensor((2, 3)), None, 1, axis=0) == (
+        1,
+        3,
+    )
+    assert DynamicSliceInDim().infer_shape(None, None, 1) == ()
+    assert DynamicUpdateSliceInDim().infer_shape(MockTensor((2, 3)), None, None) == (
+        2,
+        3,
+    )
+    assert DynamicIndexInDim().infer_shape(MockTensor((2, 3)), None, axis=0, keepdims=True) == (1, 3)
+    assert DynamicIndexInDim().infer_shape(MockTensor((2, 3)), None, axis=0, keepdims=False) == (3,)
+    assert DynamicIndexInDim().infer_shape(None, None) == ()
+    assert DynamicUpdateIndexInDim().infer_shape(MockTensor((2, 3)), None, None) == (
+        2,
+        3,
+    )
     spec = IndexSpec(start_index=0, limit_index=2, stride=1, axis=0)
-    assert ensure_callable(SliceInDim)().infer_shape(ensure_callable(MockTensor)((4, 3)), spec) == (2, 3)
-    assert ensure_callable(SliceInDim)().infer_shape(None, spec) == ()
-    assert ensure_callable(ScatterApply)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None, None) == (2, 3)
-    assert ensure_callable(ScatterMax)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
-    assert ensure_callable(ScatterMin)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
-    assert ensure_callable(ScatterMul)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
-    assert ensure_callable(PutAlongAxisClass)().infer_shape(ensure_callable(MockTensor)((2, 3)), None, None) == (2, 3)
+    assert SliceInDim().infer_shape(MockTensor((4, 3)), spec) == (2, 3)
+    assert SliceInDim().infer_shape(None, spec) == ()
+    assert ScatterApply().infer_shape(MockTensor((2, 3)), None, None, None) == (2, 3)
+    assert ScatterMax().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+    assert ScatterMin().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+    assert ScatterMul().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+    assert PutAlongAxisClass().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
 
 
-def test_indexing_exact_shapes(mocker: EagerTensorProtocol) -> None:
+def test_indexing_exact_shapes(mocker: MockerFixture) -> None:
     """Verify exact output shapes for take_along_axis, gather_nd, take, where, and classes.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
-    from ml_switcheroo_compiler.ops.shape.indexing import (
-        gather,
-        gather_nd,
-        take,
-        where,
-    )
+    from ml_switcheroo_compiler.ops.shape.indexing import gather, gather_nd, take, where
 
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:
@@ -313,31 +322,33 @@ def test_indexing_exact_shapes(mocker: EagerTensorProtocol) -> None:
 
     # 5. ExtractVolumePatches
     vol_in = MockTensor((1, 10, 10, 10, 3))
-    vol_out = ensure_callable(ensure_callable(ExtractVolumePatches)().infer_shape)(vol_in, [1, 3, 3, 3, 1], [1, 1, 1, 1, 1], "VALID")
+    vol_out = ExtractVolumePatches().infer_shape(vol_in, [1, 3, 3, 3, 1], [1, 1, 1, 1, 1], "VALID")
     assert vol_out == (1, 8, 8, 8, 81)
 
     # 6. DynamicPartition with valid tensor shapes
     part_data = MockTensor((10, 4))
     part_ids = MockTensor((10,))
-    p_shapes = ensure_callable(ensure_callable(DynamicPartition)().infer_shape)(part_data, part_ids, 3)
-    assert ensure_callable(len)(p_shapes) == 3
-    assert ensure_eager_tensor(p_shapes)[0] == (None, 4)
+    p_shapes = DynamicPartition().infer_shape(part_data, part_ids, 3)
+    assert len(coerce_operand_list(p_shapes)) == 3
+    assert coerce_operand_list(p_shapes)[0] == (None, 4)
 
     # 7. UnravelIndex
     flat_idx = MockTensor((15,))
-    unravelled = ensure_callable(ensure_callable(UnravelIndex)().infer_shape)(flat_idx, [3, 5])
+    unravelled = UnravelIndex().infer_shape(flat_idx, [3, 5])
     assert unravelled == ((15,), (15,))
 
 
-def test_indexing_edge_cases(mocker: EagerTensorProtocol) -> None:
+def test_indexing_edge_cases(mocker: MockerFixture) -> None:
     """Test edge cases and fallback branches in shape indexing operations.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:
@@ -384,18 +395,18 @@ def test_indexing_edge_cases(mocker: EagerTensorProtocol) -> None:
     # 4. DynamicStitch infer_shape variations (indices, data)
     stitch = DynamicStitch()
     # len(d_shape) >= len(idx_shape)
-    res1 = ensure_callable(stitch.infer_shape)([ensure_callable(MockTensor)((2,))], [ensure_callable(MockTensor)((2, 3, 4))])
+    res1 = stitch.infer_shape([MockTensor((2,))], [MockTensor((2, 3, 4))])
     assert res1 == (None, 3, 4)
     # len(d_shape) < len(idx_shape)
-    res2 = ensure_callable(stitch.infer_shape)([ensure_callable(MockTensor)((2, 3, 4))], [ensure_callable(MockTensor)((2,))])
+    res2 = stitch.infer_shape([MockTensor((2, 3, 4))], [MockTensor((2,))])
     assert res2 == (None,)
     # elements without shape attribute
-    assert ensure_callable(stitch.infer_shape)([1], [1]) == ()
+    assert stitch.infer_shape([1], [1]) == ()
 
     # 5. ExtractVolumePatches SAME padding and non-5D input
     evp = ExtractVolumePatches()
     vol_in = MockTensor((1, 10, 10, 10, 3))
-    res_same = ensure_callable(evp.infer_shape)(vol_in, [1, 3, 3, 3, 1], [1, 2, 2, 2, 1], "SAME")
+    res_same = evp.infer_shape(vol_in, [1, 3, 3, 3, 1], [1, 2, 2, 2, 1], "SAME")
     assert res_same == (1, 5, 5, 5, 81)
-    res_non_5d = ensure_callable(evp.infer_shape)(ensure_callable(MockTensor)((1, 10, 10, 3)), [1, 3, 3, 1], [1, 1, 1, 1], "VALID")
+    res_non_5d = evp.infer_shape(MockTensor((1, 10, 10, 3)), [1, 3, 3, 1], [1, 1, 1, 1], "VALID")
     assert res_non_5d == ()

@@ -5,14 +5,15 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.grad.testing import check_jvp_vjp_duality
 from ml_switcheroo_compiler.ops import linalg
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_jvp_vjp_duality_linear_ops() -> None:
@@ -22,36 +23,43 @@ def test_jvp_vjp_duality_linear_ops() -> None:
         None
     """
     with ConfigContext(eager_mode=True):
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from tests.testing_utils import NumpyTestArray, ensure_tensor
 
-        def matmul_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]], y: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
+        def matmul_fn(
+            x: Tensor | NumpyTestArray,
+            y: Tensor | NumpyTestArray,
+        ) -> BackendArg:
             """Matrix multiplication wrapper.
 
             Args:
-                x (np.ndarray): First matrix.
-                y (np.ndarray): Second matrix.
+                x: First matrix.
+                y: Second matrix.
 
             Returns:
-                EagerValue: Product matrix.
+                BackendArg: Product matrix.
             """
-            return ensure_callable(linalg.matmul)(x, y)
+            return linalg.matmul(ensure_tensor(x), ensure_tensor(y))
 
         x_val = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         y_val = np.array([[0.5, -1.0], [1.5, 2.0]], dtype=np.float32)
         check_jvp_vjp_duality(matmul_fn, (x_val, y_val))
 
-        def scale_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
+        def scale_fn(
+            x: Tensor | NumpyTestArray,
+        ) -> Tensor | NumpyTestArray:
             """Scaling operation.
 
             Args:
-                x (np.ndarray): Input matrix.
+                x (Tensor | NumpyTestArray): Input matrix.
 
             Returns:
-                EagerValue: Scaled matrix.
+                Tensor | NumpyTestArray: Scaled matrix.
             """
-            return ensure_eager_tensor(ensure_eager_tensor(x) * ensure_eager_tensor(2.5))
+            return x * 2.5
 
         check_jvp_vjp_duality(scale_fn, (x_val,))
-        assert np.allclose(ensure_eager_tensor(scale_fn(x_val.astype(np.float64))), x_val * 2.5)
+        assert np.allclose(ensure_ndarray(scale_fn(x_val.astype(np.float64))), x_val * 2.5)
 
 
 def test_jvp_vjp_duality_transcendental_ops() -> None:
@@ -60,23 +68,28 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
     Returns:
         None
     """
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from tests.testing_utils import NumpyTestArray
+
     with ConfigContext(eager_mode=True):
 
-        def poly_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
+        def poly_fn(
+            x: Tensor | NumpyTestArray,
+        ) -> Tensor | NumpyTestArray:
             """Polynomial composite function.
 
             Args:
-                x (np.ndarray): Input array.
+                x (Tensor | NumpyTestArray): Input array.
 
             Returns:
-                EagerValue: Evaluated array.
+                Tensor | NumpyTestArray: Evaluated array.
             """
-            return (((ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)) - ((ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(2.0))) + (ensure_eager_tensor(x) * ensure_eager_tensor(0.5))
+            return (((x * x) * x) - ((x * x) * 2.0)) + (x * 0.5)
 
         arr = np.array([0.2, -0.5, 0.8, -1.2], dtype=np.float32)
         check_jvp_vjp_duality(poly_fn, (arr,))
         expected = (arr**3) - 2.0 * (arr**2) + 0.5 * arr
-        assert np.allclose(ensure_eager_tensor(poly_fn(arr.astype(np.float64))), expected)
+        assert np.allclose(ensure_ndarray(poly_fn(arr.astype(np.float64))), expected)
 
 
 def test_jvp_vjp_duality_reductions() -> None:
@@ -85,22 +98,27 @@ def test_jvp_vjp_duality_reductions() -> None:
     Returns:
         None
     """
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from tests.testing_utils import NumpyTestArray
+
     with ConfigContext(eager_mode=True):
 
-        def linear_comb_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
+        def linear_comb_fn(
+            x: Tensor | NumpyTestArray,
+        ) -> Tensor | NumpyTestArray:
             """Linear combination function.
 
             Args:
-                x (np.ndarray): Input array.
+                x (Tensor | NumpyTestArray): Input array.
 
             Returns:
-                EagerValue: Linear combination.
+                Tensor | NumpyTestArray: Linear combination.
             """
-            return (ensure_eager_tensor(x) * ensure_eager_tensor(1.5)) + (ensure_eager_tensor(x) * ensure_eager_tensor(0.75))
+            return (x * 1.5) + (x * 0.75)
 
         arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         check_jvp_vjp_duality(linear_comb_fn, (arr,))
-        assert np.allclose(ensure_eager_tensor(linear_comb_fn(arr.astype(np.float64))), arr * 2.25)
+        assert np.allclose(ensure_ndarray(linear_comb_fn(arr.astype(np.float64))), arr * 2.25)
 
 
 def test_jvp_vjp_duality_failure_raises() -> None:
@@ -109,30 +127,33 @@ def test_jvp_vjp_duality_failure_raises() -> None:
     Returns:
         None
     """
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from tests.testing_utils import NumpyTestArray
+
     with ConfigContext(eager_mode=True):
 
-        def simple_fn(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
+        def simple_fn(
+            x: Tensor | NumpyTestArray,
+        ) -> Tensor | NumpyTestArray:
             """Simple multiplication.
 
             Args:
-                x (np.ndarray): Input array.
+                x (Tensor | NumpyTestArray): Input array.
 
             Returns:
-                EagerValue: Scaled array.
+                Tensor | NumpyTestArray: Scaled array.
             """
-            return ensure_eager_tensor(ensure_eager_tensor(x) * ensure_eager_tensor(2.0))
+            return x * 2.0
 
         arr = np.array([1.0, 2.0], dtype=np.float32)
         tan = np.array([0.5, 0.5], dtype=np.float32)
         cot = np.array([1.0, 1.0], dtype=np.float32)
         check_jvp_vjp_duality(simple_fn, (arr,), tangents=(tan,), cotangents=cot)
-        assert np.allclose(ensure_eager_tensor(simple_fn(arr.astype(np.float64))), np.array([2.0, 4.0], dtype=np.float32))
+        assert np.allclose(ensure_ndarray(simple_fn(arr.astype(np.float64))), np.array([2.0, 4.0], dtype=np.float32))
 
 
 def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
     """Test JVP/VJP duality with Tensor input and verify failure raises SwitcherooError."""
-    import pytest
-
     from ml_switcheroo_compiler.core.device import Device
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.errors import SwitcherooError
@@ -142,14 +163,14 @@ def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
         # 1. Primal as a Tensor with tangents=None (hits line 153)
         t = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
 
-        def double_fn(x: Tensor) -> EagerValue:
+        def double_fn(x: Tensor) -> BackendArg:
             """Double the input tensor.
 
             Args:
                 x (Tensor): Input tensor.
 
             Returns:
-                EagerValue: Scaled tensor.
+                BackendArg: Scaled tensor.
             """
             return x * 2.0
 
@@ -162,8 +183,6 @@ def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
 
 def test_check_numerical_grads_coverage() -> None:
     """Test full branch and statement coverage for check_numerical_grads."""
-    import pytest
-
     from ml_switcheroo_compiler.core.device import Device
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.errors import SwitcherooError
@@ -186,14 +205,14 @@ def test_check_numerical_grads_coverage() -> None:
     check_numerical_grads(square_fn, (3.0,))
 
     # 2. Tensor input
-    def tensor_scale_fn(x: Tensor) -> EagerValue:
+    def tensor_scale_fn(x: Tensor) -> BackendArg:
         """Scale tensor input.
 
         Args:
             x (Tensor): Input tensor.
 
         Returns:
-            EagerValue: Scaled tensor.
+            BackendArg: Scaled tensor.
         """
         return x * 2.5
 

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Mapping, Sequence
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, DType
+from ml_switcheroo_ir import AttributeValue, DType, IRGraph
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 class ExportArchive:
@@ -20,12 +20,12 @@ class ExportArchive:
         """Initialize `ExportArchive` with empty trackables, endpoints, and variable collections."""
         self.trackables: dict[
             int,
-            int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
+            int | float | str | bool | Sequence[AttributeValue] | Mapping[str, AttributeValue] | None,
         ] = {}
-        self.endpoints: dict[str, TensorOrScalar] = {}
+        self.endpoints: dict[str, OpValue] = {}
         self.collections: dict[
             str,
-            int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
+            int | float | str | bool | Sequence[AttributeValue] | Mapping[str, AttributeValue] | None,
         ] = {}
 
         yaml_path = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
@@ -37,27 +37,34 @@ class ExportArchive:
 
     def track(
         self,
-        resource: int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
+        resource: int | float | str | bool | Sequence[AttributeValue] | Mapping[str, AttributeValue] | None,
     ) -> None:
         """Register a trackable variable or resource with the archive.
 
         Args:
-            resource (Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]): Resource to track.
+            resource: Trackable tensor, collection, or primitive resource.
         """
         self.trackables[id(resource)] = resource
 
     def add_endpoint(
         self,
         name: str,
-        fn: TensorOrScalar,
-        **kwargs: int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
+        fn: OpValue,
+        **kwargs: int
+        | float
+        | str
+        | bool
+        | list[AttributeValue]
+        | tuple[AttributeValue, ...]
+        | dict[str, AttributeValue]
+        | None,
     ) -> None:
         """Register a named callable endpoint for signature export.
 
         Args:
             name (str): Endpoint signature name.
-            fn (TensorOrScalar): Callable endpoint function.
-            **kwargs (Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]): Optional endpoint metadata.
+            fn (OpValue): Callable endpoint function.
+            **kwargs: Optional endpoint metadata attributes.
         """
         _ = kwargs
         self.endpoints[name] = fn
@@ -127,7 +134,11 @@ class ExportArchive:
             for i, out_id in enumerate(graph.outputs):
                 out_node = graph.nodes.get(out_id)
                 raw_out_dt: DType | str | None = out_node.dtype if out_node is not None else None
-                dtype = str(raw_out_dt.value if isinstance(raw_out_dt, DType) else (raw_out_dt if raw_out_dt is not None else "float32"))
+                dtype = str(
+                    raw_out_dt.value
+                    if isinstance(raw_out_dt, DType)
+                    else (raw_out_dt if raw_out_dt is not None else "float32")
+                )
 
                 out_tensor = ProtobufWriter()
                 out_tensor.add_string(1, out_id)
@@ -237,7 +248,8 @@ class ExportArchive:
 
         Args:
             name (str): Variable collection identifier.
-            variables (Union[list[AttributeValue], dict[str, AttributeValue], tuple[AttributeValue, ...]]): Variables to store.
+            variables (Union[list[AttributeValue], dict[str, AttributeValue], tuple[AttributeValue, ...]]): Variables
+                to store.
         """
         self.collections[name] = variables
 
@@ -261,7 +273,17 @@ def validate_onnx_binary(file_path: str) -> bool:
             data: bytes = f.read()
         meta = validate_onnx_model_bytes(data)
         return bool(int(meta.get("opset_version", 0)) >= 14 or int(meta.get("ir_version", 0)) > 0)
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     with open(file_path, "rb") as f:

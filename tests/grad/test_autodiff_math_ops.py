@@ -12,17 +12,17 @@ from ml_switcheroo_compiler.core.errors import CompilerError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable, ensure_tensor_obj
+from tests.testing_utils import ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tensor:
+def _make_tensor(val: BackendArg, shape: tuple[int, ...] | None = None) -> Tensor:
     """Construct a Tensor instance with CPU Float32 configuration.
 
     Args:
-        val (EagerValue): Input data to wrap.
+        val (BackendArg): Input data to wrap.
         shape (tuple[int, ...] | None): Optional explicit shape.
 
     Returns:
@@ -77,11 +77,11 @@ def test_autodiff_unary_math_ops() -> None:
             Returns:
                 Tensor: Computed output value from `f`.
             """
-            return ensure_tensor_obj(dispatch_op(op_bound, inp))
+            return ensure_tensor(dispatch_op(op_bound, inp))
 
         try:
-            primal, vjp_fn = ensure_callable(vjp)(f, x)
-            grads = ensure_callable(vjp_fn)(cot)
+            primal, vjp_fn = vjp(f, x)
+            grads = vjp_fn(cot)
             assert primal is not None
             assert grads is not None
             evaluated_unary += 1
@@ -129,11 +129,11 @@ def test_autodiff_binary_math_ops() -> None:
             Returns:
                 Tensor: Computed output value from `f`.
             """
-            return ensure_tensor_obj(dispatch_op(op_bound, in_a, in_b))
+            return ensure_tensor(dispatch_op(op_bound, in_a, in_b))
 
         try:
-            primal, vjp_fn = ensure_callable(vjp)(f, x, y)
-            grads = ensure_callable(vjp_fn)(cot)
+            primal, vjp_fn = vjp(f, x, y)
+            grads = vjp_fn(cot)
             assert primal is not None
             assert grads is not None
             evaluated_binary += 1

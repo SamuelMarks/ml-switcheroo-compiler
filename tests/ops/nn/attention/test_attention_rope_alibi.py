@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
@@ -12,7 +13,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,12 +22,12 @@ if typing.TYPE_CHECKING:
 def test_rope_infer_shape() -> None:
     """Test function test_rope_infer_shape."""
 
-    class DummyShape:
+    class DummyShape(MockTestStub):
         """Test class DummyShape."""
 
         shape = (1, 2)
 
-    assert ensure_callable(RopeOp)().infer_shape(ensure_callable(DummyShape)()) == (1, 2)
+    assert RopeOp().infer_shape(DummyShape()) == (1, 2)
 
 
 def test_rope() -> None:
@@ -43,7 +44,12 @@ def test_rope() -> None:
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
     added_nodes: list[str] = []
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: added_nodes.append(str(ensure_eager_tensor(node).op_type)))
+    pytest.MonkeyPatch().setattr(
+        state.global_tracing_state,
+        "add_node",
+        lambda node: added_nodes.append(str(node.op_type)),
+        raising=False,
+    )
     try:
         traced_out = rope(t, 2)
         assert isinstance(traced_out, Tensor) and traced_out.shape == (1, 2)
@@ -51,7 +57,7 @@ def test_rope() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
 
 
 def test_sinusoidal() -> None:
@@ -63,14 +69,14 @@ def test_sinusoidal() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
     try:
         res = sinusoidal_positional_encoding(4, 4)
-        assert res is not None
+        assert tuple(extract_test_shape(res)) == (4, 4)
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
 
 
 def test_alibi() -> None:
@@ -82,22 +88,22 @@ def test_alibi() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
     try:
         res = alibi_mask(4, 2)
         assert res == 0.0
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
 
 
 def test_scaled_dot() -> None:
     """Test function test_scaled_dot."""
 
-    class DummyShape:
+    class DummyShape(MockTestStub):
         """Test class DummyShape."""
 
         shape = (1, 2)
 
-    assert ensure_callable(ScaledDotProductAttention)().infer_shape(ensure_callable(DummyShape)(), None, None, None) == (1, 2)
+    assert ScaledDotProductAttention().infer_shape(DummyShape(), None, None, None) == (1, 2)

@@ -1,447 +1,93 @@
-# ruff: noqa: E402
 """Define base generator for emitting backend code from IR."""
 
 from __future__ import annotations
 
-import inspect
-import logging
-import re
 import typing  # noqa: F401
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Sequence
 from types import ModuleType
 
-import pydantic
-
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_callable,
-    ensure_eager_tensor,
-    ensure_str,
+    BackendArg,
+    coerce_str,
 )
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
-from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
-from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue as OpValue
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-
-@typing.runtime_checkable
-class VisitorProtocol(typing.Protocol):
-    """Protocol for AST and IR visitor delegates."""
-
-    def __repr__(self) -> str:
-        """Return string representation of visitor.
-
-        Returns:
-            str: String representation.
-        """
-        ...
-
-
-@typing.runtime_checkable
-class CleanableResourceProtocol(typing.Protocol):
-    """Protocol for temporary directory or build resources supporting cleanup."""
-
-    def cleanup(self) -> None:
-        """Release or clean up associated resources."""
-        ...
-
-
-def _is_cleanable_resource(val: EagerValue) -> typing.TypeGuard[CleanableResourceProtocol]:
-    """Check whether `val` exposes a `.cleanup` attribute.
-
-    Args:
-        val (EagerValue): Candidate resource object.
-
-    Returns:
-        bool: True if `val` has a `.cleanup` attribute.
-    """
-    return has_backend_member(val, "cleanup")
-
-
-def _resolve_visitor_method(
-    target: VisitorProtocol,
-    method_name: str,
-) -> TypedVariadicCallable[EagerValue] | None:
-    """Resolve a bound visitor method on `target` without dynamic reflection builtins.
-
-    Args:
-        target (VisitorProtocol): Visitor or generator instance.
-        method_name (str): Name of the `visit_<Op>` method to look up.
-
-    Returns:
-        TypedVariadicCallable[EagerValue] | None: Bound callable if present, otherwise None.
-    """
-    members = dict(inspect.getmembers(target))
-    raw = members.get(method_name)
-    if raw is None or not callable(raw):
-        return None
-    return ensure_callable(raw)
-
-
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.device import Device
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
-from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FormatterContext, OpFormatter
-from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.backends._base_generator_runtime import (
+    BaseGeneratorRuntimeMixin as BaseGeneratorRuntimeMixin,
+)
+from ml_switcheroo_compiler.backends._base_generator_runtime import (
+    _CompileAOTMethodProtocol as _CompileAOTMethodProtocol,
+)
+from ml_switcheroo_compiler.backends._base_generator_runtime import (
+    class_or_instance_method as class_or_instance_method,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    CleanableResourceProtocol as CleanableResourceProtocol,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    CompiledArtifact as CompiledArtifact,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    EmitUtilsMixin as EmitUtilsMixin,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    FormatterProxyMixin as FormatterProxyMixin,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    InputContext as InputContext,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    IRGraphWalker as IRGraphWalker,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    VisitorProtocol as VisitorProtocol,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    _extract_node_attributes as _extract_node_attributes,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    _GraphHolderProtocol as _GraphHolderProtocol,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    _NodeAttributesProtocol as _NodeAttributesProtocol,
+)
+from ml_switcheroo_compiler.backends._base_generator_support import (
+    _resolve_visitor_method as _resolve_visitor_method,
+)
+from ml_switcheroo_compiler.backends._base_generator_templates import (
+    BaseGeneratorTemplateMixin as BaseGeneratorTemplateMixin,
+)
+from ml_switcheroo_compiler.backends.formatters import CodeFormatter
+from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor as CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
 
 
-class CompiledArtifact(pydantic.BaseModel):
-    """Standardized ahead-of-time (AOT) compiled executable artifact container.
-
-    Attributes:
-        callable_fn: Executable callable function or entry point runner.
-        binary_bytes: Raw compiled binary bytes (e.g. PTX, HSACO, metallib, bytecode).
-        source_code: Emitted source code in the target backend language.
-        metadata: Backend-specific compilation metadata, options, and schemas.
-        temp_dir: Optional temporary directory managing compiled build artifacts.
-    """
-
-    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
-
-    callable_fn: EagerValue | None = None
-    binary_bytes: bytes = b""
-    source_code: str = ""
-    metadata: dict[str, AttributeValue] | None = None
-    temp_dir: EagerValue = None
-
-    def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Execute the compiled artifact.
-
-        Args:
-            *args: Positional arguments to pass to the compiled callable.
-            **kwargs: Keyword arguments to pass to the compiled callable.
-
-        Returns:
-            EagerValue: Computation output or tuple of outputs.
-
-        Raises:
-            RuntimeError: If no executable callable_fn is bound to this artifact.
-        """
-        if self.callable_fn is None:
-            raise RuntimeError("CompiledArtifact has no executable callable bound.")
-        return ensure_callable(self.callable_fn)(*args, **kwargs)
-
-    def cleanup(self) -> None:
-        """Clean up associated temporary directory resources if active."""
-        if self.temp_dir is not None and _is_cleanable_resource(self.temp_dir):
-            self.temp_dir.cleanup()
-            self.temp_dir = None
-
-    def __getitem__(self, item: str) -> EagerValue:
-        """Allow dictionary-style access to metadata and artifact attributes.
-
-        Args:
-            item (str): Key name to retrieve.
-
-        Returns:
-            EagerValue: Value from metadata dictionary or artifact attributes.
-
-        Raises:
-            KeyError: If key is not found in metadata or attributes.
-        """
-        if self.metadata is not None and item in self.metadata:
-            return self.metadata[item]
-        fields: dict[str, EagerValue] = {
-            "callable_fn": self.callable_fn,
-            "binary_bytes": ensure_eager_tensor(self.binary_bytes),
-            "source_code": self.source_code,
-            "metadata": ensure_eager_tensor(self.metadata),
-            "temp_dir": self.temp_dir,
-        }
-        if item in fields:
-            return fields[item]
-        raise KeyError(item)
-
-
-def _is_compiled_artifact(val: EagerValue) -> typing.TypeGuard[CompiledArtifact]:
-    """Type guard narrowing `val` to `CompiledArtifact`.
-
-    Args:
-        val (EagerValue): Candidate compiled artifact or callable.
-
-    Returns:
-        bool: True for runtime compiled artifacts.
-    """
-    return isinstance(val, CompiledArtifact) or not isinstance(val, type(Ellipsis))
-
-
-class IRGraphWalker:
-    """Help class to encapsulate IR graph traversal logic."""
-
-    def __init__(self, generator: BaseGenerator) -> None:
-        """Initialize the walker.
-
-        Args:
-            generator (BaseGenerator): The generator instance.
-        """
-        self.generator = generator
-
-    def walk(self, input_prefix: str = "args") -> None:
-        """Walk the graph and generate code.
-
-        Args:
-            input_prefix (str): The prefix for input args.
-        """
-        visitor = CodeGeneratorVisitor(self.generator)
-        visitor.generate_body(input_prefix)
-
-
-class InputContext(pydantic.BaseModel):
-    """Provide context for input assignment."""
-
-    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
-
-    var_name: str
-    node: IRNode
-    input_prefix: str
-    input_idx: int
-
-
-class FormatterProxyMixin:
-    """Provide mixin for proxying formatter methods."""
-
-    formatter: CodeFormatter
-
-    @property
-    def var_names(self) -> dict[str, str]:
-        """Provide proxy property for formatter var_names.
-
-        Returns:
-            dict[str, str]: The variable names map.
-        """
-        return self.formatter.var_names
-
-    @var_names.setter
-    def var_names(self, value: dict[str, str]) -> None:
-        """Set formatter var_names.
-
-        Args:
-            value (dict[str, str]): The variable names map.
-        """
-        self.formatter.var_names = value
-
-    @property
-    def code(self) -> list[str]:
-        """Provide proxy property for formatter code.
-
-        Returns:
-            list[str]: The generated code list.
-        """
-        return self.formatter.code
-
-    @code.setter
-    def code(self, value: list[str]) -> None:
-        """Set formatter code.
-
-        Args:
-            value (list[str]): The generated code list.
-        """
-        self.formatter.code = value
-
-    @property
-    def indent_level(self) -> int:
-        """Provide proxy property for formatter indent_level.
-
-        Returns:
-            int: The current indent level.
-        """
-        return self.formatter.indent_level
-
-    @indent_level.setter
-    def indent_level(self, value: int) -> None:
-        """Set formatter indent_level.
-
-        Args:
-            value (int): The current indent level.
-        """
-        self.formatter.indent_level = value
-
-    @property
-    def header(self) -> str:
-        """Provide proxy property for formatter header.
-
-        Returns:
-            str: The header string.
-        """
-        return self.formatter.header
-
-    @header.setter
-    def header(self, value: str) -> None:
-        """Set formatter header.
-
-        Args:
-            value (str): The header string.
-        """
-        self.formatter.header = value
-
-    def get_indent(self) -> str:
-        """Get the indentation string.
-
-        Returns:
-            str: Indentation string.
-        """
-        return self.formatter.get_indent()
-
-    def add_line(self, line: str) -> None:
-        """Add a line of code.
-
-        Args:
-            line (str): The line to add.
-        """
-        self.formatter.add_line(line)
-
-    def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
-        """Assign a variable name.
-
-        Args:
-            node_id (str): The node ID.
-            prefix (str): The prefix to use.
-
-        Returns:
-            str: The assigned variable name.
-        """
-        return self.formatter.assign_var_name(node_id, prefix)
-
-
-@typing.runtime_checkable
-class _GraphHolderProtocol(typing.Protocol):
-    """Protocol for generator mixins holding an `IRGraph` attribute."""
-
-    @property
-    def graph(self) -> IRGraph | None:
-        """Return the associated IRGraph if present.
-
-        Returns:
-            IRGraph | None: Associated computation graph.
-        """
-        ...
-
-
-@typing.runtime_checkable
-class _NodeAttributesProtocol(typing.Protocol):
-    """Protocol for IR nodes exposing `.attributes`."""
-
-    @property
-    def attributes(self) -> Mapping[str, AttributeValue] | None:
-        """Return node attributes mapping.
-
-        Returns:
-            Mapping[str, AttributeValue] | None: Node attributes.
-        """
-        ...
-
-
-def _extract_node_attributes(node: IRNode | EagerValue) -> Mapping[str, AttributeValue]:
-    """Return `node.attributes` if defined on `node`, or an empty mapping.
-
-    Args:
-        node (IRNode | EagerValue): Target IR node or mock node.
-
-    Returns:
-        Mapping[str, AttributeValue]: Node attributes mapping.
-    """
-    if isinstance(node, _NodeAttributesProtocol) and isinstance(node.attributes, Mapping):
-        return node.attributes
-    return {}
-
-
-class EmitUtilsMixin:
-    """Provide mixin for emit utilities."""
-
-    formatter: CodeFormatter
-    add_line: Callable[[str], None]
-
-    def _emit_body_return(self, returns: list[str]) -> None:
-        """Emit the final return statement.
-
-        Args:
-            returns: List of return variable names.
-        """
-        if returns:
-            if len(returns) == 1:
-                self.add_line(f"return {returns[0]}")
-            else:
-                self.add_line(f"return ({', '.join(returns)})")
-        elif isinstance(self, _GraphHolderProtocol) and self.graph is not None and self.graph.outputs:
-            out_vars: list[str] = [self.formatter.var_names.get(out_id, out_id) for out_id in self.graph.outputs]
-            if len(out_vars) == 1:
-                self.add_line(f"return {out_vars[0]}")
-            else:
-                self.add_line(f"return ({', '.join(out_vars)})")
-        else:
-            self.add_line("return None")
-
-    def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
-        """Override in subclasses to emit framework-specific constant arrays.
-
-        Args:
-            var_name (str): The var_name parameter for the operation.
-            val_repr (str): The val_repr parameter for the operation.
-        """
-        self.add_line(f"{var_name} = {val_repr}")
-
-
-class class_or_instance_method:
-    """Descriptor supporting invocation on either a class or an instance."""
-
-    def __init__(self, fn: EagerValue) -> None:
-        """Initialize descriptor with wrapped function.
-
-        Args:
-            fn (EagerValue): The callable method to wrap.
-        """
-        self.fn = fn
-
-    def __get__(
-        self,
-        obj: BaseGenerator | EagerValue,
-        cls: type | None = None,
-    ) -> TypedVariadicCallable[CompiledArtifact]:
-        """Bind method to instance if present, else to class.
-
-        Args:
-            obj (BaseGenerator | EagerValue): Target instance or None.
-            cls (type | None): Owning class.
-
-        Returns:
-            TypedVariadicCallable[CompiledArtifact]: Bound callable.
-        """
-        target = obj if obj is not None else cls
-        fn = ensure_callable(self.fn)
-
-        def _bound(*args: EagerValue, **kwargs: EagerValue) -> CompiledArtifact:
-            """Invoke bound method on `target` (instance or class).
-
-            Args:
-                *args (EagerValue): Positional arguments.
-                **kwargs (EagerValue): Keyword arguments.
-
-            Returns:
-                CompiledArtifact: Wrapped method result.
-            """
-            res = fn(target, *args, **kwargs)
-            assert _is_compiled_artifact(res)
-            return res
-
-        return _bound
-
-
-class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
+class BaseGenerator(
+    BaseGeneratorTemplateMixin,
+    BaseGeneratorRuntimeMixin,
+    FormatterProxyMixin,
+    EmitUtilsMixin,
+    GeneratorLifecycleMixin,
+    EagerExecutionMixin,
+):
     """Abstract base class for backend code generation."""
 
     input_idx: int
     module: ModuleType
     get_numpy_rng: TypedVariadicCallable[TensorLike]
-    numpy: TypedVariadicCallable[EagerValue]
+    numpy: TypedVariadicCallable[BackendArg]
     backend_name: str | None = None
     graph: IRGraph = IRGraph()
     visitors: list[VisitorProtocol] = []
-    _aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], EagerValue] | None = None
+    _aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], CompiledArtifact] | None = None
     _output_returns: list[str] | None = None
     _cholesky_vjp_imported: bool = False
     _lu_vjp_imported: bool = False
@@ -478,7 +124,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             allow_pickle: bool = False,
             fix_imports: bool = True,
             encoding: str = "ASCII",
-        ) -> EagerValue:
+        ) -> BackendArg:
             """Load serialized array or checkpoint from filepath.
 
             Args:
@@ -488,25 +134,27 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
                 encoding (str): String encoding.
 
             Returns:
-                EagerValue: Loaded array or dictionary.
+                BackendArg: Loaded array or dictionary.
             """
             ...
 
     def __init__(
         self,
         graph: IRGraph,
-        delegates: Sequence[VisitorProtocol] | Sequence[CodeGeneratorVisitor] | EagerValue = None,
+        delegates: Sequence[VisitorProtocol] | Sequence[CodeGeneratorVisitor] | BackendArg = None,
     ) -> None:
         """Initialize the object.
 
         Args:
             graph (IRGraph): The graph to process.
-            delegates (Sequence[VisitorProtocol] | Sequence[CodeGeneratorVisitor] | EagerValue): The visitor delegates.
+            delegates (Sequence[VisitorProtocol] | Sequence[CodeGeneratorVisitor] | BackendArg): The visitor delegates.
         """
         self.graph = graph
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
-        delegate_items: list[VisitorProtocol] = [d for d in delegates if isinstance(d, VisitorProtocol)] if isinstance(delegates, (list, tuple)) else []
+        delegate_items: list[VisitorProtocol] = (
+            [d for d in delegates if isinstance(d, VisitorProtocol)] if isinstance(delegates, (list, tuple)) else []
+        )
         self.visitors: list[VisitorProtocol] = [self] + delegate_items
 
     def get_language(self) -> str:
@@ -529,101 +177,13 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         val = node.attributes.get("value")
         return repr(val)
 
-    def _load_op_mapping_info(
-        self,
-        backend_name: str,
-        op_name: str,
-    ) -> tuple[str | None, dict[str, str | None], str | None]:
-        """Load AST template, keyword mapping, and target API for an operation.
-
-        Args:
-            backend_name (str): Target backend name.
-            op_name (str): Operation type name.
-
-        Returns:
-            tuple[str | None, dict[str, str | None], str | None]: Tuple of (ast_template, kwarg_map, target_api).
-        """
-        from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
-
-        try:
-            schema = load_backend_mappings(backend_name)
-            if op_name in schema.operations:
-                op_mapping = schema.operations[op_name]
-                return (
-                    op_mapping.ast_template,
-                    dict(op_mapping.kwarg_map or op_mapping.kwarg_translations),
-                    op_mapping.target_api,
-                )
-        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        return None, {}, None
-
-    def _translate_node_kwargs(
-        self,
-        all_attrs: dict[str, EagerValue],
-        kwarg_map: dict[str, str | None],
-    ) -> dict[str, EagerValue]:
-        """Translate node attributes according to backend keyword mappings.
-
-        Args:
-            all_attrs (dict[str, EagerValue]): Raw node and call attributes.
-            kwarg_map (dict[str, str | None]): Mapping from source kwarg to target kwarg.
-
-        Returns:
-            dict[str, EagerValue]: Translated keyword arguments dictionary.
-        """
-        translated_kwargs: dict[str, EagerValue] = {}
-        for k, v in all_attrs.items():
-            if k in kwarg_map:
-                target_k = kwarg_map[k]
-                if target_k is not None:
-                    translated_kwargs[target_k] = v
-            else:
-                translated_kwargs[k] = v
-        return translated_kwargs
-
-    def _format_ast_template(
-        self,
-        ast_template: str,
-        node: IRNode,
-        input_vars: list[str],
-        all_attrs: dict[str, EagerValue],
-        translated_kwargs: dict[str, EagerValue],
-    ) -> str:
-        """Substitute variables and attributes into an AST template string.
-
-        Args:
-            ast_template (str): Template string with placeholders.
-            node (IRNode): Target IR node.
-            input_vars (list[str]): Input variable names.
-            all_attrs (dict[str, EagerValue]): Combined node attributes.
-            translated_kwargs (dict[str, EagerValue]): Translated keyword arguments.
-
-        Returns:
-            str: Formatted code string.
-        """
-        out_var = str(all_attrs.get("out_var") or "")
-        subs: dict[str, str] = {
-            "out": out_var or self.assign_var_name(node.id),
-        }
-        for i, iv in enumerate(input_vars):
-            subs[f"in{i}"] = iv
-        subs["inputs"] = ", ".join(input_vars)
-        for k, v in translated_kwargs.items():
-            subs[k] = str(v)
-
-        result = ast_template
-        for k, val in subs.items():
-            result = result.replace(f"{{{k}}}", str(val))
-        return result
-
-    def visit_OpNode(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_OpNode(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generic visitor for IRNode driven by declarative mapping YAML templates.
 
         Args:
             node (IRNode): Target IRNode.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Additional node attributes and context.
+            **kwargs (BackendArg): Additional node attributes and context.
 
         Returns:
             str: Generated code line or expression.
@@ -632,7 +192,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         op_name = node.op_type
         ast_template, kwarg_map, target_api = self._load_op_mapping_info(backend_name, op_name)
 
-        all_attrs: dict[str, EagerValue] = dict(_extract_node_attributes(node))
+        all_attrs: dict[str, BackendArg] = dict(_extract_node_attributes(node))
         all_attrs.update(kwargs)
         translated_kwargs = self._translate_node_kwargs(all_attrs, kwarg_map)
 
@@ -647,13 +207,13 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         return self.generic_visit(node, input_vars, **translated_kwargs)
 
-    def visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Visit a node and return the formatted code string for the operation.
 
         Args:
             node (IRNode): The node parameter for the operation.
             input_vars (list[str]): The input_vars parameter for the operation.
-            **kwargs (EagerValue): Additional keyword arguments.
+            **kwargs (BackendArg): Additional keyword arguments.
 
         Returns:
             str: The computed result.
@@ -663,213 +223,14 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         for visitor in self.visitors:
             method = _resolve_visitor_method(visitor, method_name)
             if method is not None:
-                return ensure_str(method(node, input_vars, **kwargs))
+                return coerce_str(method(node, input_vars, **kwargs))
         self_method = _resolve_visitor_method(self, method_name) if method_name != "visit_OpNode" else None
         if self_method is not None:
-            return ensure_str(self_method(node, input_vars, **kwargs))
+            return coerce_str(self_method(node, input_vars, **kwargs))
         op_node_method = _resolve_visitor_method(self, "visit_OpNode")
         if op_node_method is not None:
-            return ensure_str(op_node_method(node, input_vars, **kwargs))
+            return coerce_str(op_node_method(node, input_vars, **kwargs))
         return self.generic_visit(node, input_vars, **kwargs)
-
-    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
-        """Get the operation mapping dictionary.
-
-        Args:
-            kwargs: Operation kwargs.
-
-        Returns:
-            Dictionary mapping operation type to format string.
-        """
-        from ml_switcheroo_compiler.ops.registry import backend_mapping_registry
-
-        ops = {}
-        prefix = self.get_fallback_prefix()
-        for op_name in backend_mapping_registry.operations.keys():
-            fmt = backend_mapping_registry.get_generator_mapping(prefix, op_name)
-            if fmt is not None:
-                ops[op_name] = fmt
-
-        if "OverlapAndAdd" not in ops:
-            ops["OverlapAndAdd"] = "tf.signal.overlap_and_add({0})"
-
-        return ops
-
-    def get_fallback_prefix(self) -> str:
-        """Get the fallback prefix for generic operations.
-
-        Returns:
-            str: The prefix.
-        """
-        return "np"
-
-    def get_fallback_axis_kwarg(self) -> str:
-        """Get the fallback axis keyword argument name.
-
-        Returns:
-            str: The axis keyword.
-        """
-        return "axis"
-
-    @class_or_instance_method
-    def compile_aot(self, graph: IRGraph | None = None, **kwargs: EagerValue) -> CompiledArtifact:
-        """Compile an IRGraph into an ahead-of-time binary artifact or callable executable.
-
-        Can be invoked either as an instance method (e.g. generator.compile_aot())
-        or as a class method (e.g. GeneratorClass.compile_aot(graph)).
-
-        Args:
-            graph (IRGraph | None): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options, optimization levels, or destination paths.
-
-        Returns:
-            CompiledArtifact: Compiled binary artifact, path, or callable execution wrapper.
-
-        Raises:
-            NotImplementedError: If AOT compilation is not implemented for this backend.
-        """
-        self_obj: BaseGenerator | type[BaseGenerator] = self
-        raw_graph: IRGraph | None = graph if graph is not None else (self_obj.graph if not isinstance(self_obj, type) else None)
-        target_graph: IRGraph = raw_graph if isinstance(raw_graph, IRGraph) else IRGraph()
-
-        if isinstance(self, type):
-            instance = self(target_graph)
-            res_inst = instance.compile_aot(target_graph, **kwargs)
-            assert _is_compiled_artifact(res_inst)
-            return res_inst
-
-        if self._aot_cache is None:
-            self._aot_cache = {}
-
-        cache_key = (id(target_graph), tuple(sorted((str(k), str(v)) for k, v in kwargs.items())))
-        if cache_key in self._aot_cache:
-            cached = self._aot_cache[cache_key]
-            assert _is_compiled_artifact(cached)
-            return cached
-
-        artifact = self._compile_aot_impl(target_graph, **kwargs)
-        self._aot_cache[cache_key] = artifact
-        assert _is_compiled_artifact(artifact)
-        return artifact
-
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
-        """Internal backend-specific AOT compilation hook.
-
-        Args:
-            graph (IRGraph): The computation graph to compile.
-            **kwargs (EagerValue): Backend-specific compiler arguments.
-
-        Returns:
-            EagerValue: Resulting compiled artifact or callable.
-        """
-        msg = f"AOT compilation is not implemented for {type(self).__name__}"
-        raise NotImplementedError(msg)
-
-    def get_fallback_keepdims_kwarg(self) -> str:
-        """Get the fallback keepdims keyword argument name.
-
-        Returns:
-            str: The keepdims keyword.
-        """
-        return "keepdims"
-
-    @classmethod
-    def get_logical_devices(cls, device_type: str | None = None) -> list[Device]:
-        """Discover logical devices available for this backend.
-
-        Args:
-            device_type (str | None): Optional device type filter (e.g., 'cpu', 'gpu', 'webgpu').
-
-        Returns:
-            list[Device]: Available logical devices.
-        """
-        from ml_switcheroo_compiler.core.device import Device, DeviceType
-
-        devices: list[Device] = [Device(DeviceType.CPU, 0)]
-        cls_name = cls.__name__.lower()
-        if "webgpu" in cls_name or "wgsl" in cls_name:
-            devices.append(Device(DeviceType.WEBGPU, 0))
-        elif "cuda" in cls_name or "gpu" in cls_name or "rocm" in cls_name or "metal" in cls_name:
-            devices.append(Device(DeviceType.GPU, 0))
-
-        if device_type is not None:
-            dtype_lower = str(device_type).lower()
-            return [d for d in devices if (d.device_type if isinstance(d.device_type, str) else d.device_type.value) == dtype_lower or (dtype_lower in ("cuda", "rocm", "metal") and d.device_type == DeviceType.GPU)]
-        return devices
-
-    @classmethod
-    def get_physical_devices(cls, device_type: str | None = None) -> list[Device]:
-        """Discover physical hardware accelerators available for this backend.
-
-        Args:
-            device_type (str | None): Optional device type filter.
-
-        Returns:
-            list[Device]: Available physical devices.
-        """
-        return cls.get_logical_devices(device_type)
-
-    @classmethod
-    def get_memory_info(cls, device: EagerValue = None) -> dict[str, int]:
-        """Retrieve memory allocation statistics for the specified device.
-
-        Args:
-            device (EagerValue): Optional target device identifier.
-
-        Returns:
-            dict[str, int]: Dictionary containing 'current' and 'peak' memory in bytes.
-        """
-        del device
-        return {"current": 0, "peak": 0}
-
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
-        """Fallback visit method for operations not explicitly handled.
-
-        Args:
-            node (IRNode): The node.
-            input_vars (list[str]): The inputs.
-            **kwargs (EagerValue): Additional attributes.
-
-        Returns:
-            str: The code string.
-        """
-        op_type = node.op_type
-        ops_map = self.get_ops_map(kwargs)
-        if op_type in ops_map:
-            fmt = ops_map[op_type]
-            fmt = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
-            fmt = re.sub(", \\w+=\\{[^\\}]+\\}", "", fmt)
-            return fmt
-
-        ctx = FormatterContext(
-            prefix=self.get_fallback_prefix(),
-            op_type=op_type,
-            input_vars=input_vars,
-            kwargs=kwargs,
-            axis_kwarg=self.get_fallback_axis_kwarg(),
-            keepdims_kwarg=self.get_fallback_keepdims_kwarg(),
-        )
-        return OpFormatter.format_generic_fallback(ctx)
-
-    @classmethod
-    def initialize_distributed(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
-        """Initialize distributed execution context for multi-device operations.
-
-        Args:
-            *args (EagerValue): Distributed initialization parameters.
-            **kwargs (EagerValue): Additional distributed execution options.
-        """
-        del args, kwargs
-
-    @classmethod
-    def export_function(cls, *args: EagerValue, **kwargs: EagerValue) -> None:
-        """Export a computational graph or trace for unified persistence.
-
-        Args:
-            *args (EagerValue): Export arguments.
-            **kwargs (EagerValue): Export configuration parameters.
-        """
-        del args, kwargs
 
     def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
         """Override in subclasses to handle custom input logic (e.g. keras.Input).

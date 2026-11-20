@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -35,11 +35,12 @@ def test_missing_optimizers_coverage() -> None:
     """Test function test_missing_optimizers_coverage."""
     from ml_switcheroo_compiler.ops.optimizers.updates import AdamaxHyperparamsOp, ApplyRMSProp
 
-    class DummyShape:
+    class DummyShape(MockTestStub):
         """Test class DummyShape."""
 
         shape = (1,)
 
+    incomplete_args: list[DummyShape] = [DummyShape()]
     with pytest.raises(TypeError):
-        ensure_callable(ApplyRMSProp)().infer_shape(ensure_callable(DummyShape)())
-    ensure_callable(AdamaxHyperparamsOp)().infer_shape(ensure_callable(DummyShape)())
+        ApplyRMSProp().infer_shape(*incomplete_args)
+    AdamaxHyperparamsOp().infer_shape(DummyShape())

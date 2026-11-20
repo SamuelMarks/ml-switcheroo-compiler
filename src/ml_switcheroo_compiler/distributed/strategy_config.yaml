@@ -4,13 +4,13 @@ strategies:
     cross_device_ops: nccl
     registry_hooks:
       init: init_process_group
-      sync: all_reduce
+      sync: sync_gradients_hook
   MultiWorkerMirroredStrategy:
     all_reduce_algorithm: ring
     cross_device_ops: nccl
     registry_hooks:
       init: init_process_group
-      sync: all_reduce
+      sync: sync_gradients_hook
   ModelParallelStrategy:
     all_reduce_algorithm: ring
     row_parallel_dim: 0

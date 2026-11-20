@@ -6,12 +6,14 @@ import typing
 from unittest import mock
 from unittest.mock import patch
 
+import pytest
+
 from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_registry_get_op() -> None:
@@ -19,7 +21,7 @@ def test_registry_get_op() -> None:
     # Transpose should definitely exist.
     op = registry.get_op("Transpose")
     assert op is not None
-    assert ensure_eager_tensor(op["description"]) == ensure_eager_tensor("The Transpose operation.")
+    assert op["description"] == "The Transpose operation."
 
     # Missing op
     assert registry.get_op("NonExistentOp123") is None
@@ -52,9 +54,15 @@ def test_registry_get_generator_mapping() -> None:
 
 def test_registry_extras() -> None:
     """test_registry_extras."""
-    import pytest
-
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, backend_mapping_registry, get_all_ops, get_backend_mapping, get_frontend, get_op, register_frontend
+    from ml_switcheroo_compiler.ops.registry import (
+        _YAML_REGISTRY,
+        backend_mapping_registry,
+        get_all_ops,
+        get_backend_mapping,
+        get_frontend,
+        get_op,
+        register_frontend,
+    )
 
     with pytest.raises(KeyError):
         get_op("NonExistentOp")
@@ -88,8 +96,6 @@ def test_registry_extras() -> None:
 
 def test_registry_remaining() -> None:
     """test_registry_remaining."""
-    import pytest
-
     from ml_switcheroo_compiler.ops.base import OpDef
     from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, get_op, get_util, register_op, register_util
 
@@ -121,15 +127,29 @@ def test_registry_remaining() -> None:
     # hit 112
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-    ensure_eager_tensor(_YAML_REGISTRY)["DynamicTestOp123"] = {"test": 1}
-    op_cls = get_op("DynamicTestOp123")
-    assert ensure_eager_tensor(ensure_eager_tensor(op_cls).get_yaml_data)() == {"test": 1}
+    @typing.runtime_checkable
+    class _YamlDataProto(typing.Protocol):
+        """Protocol for DynamicOpDef classes exposing `get_yaml_data`."""
+
+        def get_yaml_data(self) -> BackendArg:
+            """Return backing YAML entry.
+
+            Returns:
+                BackendArg: YAML dictionary.
+            """
+            ...
+
+    yaml_entry: dict[str, dict[str, dict[str, str]]] = {"variants": {"test_backend": {"generator": "dynamic_test_gen"}}}
+    _YAML_REGISTRY["DynamicTestOp123"] = yaml_entry
+    op_inst = get_op("DynamicTestOp123")()
+    assert isinstance(op_inst, _YamlDataProto)
+    assert op_inst.get_yaml_data() == yaml_entry
 
     # hit 170-175 inside _RegistryShim
     class DummyShim:
         """DummyShim."""
 
-        def __init__(self, data: EagerValue) -> None:
+        def __init__(self, data: BackendArg) -> None:
             """__init__.
 
             Args:
@@ -137,7 +157,7 @@ def test_registry_remaining() -> None:
             """
             self.operations = data
 
-        def get_generator_mapping(self, prefix: EagerValue, op_name: EagerValue) -> EagerValue:
+        def get_generator_mapping(self, prefix: BackendArg, op_name: BackendArg) -> BackendArg:
             """get_generator_mapping.
 
             Args:
@@ -145,14 +165,14 @@ def test_registry_remaining() -> None:
                 op_name: Test parameter `op_name`.
 
             Returns:
-                EagerValue: Computed output value from `get_generator_mapping`.
+                BackendArg: Computed output value from `get_generator_mapping`.
             """
-            op = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(self.operations).get))(op_name, {})
+            op = adapt_backend_module(self.operations).require_symbol("get")(op_name, {})
             if not op:
                 return None
-            variants = ensure_eager_tensor(ensure_eager_tensor(op).get)("variants", {})
-            backend = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(variants).get))(prefix, {})
-            return ensure_eager_tensor(ensure_eager_tensor(backend).get)("generator")
+            variants = adapt_backend_module(op).require_symbol("get")("variants", {})
+            backend = adapt_backend_module(variants).require_symbol("get")(prefix, {})
+            return adapt_backend_module(backend).require_symbol("get")("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim
 
@@ -169,7 +189,10 @@ def test_ops_registry_branches() -> None:
     cached = get_op("Add")
     assert cached is op_cls
     reg._YAML_REGISTRY["NonMathFakeOp"] = {}
-    with mock.patch("ml_switcheroo_compiler.diagnostics.types_registry.is_non_math_type", side_effect=lambda name: name == "NonMathFakeOp"):
+    with mock.patch(
+        "ml_switcheroo_compiler.diagnostics.types_registry.is_non_math_type",
+        side_effect=lambda name: name == "NonMathFakeOp",
+    ):
         all_ops = get_all_ops()
         assert "Add" in all_ops
     reg._YAML_REGISTRY.pop("NonMathFakeOp", None)

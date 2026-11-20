@@ -6,7 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.grad.utils import GradTensorProtocol
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.eager_evaluator import (
@@ -15,7 +16,7 @@ from ml_switcheroo_compiler.ops.eager_evaluator import (
     EvaluationContext,
     EvaluationStrategy,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub, require_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -43,11 +44,11 @@ class MockEagerTensor:
         return self._shape
 
     @property
-    def dtype(self) -> EagerValue:
+    def dtype(self) -> BackendArg:
         """Get dtype.
 
         Returns:
-            EagerValue: Computed output value from `dtype`.
+            BackendArg: Computed output value from `dtype`.
         """
         return self._dtype
 
@@ -59,7 +60,7 @@ class MockEagerTensor:
         """
         return self._shape[0]
 
-    def __getitem__(self, key: EagerValue) -> MockEagerTensor:
+    def __getitem__(self, key: BackendArg) -> MockEagerTensor:
         """Get item.
 
         Args:
@@ -70,7 +71,7 @@ class MockEagerTensor:
         """
         return self
 
-    def __setitem__(self, key: EagerValue, value: EagerValue) -> None:
+    def __setitem__(self, key: BackendArg, value: BackendArg) -> None:
         """Set item.
 
         Args:
@@ -87,7 +88,7 @@ class MockEagerTensor:
         """
         return self
 
-    def __add__(self, other: EagerValue) -> MockEagerTensor:
+    def __add__(self, other: BackendArg) -> MockEagerTensor:
         """Addition.
 
         Args:
@@ -98,7 +99,7 @@ class MockEagerTensor:
         """
         return self
 
-    def __sub__(self, other: EagerValue) -> MockEagerTensor:
+    def __sub__(self, other: BackendArg) -> MockEagerTensor:
         """Subtraction.
 
         Args:
@@ -109,7 +110,7 @@ class MockEagerTensor:
         """
         return self
 
-    def __mul__(self, other: EagerValue) -> MockEagerTensor:
+    def __mul__(self, other: BackendArg) -> MockEagerTensor:
         """Multiplication.
 
         Args:
@@ -120,7 +121,7 @@ class MockEagerTensor:
         """
         return self
 
-    def __truediv__(self, other: EagerValue) -> MockEagerTensor:
+    def __truediv__(self, other: BackendArg) -> MockEagerTensor:
         """Division.
 
         Args:
@@ -131,51 +132,51 @@ class MockEagerTensor:
         """
         return self
 
-    def __lt__(self, other: EagerValue) -> EagerValue:
+    def __lt__(self, other: BackendArg) -> BackendArg:
         """Less than.
 
         Args:
             other: Test parameter `other`.
 
         Returns:
-            EagerValue: Computed output value from `__lt__`.
+            BackendArg: Computed output value from `__lt__`.
         """
         return True
 
-    def __le__(self, other: EagerValue) -> EagerValue:
+    def __le__(self, other: BackendArg) -> BackendArg:
         """Less than or equal.
 
         Args:
             other: Test parameter `other`.
 
         Returns:
-            EagerValue: Computed output value from `__le__`.
+            BackendArg: Computed output value from `__le__`.
         """
         return True
 
-    def __gt__(self, other: EagerValue) -> EagerValue:
+    def __gt__(self, other: BackendArg) -> BackendArg:
         """Greater than.
 
         Args:
             other: Test parameter `other`.
 
         Returns:
-            EagerValue: Computed output value from `__gt__`.
+            BackendArg: Computed output value from `__gt__`.
         """
         return False
 
-    def __ge__(self, other: EagerValue) -> EagerValue:
+    def __ge__(self, other: BackendArg) -> BackendArg:
         """Greater than or equal.
 
         Args:
             other: Test parameter `other`.
 
         Returns:
-            EagerValue: Computed output value from `__ge__`.
+            BackendArg: Computed output value from `__ge__`.
         """
         return True
 
-    def __pow__(self, other: EagerValue) -> MockEagerTensor:
+    def __pow__(self, other: BackendArg) -> MockEagerTensor:
         """Exponentiation.
 
         Args:
@@ -198,11 +199,11 @@ class MockGradTensor:
         self._data = [1, 2, 3]
 
     @property
-    def dtype(self) -> EagerValue:
+    def dtype(self) -> BackendArg:
         """Get dtype.
 
         Returns:
-            EagerValue: Computed output value from `dtype`.
+            BackendArg: Computed output value from `dtype`.
         """
         return self._dtype
 
@@ -225,11 +226,11 @@ class MockGradTensor:
         return self._id
 
     @property
-    def data(self) -> EagerValue:
+    def data(self) -> BackendArg:
         """Get data.
 
         Returns:
-            EagerValue: Computed output value from `data`.
+            BackendArg: Computed output value from `data`.
         """
         return self._data
 
@@ -261,18 +262,19 @@ class MockInterpreterTensor(MockEagerTensor):
 def test_eager_tensor_protocol_conformance() -> None:
     """Verify MockEagerTensor conforms to EagerTensorProtocol."""
     t = MockEagerTensor((4, 4))
-    assert ensure_eager_tensor(t).shape == (4, 4) and EagerTensorProtocol is not None
+    assert t.shape == (4, 4) and EagerTensorProtocol is not None
     assert t.shape == (4, 4)
     assert t.dtype == "float32"
     assert len(t) == 4
     assert t[0] is t
     t[0] = t
     assert (-t) is t
-    from ml_switcheroo_compiler.backends.protocols import get_backend_member, resolve_backend_member
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
-    assert resolve_backend_member(t, "missing.dotted.attr")[0] is False
+    adapter = adapt_backend_module(t)
+    assert adapter.resolve_symbol("missing.dotted.attr")[0] is False
     with pytest.raises(AttributeError):
-        get_backend_member(t, "nonexistent_attr_xyz")
+        adapter.require_op("nonexistent_attr_xyz")
     assert (t + 1) is t
     assert (t - 1) is t
     assert (t * 2) is t
@@ -298,7 +300,7 @@ def test_grad_tensor_protocol_conformance() -> None:
 def test_tensor_like_protocol_conformance() -> None:
     """Verify MockInterpreterTensor conforms to TensorLike."""
     it = MockInterpreterTensor()
-    assert ensure_eager_tensor(it).item() == 42.0 and TensorLike is not None
+    assert it.item() == 42.0 and TensorLike is not None
     assert it.shape == (1,)
     assert it[0] is it
     assert it.item() == 42.0
@@ -308,7 +310,7 @@ def test_tensor_like_protocol_conformance() -> None:
 def test_custom_eager_eval_strategy() -> None:
     """Test CustomEagerEvalStrategy evaluate implementation across eager_eval and forward."""
 
-    class OpWithEagerEval:
+    class OpWithEagerEval(MockTestStub):
         """Op class with eager_eval method."""
 
         def eager_eval(self, a: int, b: int) -> int:
@@ -396,17 +398,17 @@ def test_custom_eager_eval_strategy() -> None:
 
     # Test base abstract evaluate method
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        ensure_callable(EvaluationStrategy)()
+        require_callable(EvaluationStrategy)()
 
     # Test instance passed as op_cls
-    ctx_inst = ensure_callable(EvaluationContext)(
-        op_cls=ensure_callable(OpWithEagerEval)(),  # instance rather than type
+    ctx_inst = EvaluationContext(
+        op_cls=OpWithEagerEval(),  # instance rather than type
         op_type="Add",
         args=[10, 20],
         kwargs={},
         backend=DummyBackend,
     )
-    assert ensure_callable(strategy.evaluate)(ctx_inst) == 30
+    assert strategy.evaluate(ctx_inst) == 30
 
 
 def test_eager_evaluator_dispatch_and_packing() -> None:
@@ -426,7 +428,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
     class CustomOpClass:
         """Custom op class for testing strategy."""
 
-        def eager_eval(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+        def eager_eval(self, *args: BackendArg, **kwargs: BackendArg) -> None:
             """Eager eval.
 
             Args:
@@ -440,7 +442,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
 
     res = EagerEvaluator.evaluate("Add", t1, t2)
     assert isinstance(res, Tensor)
-    ensure_callable(np.testing.assert_allclose)(res.data, ensure_callable(np.array)([4.0, 6.0]))
+    np.testing.assert_allclose(ensure_ndarray(res.data), np.array([4.0, 6.0]))
 
     # Test packing multiple tuple outputs
     res_tuple = EagerEvaluator._pack_outputs((arr1, arr2), t1, "cpu")

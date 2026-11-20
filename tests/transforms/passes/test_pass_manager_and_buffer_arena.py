@@ -7,20 +7,13 @@ import tempfile
 import typing
 
 import yaml
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.pass_manager import (
-    PassManager,
-    _restore_graph,
-    _snapshot_graph,
-)
+from ml_switcheroo_compiler.transforms.pass_manager import PassManager, _restore_graph, _snapshot_graph
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import BufferAllocationPass
 from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCriteria
-from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
-    _discover_fusion_patterns,
-)
-from tests.testing_utils import ensure_callable
+from ml_switcheroo_compiler.transforms.passes.operator_fusion import _discover_fusion_patterns
+from tests.testing_utils import MockGraphStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -30,24 +23,26 @@ def test_pass_manager_coverage_branches() -> None:
     """Test pass manager snapshot, restore, and config execution branches."""
 
     # 1. Graph with list nodes instead of dict
-    class MockListGraph:
+    class MockListGraph(MockGraphStub):
         """Test class MockListGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
+            import pytest
+
             n = IRNode(id="n1", op_type="Input")
             n.shape_metadata = ()
-            self.nodes = [n]
+            pytest.MonkeyPatch().setattr(self, "nodes", [n], raising=False)
             self.inputs = ["n1"]
             self.outputs = ["n1"]
 
     lg = MockListGraph()
-    snap = ensure_callable(_snapshot_graph)(lg)
+    snap = _snapshot_graph(lg)
     assert "n1" in snap["nodes"]
 
     # Restore onto list graph
     lg_target = MockListGraph()
-    ensure_callable(_restore_graph)(lg_target, snap)
+    _restore_graph(lg_target, snap)
     assert len(lg_target.nodes) == 1
 
     # 2. load_from_config with plain execution_order

@@ -11,13 +11,22 @@ from unittest.mock import patch
 import pytest
 
 import ml_switcheroo_compiler.serialization as s
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _test_serialization_format_dispatch_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestSerializationFormatDispatchState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_serialization_format_dispatch` split helpers."""
+
+    FakeModel: type
+    dummy_model: str
+    pk_path: str
+    tmp_path: Path
+    zip_path: str
+
+
+def _test_serialization_format_dispatch_part_1(_state: _TestSerializationFormatDispatchState) -> None:
     """Execute part 1 of test_serialization_format_dispatch.
 
     Args:
@@ -40,12 +49,12 @@ def _test_serialization_format_dispatch_part_1(_state: dict[str, EagerTensorProt
         s._load_safetensors_weights(st_path)
     with patch("ml_switcheroo_compiler.serialization.NpzWeightFormat.load"):
         s._load_npz_weights(npz_path)
-    _state.update(ensure_tensor_dict({"dummy_model": dummy_model, "h5_path": h5_path, "npz_path": npz_path, "pk_path": pk_path}))
-    _state.update(ensure_tensor_dict({"st_path": st_path, "zip_path": zip_path}))
-    _state.update(ensure_tensor_dict({"tmp_path": tmp_path}))
+    _state.update({"dummy_model": dummy_model, "pk_path": pk_path})
+    _state.update({"zip_path": zip_path})
+    _state.update({"tmp_path": tmp_path})
 
 
-def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_serialization_format_dispatch_part_2(_state: _TestSerializationFormatDispatchState) -> None:
     """Execute part 2 of test_serialization_format_dispatch.
 
     Args:
@@ -53,7 +62,7 @@ def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProt
     """
     pk_path = _state["pk_path"]
     with patch("ml_switcheroo_compiler.serialization.PickleWeightFormat.load"):
-        ensure_callable(s._load_pickle_weights)(pk_path)
+        s._load_pickle_weights(pk_path)
 
     class FakeWeight:
         """Mock weight variable."""
@@ -86,7 +95,7 @@ def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProt
         """Mock neural network model."""
 
         weights: list[FakeWeight] = [FakeWeight("w")]
-        optimizer: EagerValue = type("O", (), {"variables": [FakeWeight("v")], "momentums": [FakeWeight("m")]})()
+        optimizer: BackendArg = type("O", (), {"variables": [FakeWeight("v")], "momentums": [FakeWeight("m")]})()
         non_trainable_variables: list[FakeWeight] = [FakeWeight("nt")]
         ema_variables: list[FakeWeight] = [FakeWeight("ema")]
 
@@ -98,48 +107,49 @@ def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProt
             """
             return {"c": 1}
 
-    _state.update(ensure_tensor_dict({"FakeModel": FakeModel, "FakeWeight": FakeWeight}))
-    _state.update(ensure_tensor_dict({"pk_path": pk_path}))
+    _state.update({"FakeModel": FakeModel})
+    _state.update({"pk_path": pk_path})
 
 
-def _test_serialization_format_dispatch_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_serialization_format_dispatch_part_3(_state: _TestSerializationFormatDispatchState) -> None:
     """Execute part 3 of test_serialization_format_dispatch.
 
     Args:
         _state: Shared test state dictionary.
     """
     (FakeModel, zip_path) = (_state["FakeModel"], _state["zip_path"])
-    ws = ensure_callable(s._extract_model_weights)(ensure_callable(FakeModel)())
+    ws = s._extract_model_weights(FakeModel())
     assert len(ws) == 1
-    st: dict[str, EagerValue] = {}
+    st: dict[str, BackendArg] = {}
     s._extract_optimizer_state(FakeModel(), st)
     s._extract_non_trainable_state(FakeModel(), st, {})
     s._extract_ema_state(FakeModel(), st)
-    ensure_callable(s._extract_model_state)(ensure_callable(FakeModel)(), {})
-    ensure_callable(s._compile_model_metadata)(ensure_callable(FakeModel)())
+    s._extract_model_state(FakeModel(), {})
+    s._compile_model_metadata(FakeModel())
     if os.path.exists(zip_path):
         os.remove(zip_path)
     with zipfile.ZipFile(zip_path, "w") as zf:
-        with patch("ml_switcheroo_compiler.serialization._save_as_h5"):
+        with patch("ml_switcheroo_compiler.serialization.model_archive._save_as_h5"):
             s._write_h5_to_zip(zf, "test.h5", {"a": 1})
     if os.path.exists(zip_path):
         os.remove(zip_path)
-    ctx = ensure_callable(s.KerasSerializationContext)(filepath=zip_path, config_dict={}, metadata={}, weights_store={"a": 1}, state_store={"b": 1})
-    with patch("ml_switcheroo_compiler.serialization._write_h5_to_zip"):
-        ensure_callable(s._write_keras_zip)(ctx)
-    _state.update(ensure_tensor_dict({"ctx": ctx, "st": st, "ws": ws, "zf": zf}))
-    _state.update(ensure_tensor_dict({"FakeModel": FakeModel, "zip_path": zip_path}))
+    ctx = s.ArchiveSerializationContext(
+        filepath=zip_path, config_dict={}, metadata={}, weights_store={"a": 1}, state_store={"b": 1}
+    )
+    with patch("ml_switcheroo_compiler.serialization.model_archive._write_h5_to_zip"):
+        s._write_archive_zip(ctx)
+    _state.update({"FakeModel": FakeModel, "zip_path": zip_path})
 
 
-def _test_serialization_format_dispatch_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_serialization_format_dispatch_part_4(_state: _TestSerializationFormatDispatchState) -> None:
     """Execute part 4 of test_serialization_format_dispatch.
 
     Args:
         _state: Shared test state dictionary.
     """
     (FakeModel, dummy_model) = (_state["FakeModel"], _state["dummy_model"])
-    ensure_callable(s.save_model)(ensure_callable(FakeModel)(), dummy_model)
-    ensure_callable(s.load_model)(dummy_model)
+    s.save_model(FakeModel(), dummy_model)
+    s.load_model(dummy_model)
     s.get_custom_objects()
     s.get_registered_name(list)
     s.get_registered_object("list")
@@ -150,10 +160,10 @@ def _test_serialization_format_dispatch_part_4(_state: dict[str, EagerTensorProt
     s.MaxShardSizePolicy(1)
     s.ShardByTaskPolicy()
     s.SavedModel()
-    ensure_callable(s.read_fingerprint)(dummy_model)
-    ensure_callable(s.load_variable)(dummy_model, "var1")
+    s.read_fingerprint(dummy_model)
+    s.load_variable(dummy_model, "var1")
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        ensure_callable(s.run_restore_ops)(dummy_model)
+        s.run_restore_ops(dummy_model)
 
 
 def test_serialization_format_dispatch(tmp_path: Path) -> None:
@@ -162,7 +172,7 @@ def test_serialization_format_dispatch(tmp_path: Path) -> None:
     Args:
         tmp_path (Path): Temporary filesystem directory fixture.
     """
-    _state: dict[str, EagerTensorProtocol] = ensure_tensor_dict({"tmp_path": tmp_path})
+    _state: _TestSerializationFormatDispatchState = {"tmp_path": tmp_path}
     _test_serialization_format_dispatch_part_1(_state)
     _test_serialization_format_dispatch_part_2(_state)
     _test_serialization_format_dispatch_part_3(_state)
@@ -176,12 +186,12 @@ def test_weight_format_load_save(tmp_path: Path) -> None:
     Args:
         tmp_path (Path): Temporary filesystem directory fixture.
     """
-    assert ensure_callable(s._validate_and_map_weights)({"a": 1}) == {"a": 1}
+    assert s._validate_and_map_weights({"a": 1}) == {"a": 1}
     tf = str(tmp_path / "last_lines_weights.h5")
     if os.path.exists(tf):
         os.remove(tf)
     s.save_weights(None, tf)
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load", return_value={"x": 2}):
+    with patch.object(s.H5WeightFormat, "load", return_value={"x": 2}):
         res = s.load_weights(tf)
         assert res == {"x": 2}
     if os.path.exists(tf):

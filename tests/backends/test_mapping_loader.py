@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import pathlib
 import typing
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.mapping_loader import (
     _MAPPING_CACHE,
     BackendMappingSchema,
@@ -25,10 +26,10 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
     translate_kwargs,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
+from tests.testing_utils import MockTestStub, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_kwarg_translation_model() -> None:
@@ -76,7 +77,7 @@ def test_load_backend_mappings_missing_files() -> None:
         assert len(schema.operations) == 0
 
 
-def test_read_and_merge_variations(tmp_path: EagerTensorProtocol) -> None:
+def test_read_and_merge_variations(tmp_path: Path) -> None:
     """Test _read_and_merge with different YAML structures.
 
     Args:
@@ -85,26 +86,26 @@ def test_read_and_merge_variations(tmp_path: EagerTensorProtocol) -> None:
     # Dict with operations key
     f1 = tmp_path / "f1.yaml"
     f1.write_text("operations:\n  op1:\n    target_api: a.b\n", encoding="utf-8")
-    t1 = ensure_tensor_dict({})
-    ensure_callable(_read_and_merge)(ensure_callable(str)(f1), t1)
+    t1: dict[str, BackendArg] = {}
+    _read_and_merge(str(f1), t1)
     assert "op1" in t1
 
     # Dict without operations key
     f2 = tmp_path / "f2.yaml"
     f2.write_text("op2:\n  target_api: c.d\n", encoding="utf-8")
-    t2 = ensure_tensor_dict({})
-    ensure_callable(_read_and_merge)(ensure_callable(str)(f2), t2)
+    t2: dict[str, BackendArg] = {}
+    _read_and_merge(str(f2), t2)
     assert "op2" in t2
 
     # Non-dict data (e.g. list)
     f3 = tmp_path / "f3.yaml"
     f3.write_text("- item1\n- item2\n", encoding="utf-8")
-    t3 = ensure_tensor_dict({})
-    ensure_callable(_read_and_merge)(ensure_callable(str)(f3), t3)
+    t3: dict[str, BackendArg] = {}
+    _read_and_merge(str(f3), t3)
     assert t3 == {}
 
 
-def test_load_yaml_dir(tmp_path: EagerTensorProtocol) -> None:
+def test_load_yaml_dir(tmp_path: Path) -> None:
     """Test _load_yaml_dir with directory of yaml and non-yaml files.
 
     Args:
@@ -115,66 +116,91 @@ def test_load_yaml_dir(tmp_path: EagerTensorProtocol) -> None:
     (d / "ignored.txt").write_text("hello", encoding="utf-8")
     (d / "valid.yaml").write_text("opX: {target_api: x.y}\n", encoding="utf-8")
 
-    res = ensure_tensor_dict({})
-    ensure_callable(_load_yaml_dir)(ensure_callable(str)(d), res)
+    res: dict[str, BackendArg] = {}
+    _load_yaml_dir(str(d), res)
     assert "opX" in res
 
     # Non-directory
-    empty_res = ensure_tensor_dict({})
-    ensure_callable(_load_yaml_dir)(ensure_callable(str)(tmp_path / "not_a_dir"), empty_res)
+    empty_res: dict[str, BackendArg] = {}
+    _load_yaml_dir(str(tmp_path / "not_a_dir"), empty_res)
     assert empty_res == {}
 
 
 def test_resolve_custom_code() -> None:
     """Test _resolve_custom_code branches."""
     res = _resolve_custom_code("lambda x: x * 2", None)
-    assert ensure_callable(res)(5) == 10
+    assert require_callable(res)(5) == 10
 
     # With backend_module having globals and property raising error
-    class MockBackend:
+    class MockBackend(MockTestStub):
         """Test class MockBackend."""
 
         MY_VAR = 7
 
         @property
         def err(self) -> None:
-            """Test function err."""
+            """Test function err.
+
+            Raises:
+                RuntimeError: When raised during `err` (Property access failed).
+            """
             raise RuntimeError("Property access failed")
 
-    res2 = _resolve_custom_code("lambda x: x + MY_VAR", ensure_eager_tensor(MockBackend()))
-    assert ensure_callable(res2)(3) == 10
+    res2 = _resolve_custom_code("lambda x: x + MY_VAR", MockBackend())
+    assert require_callable(res2)(3) == 10
 
     # Invalid code
     assert _resolve_custom_code("lambda invalid syntax", None) is None
 
-    # Comprehensive _safe_expr_eval AST coverage (varargs, kwargs, defaults, slices, comprehensions, operators, security guards)
+    # Comprehensive _safe_expr_eval AST coverage (varargs, kwargs, defaults, slices, comprehensions, operators,
+    # security guards)
     from ml_switcheroo_compiler.backends._safe_expr_eval import evaluate_safe_expression
 
-    fn_full = ensure_callable(evaluate_safe_expression("lambda a, b=2, *xs, **kw: [a + b + len(xs) + kw.get('c', 0) for i in range(2)]", {}))
-    assert fn_full(1) == [3, 3]
-    assert fn_full(a=1, b=4, c=5) == [10, 10]
-    assert fn_full(1, 2, 9, 8) == [5, 5]
-
-    fn_plain = ensure_callable(evaluate_safe_expression("lambda x: (x[0:2], [1, 2], +x[0], -x[0], not False, True and False, False or True, 1 if x[0] == 1 else 0)", {}))
-    assert fn_plain([1, 2, 3]) == ([1, 2], [1, 2], 1, -1, True, False, True, 1)
-    assert fn_plain([5, 2, 3])[-1] == 0
-
-    fn_ops = ensure_callable(evaluate_safe_expression("lambda a, b: (a - b, a * b, a / b, a // b, a % b, a ** b, a != b, a < b, a <= b, a > b, a >= b)", {}))
-    assert fn_ops(6, 2) == (4, 12, 3.0, 3, 0, 36, True, False, False, True, True)
-
-    fn_star = ensure_callable(evaluate_safe_expression("lambda f, xs, kw: f(*xs, s=1, **kw)", {}))
-    assert fn_star(lambda p, q, r=0, s=0: p + q + r + s, [3, 4], {"r": 5}) == 13
-
-    fn_gen = ensure_callable(evaluate_safe_expression("lambda n: tuple(i * 2 for i in range(n))", {}))
-    assert fn_gen(3) == (0, 2, 4)
-
-    fn_builtins = ensure_callable(
-        evaluate_safe_expression(
-            "lambda x: (bool(x), int(x), float(x), str(x), abs(-x), list((1, 2)), sum([1, 2, 3]), max([1, 5, 2]), min(4, 2, 9), list(range(1, 5, 2)), slice(1, 3))",
-            {},
-        )
+    fn_full = evaluate_safe_expression(
+        "lambda a, b=2, *xs, **kw: [a + b + len(xs) + kw.get('c', 0) for i in range(2)]", {}
     )
-    assert fn_builtins(3) == (True, 3, 3.0, "3", 3, [1, 2], 6, 5, 2, [1, 3], slice(1, 3))
+    assert require_callable(fn_full)(1) == [3, 3]
+    assert require_callable(fn_full)(a=1, b=4, c=5) == [10, 10]
+    assert require_callable(fn_full)(1, 2, 9, 8) == [5, 5]
+
+    fn_plain = evaluate_safe_expression(
+        "lambda x: (x[0:2], [1, 2], +x[0], -x[0], not False, True and False, False or True, 1 if x[0] == 1 else 0)",
+        {},
+    )
+    assert require_callable(fn_plain)([1, 2, 3]) == ([1, 2], [1, 2], 1, -1, True, False, True, 1)
+    assert require_callable(fn_plain)([5, 2, 3])[-1] == 0
+
+    fn_ops = evaluate_safe_expression(
+        "lambda a, b: (a - b, a * b, a / b, a // b, a % b, a ** b, a != b, a < b, a <= b, a > b, a >= b)", {}
+    )
+    assert require_callable(fn_ops)(6, 2) == (4, 12, 3.0, 3, 0, 36, True, False, False, True, True)
+
+    fn_star = evaluate_safe_expression("lambda f, xs, kw: f(*xs, s=1, **kw)", {})
+    assert require_callable(fn_star)(lambda p, q, r=0, s=0: p + q + r + s, [3, 4], {"r": 5}) == 13
+
+    fn_gen = evaluate_safe_expression("lambda n: tuple(i * 2 for i in range(n))", {})
+    assert require_callable(fn_gen)(3) == (0, 2, 4)
+
+    fn_builtins = evaluate_safe_expression(
+        (
+            "lambda x: (bool(x), int(x), float(x), str(x), abs(-x), list((1, 2)), sum([1, 2, 3]), max([1,"
+            " 5, 2]), min(4, 2, 9), list(range(1, 5, 2)), slice(1, 3))"
+        ),
+        {},
+    )
+    assert require_callable(fn_builtins)(3) == (
+        True,
+        3,
+        3.0,
+        "3",
+        3,
+        [1, 2],
+        6,
+        5,
+        2,
+        [1, 3],
+        require_callable(slice)(1, 3),
+    )
 
     class _PubHolder:
         """Public attribute holder for safe hasattr/getattr verification."""
@@ -182,21 +208,21 @@ def test_resolve_custom_code() -> None:
         val = 11
 
     holder = _PubHolder()
-    fn_attr = ensure_callable(evaluate_safe_expression("lambda h: h.val if hasattr(h, 'val') and not hasattr(h, '_secret') else 0", {}))
-    assert fn_attr(ensure_eager_tensor(holder)) == 11
+    fn_attr = evaluate_safe_expression("lambda h: h.val if hasattr(h, 'val') and not hasattr(h, '_secret') else 0", {})
+    assert require_callable(fn_attr)(holder) == 11
 
     with pytest.raises(TypeError, match="Missing required argument"):
-        fn_plain()
+        require_callable(fn_plain)()
     with pytest.raises(TypeError, match="Too many positional arguments"):
-        fn_plain([1], [2])
+        require_callable(fn_plain)([1], [2])
     with pytest.raises(TypeError, match="Unexpected keyword arguments"):
-        fn_plain([1], extra=9)
+        require_callable(fn_plain)([1], extra=9)
     with pytest.raises(NameError, match="Disallowed private identifier"):
         evaluate_safe_expression("_secret", {})
     with pytest.raises(NameError, match="Unbound identifier"):
         evaluate_safe_expression("unknown_symbol", {})
     with pytest.raises(ValueError, match="Disallowed private attribute"):
-        ensure_callable(evaluate_safe_expression("lambda h: h._priv", {}))(ensure_eager_tensor(holder))
+        require_callable(evaluate_safe_expression)("lambda h: h._priv", {})(holder)
     with pytest.raises(ValueError, match="Unsupported binary operator"):
         evaluate_safe_expression("1 << 2", {})
     with pytest.raises(ValueError, match="Unsupported unary operator"):
@@ -210,10 +236,13 @@ def test_resolve_custom_code() -> None:
 
 
 def test_resolve_by_import() -> None:
-    """Test _resolve_by_import success and failure."""
+    """Test _resolve_by_import success, nested submodule traversal, and failure."""
     import math
 
+    resolved_cls = _resolve_by_import("http.cookiejar.CookieJar")
+    assert resolved_cls is not None
     assert _resolve_by_import("math.sqrt") is math.sqrt
+    assert _resolve_by_import("math.missing_submod.func") is None
     assert _resolve_by_import("non_existent_pkg.sub.func") is None
 
 
@@ -231,7 +260,7 @@ def test_resolve_from_backend_module() -> None:
             """
             return 42
 
-    class ParentMod:
+    class ParentMod(MockTestStub):
         """Test class ParentMod."""
 
         def __init__(self) -> None:
@@ -242,26 +271,23 @@ def test_resolve_from_backend_module() -> None:
     mod = ParentMod()
 
     # Successfully traverse sub_parts (line 169)
-    res1 = _resolve_from_backend_module("torch.sub.my_target", ensure_eager_tensor(mod))
-    assert callable(res1)
-    assert res1() == 42
+    res1 = _resolve_from_backend_module("torch.sub.my_target", mod)
+    assert require_callable(res1)() == 42
 
     # Miss sub_parts, but backend_module has parts[-1] (line 166 branch 1)
-    res2 = _resolve_from_backend_module("torch.missing.direct_target", ensure_eager_tensor(mod))
-    assert callable(res2)
-    assert res2() == 100
+    res2 = _resolve_from_backend_module("torch.missing.direct_target", mod)
+    assert require_callable(res2)() == 100
 
     # Miss sub_parts, and backend_module does NOT have parts[-1] (line 166 branch 2)
-    res3 = _resolve_from_backend_module("torch.missing.nonexistent", ensure_eager_tensor(mod))
+    res3 = _resolve_from_backend_module("torch.missing.nonexistent", mod)
     assert res3 is None
 
     # Single-part api_str to exercise else: sub_parts = parts (line 163)
-    res_single = _resolve_from_backend_module("direct_target", ensure_eager_tensor(mod))
-    assert callable(res_single)
-    assert res_single() == 100
+    res_single = _resolve_from_backend_module("direct_target", mod)
+    assert require_callable(res_single)() == 100
 
     # dask.array.target to exercise sub_parts = parts[2:]
-    class MockDaskMod:
+    class MockDaskMod(MockTestStub):
         """Test class MockDaskMod."""
 
         def my_sum(self) -> str:
@@ -273,16 +299,15 @@ def test_resolve_from_backend_module() -> None:
             return "dask_sum"
 
     dask_mod = MockDaskMod()
-    res_dask = _resolve_from_backend_module("dask.array.my_sum", ensure_eager_tensor(dask_mod))
-    assert callable(res_dask)
-    assert res_dask() == "dask_sum"
+    res_dask = _resolve_from_backend_module("dask.array.my_sum", dask_mod)
+    assert require_callable(res_dask)() == "dask_sum"
 
 
 def test_resolve_target_api() -> None:
     """Test resolve_target_api paths and branches."""
     # custom_op
     res = resolve_target_api("custom_op", custom_code="lambda x: x * 2")
-    assert ensure_callable(res)(5) == 10
+    assert require_callable(res)(5) == 10
 
     # Empty api_str
     assert resolve_target_api("") is None
@@ -296,20 +321,22 @@ def test_resolve_target_api() -> None:
     assert resolve_target_api("unresolvable_module_xyz.func") is None
 
     # backend_module has dotted attribute directly via setattr (line 200 with backend_module)
-    def dummy_func() -> EagerValue:
+    def dummy_func() -> BackendArg:
         """Return dummy constant 777.
 
         Returns:
-            EagerValue: Computed output value from `dummy_func`.
+            BackendArg: Computed output value from `dummy_func`.
         """
         return 777
 
-    dummy = type("Dummy", (), {"special.pkg.func": staticmethod(dummy_func)})()
+    pkg_ns = type("PkgNs", (), {"func": staticmethod(dummy_func)})()
+    special_ns = type("SpecialNs", (), {"pkg": pkg_ns})()
+    dummy = type("Dummy", (), {"special": special_ns})()
     res_dotted = resolve_target_api("special.pkg.func", backend_module=dummy)
     assert res_dotted == dummy_func
 
     # backend_module has last part
-    class MockBackend:
+    class MockBackend(MockTestStub):
         """Test class MockBackend."""
 
         def my_func(self) -> int:
@@ -320,8 +347,8 @@ def test_resolve_target_api() -> None:
             """
             return 5
 
-    res3 = resolve_target_api("some.prefix.my_func", backend_module=ensure_eager_tensor(MockBackend()))
-    assert ensure_eager_tensor(ensure_eager_tensor(res3).__name__) == "my_func"
+    res3 = resolve_target_api("some.prefix.my_func", backend_module=MockBackend())
+    assert require_callable(res3)() == 5
 
     # backend_module has nested structure without root attribute (lines 198-200)
     class InnerMod:
@@ -335,16 +362,15 @@ def test_resolve_target_api() -> None:
             """
             return 999
 
-    class OuterMod:
+    class OuterMod(MockTestStub):
         """Test class OuterMod."""
 
         def __init__(self) -> None:
             """Test function __init__."""
             self.inner = InnerMod()
 
-    res_mod_res = resolve_target_api("inner.target", backend_module=ensure_eager_tensor(OuterMod()))
-    assert callable(res_mod_res)
-    assert res_mod_res() == 999
+    res_mod_res = resolve_target_api("inner.target", backend_module=OuterMod())
+    assert require_callable(res_mod_res)() == 999
 
     # Direct import
     import math
@@ -407,7 +433,7 @@ def test_dispatch_eager_op() -> None:
     assert res_kwargs == {"axis": 2, "mapped_dim": 5, "keepdims": True}
 
     # is_method True and method exists
-    class CallableObj:
+    class CallableObj(MockTestStub):
         """Test class CallableObj."""
 
         def do_method(self, val: int) -> int:
@@ -425,13 +451,13 @@ def test_dispatch_eager_op() -> None:
     res_m = dispatch_eager_op(
         "test_backend_dispatch",
         "MethodOp",
-        [ensure_eager_tensor(c_obj), 5],
+        [c_obj, 5],
         {},
-        backend_module=ensure_eager_tensor(c_obj),
+        backend_module=c_obj,
     )
     assert res_m == 50
 
-    class _BareDummy:
+    class _BareDummy(MockTestStub):
         """Empty dummy class without attributes."""
 
     # is_method True but method missing or not callable -> falls back to func
@@ -440,7 +466,7 @@ def test_dispatch_eager_op() -> None:
     res_fb = dispatch_eager_op(
         "test_backend_dispatch",
         "MethodOpFallback",
-        [ensure_eager_tensor(_BareDummy())],
+        [_BareDummy()],
         {},
         backend_module=mock_fallback_mod,
     )
@@ -455,6 +481,6 @@ def test_read_and_merge_with_operation(tmp_path: pathlib.Path) -> None:
     """
     yaml_file = tmp_path / "op.yaml"
     yaml_file.write_text("operation: test_single_op\ntarget_api: foo.bar\n")
-    target: dict[str, EagerValue] = {}
+    target: dict[str, BackendArg] = {}
     _read_and_merge(str(yaml_file), target)
     assert "test_single_op" in target

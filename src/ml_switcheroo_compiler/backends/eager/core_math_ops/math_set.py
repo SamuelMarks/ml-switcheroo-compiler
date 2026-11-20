@@ -1,16 +1,22 @@
-"""Implementation of math set operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_set`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_math_ops.math_set`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
 @global_eager_registry.register("Intersect1d")
-def _intersect1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _intersect1d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager intersect1d operation on the active backend array.
 
     Args:
@@ -19,13 +25,15 @@ def _intersect1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(get_backend_member(backend_module, "intersect1d")(*args, **kwargs))
+    return adapt_backend_module(backend_module).require_symbol("intersect1d")(*args, **kwargs)
 
 
 @global_eager_registry.register("Union1d")
-def _np_union1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_union1d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np union1d operation on the active backend array.
 
     Args:
@@ -34,16 +42,20 @@ def _np_union1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "union1d", get_backend_member(backend_module, "union1d", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "union1d", adapt_backend_module(backend_module).get_symbol("union1d", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).union1d(*args, **kwargs)
 
 
 @global_eager_registry.register("Unique")
-def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_unique(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np unique operation on the active backend array.
 
     Args:
@@ -52,16 +64,20 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "unique", get_backend_member(backend_module, "unique", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "unique", adapt_backend_module(backend_module).get_symbol("unique", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).unique(*args, **kwargs)
 
 
 @global_eager_registry.register("UniqueAll")
-def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_uniqueall(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np uniqueall operation on the active backend array.
 
     Args:
@@ -70,11 +86,13 @@ def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "uniqueall", get_backend_member(backend_module, "uniqueall", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "uniqueall", adapt_backend_module(backend_module).get_symbol("uniqueall", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     mod = _resolve_eager_mod(backend_module)
     arr = mod.asarray(args[0]).flatten()
     values, indices = mod.unique(arr, return_index=True)
@@ -88,7 +106,9 @@ def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
 
 
 @global_eager_registry.register("UniqueCounts")
-def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_uniquecounts(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np uniquecounts operation on the active backend array.
 
     Args:
@@ -97,15 +117,17 @@ def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, *
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "uniquecounts", get_backend_member(backend_module, "uniquecounts", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "uniquecounts", adapt_backend_module(backend_module).get_symbol("uniquecounts", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     mod = _resolve_eager_mod(backend_module)
     arr = mod.asarray(args[0]).flatten()
     values = mod.unique(arr)
-    counts_map: dict[EagerValue, int] = {}
+    counts_map: dict[BackendArg, int] = {}
     for elem in arr.tolist():
         counts_map[elem] = counts_map.get(elem, 0) + 1
     counts = mod.array([counts_map[v] for v in values.tolist()], dtype=mod.intp)
@@ -113,7 +135,9 @@ def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, *
 
 
 @global_eager_registry.register("UniqueValues")
-def _np_uniquevalues(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_uniquevalues(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np uniquevalues operation on the active backend array.
 
     Args:
@@ -122,9 +146,11 @@ def _np_uniquevalues(backend_module: BackendModuleProtocol, *args: EagerValue, *
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "uniquevalues", get_backend_member(backend_module, "uniquevalues", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "uniquevalues", adapt_backend_module(backend_module).get_symbol("uniquevalues", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).unique(args[0])

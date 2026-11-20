@@ -12,7 +12,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.svd import Svd, svd
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -23,21 +23,23 @@ def test_svd_dummy() -> None:
     op = Svd()
     assert op.infer_shape() == ()
 
-    class MockTensor:
+    class MockTensor(MockTestStub):
         """Test class MockTensor."""
 
         shape = (2, 3, 4)
 
+    from tests.testing_utils import coerce_operand_list
+
     t = MockTensor()
-    (u_shape, s_shape, vh_shape) = ensure_callable(op.infer_shape)(t, compute_uv=True, full_matrices=True)
+    (u_shape, s_shape, vh_shape) = coerce_operand_list(op.infer_shape(t, compute_uv=True, full_matrices=True))
     assert u_shape == (2, 3, 3)
     assert s_shape == (2, 3)
     assert vh_shape == (2, 4, 4)
-    (u_shape, s_shape, vh_shape) = ensure_callable(op.infer_shape)(t, compute_uv=True, full_matrices=False)
+    (u_shape, s_shape, vh_shape) = coerce_operand_list(op.infer_shape(t, compute_uv=True, full_matrices=False))
     assert u_shape == (2, 3, 3)
     assert s_shape == (2, 3)
     assert vh_shape == (2, 3, 4)
-    res = ensure_callable(op.infer_shape)(t, compute_uv=False)
+    res = op.infer_shape(t, compute_uv=False)
     assert res == ((2, 3),)
 
 
@@ -60,12 +62,18 @@ def test_svd_eager() -> None:
     t = Tensor(input_data, TensorConfig(input_data.shape, "float32", "cpu"))
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
-        mock_backend.return_value.execute_op.return_value = (np.array([[1.0, 0.0], [0.0, 1.0]]), np.array([1.0, 1.0]), np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]))
+        mock_backend.return_value.execute_op.return_value = (
+            np.array([[1.0, 0.0], [0.0, 1.0]]),
+            np.array([1.0, 1.0]),
+            np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]),
+        )
+        from tests.testing_utils import coerce_operand_list
+
         mock_backend.return_value.array = lambda x: x
-        (res1, res2, res3) = ensure_callable(svd)(t)
-        assert isinstance(ensure_eager_tensor(res1), Tensor)
-        assert isinstance(ensure_eager_tensor(res2), Tensor)
-        assert isinstance(ensure_eager_tensor(res3), Tensor)
+        (res1, res2, res3) = coerce_operand_list(svd(t))
+        assert isinstance(res1, Tensor)
+        assert isinstance(res2, Tensor)
+        assert isinstance(res3, Tensor)
 
 
 def test_svd_full_matrices_true() -> None:

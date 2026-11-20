@@ -35,7 +35,11 @@ def validate_n_to_m(snapshot_dir: str | None = None) -> list[str]:
     """
     del snapshot_dir
     op_counts: dict[str, list[str]] = {}
-    backend_maps: list[str] = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True) + glob.glob("src/ml_switcheroo_compiler/backends/**/eager_mappings.yaml", recursive=True) + glob.glob("src/ml_switcheroo_compiler/backends/**/mappings/*.yaml", recursive=True)
+    backend_maps: list[str] = (
+        glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True)
+        + glob.glob("src/ml_switcheroo_compiler/backends/**/eager_mappings.yaml", recursive=True)
+        + glob.glob("src/ml_switcheroo_compiler/backends/**/mappings/*.yaml", recursive=True)
+    )
     for bp in sorted(backend_maps):
         with open(bp, encoding="utf-8") as f:
             data = yaml.safe_load(f)
@@ -53,13 +57,17 @@ def validate_n_to_m(snapshot_dir: str | None = None) -> list[str]:
             ops_dict = data.get("operations", {})
             if isinstance(ops_dict, dict):
                 for op, spec in ops_dict.items():
-                    if isinstance(spec, dict) and (spec.get("target_api") or spec.get("ast_template") or spec.get("custom_code")):
+                    if isinstance(spec, dict) and (
+                        spec.get("target_api") or spec.get("ast_template") or spec.get("custom_code")
+                    ):
                         _record_op_backend(op_counts, str(op), be)
 
     errors: list[str] = []
     for op, backends in op_counts.items():
         if len(backends) < 2:
-            errors.append(f"Operation '{op}' violates Rule 4 (N-to-M). It is only supported by 1 backend ({backends[0]}).")
+            errors.append(
+                f"Operation '{op}' violates Rule 4 (N-to-M). It is only supported by 1 backend ({backends[0]})."
+            )
 
     return errors
 

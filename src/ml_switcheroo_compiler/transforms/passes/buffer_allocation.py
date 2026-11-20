@@ -7,10 +7,9 @@ import os
 import typing
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.config_models import OptimizationHeuristicsConfig
 
@@ -22,25 +21,6 @@ class _GraphOutputsProtocol(typing.Protocol):
     outputs: list[str]
 
 
-@typing.runtime_checkable
-class _GraphAttributesProtocol(typing.Protocol):
-    """Protocol for graphs exposing an `attributes` attribute."""
-
-    attributes: AttributeValue
-
-
-def _is_graph_attributes_holder(val: IRGraph) -> typing.TypeGuard[_GraphAttributesProtocol]:
-    """Type guard narrowing `val` to `_GraphAttributesProtocol` for attribute assignment.
-
-    Args:
-        val (IRGraph): Graph instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
 def _ensure_graph_attributes(graph: IRGraph) -> dict[str, AttributeValue]:
     """Ensure `graph.attributes` exists as a mutable dictionary and return it.
 
@@ -50,10 +30,9 @@ def _ensure_graph_attributes(graph: IRGraph) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Mutable graph attributes dictionary.
     """
-    raw_graph: TensorOrScalar = graph
-    if isinstance(raw_graph, _GraphAttributesProtocol) and isinstance(raw_graph.attributes, dict):
-        return raw_graph.attributes
-    assert _is_graph_attributes_holder(graph)
+    raw_attrs: AttributeValue = graph.attributes
+    if isinstance(raw_attrs, dict):
+        return raw_attrs
     new_attrs: dict[str, AttributeValue] = {}
     graph.attributes = new_attrs
     return new_attrs
@@ -202,7 +181,11 @@ def _try_reuse_buffer(node: IRNode, graph: IRGraph, size: int, i: int, last_use:
             if last_use.get(inp_id, -1) == i:
                 inp_offset = inp_node.attributes.get("buffer_offset")
                 inp_size = inp_node.attributes.get("buffer_size", 0)
-                if isinstance(inp_offset, (int, float)) and isinstance(inp_size, (int, float)) and int(inp_size) >= size:
+                if (
+                    isinstance(inp_offset, (int, float))
+                    and isinstance(inp_size, (int, float))
+                    and int(inp_size) >= size
+                ):
                     return int(inp_offset)
     return -1
 
@@ -322,7 +305,9 @@ class InterferenceGraphColoringAllocator:
         ig.build_edges_from_intervals()
         return ig
 
-    def allocate_colored_buffers(self, graph: IRGraph, sorted_nodes: list[IRNode] | None = None) -> dict[str, dict[str, int]]:
+    def allocate_colored_buffers(
+        self, graph: IRGraph, sorted_nodes: list[IRNode] | None = None
+    ) -> dict[str, dict[str, int]]:
         """Allocate minimal linear memory buffers using graph coloring.
 
         Args:
@@ -380,7 +365,9 @@ class InterferenceGraphColoringAllocator:
         for nid, c in colors.items():
             color_max_sizes[c] = max(color_max_sizes.get(c, 0), ig.sizes[nid])
 
-        colored_peak = sum(((sz + self.alignment - 1) // self.alignment) * self.alignment for sz in color_max_sizes.values())
+        colored_peak = sum(
+            ((sz + self.alignment - 1) // self.alignment) * self.alignment for sz in color_max_sizes.values()
+        )
 
         reduction_pct = ((naive_peak - colored_peak) / naive_peak * 100.0) if naive_peak > 0 else 0.0
         return {
@@ -401,12 +388,14 @@ class BufferAllocationPass:
         """
         self.alignment: int = alignment
 
-    def compute_liveness_intervals(self, graph: IRGraph, sorted_nodes: list[IRNode] | None = None) -> dict[str, tuple[int, int]]:
+    def compute_liveness_intervals(
+        self, graph: IRGraph, sorted_nodes: list[IRNode] | None = None
+    ) -> dict[str, tuple[int, int]]:
         """Compute the [birth, death] liveness interval for each node's intermediate tensor.
 
         Args:
             graph (IRGraph): The IR graph.
-            sorted_nodes (list[IRNode], optional): Topologically sorted nodes.
+            sorted_nodes (list[IRNode] | None): Topologically sorted nodes.
 
         Returns:
             dict[str, tuple[int, int]]: Mapping of node ID to (start_timestep, end_timestep).
@@ -440,7 +429,7 @@ class BufferAllocationPass:
 
         Args:
             graph (IRGraph): The IR graph.
-            alignment (int, optional): Byte alignment for buffer offsets. Defaults to self.alignment.
+            alignment (int | None): Byte alignment for buffer offsets. Defaults to self.alignment.
 
         Returns:
             dict[str, int]: Mapping of node ID to assigned byte offset in the linear arena.
@@ -457,7 +446,7 @@ class BufferAllocationPass:
             if isinstance(size_val, str):
                 # Handle symbolic/dynamic batch dimensions using stride multipliers
                 stride_mult = 1
-                raw_node: TensorOrScalar = node
+                raw_node: OpValue = node
                 node_shape_attr = raw_node.shape if isinstance(raw_node, ShapeProtocol) else None
                 shape = node.shape_metadata or node_shape_attr or node.attributes.get("shape")
                 if shape and isinstance(shape, (list, tuple)) and len(shape) > 1:
@@ -542,7 +531,9 @@ class BufferAllocationPass:
             color_groups: dict[int, list[str]] = {}
             for nid, c in colors.items():
                 color_groups.setdefault(c, []).append(nid)
-            color_sizes = {c: ((max(ig.sizes[nid] for nid in nids) + 256 - 1) // 256) * 256 for c, nids in color_groups.items()}
+            color_sizes = {
+                c: ((max(ig.sizes[nid] for nid in nids) + 256 - 1) // 256) * 256 for c, nids in color_groups.items()
+            }
             cur_off = 0
             c_offsets: dict[int, int] = {}
             for c in sorted(color_sizes.keys()):

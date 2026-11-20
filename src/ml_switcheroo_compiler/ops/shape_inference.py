@@ -1,7 +1,11 @@
-"""Declarative Dynamic Op Shape Inference Engine.
+"""Declarative Dynamic Op Shape Inference Engine (Shape Layer 3).
 
-This module provides Pydantic schema models, symbolic dimension representations,
-and declarative shape transfer functions for all operations in the compiler.
+Layer Responsibilities across the Shape Subsystem:
+    1. ``ir.shape_system``: Symbolic algebra (``Polynomial``, ``SymNode``, ``SymInt``), constraint unification,
+       canonical contiguous strides, and symbolic matrix/broadcast rules.
+    2. ``core.shape``: Runtime structural protocols, shape/dtype/device extraction, and dynamic validation.
+    3. ``ops.shape_inference``: Declarative YAML op signatures and per-operator transfer functions.
+    4. ``transforms.passes.shape_inference``: Topological whole-graph shape propagation and runtime shape learning.
 """
 
 from __future__ import annotations
@@ -16,9 +20,15 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeMetadataProtocol,
     ShapeProtocol,
-    TensorOrScalar,
+)
+from ml_switcheroo_compiler.ir.shape_system import (
+    SymVar,
+)
+from ml_switcheroo_compiler.ir.shape_system import (
+    compute_contiguous_strides as compute_contiguous_strides,
 )
 
 
@@ -26,7 +36,7 @@ from ml_switcheroo_compiler.core.shape import (
 class _YamlDataOpClassProtocol(typing.Protocol):
     """Protocol for dynamically generated OpDef classes exposing `_yaml_data`."""
 
-    _yaml_data: TensorOrScalar
+    _yaml_data: OpValue
 
 
 @typing.runtime_checkable
@@ -37,7 +47,7 @@ class _InferShapeMethodProtocol(typing.Protocol):
         self,
         *args: ShapeType | Sequence[int] | None,
         **kwargs: int | float | str | bool | ShapeType | Sequence[int] | None,
-    ) -> TensorOrScalar:
+    ) -> OpValue:
         """Infer output shape.
 
         Args:
@@ -45,123 +55,94 @@ class _InferShapeMethodProtocol(typing.Protocol):
             **kwargs: Keyword arguments.
 
         Returns:
-            TensorOrScalar: Inferred shape.
+            OpValue: Inferred shape.
         """
         ...
 
 
-def _is_padding_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int] | str]:
-    """Type guard narrowing `val` to `int | Sequence[int] | str`.
-
-    Args:
-        val (int | float | str | Sequence[int | S] | None): Candidate padding value.
-
-    Returns:
-        bool: True for padding specifications.
-    """
-    return not isinstance(val, bytes)
-
-
 def _to_padding(val: int | float | str | Sequence[int | S] | None) -> int | Sequence[int] | str:
-    """Convert a padding argument to `int | Sequence[int] | str`.
+    """Convert a padding argument to ``int | Sequence[int] | str``.
 
     Args:
         val (int | float | str | Sequence[int | S] | None): Input padding value.
 
     Returns:
-        int | Sequence[int] | str: Narrowed padding specification.
+        int | Sequence[int] | str: Coerced padding specification.
     """
-    assert _is_padding_val(val)
-    return val
+    if isinstance(val, str):
+        return val
+    if isinstance(val, (list, tuple)):
+        return [int(x) if isinstance(x, (int, float)) else 0 for x in val]
+    if isinstance(val, (int, float)):
+        return int(val)
+    return 0
 
 
-def _is_shape_type(val: tuple[int | str | S | None, ...]) -> typing.TypeGuard[ShapeType]:
-    """Type guard narrowing a shape tuple to `ShapeType`.
+def _to_shape_type(seq: Sequence[int | str | S | None | OpValue]) -> ShapeType:
+    """Convert a raw dimension sequence into a typed ``ShapeType`` tuple.
 
     Args:
-        val (tuple[int | str | S | None, ...]): Shape tuple.
+        seq (Sequence[int | str | S | None | OpValue]): Raw dimension sequence.
 
     Returns:
-        bool: Always True for shape tuples.
+        ShapeType: Tuple of concrete ``int`` or symbolic ``S`` dimensions.
     """
-    return isinstance(val, tuple)
-
-
-def _is_opt_int_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[Sequence[int] | None]:
-    """Type guard narrowing `val` to `Sequence[int] | None`.
-
-    Args:
-        val (int | float | str | Sequence[int | S] | None): Candidate value.
-
-    Returns:
-        bool: True for optional integer sequences.
-    """
-    return not isinstance(val, bytes)
+    dims: list[DimType] = []
+    for d in seq:
+        if isinstance(d, S):
+            dims.append(d)
+        elif isinstance(d, int) and not isinstance(d, bool):
+            dims.append(d)
+        elif isinstance(d, str):
+            dims.append(S(d))
+        else:
+            dims.append(0)
+    return tuple(dims)
 
 
 def _to_opt_int_seq(val: int | float | str | Sequence[int | S] | None) -> Sequence[int] | None:
-    """Convert a shape/dilation/stride argument to `Sequence[int] | None`.
+    """Convert a shape/dilation/stride argument to ``Sequence[int] | None``.
 
     Args:
         val (int | float | str | Sequence[int | S] | None): Input value.
 
     Returns:
-        Sequence[int] | None: Narrowed sequence of ints or None.
+        Sequence[int] | None: Coerced sequence of ints or ``None``.
     """
-    assert _is_opt_int_seq_val(val)
-    return val
-
-
-def _is_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int]]:
-    """Type guard narrowing `val` to `int | Sequence[int]`.
-
-    Args:
-        val (int | float | str | Sequence[int | S] | None): Candidate value.
-
-    Returns:
-        bool: True for int or integer sequences.
-    """
-    return not isinstance(val, bytes)
+    if isinstance(val, (list, tuple)):
+        return [int(x) if isinstance(x, (int, float)) else 0 for x in val]
+    return None
 
 
 def _to_int_or_seq(val: int | float | str | Sequence[int | S] | None, default: int = 1) -> int | Sequence[int]:
-    """Convert a stride/padding/dilation argument to `int | Sequence[int]`.
+    """Convert a stride/padding/dilation argument to ``int | Sequence[int]``.
 
     Args:
         val (int | float | str | Sequence[int | S] | None): Input value.
-        default (int): Unused fallback value preserved for signature compatibility.
+        default (int): Fallback integer value when ``val`` is non-numeric.
 
     Returns:
-        int | Sequence[int]: Narrowed integer or sequence of ints.
+        int | Sequence[int]: Coerced integer or sequence of ints.
     """
-    _ = default
-    assert _is_int_or_seq_val(val)
-    return val
-
-
-def _is_opt_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int] | None]:
-    """Type guard narrowing `val` to `int | Sequence[int] | None`.
-
-    Args:
-        val (int | float | str | Sequence[int | S] | None): Candidate value.
-
-    Returns:
-        bool: True for optional int or integer sequences.
-    """
-    return not isinstance(val, bytes)
+    if isinstance(val, (list, tuple)):
+        return [int(x) if isinstance(x, (int, float)) else default for x in val]
+    if isinstance(val, (int, float)):
+        return int(val)
+    return default
 
 
 def _to_opt_int_or_seq(val: int | float | str | Sequence[int | S] | None) -> int | Sequence[int] | None:
-    """Convert an optional stride/dilation argument to `int | Sequence[int] | None`.
+    """Convert an optional stride/dilation argument to ``int | Sequence[int] | None``.
 
     Args:
         val (int | float | str | Sequence[int | S] | None): Input value.
 
     Returns:
-        int | Sequence[int] | None: Narrowed integer, sequence of ints, or None.
+        int | Sequence[int] | None: Coerced integer, sequence of ints, or ``None``.
     """
-    assert _is_opt_int_or_seq_val(val)
-    return val
+    if val is None:
+        return None
+    return _to_int_or_seq(val)
 
 
 class ShapeInferFn(typing.Protocol):
@@ -169,8 +150,8 @@ class ShapeInferFn(typing.Protocol):
 
     def __call__(
         self,
-        *args: ShapeType | Sequence[int] | TensorOrScalar | None,
-        **kwargs: int | float | str | bool | ShapeType | Sequence[int] | TensorOrScalar | None,
+        *args: ShapeType | Sequence[int] | OpValue | None,
+        **kwargs: int | float | str | bool | ShapeType | Sequence[int] | OpValue | None,
     ) -> ShapeType:
         """Infer output shape from input shapes and attributes.
 
@@ -212,8 +193,8 @@ def register_shape_inference(op_type: str) -> Callable[[ShapeInferFn], ShapeInfe
     return decorator
 
 
-class S:
-    """Symbolic dimension variable (e.g., dynamic batch size S('batch'))."""
+class S(SymVar):
+    """Symbolic dimension variable (e.g., dynamic batch size ``S('batch')``)."""
 
     name: str
 
@@ -223,13 +204,13 @@ class S:
         Args:
             name (str): Identifier for the symbolic dimension.
         """
-        self.name = name
+        super().__init__(name)
 
     def __repr__(self) -> str:
         """Return developer representation of symbolic dimension.
 
         Returns:
-            str: String representation in S('name') format.
+            str: String representation in ``S('name')`` format.
         """
         return f"S({self.name!r})"
 
@@ -240,27 +221,6 @@ class S:
             str: Symbolic name.
         """
         return self.name
-
-    def __eq__(self, other: TensorOrScalar | S) -> bool:
-        """Compare two symbolic dimensions for equality.
-
-        Args:
-            other (TensorOrScalar | S): Object to compare against.
-
-        Returns:
-            bool: True if both are S with matching names.
-        """
-        if isinstance(other, S):
-            return self.name == other.name
-        return False
-
-    def __hash__(self) -> int:
-        """Hash code for symbolic dimension.
-
-        Returns:
-            int: Hash integer.
-        """
-        return hash(self.name)
 
 
 DimType = typing.Union[int, S]  # noqa: UP007
@@ -305,28 +265,6 @@ def load_shape_signatures() -> ShapeSignaturesConfig:
 
     _CACHED_SIGNATURES = ShapeSignaturesConfig.model_validate(raw_data)
     return _CACHED_SIGNATURES
-
-
-def compute_contiguous_strides(shape: ShapeType) -> tuple[int, ...]:
-    """Compute standard row-major contiguous strides for a tensor shape.
-
-    Args:
-        shape (ShapeType): Dimensions of the tensor.
-
-    Returns:
-        tuple[int, ...]: Contiguous stride tuple.
-    """
-    if not shape:
-        return ()
-
-    strides: list[int] = [1] * len(shape)
-    for i in range(len(shape) - 2, -1, -1):
-        next_dim = shape[i + 1]
-        if isinstance(next_dim, int):
-            strides[i] = strides[i + 1] * next_dim
-        else:
-            strides[i] = strides[i + 1]
-    return tuple(strides)
 
 
 def broadcast_shapes(*shapes: ShapeType | None) -> ShapeType:
@@ -615,7 +553,9 @@ def infer_reshape(input_shape: ShapeType, target_shape: Sequence[int | S]) -> Sh
         else:
             total_out = math.prod(tgt_ints)
             if total_in != total_out:
-                raise ValueError(f"Cannot reshape tensor of size {total_in} into shape {target_shape} (size {total_out})")
+                raise ValueError(
+                    f"Cannot reshape tensor of size {total_in} into shape {target_shape} (size {total_out})"
+                )
 
     return tuple(target)
 
@@ -827,7 +767,9 @@ def infer_stack(shapes: Sequence[ShapeType], axis: int = 0) -> ShapeType:
     return (*first[:norm_axis], len(shapes), *first[norm_axis:])
 
 
-def infer_reduction(input_shape: ShapeType, axis: int | Sequence[int] | None = None, keepdims: bool = False) -> ShapeType:
+def infer_reduction(
+    input_shape: ShapeType, axis: int | Sequence[int] | None = None, keepdims: bool = False
+) -> ShapeType:
     """Infer shape resulting from a reduction operation.
 
     Args:
@@ -946,7 +888,13 @@ def _dispatch_group_ops(
         splits = kwargs.get("num_or_size_splits", kwargs.get("chunks", 2))
         raw_axis = kwargs.get("axis", 0)
         axis_val = int(raw_axis) if isinstance(raw_axis, (int, float, str)) else 0
-        splits_val: int | Sequence[int] = splits if isinstance(splits, int) else [int(x) for x in splits if isinstance(x, (int, float))] if isinstance(splits, (list, tuple)) else 2
+        splits_val: int | Sequence[int] = (
+            splits
+            if isinstance(splits, int)
+            else [int(x) for x in splits if isinstance(x, (int, float))]
+            if isinstance(splits, (list, tuple))
+            else 2
+        )
         res = infer_split(valid_shapes[0], splits_val, axis=axis_val)
         return res[0] if res else ()
     if category == "concat":
@@ -1050,7 +998,7 @@ def infer_op_shape_declarative(
 
     Args:
         op_type (str): Operation identifier.
-        *shapes (ShapeType): Input tensor shapes.
+        *shapes (ShapeType | None): Input tensor shapes.
         **kwargs (Union[int, float, str, bool, ShapeType, Sequence[int], None]): Op attributes.
 
     Returns:
@@ -1102,11 +1050,13 @@ def _normalize_inputs_to_shapes(
         list[ShapeType]: Extracted shape tuples.
     """
     raw_kw_inputs = kwargs.get("inputs")
-    input_seq: Sequence[TensorOrScalar | ShapeType | Sequence[int] | ShapeProtocol | ShapeMetadataProtocol | S]
+    input_seq: Sequence[OpValue | ShapeType | Sequence[int] | ShapeProtocol | ShapeMetadataProtocol | S]
     if raw_kw_inputs is None:
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             first_seq = args[0]
-            if any(isinstance(x, (ShapeProtocol, ShapeMetadataProtocol, list, tuple)) for x in first_seq) or not all(isinstance(x, (int, S)) for x in first_seq):
+            if any(isinstance(x, (ShapeProtocol, ShapeMetadataProtocol, list, tuple)) for x in first_seq) or not all(
+                isinstance(x, (int, S)) for x in first_seq
+            ):
                 input_seq = list(first_seq)
             else:
                 input_seq = list(args)
@@ -1120,17 +1070,11 @@ def _normalize_inputs_to_shapes(
     shapes: list[ShapeType] = []
     for item in input_seq:
         if isinstance(item, ShapeMetadataProtocol) and item.shape_metadata is not None:
-            cand_sm = tuple(item.shape_metadata)
-            assert _is_shape_type(cand_sm)
-            shapes.append(cand_sm)
+            shapes.append(_to_shape_type(item.shape_metadata))
         elif isinstance(item, ShapeProtocol) and item.shape is not None:
-            cand_sh = tuple(item.shape)
-            assert _is_shape_type(cand_sh)
-            shapes.append(cand_sh)
+            shapes.append(_to_shape_type(item.shape))
         elif isinstance(item, (list, tuple)):
-            cand_tup = tuple(item)
-            assert _is_shape_type(cand_tup)
-            shapes.append(cand_tup)
+            shapes.append(_to_shape_type(item))
     return shapes
 
 
@@ -1143,8 +1087,8 @@ def infer_shape(
 
     Args:
         op_type (str): Operation identifier.
-        *args (Union[ShapeType, Sequence[int], None]): Positional inputs/shapes.
-        **kwargs (Union[int, float, str, bool, ShapeType, Sequence[int], None]): Keyword arguments.
+        *args (ShapeType | Sequence[int] | None): Positional inputs/shapes.
+        **kwargs (int | float | str | bool | ShapeType | Sequence[int] | None): Keyword arguments.
 
     Returns:
         ShapeType: Inferred shape tuple.
@@ -1166,15 +1110,23 @@ def infer_shape(
             if not isinstance(raw_op_cls, _InferShapeMethodProtocol):
                 return ()
             if not isinstance(raw_op_cls, _YamlDataOpClassProtocol):
-                instance: TensorOrScalar | _InferShapeMethodProtocol = op_cls()
+                instance: OpValue | _InferShapeMethodProtocol = op_cls()
                 assert isinstance(instance, _InferShapeMethodProtocol)
                 try:
                     raw_res = instance.infer_shape(*shapes, **kwargs)
-                except Exception:
+                except (
+                    AttributeError,
+                    ImportError,
+                    LookupError,
+                    OSError,
+                    ArithmeticError,
+                    RuntimeError,
+                    SyntaxError,
+                    TypeError,
+                    ValueError,
+                ):
                     raw_res = instance.infer_shape(*args, **kwargs)
-                res_tup = tuple(raw_res) if isinstance(raw_res, (list, tuple)) else ()
-                assert _is_shape_type(res_tup)
-                return res_tup
+                return _to_shape_type(raw_res) if isinstance(raw_res, (list, tuple)) else ()
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

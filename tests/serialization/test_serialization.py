@@ -10,7 +10,8 @@ import zipfile
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.serialization import (
     LoadedModel,
     SavedModel,
@@ -25,10 +26,10 @@ from ml_switcheroo_compiler.serialization import (
     save_model,
     serialize_object,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockGraphStub, MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_serialization_primitives_and_custom_objects() -> None:
@@ -38,7 +39,7 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
     # Custom serializable class
     @register_serializable(package="MyPackage", name="CustomDense")
-    class CustomDense:
+    class CustomDense(MockTestStub):
         """Test class CustomDense."""
 
         def __init__(self, units: int = 32) -> None:
@@ -49,16 +50,16 @@ def test_serialization_primitives_and_custom_objects() -> None:
             """
             self.units = units
 
-        def get_config(self) -> dict[str, EagerValue]:
+        def get_config(self) -> dict[str, BackendArg]:
             """Test function get_config.
 
             Returns:
-                dict[str, EagerValue]: Computed output value from `get_config`.
+                dict[str, BackendArg]: Computed output value from `get_config`.
             """
             return {"units": self.units}
 
         @classmethod
-        def from_config(cls, cfg: dict[str, EagerValue]) -> CustomDense:
+        def from_config(cls, cfg: dict[str, BackendArg]) -> CustomDense:
             """Test function from_config.
 
             Args:
@@ -67,18 +68,20 @@ def test_serialization_primitives_and_custom_objects() -> None:
             Returns:
                 CustomDense: Computed output value from `from_config`.
             """
-            from ml_switcheroo_compiler.backends.eager_registry import ensure_int
+            from ml_switcheroo_compiler.backends.eager_registry import coerce_int
 
-            return cls(units=int(ensure_int(cfg.get("units", 0))))
+            return cls(units=int(coerce_int(cfg.get("units", 0))))
 
     obj = CustomDense(units=64)
-    serialized = serialize_object(ensure_eager_tensor(obj))
-    assert ensure_eager_tensor(serialized)["class_name"] == "CustomDense"
-    assert ensure_eager_tensor(serialized)["config"]["units"] == 64
+    serialized = serialize_object(obj)
+    assert isinstance(serialized, dict)
+    assert serialized["class_name"] == "CustomDense"
+    ser_cfg = serialized["config"]
+    assert isinstance(ser_cfg, dict) and ser_cfg["units"] == 64
 
     # Deserialization from registry
-    deserialized = ensure_eager_tensor(deserialize_object(serialized))
-    assert type(deserialized).__name__ == "CustomDense"
+    deserialized = deserialize_object(serialized)
+    assert isinstance(deserialized, CustomDense)
     assert deserialized.units == 64
 
     # Scoped custom object
@@ -93,19 +96,21 @@ def test_serialization_primitives_and_custom_objects() -> None:
             """
             self.rate = rate
 
-        def get_config(self) -> dict[str, EagerValue]:
+        def get_config(self) -> dict[str, BackendArg]:
             """Test function get_config.
 
             Returns:
-                dict[str, EagerValue]: Computed output value from `get_config`.
+                dict[str, BackendArg]: Computed output value from `get_config`.
             """
             return {"rate": self.rate}
 
     with custom_object_scope({"ScopedLayer": ScopedLayer}):
         assert get_registered_object("ScopedLayer") is ScopedLayer
-        s_cfg = ensure_eager_tensor({"class_name": "ScopedLayer", "config": {"rate": 0.25}})
-        des_scoped = ensure_eager_tensor(deserialize_object(s_cfg))
-        assert type(des_scoped).__name__ == "ScopedLayer"
+        from ml_switcheroo_compiler.core.shape import OpValue
+
+        s_cfg: dict[str, OpValue] = {"class_name": "ScopedLayer", "config": {"rate": 0.25}}
+        des_scoped: OpValue | ScopedLayer = deserialize_object(s_cfg)
+        assert isinstance(des_scoped, ScopedLayer)
         assert des_scoped.rate == 0.25
 
     # Scope restoration
@@ -113,7 +118,7 @@ def test_serialization_primitives_and_custom_objects() -> None:
 
     # Unknown class raises ValueError
     with pytest.raises(ValueError, match="Unknown class 'UnregisteredClass'"):
-        deserialize_object(ensure_eager_tensor({"class_name": "UnregisteredClass", "config": {}}))
+        deserialize_object({"class_name": "UnregisteredClass", "config": {}})
 
 
 def test_universal_model_loader_and_save_model() -> None:
@@ -122,23 +127,23 @@ def test_universal_model_loader_and_save_model() -> None:
         model_path = os.path.join(tmpdir, "model.keras")
 
         # Mock model with config and weights
-        class DummyModel:
+        class DummyModel(MockTestStub):
             """Test class DummyModel."""
 
             def __init__(self) -> None:
                 """Test function __init__."""
                 self.weights = [np.array([1.0, 2.0], dtype=np.float32)]
 
-            def get_config(self) -> dict[str, EagerValue]:
+            def get_config(self) -> dict[str, BackendArg]:
                 """Test function get_config.
 
                 Returns:
-                    dict[str, EagerValue]: Computed output value from `get_config`.
+                    dict[str, BackendArg]: Computed output value from `get_config`.
                 """
                 return {"architecture": "linear", "hidden_dim": 128}
 
         m = DummyModel()
-        ensure_callable(save_model)(m, model_path)
+        save_model(m, model_path)
         assert os.path.exists(model_path)
 
         # Successful load
@@ -146,7 +151,7 @@ def test_universal_model_loader_and_save_model() -> None:
         assert isinstance(loaded, LoadedModel)
         assert loaded.config["architecture"] == "linear"
         assert loaded.config["hidden_dim"] == 128
-        assert "keras_version" in loaded.metadata
+        assert "compiler_version" in loaded.metadata
 
         # Error cases: non-existent file
         with pytest.raises(FileNotFoundError, match="not found"):
@@ -176,18 +181,18 @@ def test_saved_model_and_fingerprinting() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         sm_dir = os.path.join(tmpdir, "my_saved_model")
 
-        class MockGraphModel:
+        class MockGraphModel(MockTestStub):
             """Test class MockGraphModel."""
 
-            def get_config(self) -> dict[str, EagerValue]:
+            def get_config(self) -> dict[str, BackendArg]:
                 """Test function get_config.
 
                 Returns:
-                    dict[str, EagerValue]: Computed output value from `get_config`.
+                    dict[str, BackendArg]: Computed output value from `get_config`.
                 """
                 return {"op": "Add", "inputs": ["x", "y"]}
 
-        sm = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
+        sm = SavedModel(model=MockGraphModel(), signatures={"serving_default": {"inputs": ["x"]}})
         sm.save(sm_dir)
 
         assert os.path.exists(os.path.join(sm_dir, "saved_model.pb"))
@@ -199,14 +204,14 @@ def test_saved_model_and_fingerprinting() -> None:
 
         # Fingerprint invariance for identical structure
         sm_dir2 = os.path.join(tmpdir, "my_saved_model2")
-        sm2 = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x"]}})
+        sm2 = SavedModel(model=MockGraphModel(), signatures={"serving_default": {"inputs": ["x"]}})
         sm2.save(sm_dir2)
         fp2 = read_fingerprint(sm_dir2)
         assert fp == fp2
 
         # Fingerprint changes on mutation
         sm_mutated_dir = os.path.join(tmpdir, "mutated_model")
-        sm_mut = SavedModel(model=ensure_eager_tensor(MockGraphModel()), signatures={"serving_default": {"inputs": ["x", "z"]}})
+        sm_mut = SavedModel(model=MockGraphModel(), signatures={"serving_default": {"inputs": ["x", "z"]}})
         sm_mut.save(sm_mutated_dir)
         fp_mut = read_fingerprint(sm_mutated_dir)
         assert fp != fp_mut
@@ -214,7 +219,7 @@ def test_saved_model_and_fingerprinting() -> None:
         # SavedModel load
         loaded_sm = SavedModel.load(sm_dir)
         assert loaded_sm.signatures == {"serving_default": {"inputs": ["x"]}}
-        assert ensure_eager_tensor(loaded_sm.model)["op"] == "Add"
+        assert isinstance(loaded_sm.model, dict) and loaded_sm.model["op"] == "Add"
 
         # Corrupted proto load
         corrupt_pb_dir = os.path.join(tmpdir, "corrupt_sm")
@@ -243,8 +248,8 @@ def test_variable_restoration_engine() -> None:
         restored = run_restore_ops(tmpdir)
         assert "dense_w" in restored
         assert "dense_b" in restored
-        assert ensure_callable(np.allclose)(restored["dense_w"], var1)
-        assert ensure_callable(np.allclose)(restored["dense_b"], var2)
+        assert np.allclose(ensure_ndarray(restored["dense_w"]), var1)
+        assert np.allclose(ensure_ndarray(restored["dense_b"]), var2)
 
         # Restore into target model with matching shapes
         class MockVar:
@@ -261,15 +266,21 @@ def test_variable_restoration_engine() -> None:
                 self.shape = shape
                 self.assigned = None
 
-            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+            def assign(
+                self,
+                val: np.ndarray[
+                    tuple[int, ...],
+                    np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+                ],
+            ) -> None:
                 """Test function assign.
 
                 Args:
                     val: Test parameter `val`.
                 """
-                ensure_mutable(self).assigned = ensure_eager_tensor(val)
+                pytest.MonkeyPatch().setattr(self, "assigned", val, raising=False)
 
-        class TargetModel:
+        class TargetModel(MockTestStub):
             """Test class TargetModel."""
 
             def __init__(self) -> None:
@@ -280,12 +291,12 @@ def test_variable_restoration_engine() -> None:
                 ]
 
         model_inst = TargetModel()
-        run_restore_ops(tmpdir, target_model=ensure_eager_tensor(model_inst))
-        assert ensure_callable(np.allclose)(model_inst.weights[0].assigned, var1)
-        assert ensure_callable(np.allclose)(model_inst.weights[1].assigned, var2)
+        run_restore_ops(tmpdir, target_model=model_inst)
+        assert np.allclose(ensure_ndarray(model_inst.weights[0].assigned), var1)
+        assert np.allclose(ensure_ndarray(model_inst.weights[1].assigned), var2)
 
         # Shape mismatch in target model raises ValueError
-        class IncompatibleModel:
+        class IncompatibleModel(MockTestStub):
             """Test class IncompatibleModel."""
 
             def __init__(self) -> None:
@@ -293,7 +304,7 @@ def test_variable_restoration_engine() -> None:
                 self.weights = [MockVar("dense_w", (3, 3))]
 
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'dense_w'"):
-            run_restore_ops(tmpdir, target_model=ensure_eager_tensor(IncompatibleModel()))
+            run_restore_ops(tmpdir, target_model=IncompatibleModel())
 
         # Shape mismatch in variables dictionary raises ValueError
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'dense_b'"):
@@ -303,15 +314,19 @@ def test_variable_restoration_engine() -> None:
 def test_file_handler() -> None:
     """Test file handler."""
 
-    class DummyGraph:
+    class DummyGraph(MockGraphStub):
         """Test class DummyGraph."""
 
-        def to_json(self) -> EagerValue:
+        def to_json(self, indent: int | None = 2) -> str:
             """Test function to_json.
 
+            Args:
+                indent: JSON indentation.
+
             Returns:
-                EagerValue: Computed output value from `to_json`.
+                str: Computed output value from `to_json`.
             """
+            del indent
             return "{}"
 
-    assert ensure_callable(graph_to_json)(ensure_callable(DummyGraph)()) == "{}"
+    assert graph_to_json(DummyGraph()) == "{}"

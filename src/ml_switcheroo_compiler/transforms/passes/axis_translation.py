@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import uuid
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
@@ -59,9 +60,19 @@ def axis_translation_pass(graph: IRGraph, target_layout: str = "NHWC") -> bool:
                     transp_in_id = f"transpose_{uuid.uuid4().hex[:8]}"
 
                     orig_shape = graph.nodes[inp_id].shape_metadata if inp_id in graph.nodes else None
-                    new_meta = (orig_shape[0], orig_shape[2], orig_shape[3], orig_shape[1]) if orig_shape and len(orig_shape) == 4 else orig_shape
+                    new_meta = (
+                        (orig_shape[0], orig_shape[2], orig_shape[3], orig_shape[1])
+                        if orig_shape and len(orig_shape) == 4
+                        else orig_shape
+                    )
 
-                    transp_in_node = IRNode(id=transp_in_id, op_type="Transpose", inputs=[inp_id], attributes={"axes": [0, 2, 3, 1]}, shape_metadata=new_meta)
+                    transp_in_node = IRNode(
+                        id=transp_in_id,
+                        op_type="Transpose",
+                        inputs=[inp_id],
+                        attributes={"axes": [0, 2, 3, 1]},
+                        shape_metadata=new_meta,
+                    )
                     graph.nodes[transp_in_id] = transp_in_node
                     node.inputs[0] = transp_in_id
 
@@ -70,7 +81,13 @@ def axis_translation_pass(graph: IRGraph, target_layout: str = "NHWC") -> bool:
 
                 # Convert the output back (N, H, W, C -> N, C, H, W)
                 transp_out_id = f"transpose_{uuid.uuid4().hex[:8]}"
-                transp_out_node = IRNode(id=transp_out_id, op_type="Transpose", inputs=[node.id], attributes={"axes": [0, 3, 1, 2]}, shape_metadata=node.shape_metadata)
+                transp_out_node = IRNode(
+                    id=transp_out_id,
+                    op_type="Transpose",
+                    inputs=[node.id],
+                    attributes={"axes": [0, 3, 1, 2]},
+                    shape_metadata=node.shape_metadata,
+                )
 
                 # Update consumers of Conv2D to read from the new Transpose
                 for other_node in graph.nodes.values():

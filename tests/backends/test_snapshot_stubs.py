@@ -30,7 +30,9 @@ ALL_BACKENDS: list[str] = [
 
 def test_snapshot_stubs_exist_and_parse() -> None:
     """Verify that snapshot_stubs.pyi exists and parses valid AST across all 24 backends."""
-    base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends"))
+    base_dir: str = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends")
+    )
 
     for backend in ALL_BACKENDS:
         for stub_name in ("snapshot_stubs.pyi",):
@@ -50,7 +52,9 @@ def test_snapshot_stubs_exist_and_parse() -> None:
 
 def test_snapshot_stubs_function_definitions() -> None:
     """Verify that generated stubs contain function definitions with annotations."""
-    base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends"))
+    base_dir: str = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends")
+    )
 
     for backend in ALL_BACKENDS:
         stub_path: str = os.path.join(base_dir, backend, "snapshot_stubs.pyi")
@@ -64,7 +68,9 @@ def test_snapshot_stubs_function_definitions() -> None:
 
 def test_snapshot_stubs_tensor_class_methods() -> None:
     """Verify that class Tensor in all stubs contains methods and annotations."""
-    base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends"))
+    base_dir: str = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends")
+    )
 
     for backend in ALL_BACKENDS:
         stub_path: str = os.path.join(base_dir, backend, "snapshot_stubs.pyi")
@@ -72,10 +78,16 @@ def test_snapshot_stubs_tensor_class_methods() -> None:
             content: str = f.read()
 
         parsed: ast.Module = ast.parse(content, filename=stub_path)
-        tensor_class: ast.ClassDef | None = next((node for node in parsed.body if isinstance(node, ast.ClassDef) and node.name == "Tensor"), None)
+        tensor_class: ast.ClassDef | None = next(
+            (node for node in parsed.body if isinstance(node, ast.ClassDef) and node.name == "Tensor"), None
+        )
         assert tensor_class is not None, f"Tensor class missing in {backend}"
 
-        field_names: set[str] = {stmt.target.id for stmt in tensor_class.body if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)}
+        field_names: set[str] = {
+            stmt.target.id
+            for stmt in tensor_class.body
+            if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)
+        }
         assert "shape" in field_names
         assert "dtype" in field_names
         assert "ndim" in field_names

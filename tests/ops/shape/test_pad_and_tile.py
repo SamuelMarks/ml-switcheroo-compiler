@@ -5,12 +5,13 @@ from __future__ import annotations
 import typing
 
 import pytest
+from pytest_mock import MockerFixture
 
 import ml_switcheroo_compiler.ops.shape.pad_and_tile as shape_misc
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_shape_misc_functions() -> None:
@@ -26,26 +27,28 @@ def test_shape_misc_functions() -> None:
     shape_misc._infer_shape_percentile_quantile(a, 0.5, axis=None, keepdims=False)
     shape_misc._infer_shape_percentile_quantile(a, [0.5], axis=0, keepdims=True)
     shape_misc._infer_shape_percentile_quantile(a, [0.5], axis=0, keepdims=False)
-    val = ensure_callable(shape_misc._infer_shape_percentile_quantile)
+    val = shape_misc._infer_shape_percentile_quantile
     with pytest.raises(TypeError):
-        val(a)
+        require_callable(val)(a)
     val(a, a)
     with pytest.raises((TypeError, AttributeError)):
         val(a, a, a)
 
 
-def test_tile_repeat_triu_tril_exact_shapes(mocker: EagerTensorProtocol) -> None:
+def test_tile_repeat_triu_tril_exact_shapes(mocker: MockerFixture) -> None:
     """Verify exact output shape inference for tile, repeat, triu, and tril in graph mode.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:
@@ -68,19 +71,19 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker: EagerTensorProtocol) -> None
     assert captured_shapes.get("Tile") == (4, 12)
     shape_misc.tile(t, reps=(3, 2, 4))
     assert captured_shapes.get("Tile") == (3, 4, 12)
-    ensure_callable(shape_misc.tile)(t, reps=2)
+    require_callable(shape_misc.tile)(t, reps=2)
     assert captured_shapes.get("Tile") == (2, 6)
     shape_misc.repeat(t, repeats=3, axis=1)
     assert captured_shapes.get("Repeat") == (2, 9)
     shape_misc.repeat(t, repeats=[2, 3], axis=0)
     assert captured_shapes.get("Repeat") == (5, 3)
-    ensure_callable(shape_misc.repeat)(t, repeats=None, axis=0)
+    require_callable(shape_misc.repeat)(t, repeats=None, axis=0)
     assert captured_shapes.get("Repeat") == (2, 3)
     shape_misc.repeat(t, repeats=2, axis=None)
     assert captured_shapes.get("Repeat") == (12,)
     shape_misc.repeat(t, repeats=[1, 2, 3], axis=None)
     assert captured_shapes.get("Repeat") == (6,)
-    ensure_callable(shape_misc.repeat)(t, repeats=None, axis=None)
+    require_callable(shape_misc.repeat)(t, repeats=None, axis=None)
     assert captured_shapes.get("Repeat") == (6,)
     shape_misc.triu(t, diagonal=0)
     assert captured_shapes["Triu"] == (2, 3)

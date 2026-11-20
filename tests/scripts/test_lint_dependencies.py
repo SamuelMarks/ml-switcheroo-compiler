@@ -1,4 +1,4 @@
-"""Tests for scripts/lint_dependencies.py."""
+"""Unit tests for scripts/lint_dependencies.py enforcing dependency and dynamic-import isolation."""
 
 from __future__ import annotations
 
@@ -6,140 +6,193 @@ import os
 import runpy
 import sys
 import tempfile
+import textwrap
 from unittest.mock import patch
 
 import pytest
 
-from scripts.lint_dependencies import _check_module_name, check_dependencies, main
+from scripts.lint_dependencies import (
+    BACKEND_ALLOWED,
+    GLOBAL_ALLOWED_THIRD_PARTY,
+    _check_module_name,
+    _validate_single_backend_dependency,
+    check_dependencies,
+    main,
+)
 
 
-def test_check_dependencies_clean() -> None:
-    """Test checking dependencies on clean directory."""
+def test_global_allowed_third_party_exact_whitelist() -> None:
+    """Verify GLOBAL_ALLOWED_THIRD_PARTY contains strictly Tier-1 IR and approved global packages."""
+    assert GLOBAL_ALLOWED_THIRD_PARTY == {
+        "ml_switcheroo_ir",
+        "yaml",
+        "PIL",
+        "pillow",
+        "pydantic",
+        "cdd",
+        "libcst",
+        "h5py",
+    }
+    assert "ml_switcheroo_ir" in GLOBAL_ALLOWED_THIRD_PARTY
+
+
+def test_check_dependencies_clean_and_syntax_error() -> None:
+    """Test clean allowed global/stdlib/relative imports and graceful SyntaxError skip."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        core_dir: str = os.path.join(temp_dir, "core")
-        os.makedirs(core_dir)
-        clean_file: str = os.path.join(core_dir, "clean.py")
-        with open(clean_file, "w", encoding="utf-8") as f:
-            f.write("import os\nimport sys\nimport yaml\nimport pydantic\n")
-        with open(os.path.join(core_dir, "notes.txt"), "w", encoding="utf-8") as f:
-            f.write("Some notes")
-        violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) == 0
+        good_file: str = os.path.join(temp_dir, "good.py")
+        local_helper: str = os.path.join(temp_dir, "local_helper.py")
+        bad_syntax: str = os.path.join(temp_dir, "broken.py")
+        txt_file: str = os.path.join(temp_dir, "notes.txt")
+        with open(local_helper, "w", encoding="utf-8") as f:
+            f.write("X = 1")
+        with open(good_file, "w", encoding="utf-8") as f:
+            f.write(
+                textwrap.dedent(
+                    """
+                    import os
+                    import importlib
+                    import ml_switcheroo_ir
+                    import yaml
+                    import pydantic
+                    import libcst
+                    import h5py
+                    import local_helper
+                    from . import sibling
+                    m = importlib.import_module("math")
+                    rel = importlib.import_module("...")
+                    """
+                )
+            )
+        with open(bad_syntax, "w", encoding="utf-8") as f:
+            f.write("def broken(:")
+        with open(txt_file, "w", encoding="utf-8") as f:
+            f.write("ignored")
 
-        eval_file: str = os.path.join(core_dir, "bad_eval.py")
-        with open(eval_file, "w", encoding="utf-8") as f:
-            f.write("x = eval('1 + 1')\n")
-        eval_violations: list[str] = check_dependencies(temp_dir)
-        assert any("Prohibited builtin 'eval()'" in v for v in eval_violations)
+        reg_dir: str = os.path.join(temp_dir, "backends")
+        os.makedirs(reg_dir)
+        reg_file: str = os.path.join(reg_dir, "registry.py")
+        with open(reg_file, "w", encoding="utf-8") as f:
+            f.write(
+                textwrap.dedent(
+                    """
+                    import importlib
+                    mod = importlib.import_module(dynamic_var)
+                    """
+                )
+            )
+
+        assert check_dependencies(temp_dir) == []
 
 
-def test_check_dependencies_violations() -> None:
-    """Test checking dependencies detects disallowed 3rd party import (static and dynamic)."""
+def test_check_dependencies_disallowed_dynamic_eval_and_external() -> None:
+    """Test disallowed 3rd-party packages, upward zero_* imports, dynamic imports, and eval()."""
     with tempfile.TemporaryDirectory() as temp_dir:
         core_dir: str = os.path.join(temp_dir, "core")
         os.makedirs(core_dir)
         bad_file: str = os.path.join(core_dir, "bad.py")
         with open(bad_file, "w", encoding="utf-8") as f:
             f.write(
-                "import importlib\n"
-                "import sklearn\n"
-                "import numpy as np\n"
-                "from scipy.optimize import minimize\n"
-                'p = __import__("psutil")\n'
-                'sub = "special"\n'
-                's = importlib.import_module(f"scipy.{sub}")\n'
-                'dyn = importlib.import_module(f"{sub}")\n'
-                'dyn_empty = importlib.import_module(f".{sub}")\n'
-                "other = __import__()\n"
-                "num = __import__(123)\n"
+                textwrap.dedent(
+                    """
+                    import importlib
+                    import sklearn
+                    import zero_pytorch
+                    import numpy as np
+                    from scipy.optimize import minimize
+                    p = __import__("psutil")
+                    sub = "special"
+                    s = importlib.import_module(f"scipy.{sub}")
+                    dyn = importlib.import_module(sub)
+                    other = __import__()
+                    x = eval("1 + 1")
+                    exec("y = 2")
+                    """
+                )
             )
         violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) >= 5
         assert any("sklearn" in v for v in violations)
+        assert any("zero_pytorch" in v for v in violations)
         assert any("numpy" in v for v in violations)
         assert any("scipy" in v for v in violations)
         assert any("psutil" in v for v in violations)
+        assert any("Non-literal dynamic import" in v for v in violations)
+        assert any("Prohibited builtin 'eval()'" in v for v in violations)
+        assert any("Prohibited builtin 'exec()'" in v for v in violations)
 
 
-def test_check_dependencies_backend_allowed() -> None:
-    """Test that allowed backend imports are accepted in their respective folders."""
+def test_check_dependencies_backend_allowed_and_single_root_enforcement() -> None:
+    """Test backend-scoped imports and multi-root backend directory rejection."""
     with tempfile.TemporaryDirectory() as temp_dir:
         pytorch_dir: str = os.path.join(temp_dir, "backends", "pytorch")
         os.makedirs(pytorch_dir)
-        torch_file: str = os.path.join(pytorch_dir, "runner.py")
-        with open(torch_file, "w", encoding="utf-8") as f:
-            f.write("import torch\nfrom torch import nn\n")
+        with open(os.path.join(pytorch_dir, "runner.py"), "w", encoding="utf-8") as f:
+            f.write(
+                textwrap.dedent(
+                    """
+                    import torch
+                    from torch import nn
+                    """
+                )
+            )
+
         numpy_dir: str = os.path.join(temp_dir, "backends", "numpy")
         os.makedirs(numpy_dir)
-        np_file: str = os.path.join(numpy_dir, "runner.py")
-        with open(np_file, "w", encoding="utf-8") as f:
-            f.write("import numpy as np\nimport scipy.special\n")
-        violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) == 0
+        with open(os.path.join(numpy_dir, "runner.py"), "w", encoding="utf-8") as f:
+            f.write(
+                textwrap.dedent(
+                    """
+                    import numpy as np
+                    import scipy.special
+                    """
+                )
+            )
+
+        assert check_dependencies(temp_dir) == []
+
+        with patch.dict(BACKEND_ALLOWED, {"pytorch": {"torch", "torchvision"}}):
+            with open(os.path.join(pytorch_dir, "vision.py"), "w", encoding="utf-8") as f:
+                f.write("import torchvision")
+            violations: list[str] = check_dependencies(temp_dir)
+            assert any("imports multiple third-party roots" in v for v in violations)
+
+        direct_violations: list[str] = []
+        _validate_single_backend_dependency(temp_dir, {"custom": {"pkg_a", "pkg_b"}}, direct_violations)
+        assert len(direct_violations) == 1
 
 
-def test_check_dependencies_local_module_ignored() -> None:
-    """Test that local module imports inside the same directory are ignored."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        mod_dir: str = os.path.join(temp_dir, "my_module")
-        os.makedirs(mod_dir)
-        helper_file: str = os.path.join(mod_dir, "helper.py")
-        with open(helper_file, "w", encoding="utf-8") as f:
-            f.write("X = 1\n")
-        consumer_file: str = os.path.join(mod_dir, "consumer.py")
-        with open(consumer_file, "w", encoding="utf-8") as f:
-            f.write("import helper\n")
-        violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) == 0
-
-
-def test_check_dependencies_syntax_error_handled() -> None:
-    """Test that files with syntax errors are skipped gracefully."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        bad_syntax: str = os.path.join(temp_dir, "invalid.py")
-        with open(bad_syntax, "w", encoding="utf-8") as f:
-            f.write("def invalid_syntax(\n")
-        violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) == 0
-
-
-def test_check_module_name_empty() -> None:
-    """Test empty module name in _check_module_name."""
+def test_check_module_name_empty_and_upward_imports() -> None:
+    """Test empty module name handling and forbidden upward zero* imports."""
     violations: list[str] = []
     _check_module_name("", "file.py", 1, set(), ".", violations)
-    assert len(violations) == 0
+    assert violations == []
 
-
-def test_check_dependencies_forbidden_upward_import() -> None:
-    """Test detecting forbidden upward imports from zero frontend or zero_zoo packages."""
     with tempfile.TemporaryDirectory() as temp_dir:
         core_dir: str = os.path.join(temp_dir, "core")
         os.makedirs(core_dir)
         bad_file: str = os.path.join(core_dir, "bad_upward.py")
         with open(bad_file, "w", encoding="utf-8") as f:
-            f.write("import zero_pytorch\nimport zero_zoo\n")
-        violations: list[str] = check_dependencies(temp_dir)
-        assert len(violations) == 2
-        assert any("zero_pytorch" in v for v in violations)
-        assert any("zero_zoo" in v for v in violations)
+            f.write(
+                textwrap.dedent(
+                    """
+                    import zero_pytorch
+                    import zero_zoo
+                    """
+                )
+            )
+        upward_violations: list[str] = check_dependencies(temp_dir)
+        assert len(upward_violations) == 2
+        assert any("zero_pytorch" in v for v in upward_violations)
+        assert any("zero_zoo" in v for v in upward_violations)
 
 
-def test_main_clean() -> None:
-    """Test main function when no violations are found."""
+def test_main_and_entrypoint() -> None:
+    """Test main() return codes and __main__ CLI execution."""
     with patch("scripts.lint_dependencies.check_dependencies", return_value=[]):
-        exit_code: int = main()
-        assert exit_code == 0
+        assert main() == 0
 
-
-def test_main_with_violations() -> None:
-    """Test main function when violations are detected."""
     with patch("scripts.lint_dependencies.check_dependencies", return_value=["test.py:1: error"]):
-        exit_code: int = main()
-        assert exit_code == 1
+        assert main() == 1
 
-
-def test_entrypoint_call() -> None:
-    """Test direct module invocation entrypoint."""
     with patch.object(sys, "argv", ["lint_dependencies.py"]):
         with patch("scripts.lint_dependencies.check_dependencies", return_value=[]):
             with pytest.raises(SystemExit) as exc_info:

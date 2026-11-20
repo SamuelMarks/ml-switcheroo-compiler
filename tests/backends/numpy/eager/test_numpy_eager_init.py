@@ -8,12 +8,22 @@ import typing
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import equal, execute_op, repeat, searchsorted, split, squeeze, stack, unstack
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, global_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import (
+    ensure_ndarray,
+    equal,
+    execute_op,
+    repeat,
+    searchsorted,
+    split,
+    squeeze,
+    stack,
+    unstack,
+)
+from tests.testing_utils import MockTestStub, coerce_numeric
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_execute_op() -> None:
@@ -22,11 +32,11 @@ def test_execute_op() -> None:
     Returns:
         None
     """
-    res = ensure_callable(execute_op)(None, "Equal", ensure_callable(np.array)([1]), ensure_callable(np.array)([1]))
+    res = execute_op(None, "Equal", np.array([1]), np.array([1]))
     assert res
 
     @global_eager_registry.register("DummyGlobalOp")
-    def _dummy_global(np_mod: EagerValue, x: EagerValue) -> EagerValue:
+    def _dummy_global(np_mod: BackendArg, x: BackendArg) -> BackendArg:
         """Test function _dummy_global.
 
         Args:
@@ -34,17 +44,17 @@ def test_execute_op() -> None:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `_dummy_global`.
+            BackendArg: Computed output value from `_dummy_global`.
         """
-        return ensure_eager_tensor(x) + ensure_eager_tensor(1)
+        return coerce_numeric(x) + 1
 
-    assert ensure_callable(execute_op)(None, "DummyGlobalOp", 1) == 2
-    res = ensure_callable(execute_op)(None, "Add", ensure_callable(np.array)([1]), ensure_callable(np.array)([2]))
-    assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [3]
-    res = ensure_callable(execute_op)(None, "Erf", ensure_callable(np.array)([0.0]))
-    assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [0.0]
+    assert execute_op(None, "DummyGlobalOp", 1) == 2
+    res = execute_op(None, "Add", np.array([1]), np.array([2]))
+    assert ensure_ndarray(res).tolist() == [3]
+    res = execute_op(None, "Erf", np.array([0.0]))
+    assert ensure_ndarray(res).tolist() == [0.0]
     with pytest.raises(Exception, match=r".*"):
-        ensure_callable(execute_op)(None, "NonExistentCrazyOpXYZ123")
+        execute_op(None, "NonExistentCrazyOpXYZ123")
 
 
 def test_repeat() -> None:
@@ -55,7 +65,7 @@ def test_repeat() -> None:
     """
     arr = np.array([1, 2])
     res = repeat(np, arr, 2, axis=0)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [1, 1, 2, 2]
+    assert res.tolist() == [1, 1, 2, 2]
 
 
 def test_searchsorted() -> None:
@@ -77,10 +87,10 @@ def test_split() -> None:
     """
     arr = np.array([1, 2, 3, 4])
     res = split(np, arr, 2, axis=0)
-    assert ensure_callable(len)(res) == 2
-    assert ensure_eager_tensor(ensure_eager_tensor(res)[0].tolist)() == [1, 2]
+    assert len(res) == 2
+    assert res[0].tolist() == [1, 2]
     res2 = split(np, arr, 2, axis=0)
-    assert ensure_callable(len)(res2) == 2
+    assert len(res2) == 2
 
 
 def test_squeeze() -> None:
@@ -91,9 +101,9 @@ def test_squeeze() -> None:
     """
     arr = np.array([[1], [2]])
     res = squeeze(np, arr, axis=1)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [1, 2]
+    assert res.tolist() == [1, 2]
     res2 = squeeze(np, arr, axis=1)
-    assert ensure_eager_tensor(ensure_eager_tensor(res2).tolist)() == [1, 2]
+    assert res2.tolist() == [1, 2]
 
 
 def test_stack() -> None:
@@ -105,9 +115,9 @@ def test_stack() -> None:
     arr1 = np.array([1, 2])
     arr2 = np.array([3, 4])
     res = stack(np, [arr1, arr2], axis=1)
-    assert ensure_eager_tensor(res).shape == (2, 2)
+    assert res.shape == (2, 2)
     res2 = stack(np, [arr1, arr2], axis=1)
-    assert ensure_eager_tensor(res2).shape == (2, 2)
+    assert res2.shape == (2, 2)
 
 
 def test_unstack() -> None:
@@ -118,10 +128,10 @@ def test_unstack() -> None:
     """
     arr = np.array([[1, 2], [3, 4]])
     res = unstack(np, arr, axis=1)
-    assert ensure_callable(len)(res) == 2
-    assert ensure_eager_tensor(ensure_eager_tensor(res)[0].tolist)() == [1, 3]
+    assert len(res) == 2
+    assert res[0].tolist() == [1, 3]
     res2 = unstack(np, [1, 2, 3], axis=0)
-    assert ensure_eager_tensor(res2) == (1, 2, 3)
+    assert tuple(int(x) for x in res2) == (1, 2, 3)
 
 
 def test_equal() -> None:
@@ -131,23 +141,26 @@ def test_equal() -> None:
         None
     """
     res = equal(np, np.array([1]), np.array([1]))
-    assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [True]
+    assert ensure_ndarray(res).tolist() == [True]
 
-    class IncompatibleType:
+    _EqT = typing.TypeVar("_EqT")
+
+    class IncompatibleType(MockTestStub):
         """Test class IncompatibleType."""
 
-        def __eq__(self, other: EagerValue) -> bool:
+        def __eq__(self, other: _EqT) -> bool:
             """Test function __eq__.
 
             Args:
-                other: Test parameter `other`.
+                other (_EqT): Test parameter `other`.
 
             Returns:
                 bool: Computed output value from `__eq__`.
             """
+            del other
             return True
 
-    res = equal(np, ensure_eager_tensor(IncompatibleType()), ensure_eager_tensor(IncompatibleType()))
+    res = equal(np, IncompatibleType(), IncompatibleType())
     assert res
 
 
@@ -163,4 +176,4 @@ def test_execute_op_attribute_error_raise() -> None:
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
     with pytest.raises(UnimplementedMathError):
-        ensure_callable(execute_op)(None, "OpThatThrowsAttr12345", 5)
+        execute_op(None, "OpThatThrowsAttr12345", 5)

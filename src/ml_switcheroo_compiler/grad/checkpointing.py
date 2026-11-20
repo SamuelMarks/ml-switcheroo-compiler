@@ -7,43 +7,27 @@ and wrappers for checkpointing and recomputing graph activations during backprop
 from __future__ import annotations
 
 import os
-import typing
 import uuid
 
 import yaml
 from ml_switcheroo_ir import AttributeValue as IRAttributeValue
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import (
-    VariadicCallableProtocol,
-    invoke_callable,
-)
+from ml_switcheroo_compiler.core.shape import OpValue, VariadicCallableProtocol, is_variadic_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_mixins import TracedDataProtocol
-from ml_switcheroo_compiler.grad.utils import GradValue
-from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode
+from ml_switcheroo_compiler.grad.utils import DifferentiableFn, PrimalTree, as_primal_tree
+from ml_switcheroo_compiler.ir.callback_registry import register_custom_rule_handle
+from ml_switcheroo_compiler.ir.core import IRAttrValue
 from ml_switcheroo_compiler.ops import control_flow_utils
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-AttributeValue = AttrValue
-
-
-def _is_ckpt_attr_dict(
-    val: dict[str, IRAttributeValue],
-) -> typing.TypeGuard[dict[str, LogicalGraph | GradValue | IRAttributeValue]]:
-    """Type guard narrowing checkpoint node attributes dict to accept `LogicalGraph` and `GradValue`.
-
-    Args:
-        val (dict[str, IRAttributeValue]): Attributes dict.
-
-    Returns:
-        bool: True if val is a dict.
-    """
-    return isinstance(val, dict)
+AttributeValue = IRAttrValue
 
 
 class RematerializationPolicyModel(BaseModel):
@@ -61,7 +45,9 @@ class RematerializationRulesConfig(BaseModel):
     """Container schema for all rematerialization policies."""
 
     default_policy: str = Field(default="recompute_all", description="Default policy name.")
-    policies: dict[str, RematerializationPolicyModel] = Field(default_factory=dict, description="Named policies mapping.")
+    policies: dict[str, RematerializationPolicyModel] = Field(
+        default_factory=dict, description="Named policies mapping."
+    )
     target_ops: list[str] = Field(default_factory=list, description="Default target operations.")
     high_cost_ops: list[str] = Field(default_factory=list, description="Default high cost operations.")
     model_config = ConfigDict(extra="allow")
@@ -74,7 +60,7 @@ def load_rematerialization_rules(path: str | None = None) -> RematerializationRu
     """Load and validate declarative rematerialization rules from YAML.
 
     Args:
-        path (Optional[str]): Optional custom file path.
+        path (str | None): Optional custom file path.
 
     Returns:
         RematerializationRulesConfig: Validated declarative configuration.
@@ -85,7 +71,9 @@ def load_rematerialization_rules(path: str | None = None) -> RematerializationRu
 
     target_path = path or os.path.join(os.path.dirname(__file__), "rematerialization_rules.yaml")
     if not os.path.exists(target_path):
-        target_path = os.path.join(os.path.dirname(__file__), "..", "transforms", "passes", "rematerialization_rules.yaml")
+        target_path = os.path.join(
+            os.path.dirname(__file__), "..", "transforms", "passes", "rematerialization_rules.yaml"
+        )
 
     raw_data: dict[str, AttributeValue] = {}
     if os.path.exists(target_path):
@@ -104,7 +92,7 @@ def get_rematerialization_policy(
     """Retrieve and validate a rematerialization policy.
 
     Args:
-        policy (Optional[Union[str, RematerializationPolicyModel]]): Policy name or instance.
+        policy (str | RematerializationPolicyModel | None): Policy name or instance.
 
     Returns:
         RematerializationPolicyModel: The resolved policy model.
@@ -132,13 +120,13 @@ def get_rematerialization_policy(
 
 
 def checkpoint(
-    fun: GradValue,
+    fun: DifferentiableFn,
     policy: str | RematerializationPolicyModel | None = None,
 ) -> VariadicCallableProtocol:
     """Apply gradient checkpointing / rematerialization to a function.
 
     Args:
-        fun (GradValue): The function to checkpoint.
+        fun (DifferentiableFn): The function to checkpoint.
         policy (str | RematerializationPolicyModel | None): Checkpointing policy.
 
     Returns:
@@ -147,20 +135,22 @@ def checkpoint(
     active_policy = get_rematerialization_policy(policy)
 
     def wrapper(
-        *args: GradValue,
-        **kwargs: GradValue,
-    ) -> GradValue:
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> PrimalTree:
         """Execute checkpointed function wrapper.
 
         Args:
-            *args (GradValue): Positional arguments.
-            **kwargs (GradValue): Keyword arguments.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
-            GradValue: Computed result or proxy tensor.
+            PrimalTree: Computed result or proxy tensor.
         """
         if config.eager_mode or not global_tracing_state.is_tracing:
-            return invoke_callable(fun, *args, **kwargs)
+            _callable_fn_1: OpValue = fun
+            assert is_variadic_callable(_callable_fn_1)
+            return as_primal_tree(_callable_fn_1(*args, **kwargs))
 
         tensor_args = [a for a in args if isinstance(a, Tensor)]
         fwd_block = control_flow_utils._trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
@@ -169,7 +159,9 @@ def checkpoint(
         out_node = fwd_block.nodes[out_node_id]
         real_out_node = fwd_block.nodes[out_node.inputs[0]]
 
-        shape: tuple[int | str, ...] = tuple(d if isinstance(d, int) else str(d) for d in (real_out_node.shape_metadata or ()))
+        shape: tuple[int | str, ...] = tuple(
+            d if isinstance(d, int) else str(d) for d in (real_out_node.shape_metadata or ())
+        )
         dtype = "float32"
         if "dtype" in real_out_node.attributes:
             dtype = str(real_out_node.attributes["dtype"])
@@ -184,6 +176,8 @@ def checkpoint(
         ckpt_attrs: dict[str, IRAttributeValue] = {
             "evicted": active_policy.evict_activations,
             "policy": active_policy.model_dump(),
+            "subgraph": fwd_block,
+            "fun": register_custom_rule_handle(fun),
         }
         node = LogicalNode(
             id=out_id,
@@ -192,9 +186,6 @@ def checkpoint(
             attributes=ckpt_attrs,
             shape_metadata=shape,
         )
-        assert _is_ckpt_attr_dict(node.attributes)
-        node.attributes["subgraph"] = fwd_block
-        node.attributes["fun"] = fun
         global_tracing_state.add_node(node)
 
         proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)
@@ -204,13 +195,13 @@ def checkpoint(
 
 
 def remat(
-    fun: GradValue,
+    fun: DifferentiableFn,
     policy: str | RematerializationPolicyModel | None = None,
 ) -> VariadicCallableProtocol:
     """Gradient checkpointing / rematerialization alias.
 
     Args:
-        fun (GradValue): The function to rematerialize.
+        fun (DifferentiableFn): The function to rematerialize.
         policy (str | RematerializationPolicyModel | None): Checkpointing policy.
 
     Returns:
@@ -220,13 +211,13 @@ def remat(
 
 
 def recompute_grad(
-    fun: GradValue,
+    fun: DifferentiableFn,
     policy: str | RematerializationPolicyModel | None = None,
 ) -> VariadicCallableProtocol:
     """Gradient checkpointing / rematerialization alias.
 
     Args:
-        fun (GradValue): The function to recompute gradients for.
+        fun (DifferentiableFn): The function to recompute gradients for.
         policy (str | RematerializationPolicyModel | None): Checkpointing policy.
 
     Returns:
@@ -242,7 +233,7 @@ def load_cost_models(path: str | None = None) -> dict[str, AttributeValue]:
     """Load operator compute costs and memory footprints from cost_models.yaml.
 
     Args:
-        path (Optional[str]): Custom path to cost_models.yaml.
+        path (str | None): Custom path to cost_models.yaml.
 
     Returns:
         dict[str, AttributeValue]: Parsed cost models dictionary.
@@ -274,7 +265,7 @@ def _evaluate_node_costs(
 
     Args:
         node (LogicalNode): The IR node.
-        memory_sizes (dict[str, AttributeValue]): Mapping from dtype string to byte size.
+        memory_sizes (dict[str, AttributeValue] | None): Mapping from dtype string to byte size.
         heavy_ops (set[str]): Set of compute-heavy operator substrings.
         light_ops (set[str]): Set of compute-light operator substrings.
         heavy_cost (int): Base cost of heavy operators.
@@ -364,19 +355,25 @@ def knapsack_memory_scheduler(
     Args:
         graph (LogicalGraph): Computation graph to analyze and transform.
         memory_budget_bytes (int): Maximum peak activation memory in bytes.
-        cost_model (Optional[dict[str, AttributeValue]]): Preloaded cost model dictionary.
+        cost_model (dict[str, AttributeValue] | None): Preloaded cost model dictionary.
 
     Returns:
         list[str]: Node IDs designated for checkpointing/rematerialization.
     """
     cm = cost_model or load_cost_models()
     raw_mem = cm.get("memory_sizes", {})
-    memory_sizes: dict[str, AttributeValue] = {str(k): v for k, v in raw_mem.items()} if isinstance(raw_mem, dict) else {}
+    memory_sizes: dict[str, AttributeValue] = (
+        {str(k): v for k, v in raw_mem.items()} if isinstance(raw_mem, dict) else {}
+    )
     compute_costs = cm.get("compute_costs", {})
 
-    raw_heavy_ops = compute_costs.get("heavy_ops", ["Conv", "MatMul"]) if isinstance(compute_costs, dict) else ["Conv", "MatMul"]
+    raw_heavy_ops = (
+        compute_costs.get("heavy_ops", ["Conv", "MatMul"]) if isinstance(compute_costs, dict) else ["Conv", "MatMul"]
+    )
     heavy_ops = {str(x) for x in raw_heavy_ops} if isinstance(raw_heavy_ops, (list, tuple, set)) else {"Conv", "MatMul"}
-    raw_light_ops = compute_costs.get("light_ops", ["Add", "Sub"]) if isinstance(compute_costs, dict) else ["Add", "Sub"]
+    raw_light_ops = (
+        compute_costs.get("light_ops", ["Add", "Sub"]) if isinstance(compute_costs, dict) else ["Add", "Sub"]
+    )
     light_ops = {str(x) for x in raw_light_ops} if isinstance(raw_light_ops, (list, tuple, set)) else {"Add", "Sub"}
     raw_hc = compute_costs.get("heavy_cost", 1000) if isinstance(compute_costs, dict) else 1000
     heavy_cost = int(raw_hc) if isinstance(raw_hc, (int, float, str)) else 1000
@@ -400,7 +397,9 @@ def knapsack_memory_scheduler(
         if node.op_type in ("Input", "Constant", "Checkpoint"):
             continue
 
-        footprint, flop_cost = _evaluate_node_costs(node, memory_sizes, heavy_ops, light_ops, heavy_cost, light_cost, default_cost)
+        footprint, flop_cost = _evaluate_node_costs(
+            node, memory_sizes, heavy_ops, light_ops, heavy_cost, light_cost, default_cost
+        )
         total_activation_bytes += footprint
 
         if node.op_type in high_cost_ops or (target_ops and node.op_type not in target_ops):

@@ -8,73 +8,49 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, is_traced_data
+from ml_switcheroo_compiler.core.shape import OpValue, Scalar, is_traced_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.tracing import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-RandomArg = typing.Union[Tensor, str, float, int, bool, Sequence[int], tuple[int, ...], dtypes.DType, "None"]
+RandomArg = typing.Union[Tensor, Scalar, str, Sequence[int], dtypes.DType, "None"]
 
 
+@typing.runtime_checkable
 class _DataWrapperProtocol(typing.Protocol):
-    """Protocol for tensor wrappers exposing a `.data` attribute."""
+    """Protocol for tensor wrappers exposing a ``.data`` attribute."""
 
-    data: TensorOrScalar
+    @property
+    def data(self) -> OpValue:
+        """Return underlying tensor payload.
 
-
-def _is_data_wrapper(val: TensorOrScalar) -> typing.TypeGuard[_DataWrapperProtocol]:
-    """Check whether `val` exposes a `.data` attribute.
-
-    Args:
-        val (TensorOrScalar): Candidate input operand.
-
-    Returns:
-        bool: True if `val` has `.data`.
-    """
-    return has_backend_member(val, "data")
+        Returns:
+            OpValue: Underlying backend array or proxy.
+        """
+        ...
 
 
-def _is_random_tensor_like(val: TensorOrScalar) -> typing.TypeGuard[TensorLike]:
-    """Type guard narrowing `val` to `TensorLike`.
+def _ensure_tensor_obj(val: OpValue | Tensor) -> Tensor:
+    """Return ``val`` directly if already a ``Tensor``, otherwise wrap it in a ``Tensor``.
 
     Args:
-        val (TensorOrScalar): Evaluated backend value.
+        val (OpValue | Tensor): Tensor, backend array, or scalar operand.
 
     Returns:
-        bool: True if non-None.
+        Tensor: Canonical ``Tensor`` wrapper instance.
     """
-    return val is not None
+    if isinstance(val, Tensor):
+        return val
+    from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
 
-
-def _is_random_tensor(val: TensorOrScalar | Tensor) -> typing.TypeGuard[Tensor]:
-    """Type guard narrowing `val` to `Tensor`.
-
-    Args:
-        val (TensorOrScalar | Tensor): Candidate value.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
-def _ensure_tensor_obj(val: TensorOrScalar | Tensor) -> Tensor:
-    """Wrap `val` in a `Tensor` if it is not already a `Tensor`.
-
-    Args:
-        val (TensorOrScalar | Tensor): Tensor or backend array.
-
-    Returns:
-        Tensor: Wrapped or narrowed `Tensor` instance.
-    """
-    assert _is_random_tensor(val)
-    return val
+    shape_tuple: tuple[int, ...] = (
+        tuple(int(d) for d in val.shape if isinstance(d, int)) if isinstance(val, ShapeProtocol) else ()
+    )
+    return Tensor(val, TensorConfig(shape_tuple, "float32", "cpu"))
 
 
 def _emit_random_node(
@@ -108,7 +84,10 @@ def _emit_random_node(
         return Tensor(res, TensorConfig(shape_tuple, dtype, "cpu"))
 
     out_id = str(uuid.uuid4())
-    in_ids = [str(inp.data.id) if _is_data_wrapper(inp) and is_traced_data(inp.data) else str(inp) for inp in inputs]
+    in_ids = [
+        str(inp.data.id) if isinstance(inp, _DataWrapperProtocol) and is_traced_data(inp.data) else str(inp)
+        for inp in inputs
+    ]
     attrs = dict(attributes) if attributes is not None else {}
 
     node = LogicalNode(
@@ -122,7 +101,7 @@ def _emit_random_node(
     return Tensor(ProxyTensor(id=out_id, shape=shape_tuple, dtype=dtype_str), TensorConfig(shape_tuple, dtype, "cpu"))
 
 
-def _dispatch_random_eager(func_name: str, op_name: str, *args: RandomArg, **kwargs: RandomArg) -> TensorLike:
+def _dispatch_random_eager(func_name: str, op_name: str, *args: RandomArg, **kwargs: RandomArg) -> OpValue:
     """Dispatch random operation in eager mode.
 
     Args:
@@ -132,12 +111,10 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: RandomArg, **kwa
         **kwargs (RandomArg): Keyword arguments.
 
     Returns:
-        TensorLike: Evaluated backend array.
+        OpValue: Evaluated backend array or scalar.
     """
     del func_name
-    out = get_active_backend().execute_op(op_name, *args, **kwargs)
-    assert _is_random_tensor_like(out)
-    return out
+    return get_active_backend().execute_op(op_name, *args, **kwargs)
 
 
 def _dispatch_random(func_name: str, *args: RandomArg, **kwargs: RandomArg) -> Tensor:
@@ -184,7 +161,7 @@ def rng_uniform(
     return _dispatch_random("rng_uniform", a, b, shape=shape, dtype=dtype)
 
 
-def _get_numpy_rng(*args: int | None, **kwargs: int | None) -> TensorLike:
+def _get_numpy_rng(*args: int | None, **kwargs: int | None) -> OpValue:
     """Obtain a random number generator instance via the active backend.
 
     Args:
@@ -192,6 +169,6 @@ def _get_numpy_rng(*args: int | None, **kwargs: int | None) -> TensorLike:
         **kwargs (int | None): Keyword seed arguments.
 
     Returns:
-        TensorLike: Active backend RNG instance.
+        OpValue: Active backend RNG instance.
     """
     return get_active_backend().get_numpy_rng(*args, **kwargs)

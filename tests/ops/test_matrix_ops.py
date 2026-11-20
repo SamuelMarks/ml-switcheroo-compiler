@@ -7,12 +7,12 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -35,11 +35,17 @@ def test_matmul_op() -> None:
     a = Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     b = Tensor(np.array([[5, 6], [7, 8]], dtype=np.float32), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     res = dispatch_op("Dot", a, b)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([[19, 22], [43, 50]], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([[19, 22], [43, 50]], dtype=np.float32),
+    )
 
 
 def test_transpose_op() -> None:
     """Test function test_transpose_op."""
     a = Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     res = dispatch_op("Transpose", a)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([[1, 3], [2, 4]], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([[1, 3], [2, 4]], dtype=np.float32),
+    )

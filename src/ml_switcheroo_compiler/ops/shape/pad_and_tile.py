@@ -1,1038 +1,191 @@
-"""Shape operations for Tensor objects."""
+"""Padding, tiling, sorting, and miscellaneous shape/query operations facade."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
-# pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import (
-    ensure_bool,
-    ensure_callable,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_int,
-    ensure_opt_int,
-    ensure_shape,
-    get_active_backend,
+from ml_switcheroo_compiler.backends.registry import get_active_backend as get_active_backend
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    DynamicShape as DynamicShape,
 )
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes, extract_shape
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.shape_system import SymNode
-from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
-from ml_switcheroo_compiler.ops.shape.reshape import Resize
-from ml_switcheroo_compiler.ops.shape.utils import (
-    _emit_shape_node,
-    _extract_shape_dtype,
-    _extract_shape_or_seq,
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    Pad as Pad,
 )
-
-
-def tile(input: Tensor, reps: Sequence[int]) -> TensorOrScalar:
-    """Construct a new tensor by repeating the input tensor the specified number of times.
-
-    Args:
-        input (Tensor): Input `input` argument (input).
-        reps (Sequence): Input `reps` argument (reps).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Tile", (input.data if type(input).__name__ == "Tensor" else input), reps)
-        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
-    inputs = [input]
-    in_shape = list(inputs[0].shape) if inputs[0].shape else [1]
-    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(ensure_int(reps))]
-    while len(in_shape) < len(rep_list):
-        in_shape.insert(0, 1)
-    while len(rep_list) < len(in_shape):
-        rep_list.insert(0, 1)
-    out_shape = tuple(int(d) * int(r) for d, r in zip(in_shape, rep_list))
-    return _emit_shape_node(
-        "Tile",
-        inputs,
-        {"reps": reps},
-        out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
-
-
-def repeat(
-    input: Tensor,
-    repeats: int | Sequence[int],
-    axis: int | None = None,
-) -> TensorOrScalar:
-    """Repeat elements of the input tensor along a specified dimension.
-
-    Args:
-        input (Tensor): Input `input` argument (input).
-        repeats (int | Sequence[int]): Input `repeats` argument (repeats).
-        axis (int | None): Input `axis` argument (axis).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Repeat", (input.data if type(input).__name__ == "Tensor" else input), repeats, axis=axis)
-        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
-    inputs = [input]
-    base_shape = inputs[0].shape
-    if axis is None:
-        num_elems = 1
-        for dim in base_shape:
-            num_elems *= int(dim)
-        if isinstance(repeats, int):
-            out_shape: tuple[int, ...] = (num_elems * repeats,)
-        elif isinstance(repeats, (list, tuple)):
-            out_shape = (sum(int(r) for r in repeats),)
-        else:
-            out_shape = (num_elems,)
-    else:
-        rank = len(base_shape)
-        norm_axis = axis if axis >= 0 else axis + rank
-        if isinstance(repeats, int):
-            out_shape = tuple(int(d) * repeats if i == norm_axis else int(d) for i, d in enumerate(base_shape))
-        elif isinstance(repeats, (list, tuple)):
-            out_shape = tuple(sum(int(r) for r in repeats) if i == norm_axis else int(d) for i, d in enumerate(base_shape))
-        else:
-            out_shape = base_shape
-    return _emit_shape_node(
-        "Repeat",
-        inputs,
-        {"repeats": repeats, "axis": axis},
-        out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
-
-
-def triu(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
-    """Return the upper triangular part of a matrix or batch of matrices.
-
-    Args:
-        input (Tensor): Input `input` argument (input).
-        diagonal (int): Input `diagonal` argument (diagonal).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Triu", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
-        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
-    inputs = [input]
-    out_shape = inputs[0].shape
-    return _emit_shape_node(
-        "Triu",
-        inputs,
-        {},
-        out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
-
-
-def tril(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
-    """Return the lower triangular part of a matrix or batch of matrices.
-
-    Args:
-        input (Tensor): Input `input` argument (input).
-        diagonal (int): Input `diagonal` argument (diagonal).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Tril", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
-        return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), input.dtype, input.device))
-    inputs = [input]
-    out_shape = inputs[0].shape
-    return _emit_shape_node(
-        "Tril",
-        inputs,
-        {},
-        out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
-
-
-def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, ...]:
-    """Compute the shape for a meshgrid.
-
-    Args:
-        inputs (list[Tensor]): Input `inputs` argument (inputs).
-        indexing (str): Input `indexing` argument (indexing).
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    if not inputs:
-        return ()
-    out_shape = tuple(t.shape[0] if t.shape else 1 for t in inputs)
-    if indexing == "xy" and len(inputs) >= 2:
-        return (out_shape[1], out_shape[0]) + out_shape[2:]
-    return out_shape
-
-
-def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
-    """Create coordinate grids from coordinate vectors.
-
-    Args:
-        indexing (str): Indexing.
-
-    Args:
-        *tensors (Tensor): Positional args.
-
-    Returns:
-        Sequence: Computed `Sequence` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        datas = backend.execute_op("Meshgrid", *[(t.data if type(t).__name__ == "Tensor" else t) for t in tensors], indexing=indexing)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), tensors[0].dtype, tensors[0].device)) for d in ensure_eager_list(datas))
-    inputs = list(tensors)
-    out_shape = _compute_meshgrid_shape(inputs, indexing)
-    dtype = inputs[0].dtype if inputs else DType.Float32
-    return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
-
-
-def _normalize_pad_width(pad_width: TensorOrScalar, ndim: int) -> tuple[TensorOrScalar, ...]:
-    """Normalize pad width representation.
-
-    Args:
-        pad_width (TensorOrScalar): Pad width descriptor.
-        ndim (int): Number of dimensions.
-
-    Returns:
-        tuple: Normalized pad width.
-    """
-    if isinstance(pad_width, int):
-        return ((pad_width, pad_width),) * ndim
-    if isinstance(pad_width, tuple) and len(pad_width) == 2 and isinstance(pad_width[0], int):
-        return (pad_width,) * ndim
-    return tuple(pad_width) if isinstance(pad_width, (list, tuple)) else ()
-
-
-def _compute_pad_dim(dim: int, pw: TensorOrScalar) -> int:
-    """Compute the compute pad dim tensor operation.
-
-    Args:
-        dim (int): Input `dim` argument (dim).
-        pw (TensorOrScalar): Input `pw` argument (pw).
-
-    Returns:
-        int: Computed `int` output.
-    """
-    if isinstance(pw, int):
-        return dim + pw * 2
-    if isinstance(pw, tuple) and len(pw) == 2:
-        return dim + int(ensure_int(pw[0])) + int(ensure_int(pw[1]))
-    return dim
-
-
-@register_op("Pad")
-class Pad(OpDef):
-    """Pad op."""
-
-    op_name = "Pad"
-
-    def infer_shape(self, array: TensorOrScalar, pad_width: TensorOrScalar, mode: str = "constant", **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            array (EagerTensorProtocol): Input `array` argument (array).
-            pad_width (EagerTensorProtocol): Input `pad_width` argument (pad width).
-            mode (str): Input `mode` argument (mode).
-            **kwargs (TensorOrScalar): Keyword args.
-
-        Returns:
-            tuple: Computed `tuple` output.
-        """
-        in_shape = extract_shape(array)
-        if not in_shape:
-            return ()
-        normalized_pw = _normalize_pad_width(pad_width, len(in_shape))
-        out_shape = []
-        for i, dim in enumerate(in_shape):
-            if i < len(normalized_pw):
-                out_shape.append(_compute_pad_dim(dim, normalized_pw[i]))
-            else:
-                out_shape.append(dim)
-        return tuple(out_shape)
-
-
-@dispatch_eager("Pad")
-def pad(
-    array: TensorOrScalar,
-    pad_width: TensorOrScalar,
-    mode: str = "constant",
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
-    """Pad an array with specified widths and values.
-
-    Args:
-        array (TensorOrScalar): Input `array` argument (array).
-        pad_width (TensorOrScalar): Input `pad_width` argument (pad width).
-        mode (str): Input `mode` argument (mode).
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    op = Pad()
-    out_shape = op.infer_shape(array, pad_width, mode, **kwargs)
-    attributes = {"pad_width": pad_width, "mode": mode}
-    attributes.update(kwargs)
-    return _emit_shape_node("Pad", [array], attributes, out_shape, _extract_shape_dtype(array, None))
-
-
-@dispatch_eager("TopK")
-def top_k(operand: Tensor, k: int) -> TensorOrScalar:
-    """Return the top k values and their indices along the last dimension.
-
-    Args:
-        operand (Tensor): Input `operand` argument (operand).
-        k (int): Input `k` argument (k).
-
-    Returns:
-        tuple: Computed `tuple` output.
-    """
-    out_shape_list = list(operand.shape) if operand.shape else []
-    if out_shape_list:
-        out_shape_list[-1] = k
-    out_shape = tuple(out_shape_list)
-    inputs = [operand]
-    # We cheat a bit by returning two tensors pointing to the same node for now,
-    # as handling multi-output nodes properly requires more IR scaffolding
-    val_node = _emit_shape_node("TopK", inputs, {"k": k, "return_indices": False}, out_shape, operand.dtype)
-    idx_node = _emit_shape_node("TopK", inputs, {"k": k, "return_indices": True}, out_shape, DType.Int32)
-    return val_node, idx_node
-
-
-def argsort(
-    operand: Tensor,
-    axis: int = -1,
-    is_stable: bool = True,
-) -> TensorOrScalar:
-    """Return the indices that would sort an array along a given dimension.
-
-    Args:
-        operand (Tensor): Input `operand` argument (operand).
-        axis (int): Input `axis` argument (axis).
-        is_stable (bool): Input `is_stable` argument (is stable).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        kind = "stable" if is_stable else "quicksort"
-        data = backend.execute_op("ArgSort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=axis, kind=kind)
-        return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))
-    inputs = [operand]
-    attributes = {"dimension": axis, "is_stable": is_stable}
-    return _emit_shape_node("ArgSort", inputs, attributes, operand.shape, DType.Int32)
-
-
-def sort(
-    operand: Tensor,
-    axis: int = -1,
-    is_stable: bool = True,
-) -> TensorOrScalar:
-    """Sorts the elements of an array along a given dimension.
-
-    Args:
-        operand (Tensor): Input `operand` argument (operand).
-        axis (int): Input `axis` argument (axis).
-        is_stable (bool): Input `is_stable` argument (is stable).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        kind = "stable" if is_stable else "quicksort"
-        data = backend.execute_op("Sort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=axis, kind=kind)
-        return Tensor(
-            backend.array(data),
-            TensorConfig(extract_shape(backend.array(data)), operand.dtype, operand.device),
-        )
-    inputs = [operand]
-    attributes = {"dimension": axis, "is_stable": is_stable}
-    return _emit_shape_node("Sort", inputs, attributes, operand.shape, operand.dtype)
-
-
-@dispatch_eager("Resize")
-def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> TensorOrScalar:
-    """Resizes an image to the given target shape using interpolation.
-
-    Args:
-        image (Tensor): Input `image` argument (image).
-        shape (tuple): Input `shape` argument (shape).
-        method (str): Input `method` argument (method).
-
-    Returns:
-        Tensor: Computed `Tensor` output.
-    """
-    op = Resize()
-    out_shape = op.infer_shape(ensure_eager_tensor(image), ensure_eager_tensor(shape), method)
-    return _emit_shape_node(
-        "Resize",
-        [image],
-        {"shape": shape, "method": method},
-        out_shape,
-        image.dtype,
-    )
-
-
-@register_op("DynamicShape")
-class DynamicShape(OpDef):
-    """DynamicShape op."""
-
-    def infer_shape(self, x: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            x (EagerTensorProtocol): Input `x` argument (x).
-            **kwargs (TensorOrScalar): Keyword args.
-
-        Returns:
-            tuple: Computed `tuple` output.
-        """
-        return (len(extract_shape(x)),)
-
-
-@register_op("Rank")
-class Rank(OpDef):
-    """Rank op."""
-
-    op_name = "Rank"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        args[0] if len(args) > 0 else None
-        return ()
-
-
-@register_op("Size")
-class Size(OpDef):
-    """Size op."""
-
-    op_name = "Size"
-
-    def infer_shape(self, a: TensorOrScalar, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            a (EagerTensorProtocol): Input `a` argument (a).
-            axis (TensorOrScalar): Input `axis` argument (axis).
-            **kwargs (TensorOrScalar): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        return ()
-
-
-def pad_constant(array: TensorOrScalar, pad_width: TensorOrScalar, value: float = 0.0, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Pad an array with a constant value.
-
-    Args:
-        array: The array to pad.
-        pad_width: The padding widths.
-        value: The constant value to pad with.
-        kwargs: Additional arguments.
-
-    Returns:
-        The padded array.
-    """
-    return pad(array, pad_width, mode="constant", constant_values=value, **kwargs)
-
-
-def pad_reflect(array: TensorOrScalar, pad_width: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Pad an array with reflection.
-
-    Args:
-        array: The array to pad.
-        pad_width: The padding widths.
-        kwargs: Additional arguments.
-
-    Returns:
-        The padded array.
-    """
-    return pad(array, pad_width, mode="reflect", **kwargs)
-
-
-def pad_replicate(array: TensorOrScalar, pad_width: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Pad an array with edge replication.
-
-    Args:
-        array: The array to pad.
-        pad_width: The padding widths.
-        kwargs: Additional arguments.
-
-    Returns:
-        The padded array.
-    """
-    return pad(array, pad_width, mode="edge", **kwargs)
-
-
-def pad_circular(array: TensorOrScalar, pad_width: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Pad an array with circular wrapping.
-
-    Args:
-        array: The array to pad.
-        pad_width: The padding widths.
-        kwargs: Additional arguments.
-
-    Returns:
-        The padded array.
-    """
-    return pad(array, pad_width, mode="wrap", **kwargs)
-
-
-@register_op("Flatnonzero")
-class Flatnonzero(OpDef):
-    """Return indices that are non-zero in the flattened version of a."""
-
-    op_name = "Flatnonzero"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple: 1D index shape with symbolic nonzero count.
-        """
-        from ml_switcheroo_compiler.ir.shape_system import SymVar
-
-        return (SymVar("nonzero_count"),)
-
-
-@register_op("Lexsort")
-class Lexsort(OpDef):
-    """Perform an indirect stable sort using a sequence of keys."""
-
-    op_name = "Lexsort"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        keys = args[0] if len(args) > 0 else kwargs.get("keys")
-        if isinstance(keys, (list, tuple)):
-            return _extract_shape_or_seq(keys[0]) if keys else ()
-        in_shape = _extract_shape_or_seq(keys)
-        if len(in_shape) > 0:
-            return in_shape[1:] if len(in_shape) > 1 else ()
-        return ()
-
-
-@register_op("Nonzero")
-class Nonzero(OpDef):
-    """Return the indices of the elements that are non-zero."""
-
-    op_name = "Nonzero"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple: Tuple of 1D coordinate arrays with symbolic nonzero count.
-        """
-        from ml_switcheroo_compiler.ir.shape_system import SymVar
-
-        a = args[0] if len(args) > 0 else kwargs.get("a")
-        in_shape = _extract_shape_or_seq(a)
-        return tuple((SymVar("nonzero_count"),) for _ in in_shape)
-
-
-def _infer_shape_percentile_quantile(a: TensorOrScalar, q: TensorOrScalar, axis: TensorOrScalar = None, keepdims: bool = False) -> tuple[int, ...]:
-    """Infer shape for percentile and quantile ops.
-
-    Args:
-        a (TensorOrScalar): Input `a` argument (a).
-        q (TensorOrScalar): Input `q` argument (q).
-        axis (TensorOrScalar): Input `axis` argument (axis).
-        keepdims (bool): Input `keepdims` argument (keepdims).
-
-    Returns:
-        tuple: Computed `tuple` output.
-    """
-    in_shape = extract_shape(a)
-    q_shape = extract_shape(q)
-    if isinstance(q, (int, float)):
-        q_shape = ()
-    elif isinstance(q, (list, tuple)):
-        q_shape = (len(q),)
-    if axis is None:
-        if keepdims:
-            _typed_ret_3: tuple[int, ...] = q_shape + (1,) * len(in_shape)
-            return _typed_ret_3
-        _typed_ret_2: tuple[int, ...] = q_shape
-        return _typed_ret_2
-    axis_tup = (axis,) if isinstance(axis, int) else ensure_shape(axis)
-    out_shape = list(in_shape)
-    for ax in sorted(axis_tup, reverse=True):
-        if keepdims:
-            out_shape[ax] = 1
-        else:
-            out_shape.pop(ax)
-    _typed_ret_1: tuple[int, ...] = q_shape + tuple(out_shape)
-    return _typed_ret_1
-
-
-@register_op("Percentile")
-class Percentile(OpDef):
-    """Compute the q-th percentile of the data along the specified axis."""
-
-    op_name = "Percentile"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        a = args[0] if len(args) > 0 else None
-        q = args[1] if len(args) > 1 else None
-        axis = kwargs.get("axis", None)
-        keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, ensure_bool(keepdims))
-
-
-@register_op("Quantile")
-class Quantile(OpDef):
-    """Compute the q-th quantile of the data along the specified axis."""
-
-    op_name = "Quantile"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        a = args[0] if len(args) > 0 else None
-        q = args[1] if len(args) > 1 else None
-        axis = kwargs.get("axis", None)
-        keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, ensure_bool(keepdims))
-
-
-@register_op("RavelMultiIndex")
-class RavelMultiIndex(OpDef):
-    """Convert a tuple of index arrays into an array of flat indices."""
-
-    op_name = "RavelMultiIndex"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        multi_index = args[0] if len(args) > 0 else kwargs.get("multi_index")
-        if isinstance(multi_index, (list, tuple)) and multi_index:
-            first = multi_index[0]
-            if isinstance(first, (list, tuple)) and first:
-                return _extract_shape_or_seq(first[0])
-            return _extract_shape_or_seq(first)
-        return extract_shape(multi_index)
-
-
-def _repeat_infer_no_axis(
-    in_shape: tuple[int | None, ...],
-    repeats: int | list[int] | tuple[int, ...] | None,
-) -> tuple[int | SymNode | None, ...]:
-    """Infer shape for repeat without an axis.
-
-    Args:
-        in_shape (tuple): The input shape.
-        repeats (int | list[int] | tuple[int, ...] | None): The repetitions.
-
-    Returns:
-        tuple: The inferred shape.
-    """
-    from ml_switcheroo_compiler.ir.shape_system import SymVar
-
-    size: int | None = 1
-    for s in in_shape:
-        if s is None:
-            size = None
-            break
-        size = int(ensure_int(size)) * s
-    if isinstance(repeats, int) and size is not None:
-        return (size * repeats,)
-    if isinstance(repeats, (list, tuple)):
-        return (sum(repeats),)
-    return (SymVar("repeat_size"),)
-
-
-@register_op("Repeat")
-class Repeat(OpDef):
-    """Repeat elements of an array."""
-
-    op_name = "Repeat"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        a = args[0] if len(args) > 0 else None
-        repeats = args[1] if len(args) > 1 else None
-        axis = kwargs.get("axis", None)
-        in_shape = extract_shape(a)
-        if axis is None:
-            return ensure_eager_tensor(ensure_callable(_repeat_infer_no_axis)(in_shape, repeats))
-        out_shape: list[int | None] = list(in_shape)
-        ax = int(ensure_int(axis))
-        if isinstance(repeats, int):
-            cur_dim = out_shape[ax]
-            out_shape[ax] = cur_dim * repeats if cur_dim is not None else None
-        elif isinstance(repeats, (list, tuple)):
-            out_shape[ax] = int(sum(int(ensure_int(r)) for r in repeats))
-        else:
-            out_shape[ax] = None
-        return tuple(out_shape)
-
-
-@register_op("Searchsorted")
-class Searchsorted(OpDef):
-    """Find indices where elements should be inserted to maintain order."""
-
-    op_name = "Searchsorted"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args (sorted_sequence, values).
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Resulting shape matching values broadcasted with sequence.
-        """
-        seq = args[0] if len(args) > 0 else None
-        v = args[1] if len(args) > 1 else None
-        v_shape: tuple[int, ...] = extract_shape(v)
-        seq_shape: tuple[int, ...] = extract_shape(seq)
-        if not v_shape and not seq_shape:
-            return ()
-        if not seq_shape or len(seq_shape) <= 1:
-            return tuple(v_shape)
-        leading = broadcast_shapes(seq_shape[:-1], v_shape[:-1]) if len(v_shape) > 1 else seq_shape[:-1]
-        v_dim = (v_shape[-1],) if len(v_shape) >= 1 else ()
-        return tuple(leading) + tuple(v_dim)
-
-
-@register_op("SortComplex")
-class SortComplex(OpDef):
-    """Sort a complex array using the real part first, then the imaginary part."""
-
-    op_name = "SortComplex"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape strictly preserving input tensor shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args (input array).
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Resulting shape identical to input shape.
-        """
-        if not args or args[0] is None:
-            return ()
-        a = args[0]
-        return extract_shape(a)
-
-
-def _compute_tile_shape(
-    in_shape: tuple[int | None, ...],
-    reps: tuple[int | None, ...],
-) -> tuple[int | None, ...]:
-    """Compute the compute tile shape tensor operation.
-
-    Args:
-        in_shape (tuple): Input `in_shape` argument (in shape).
-        reps (tuple): Input `reps` argument (reps).
-
-    Returns:
-        tuple: Computed `tuple` output.
-    """
-    d = len(reps)
-    c = len(in_shape)
-    if c < d:
-        in_shape = (1,) * (d - c) + in_shape
-    elif c > d:
-        reps = (1,) * (c - d) + reps
-    return tuple(s * r if s is not None and r is not None else None for s, r in zip(in_shape, reps))
-
-
-@register_op("Tile")
-class Tile(OpDef):
-    """Construct an array by repeating A the number of times given by reps."""
-
-    op_name = "Tile"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        A = args[0] if len(args) > 0 else None
-        reps = args[1] if len(args) > 1 else None
-        if reps is None:
-            return ()
-        in_shape = extract_shape(A)
-        if isinstance(reps, int):
-            reps_tuple: tuple[int, ...] = (reps,)
-        else:
-            reps_tuple = tuple(ensure_shape(reps))
-        return ensure_eager_tensor(ensure_callable(_compute_tile_shape)(in_shape, reps_tuple))
-
-
-def _get_unique_inverse_shape(axis: int | None, in_shape: Sequence[int | None]) -> tuple[int | None, ...]:
-    """Get the inverse shape for the unique operation.
-
-    Args:
-        axis (int | None): The axis along which unique operates.
-        in_shape (tuple): The input shape.
-
-    Returns:
-        tuple: The inverse shape.
-    """
-    if axis is not None:
-        return (in_shape[axis],)
-    size: int | None = 1
-    for s in in_shape:
-        if s is None:
-            size = None
-            break
-        size = int(ensure_int(size)) * s
-    return (size,)
-
-
-@register_op("Unique")
-class Unique(OpDef):
-    """Find the unique elements of an array."""
-
-    op_name = "Unique"
-
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-        """
-        ar = args[0] if len(args) > 0 else None
-        return_index = kwargs.get("return_index", False)
-        return_inverse = kwargs.get("return_inverse", False)
-        return_counts = kwargs.get("return_counts", False)
-        axis = kwargs.get("axis", None)
-        in_shape = extract_shape(ar)
-        from ml_switcheroo_compiler.ir.shape_system import SymVar
-
-        if axis is None:
-            ret_shape: tuple[int | SymNode | None, ...] = (SymVar("unique_count"),)
-        else:
-            ret_shape_list: list[int | SymNode | None] = list(in_shape)
-            ensure_eager_tensor(ret_shape_list)[axis] = SymVar("unique_count")
-            ret_shape = tuple(ret_shape_list)
-        ret: list[tuple[int | SymNode | None, ...]] = [ret_shape]
-        if return_index:
-            ret.append((SymVar("unique_count"),) if axis is None else (in_shape[ensure_int(axis)],))
-        if return_inverse:
-            ret.append(_get_unique_inverse_shape(ensure_opt_int(axis), in_shape))
-        if return_counts:
-            ret.append((SymVar("unique_count"),))
-        if len(ret) == 1:
-            return ret[0]
-        return tuple(ret)
-
-
-def percentile(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Compute the percentile tensor operation.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Percentile", *args, **kwargs)
-
-
-def quantile(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Compute the quantile tensor operation.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Quantile", *args, **kwargs)
-
-
-def flatnonzero(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Return indices that are non-zero in the flattened version of a.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Flatnonzero", *args, **kwargs)
-
-
-def nonzero(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Return the indices of the elements that are non-zero.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Nonzero", *args, **kwargs)
-
-
-def ravel_multi_index(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Convert a tuple of index arrays into an array of flat indices.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("RavelMultiIndex", *args, **kwargs)
-
-
-def lexsort(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Perform an indirect stable sort using a sequence of keys.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Lexsort", *args, **kwargs)
-
-
-def searchsorted(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Find indices where elements should be inserted to maintain order.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Searchsorted", *args, **kwargs)
-
-
-def sort_complex(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Sort a complex array using the real part first, then the imaginary part.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("SortComplex", *args, **kwargs)
-
-
-def unique(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Find the unique elements of an array.
-
-    Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
-
-    Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
-    """
-    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-    return dispatch_op("Unique", *args, **kwargs)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    Rank as Rank,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    Size as Size,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    _compute_pad_dim as _compute_pad_dim,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    _normalize_pad_width as _normalize_pad_width,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    image_resize as image_resize,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    pad as pad,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    pad_circular as pad_circular,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    pad_constant as pad_constant,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    pad_reflect as pad_reflect,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_padding import (
+    pad_replicate as pad_replicate,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    Flatnonzero as Flatnonzero,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    Nonzero as Nonzero,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    Percentile as Percentile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    Quantile as Quantile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    RavelMultiIndex as RavelMultiIndex,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    Unique as Unique,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    _get_unique_inverse_shape as _get_unique_inverse_shape,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    _infer_shape_percentile_quantile as _infer_shape_percentile_quantile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    flatnonzero as flatnonzero,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    nonzero as nonzero,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    percentile as percentile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    quantile as quantile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    ravel_multi_index as ravel_multi_index,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_query import (
+    unique as unique,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    Repeat as Repeat,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    Tile as Tile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    _compute_meshgrid_shape as _compute_meshgrid_shape,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    _compute_tile_shape as _compute_tile_shape,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    _repeat_infer_no_axis as _repeat_infer_no_axis,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    meshgrid as meshgrid,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    repeat as repeat,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    tile as tile,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    tril as tril,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_repeat import (
+    triu as triu,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    Lexsort as Lexsort,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    Searchsorted as Searchsorted,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    SortComplex as SortComplex,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    argsort as argsort,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    lexsort as lexsort,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    searchsorted as searchsorted,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    sort as sort,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    sort_complex as sort_complex,
+)
+from ml_switcheroo_compiler.ops.shape._pad_tile_sorting import (
+    top_k as top_k,
+)
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node as _emit_shape_node
+
+__all__ = [
+    "DynamicShape",
+    "Flatnonzero",
+    "Lexsort",
+    "Nonzero",
+    "Pad",
+    "Percentile",
+    "Quantile",
+    "Rank",
+    "RavelMultiIndex",
+    "Repeat",
+    "Searchsorted",
+    "Size",
+    "SortComplex",
+    "Tile",
+    "Unique",
+    "_compute_meshgrid_shape",
+    "_compute_pad_dim",
+    "_compute_tile_shape",
+    "_emit_shape_node",
+    "_get_unique_inverse_shape",
+    "_infer_shape_percentile_quantile",
+    "_normalize_pad_width",
+    "_repeat_infer_no_axis",
+    "argsort",
+    "flatnonzero",
+    "get_active_backend",
+    "image_resize",
+    "lexsort",
+    "meshgrid",
+    "nonzero",
+    "pad",
+    "pad_circular",
+    "pad_constant",
+    "pad_reflect",
+    "pad_replicate",
+    "percentile",
+    "quantile",
+    "ravel_multi_index",
+    "repeat",
+    "searchsorted",
+    "sort",
+    "sort_complex",
+    "tile",
+    "top_k",
+    "tril",
+    "triu",
+    "unique",
+]

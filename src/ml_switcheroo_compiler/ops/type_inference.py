@@ -7,17 +7,17 @@ import typing
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import DTypeHolderProtocol, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import DTypeHolderProtocol, OpValue
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
-def resolve_dtype(res_data: TensorOrScalar, first_tensor: Tensor | None) -> DType | str:
+def resolve_dtype(res_data: OpValue, first_tensor: Tensor | None) -> DType | str:
     """Resolve the dtype for the eager result.
 
     Args:
-        res_data (TensorOrScalar): The raw result data.
+        res_data (OpValue): The raw result data.
         first_tensor (Tensor | None): The first input tensor, used as fallback.
 
     Returns:
@@ -43,13 +43,13 @@ def resolve_dtype(res_data: TensorOrScalar, first_tensor: Tensor | None) -> DTyp
 
 def resolve_output_dtype_and_device(
     first_tensor: Tensor | None,
-    kwargs: dict[str, TensorOrScalar | DType | Device],
+    kwargs: dict[str, OpValue | DType | Device],
 ) -> tuple[DType | str, Device | str | None]:
     """Resolve output dtype and device based on inputs and kwargs.
 
     Args:
         first_tensor (Tensor | None): The first input tensor.
-        kwargs (dict): The keyword arguments passed to the operation.
+        kwargs (dict[str, OpValue | DType | Device]): The keyword arguments passed to the operation.
 
     Returns:
         tuple[DType | str, Device | str | None]: A tuple containing the resolved dtype and device.

@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.type_promotion import promote_types
-from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
@@ -20,17 +19,18 @@ class _DTypeAttrProtocol(typing.Protocol):
     dtype: DType | str
 
 
-def _get_value_dtype(val: TensorOrScalar) -> DType | None:
+def _get_value_dtype(val: OpValue) -> DType | None:
     """Get the dtype from a constant value.
 
     Args:
-        val (TensorOrScalar): Input `val` argument (val).
+        val (OpValue): Input `val` argument (val).
 
     Returns:
         Optional[DType]: Inferred `DType` or None.
     """
-    if isinstance(val, _DTypeAttrProtocol):
-        return DType(str(val.dtype))
+    cand_val: OpValue | _DTypeAttrProtocol = val
+    if isinstance(cand_val, _DTypeAttrProtocol):
+        return DType(str(cand_val.dtype))
     if isinstance(val, bool):
         return DType.Bool
     if isinstance(val, int):

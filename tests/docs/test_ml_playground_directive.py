@@ -6,12 +6,13 @@ import importlib
 import os
 import sys
 import typing
+from pathlib import Path
 from unittest import mock
 
 import pytest
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 pytest.importorskip("docutils")
 
@@ -51,7 +52,7 @@ def test_get_wheel_assets_missing_dir() -> None:
         assert get_wheel_assets() == []
 
 
-def test_get_wheel_assets_with_files(tmp_path: EagerTensorProtocol) -> None:
+def test_get_wheel_assets_with_files(tmp_path: Path) -> None:
     """Test get_wheel_assets with mock directory and files.
 
     Args:
@@ -69,7 +70,7 @@ def test_get_wheel_assets_with_files(tmp_path: EagerTensorProtocol) -> None:
         assert (test_dir / "wheels.json").exists()
 
 
-def test_get_wheel_assets_os_error(tmp_path: EagerTensorProtocol) -> None:
+def test_get_wheel_assets_os_error(tmp_path: Path) -> None:
     """Test get_wheel_assets handles OSError during manifest write.
 
     Args:
@@ -79,7 +80,11 @@ def test_get_wheel_assets_os_error(tmp_path: EagerTensorProtocol) -> None:
     test_dir.mkdir()
     (test_dir / "pkg-0.1.0-py3-none-any.whl").touch()
 
-    with mock.patch("os.path.abspath", return_value=str(test_dir)), mock.patch("os.path.isdir", return_value=True), mock.patch("builtins.open", side_effect=OSError("Permission denied")):
+    with (
+        mock.patch("os.path.abspath", return_value=str(test_dir)),
+        mock.patch("os.path.isdir", return_value=True),
+        mock.patch("builtins.open", side_effect=OSError("Permission denied")),
+    ):
         assets = get_wheel_assets()
         assert assets == ["pkg-0.1.0-py3-none-any.whl"]
 

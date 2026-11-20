@@ -5,11 +5,10 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,7 +20,7 @@ def test_onnx_backend_not_supported_error() -> None:
     # Mock node with an op_type definitely not in ONNX schema
     node = IRNode("unsupported_op_1", "SomeNonExistentOp", inputs=["in1"], shape_metadata=(2, 2))
     graph.nodes["unsupported_op_1"] = node
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node])
+    graph.sorted_nodes = [node]
     graph.inputs = ["in1"]
     graph.outputs = ["unsupported_op_1"]
 

@@ -8,10 +8,16 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.backends.dask.types as dask_types
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import (
+    MockTestStub,
+    adapt_backend_module,
+    coerce_float,
+    extract_test_shape,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class _MockBackendModule:
@@ -28,23 +34,23 @@ class _MockBackendModule:
         """
         return ("zeros", shape)
 
-    def array(self, data: EagerValue, dtype: EagerValue = None) -> tuple[str, EagerValue, EagerValue]:
+    def array(self, data: BackendArg, dtype: BackendArg = None) -> tuple[str, BackendArg, BackendArg]:
         """Mock array.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (EagerValue): Optional data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg): Optional data type.
 
         Returns:
             tuple[str, object, object]: Mock array descriptor.
         """
         return ("array", data, dtype)
 
-    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
         """Mock asarray.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
             tuple[str, object]: Mock asarray descriptor.
@@ -64,7 +70,7 @@ class _MockItemObject:
         return 42.5
 
 
-class _MockDaskDtypeWrapper:
+class _MockDaskDtypeWrapper(MockTestStub):
     """Mock dtype object with value attribute."""
 
     def __init__(self, val: str) -> None:
@@ -125,23 +131,23 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
         class _FakeDaskArray:
             """Fake Dask array wrapping a NumPy ndarray."""
 
-            _arr: EagerTensorProtocol
+            _arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]
 
-            def __init__(self, arr: EagerValue) -> None:
+            def __init__(self, arr: BackendArg) -> None:
                 """Initialize fake Dask array.
 
                 Args:
-                    arr (EagerValue): Input `arr` value (arr) for `__init__`.
+                    arr (BackendArg): Input `arr` value (arr) for `__init__`.
                 """
-                raw: EagerValue = arr._arr if isinstance(arr, _FakeDaskArray) else arr
-                self._arr = ensure_eager_tensor(np.asarray(raw))
+                raw: BackendArg = arr._arr if isinstance(arr, _FakeDaskArray) else arr
+                self._arr = ensure_ndarray(raw)
                 self.shape = self._arr.shape
 
-            def compute(self) -> EagerValue:
+            def compute(self) -> BackendArg:
                 """Compute underlying NumPy array.
 
                 Returns:
-                    EagerValue: Computed output value from `compute`.
+                    BackendArg: Computed output value from `compute`.
                 """
                 return self._arr
 
@@ -162,11 +168,15 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
                 Returns:
                     float: Computed output value from `item`.
                 """
-                return ensure_float(self._arr.item())
+                return coerce_float(self._arr.item())
 
         mock_da.zeros.side_effect = lambda s, dtype=None, **kw: _FakeDaskArray(np.zeros(s, dtype=dtype))
-        mock_da.array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype))
-        mock_da.from_array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype))
+        mock_da.array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(
+            np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype)
+        )
+        mock_da.from_array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(
+            np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype)
+        )
         mock_da.asarray.side_effect = lambda d, **kw: _FakeDaskArray(d)
         mock_dask = MagicMock()
         mock_dask.array = mock_da
@@ -175,28 +185,28 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
         importlib.reload(dask_types)
 
     z = dask_types.zeros(_DummyDaskBackend, (2, 2))
-    assert ensure_eager_tensor(z).shape == (2, 2)
+    assert extract_test_shape(z) == (2, 2)
 
     arr1 = dask_types.array(_DummyDaskBackend, [1, 2], dtype=None)
-    assert ensure_eager_tensor(ensure_eager_tensor(arr1).compute)().tolist() == [1, 2]
+    assert adapt_backend_module(arr1).require_symbol("compute")().tolist() == [1, 2]
 
     arr2 = dask_types.array(_DummyDaskBackend, [3, 4], dtype="float32")
-    assert ensure_eager_tensor(ensure_eager_tensor(arr2).compute)().tolist() == [3.0, 4.0]
+    assert adapt_backend_module(arr2).require_symbol("compute")().tolist() == [3.0, 4.0]
 
-    arr3 = ensure_callable(dask_types.array)(_DummyDaskBackend, [5, 6], dtype=ensure_callable(_MockDaskDtypeWrapper)("int32"))
-    assert ensure_eager_tensor(ensure_eager_tensor(arr3).compute)().tolist() == [5, 6]
+    arr3 = dask_types.array(_DummyDaskBackend, [5, 6], dtype=_MockDaskDtypeWrapper("int32"))
+    assert adapt_backend_module(arr3).require_symbol("compute")().tolist() == [5, 6]
 
     as_arr = dask_types.asarray(_DummyDaskBackend, [7, 8])
-    assert ensure_eager_tensor(ensure_eager_tensor(as_arr).compute)().tolist() == [7, 8]
+    assert adapt_backend_module(as_arr).require_symbol("compute")().tolist() == [7, 8]
 
-    item_val = dask_types.item(_DummyDaskBackend, ensure_eager_tensor(as_arr)[0])
+    item_val = dask_types.item(_DummyDaskBackend, ensure_ndarray(as_arr)[0])
     assert item_val == 7.0
 
     # ImportError coverage for dask_types
     monkeypatch.setitem(sys.modules, "dask", None)
     monkeypatch.setitem(sys.modules, "dask.array", None)
     importlib.reload(dask_types)
-    assert ensure_eager_tensor(ensure_eager_tensor(dask_types).da) is None
+    assert dask_types.da is None
 
     # Restore dask_types
     monkeypatch.undo()

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, StaticEagerBackendAdapter
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.ir.core import IRGraph
+
+from .eager import execute_op as _tf_execute_op
 
 
 @register_backend("tensorflow")
@@ -16,7 +18,23 @@ class TensorFlowCodeGenerator(BaseGenerator):
     """Emit TensorFlow-compatible code from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
+    def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
+        """Execute an eager operation natively on the TensorFlow backend.
+
+        Args:
+            op_type (str): Canonical IR operation name.
+            *args (BackendArg): Positional tensor or scalar operands.
+            **kwargs (BackendArg): Keyword operation attributes.
+
+        Returns:
+            BackendArg: Evaluated TensorFlow tensor or collection.
+        """
+        return _tf_execute_op(cls, op_type, *args, **kwargs)
+
+    @classmethod
+    def load(
+        cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"
+    ) -> BackendArg:
         """Load.
 
         Args:
@@ -31,15 +49,16 @@ class TensorFlowCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return ensure_eager_tensor(pickle.load(f))
+            loaded: BackendArg = pickle.load(f)
+            return loaded
 
     @classmethod
-    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: BackendArg, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
             file (str): Input `file` argument (file).
-            arr (EagerValue): Input `arr` argument (arr).
+            arr (BackendArg): Input `arr` argument (arr).
             allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
             fix_imports (bool): Input `fix_imports` argument (fix imports).
         """
@@ -49,13 +68,13 @@ class TensorFlowCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Savez.
 
         Args:
             file (str): Input `file` argument (file).
-            *args (EagerValue): Positional args.
-            **kwds (EagerValue): Keyword args.
+            *args (BackendArg): Positional args.
+            **kwds (BackendArg): Keyword args.
         """
         import pickle
 
@@ -65,13 +84,13 @@ class TensorFlowCodeGenerator(BaseGenerator):
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez_compressed(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Savez compressed.
 
         Args:
             file (str): Input `file` argument (file).
-            *args (EagerValue): Positional args.
-            **kwds (EagerValue): Keyword args.
+            *args (BackendArg): Positional args.
+            **kwds (BackendArg): Keyword args.
         """
         import gzip
         import pickle
@@ -90,40 +109,40 @@ class TensorFlowCodeGenerator(BaseGenerator):
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
-    def _format_zeros_like(self, op: str, kwargs: EagerValue) -> str:
+    def _format_zeros_like(self, op: str, kwargs: BackendArg) -> str:
         """Execute format zeros like for compiler processing.
 
         Args:
         op (str): Input `op` argument (op).
-        kwargs (EagerValue): Input `kwargs` argument (kwargs).
+        kwargs (BackendArg): Input `kwargs` argument (kwargs).
 
         Returns:
         str: Computed `str` output.
         """
         res = f"tf.{op}({{shape}})"
         if isinstance(kwargs, dict) and "dtype" in kwargs:
-            res += f", dtype='{ensure_eager_tensor(kwargs)['dtype']}'"
+            res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: EagerValue) -> str:
+    def _format_full(self, kwargs: BackendArg) -> str:
         """Execute format full for compiler processing.
 
         Args:
-        kwargs (EagerValue): Input `kwargs` argument (kwargs).
+        kwargs (BackendArg): Input `kwargs` argument (kwargs).
 
         Returns:
         str: Computed `str` output.
         """
         res = "tf.full({shape}, {fill_value})"
         if isinstance(kwargs, dict) and "dtype" in kwargs:
-            res += f", dtype='{ensure_eager_tensor(kwargs)['dtype']}'"
+            res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_transpose(self, kwargs: EagerValue) -> str:
+    def _format_transpose(self, kwargs: BackendArg) -> str:
         """Execute format transpose for compiler processing.
 
         Args:
-        kwargs (EagerValue): Input `kwargs` argument (kwargs).
+        kwargs (BackendArg): Input `kwargs` argument (kwargs).
 
         Returns:
         str: Computed `str` output.
@@ -132,20 +151,20 @@ class TensorFlowCodeGenerator(BaseGenerator):
             return "tf.transpose({0}, perm={axes})"
         return "tf.transpose({0})"
 
-    def visit_RaggedDot(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_RaggedDot(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the RaggedDot operation.
 
         Args:
         node (LogicalNode): Input `node` argument (node).
         input_vars (list[str]): Input `input_vars` argument (input vars).
-        **kwargs (EagerValue): Keyword args.
+        **kwargs (BackendArg): Keyword args.
 
         Returns:
         str: Computed `str` output.
         """
         return f"tf_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Einsum(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Handle Einsum nodes.
 
         Args:
@@ -180,11 +199,11 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         return "tf.math"
 
-    def _get_creation_ops(self, kwargs: EagerValue) -> dict[str, str]:
+    def _get_creation_ops(self, kwargs: BackendArg) -> dict[str, str]:
         """Execute get creation ops for compiler processing.
 
         Args:
-            kwargs (dict): Input `kwargs` argument (kwargs).
+            kwargs (BackendArg): Input `kwargs` argument (kwargs).
 
         Returns:
             dict: Computed `dict` output.
@@ -225,7 +244,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """Execute generate function signature for compiler processing.
 
         Args:
-        self (TensorOrScalar): Input `self` argument (self).
+        self (OpValue): Input `self` argument (self).
 
         Returns:
         NoneType: Computed `NoneType` output.
@@ -235,30 +254,30 @@ class TensorFlowCodeGenerator(BaseGenerator):
         self.add_line("def apply_model(*args, **kwargs) -> object:")
         self.indent_level += 1
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into an ahead-of-time (AOT) callable using tf.function(jit_compile=True).
 
         Args:
             graph (IRGraph): Target computation graph.
-            **kwargs (EagerValue): Optional compilation options ('jit_compile').
+            **kwargs (BackendArg): Optional compilation options ('jit_compile').
 
         Returns:
-            EagerValue: Compiled executable callable.
+            BackendArg: Compiled executable callable.
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        def forward_fn(*fn_args: EagerValue) -> EagerValue:
+        def forward_fn(*fn_args: BackendArg) -> BackendArg:
             """Evaluate the graph with TensorFlow tensors.
 
             Args:
-                *fn_args (EagerValue): Input tensor values.
+                *fn_args (BackendArg): Input tensor values.
 
             Returns:
-                EagerValue: Computed tensor or collection of tensors.
+                BackendArg: Computed tensor or collection of tensors.
             """
             input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
-            inputs: dict[str, EagerValue] = {}
+            inputs: dict[str, BackendArg] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
@@ -268,30 +287,96 @@ class TensorFlowCodeGenerator(BaseGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return ensure_eager_tensor(evaluated)
+            return evaluated
 
         try:
             import tensorflow as tf
 
             jit_compile = bool(kwargs.get("jit_compile", True))
-            compiled_fn = tf.function(forward_fn, jit_compile=jit_compile)
+            from ml_switcheroo_compiler.backends.eager_registry import require_callable
 
-            def aot_tf_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
+            compiled_fn = require_callable(tf.function)(forward_fn, jit_compile=jit_compile)
+
+            def aot_tf_runner(*w_args: BackendArg, **w_kwargs: BackendArg) -> BackendArg:
                 """Execute AOT compiled TensorFlow function.
 
                 Args:
-                    *w_args (EagerValue): Input tensors.
-                    **w_kwargs (EagerValue): Keyword arguments.
+                    *w_args (BackendArg): Input tensors.
+                    **w_kwargs (BackendArg): Keyword arguments.
 
                 Returns:
-                    EagerValue: Computed outputs.
+                    BackendArg: Computed outputs.
                 """
-                tf_args = [tf.convert_to_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return ensure_eager_tensor(compiled_fn(*tf_args))
+                conv_fn = require_callable(tf.convert_to_tensor)
+                tf_args = [conv_fn(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return require_callable(compiled_fn)(*tf_args)
 
             return aot_tf_runner
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             return forward_fn
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for TensorFlow.
+
+        Returns:
+            EagerBackendAdapter: Concrete TensorFlow eager backend adapter.
+        """
+        import tensorflow as tf
+
+        return StaticEagerBackendAdapter(
+            backend_name="tensorflow",
+            ops={
+                "abs": tf.abs,
+                "add": tf.add,
+                "subtract": tf.subtract,
+                "multiply": tf.multiply,
+                "divide": tf.divide,
+                "sin": tf.math.sin,
+                "cos": tf.math.cos,
+                "tanh": tf.math.tanh,
+                "exp": tf.math.exp,
+                "log": tf.math.log,
+                "sqrt": tf.math.sqrt,
+                "matmul": tf.matmul,
+                "asarray": tf.convert_to_tensor,
+                "array": tf.constant,
+                "zeros": tf.zeros,
+                "ones": tf.ones,
+            },
+            dtypes={
+                "float16": tf.float16,
+                "float32": tf.float32,
+                "float64": tf.float64,
+                "bfloat16": tf.bfloat16,
+                "int8": tf.int8,
+                "int16": tf.int16,
+                "int32": tf.int32,
+                "int64": tf.int64,
+                "uint8": tf.uint8,
+                "bool": tf.bool,
+                "complex64": tf.complex64,
+                "complex128": tf.complex128,
+            },
+            submodules={
+                "linalg": tf.linalg,
+                "math": tf.math,
+                "nn": tf.nn,
+                "image": tf.image,
+                "signal": tf.signal,
+            },
+            module=tf,
+        )
 
 
 TensorFlowGenerator = TensorFlowCodeGenerator

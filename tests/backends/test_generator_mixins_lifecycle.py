@@ -7,10 +7,11 @@ import typing
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
@@ -31,29 +32,33 @@ class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
         self._output_returns: list[str] = []
         self.var_names: dict[str, str] = {"in1": "args[0]"}
 
-    def assign_var_name(self, node_id: str) -> str:
+    def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
         """Assign variable name.
 
         Args:
             node_id (str): Node id.
+            prefix (str): Variable name prefix.
 
         Returns:
             str: Assigned variable name.
         """
+        del prefix
         name = f"var_{node_id}"
         self.var_names[node_id] = name
         return name
 
-    def visit(self, node: LogicalNode, input_vars: list[str]) -> str:
+    def visit(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for node.
 
         Args:
             node (LogicalNode): The node.
             input_vars (list[str]): Input variables.
+            **kwargs (BackendArg): Additional keyword attributes.
 
         Returns:
             str: Code string.
         """
+        del node, kwargs
         return f"Identity({', '.join(input_vars)})"
 
     def _emit_body_return(self, returns: list[str]) -> None:
@@ -87,34 +92,34 @@ class _MockCustomModule:
         """
         return ("custom_zeros", shape)
 
-    def array(self, data: EagerValue, dtype: EagerValue | None = None) -> tuple[str, EagerValue, EagerValue | None]:
+    def array(self, data: BackendArg, dtype: BackendArg | None = None) -> tuple[str, BackendArg, BackendArg | None]:
         """Mock array.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (object | None): Data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg | None): Data type.
 
         Returns:
-            tuple[str, object, object | None]: Descriptor.
+            tuple[str, BackendArg, BackendArg | None]: Descriptor.
         """
         return ("custom_array", data, dtype)
 
-    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
         """Mock asarray.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
-            tuple[str, object]: Descriptor.
+            tuple[str, BackendArg]: Descriptor.
         """
         return ("custom_asarray", data)
 
-    def item(self, data: EagerValue) -> float:
+    def item(self, data: BackendArg) -> float:
         """Mock item.
 
         Args:
-            data (EagerValue): Input object.
+            data (BackendArg): Input object.
 
         Returns:
             float: 99.9.
@@ -141,7 +146,7 @@ class _MockEagerBackendDefault(gen_mixins.EagerExecutionMixin):
     pass
 
 
-class _MockScalarHolder:
+class _MockScalarHolder(MockTestStub):
     """Mock scalar container providing item()."""
 
     def item(self) -> float:
@@ -163,7 +168,8 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     gen = _MockDummyGenerator(graph)
     assert gen._generate_file_header() == ["# Header comment"]
     assert gen._resolve_imports() == []
-    assert ensure_callable(gen._generate_return_block)() is None
+    assert gen_mixins.GeneratorLifecycleMixin.assign_var_name(gen, "n1") == "tensor_n1"
+    gen._generate_return_block()
 
     code_str = gen.generate()
     assert "# Header comment" in code_str
@@ -177,17 +183,17 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     assert _MockEagerBackendWithModule.zeros((2, 3)) == ("custom_zeros", (2, 3))
     assert _MockEagerBackendWithModule.array([1, 2], dtype="float32") == ("custom_array", [1, 2], "float32")
     assert _MockEagerBackendWithModule.asarray([3, 4]) == ("custom_asarray", [3, 4])
-    assert ensure_callable(_MockEagerBackendWithModule.item)(ensure_callable(_MockScalarHolder)()) == 33.3
+    assert _MockEagerBackendWithModule.item(_MockScalarHolder()) == 33.3
 
     # Eager zeros, array, asarray, item with default numpy fallback
     z_def = _MockEagerBackendDefault.zeros((2, 2))
-    assert ensure_eager_tensor(z_def).shape == (2, 2)
+    assert extract_test_shape(z_def) == (2, 2)
 
     arr_def = _MockEagerBackendDefault.array([5, 6])
-    assert ensure_eager_tensor(ensure_eager_tensor(arr_def).tolist)() == [5, 6]
+    assert ensure_ndarray(arr_def).tolist() == [5, 6]
 
     as_arr_def = _MockEagerBackendDefault.asarray([7.5, 8.5])
-    assert ensure_eager_tensor(ensure_eager_tensor(as_arr_def).tolist)() == [7.5, 8.5]
+    assert ensure_ndarray(as_arr_def).tolist() == [7.5, 8.5]
 
-    item_val = ensure_callable(_MockEagerBackendDefault.item)(ensure_callable(_MockScalarHolder)())
+    item_val = _MockEagerBackendDefault.item(_MockScalarHolder())
     assert item_val == 33.3

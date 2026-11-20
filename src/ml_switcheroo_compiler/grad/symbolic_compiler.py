@@ -11,14 +11,13 @@ import uuid
 from collections.abc import Sequence
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.grad.config_models import (
     AutodiffRuleModel,
     AutodiffRulesManifestModel,
     HigherOrderAutodiffModel,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
 AttrPrimitive = typing.Union[str, int, float, bool, "None"]
@@ -91,7 +90,9 @@ class SymbolicExpressionCompiler:
             return self._manifest
 
         with open(self.manifest_path, encoding="utf-8") as f:
-            raw_data: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue] | None] = yaml.safe_load(f) or {}
+            raw_data: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue] | None] = (
+                yaml.safe_load(f) or {}
+            )
 
         self._manifest = AutodiffRulesManifestModel.model_validate(raw_data)
         return self._manifest
@@ -149,7 +150,7 @@ class SymbolicExpressionCompiler:
                 k, v = arg.split("=", 1)
                 try:
                     parsed_attrs[k.strip()] = ast.literal_eval(v.strip())
-                except Exception:
+                except (SyntaxError, ValueError, TypeError, MemoryError, RecursionError):
                     parsed_attrs[k.strip()] = v.strip()
             else:
                 parsed_inputs.append(self.compile_expression(graph, arg, node, cotangent, tangents))
@@ -227,7 +228,12 @@ class SymbolicExpressionCompiler:
 
         attrs: dict[str, AttributeValue] = {}
         if node.attributes and canonical_op == node.op_type:
-            attrs.update({str(k): v if isinstance(v, (str, int, float, bool)) or v is None else str(v) for k, v in node.attributes.items()})
+            attrs.update(
+                {
+                    str(k): v if isinstance(v, (str, int, float, bool)) or v is None else str(v)
+                    for k, v in node.attributes.items()
+                }
+            )
         attrs.update(parsed_attrs)
 
         shape_meta = _clean_shape_meta(node.shape_metadata)
@@ -431,7 +437,11 @@ class SymbolicExpressionCompiler:
             str: Output adjoint node ID.
         """
         dummy = LogicalNode(id="gelu_fwd", op_type="Gelu", inputs=[x])
-        expr = "Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))"
+        expr = (
+            "Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), "
+            "Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], "
+            "Constant(0.7071067811)))))))"
+        )
         return self.compile_expression(graph, expr, dummy, cotangent=cotangent)
 
     def compile_silu_grad(

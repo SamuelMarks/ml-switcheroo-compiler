@@ -1,16 +1,22 @@
-"""Implementation of math trig operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_trig`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_math_ops.math_trig`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
 @global_eager_registry.register("Acos")
-def _acos(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _acos(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager acos operation on the active backend array.
 
     Args:
@@ -19,16 +25,20 @@ def _acos(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arccos", get_backend_member(backend_module, "acos", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arccos", adapt_backend_module(backend_module).get_symbol("acos", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arccos(*args, **kwargs)
 
 
 @global_eager_registry.register("Acosh")
-def _acosh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _acosh(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager acosh operation on the active backend array.
 
     Args:
@@ -37,16 +47,20 @@ def _acosh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arccosh", get_backend_member(backend_module, "acosh", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arccosh", adapt_backend_module(backend_module).get_symbol("acosh", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arccos(*args, **kwargs)
 
 
 @global_eager_registry.register("Asin")
-def _asin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _asin(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager asin operation on the active backend array.
 
     Args:
@@ -55,16 +69,20 @@ def _asin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arcsin", get_backend_member(backend_module, "asin", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arcsin", adapt_backend_module(backend_module).get_symbol("asin", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arcsin(*args, **kwargs)
 
 
 @global_eager_registry.register("Asinh")
-def _asinh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _asinh(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager asinh operation on the active backend array.
 
     Args:
@@ -73,16 +91,20 @@ def _asinh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arcsinh", get_backend_member(backend_module, "asinh", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arcsinh", adapt_backend_module(backend_module).get_symbol("asinh", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arcsin(*args, **kwargs)
 
 
 @global_eager_registry.register("Atan")
-def _atan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _atan(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager atan operation on the active backend array.
 
     Args:
@@ -91,16 +113,20 @@ def _atan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arctan", get_backend_member(backend_module, "atan", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arctan", adapt_backend_module(backend_module).get_symbol("atan", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arctan(*args, **kwargs)
 
 
 @global_eager_registry.register("Atanh")
-def _atanh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _atanh(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager atanh operation on the active backend array.
 
     Args:
@@ -109,16 +135,20 @@ def _atanh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arctanh", get_backend_member(backend_module, "atanh", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arctanh", adapt_backend_module(backend_module).get_symbol("atanh", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arctan(*args, **kwargs)
 
 
 @global_eager_registry.register("Atan2")
-def _atan2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _atan2(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager atan2 operation on the active backend array.
 
     Args:
@@ -127,16 +157,20 @@ def _atan2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "arctan2", get_backend_member(backend_module, "atan2", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "arctan2", adapt_backend_module(backend_module).get_symbol("atan2", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).arctan2(*args, **kwargs)
 
 
 @global_eager_registry.register("Sinc")
-def _sinc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _sinc(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager sinc operation on the active backend array.
 
     Args:
@@ -145,16 +179,18 @@ def _sinc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "sinc", None)
+    func = adapt_backend_module(backend_module).get_symbol("sinc", None)
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).sinc(*args, **kwargs)
 
 
 @global_eager_registry.register("Isin")
-def _isin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isin(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager isin operation on the active backend array.
 
     Args:
@@ -163,13 +199,15 @@ def _isin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(get_backend_member(backend_module, "isin")(*args, **kwargs))
+    return adapt_backend_module(backend_module).require_symbol("isin")(*args, **kwargs)
 
 
 @global_eager_registry.register("Isinf")
-def _isinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isinf(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager isinf operation on the active backend array.
 
     Args:
@@ -178,17 +216,19 @@ def _isinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "isinf", None)
+    func = adapt_backend_module(backend_module).get_symbol("isinf", None)
     if func:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
 
     return _resolve_eager_mod(backend_module).isinf(args[0])
 
 
 @global_eager_registry.register("Isposinf")
-def _isposinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isposinf(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager isposinf operation on the active backend array.
 
     Args:
@@ -197,10 +237,10 @@ def _isposinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "isposinf", None)
+    func = adapt_backend_module(backend_module).get_symbol("isposinf", None)
     if func:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
 
     return _resolve_eager_mod(backend_module).isposinf(args[0])

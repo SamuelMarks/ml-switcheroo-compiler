@@ -14,13 +14,12 @@ from collections.abc import Iterable, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_list, get_active_backend
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list, get_active_backend, require_callable
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
-    TracedDataProtocol,
     extract_device,
     extract_dtype,
     extract_shape,
@@ -48,54 +47,58 @@ class _NodesValuesProtocol(typing.Protocol):
 class _AsArrayBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `.asarray(val)`."""
 
-    def asarray(self, val: TensorOrScalar) -> TensorOrScalar:
+    def asarray(self, val: OpValue) -> OpValue:
         """Convert value to backend array.
 
         Args:
-            val (TensorOrScalar): Input value.
+            val (OpValue): Input value.
 
         Returns:
-            TensorOrScalar: Backend array.
+            OpValue: Backend array.
         """
         ...
 
 
 def _eager_vmap(
-    func: TensorOrScalar,
+    func: OpValue,
     in_axes: int | tuple[int, ...],
     out_axes: int | tuple[int, ...],
-    args: Sequence[TensorOrScalar],
-) -> TensorOrScalar:
+    args: Sequence[OpValue],
+) -> OpValue:
     """Evaluate _eager_vmap operation using vectorized IR execution.
 
     Args:
-        func (TensorOrScalar): The function to vectorize.
+        func (OpValue): The function to vectorize.
         in_axes (int | tuple[int, ...]): Axis or axes mapped over in inputs.
         out_axes (int | tuple[int, ...]): Axis or axes in output tensor(s).
-        args (Sequence[TensorOrScalar]): Input arguments.
+        args (Sequence[OpValue]): Input arguments.
 
     Returns:
         Tensor: Vectorized output tensor.
     """
     first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
     if first_tensor is None:
-        return ensure_callable(func)(*args)
+        return require_callable(func)(*args)
 
     in_axis = in_axes if isinstance(in_axes, int) else (in_axes[0] if in_axes else 0)
-    batch_size = first_tensor.shape[in_axis] if first_tensor.shape and in_axis < len(first_tensor.shape) else 1
+    ft_shape = extract_shape(first_tensor)
+    batch_size = ft_shape[in_axis] if ft_shape and in_axis < len(ft_shape) else 1
 
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
     body_block = _trace_function(func, tuple(symbolic_args), "vmap_body")
 
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.transforms.passes.vectorization import vectorize_graph
 
     body_graph = IRGraph(name="vmap_body")
     body_graph.inputs = list(body_block.inputs)
     body_graph.outputs = list(body_block.outputs)
     raw_nodes: dict[str, LogicalNode] | list[LogicalNode] | _NodesValuesProtocol = body_block.nodes
-    nodes_iter: Iterable[LogicalNode] = raw_nodes.values() if isinstance(raw_nodes, _NodesValuesProtocol) else as_node_list(body_block.nodes)
+    nodes_iter: Iterable[LogicalNode] = (
+        raw_nodes.values() if isinstance(raw_nodes, _NodesValuesProtocol) else as_node_list(body_block.nodes)
+    )
     for n in nodes_iter:
         body_graph.nodes[n.id] = clone_logical_node(n) if type(n) is not IRNode else n
 
@@ -111,7 +114,7 @@ def _eager_vmap(
     out_node_id = vectorized_graph.outputs[0]
     out_val = out_map[out_node_id]
 
-    raw_backend: TensorOrScalar | _AsArrayBackendProtocol = backend
+    raw_backend: OpValue | _AsArrayBackendProtocol = backend
     if isinstance(raw_backend, _AsArrayBackendProtocol):
         out_data = raw_backend.asarray(out_val)
     else:
@@ -143,23 +146,24 @@ def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
     Returns:
         tuple: Computed `tuple` output.
     """
-    if axis is not None and len(a.shape) > 0:
-        return tuple(s for j, s in enumerate(a.shape) if j != axis)
-    return a.shape
+    a_shape = extract_shape(a)
+    if axis is not None and len(a_shape) > 0:
+        return tuple(s for j, s in enumerate(a_shape) if j != axis)
+    return a_shape
 
 
-def _create_vmap_symbolic_args(args: Sequence[TensorOrScalar] | TensorOrScalar, in_axes: int | tuple[int, ...]) -> list[TensorOrScalar]:
+def _create_vmap_symbolic_args(args: Sequence[OpValue] | OpValue, in_axes: int | tuple[int, ...]) -> list[OpValue]:
     """Compute the create vmap symbolic args tensor operation.
 
     Args:
-        args (Sequence[TensorOrScalar] | TensorOrScalar): Input `args` argument (args).
+        args (Sequence[OpValue] | OpValue): Input `args` argument (args).
         in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
 
     Returns:
-        list[TensorOrScalar]: Computed `list[TensorOrScalar]` output.
+        list[OpValue]: Computed `list[OpValue]` output.
     """
-    args_seq: Sequence[TensorOrScalar] = args if isinstance(args, (list, tuple)) else ensure_eager_list(args)
-    symbolic_args: list[TensorOrScalar] = []
+    args_seq: Sequence[OpValue] = args if isinstance(args, (list, tuple)) else coerce_operand_list(args)
+    symbolic_args: list[OpValue] = []
     for i, a in enumerate(args_seq):
         if isinstance(a, Tensor):
             axis = _resolve_vmap_axis(in_axes, i)
@@ -171,44 +175,50 @@ def _create_vmap_symbolic_args(args: Sequence[TensorOrScalar] | TensorOrScalar, 
     return symbolic_args
 
 
-def _as_traced_data(val: TensorOrScalar) -> TracedDataProtocol:
-    """Narrow a traced tensor data field to `TracedDataProtocol`.
+@typing.runtime_checkable
+class _TracedIdProtocol(typing.Protocol):
+    """Protocol for traced proxy data exposing an ``id`` string."""
 
-    Args:
-        val (TensorOrScalar): Tensor data field.
-
-    Returns:
-        TracedDataProtocol: Narrowed traced data object.
-    """
-
-    def _guard(cand: TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
-        """Type guard narrowing `cand` to `TracedDataProtocol`.
-
-        Args:
-            cand (TensorOrScalar): Candidate value.
+    @property
+    def id(self) -> str:
+        """Return traced node identifier.
 
         Returns:
-            bool: True if non-None.
+            str: Traced node ID.
         """
-        return cand is not None
+        ...
 
-    assert _guard(val)
-    return val
+
+def _extract_traced_id(val: OpValue) -> str:
+    """Extract ``.id`` from traced tensor data or raise ``AttributeError``.
+
+    Args:
+        val (OpValue): Candidate traced tensor payload.
+
+    Returns:
+        str: Traced node identifier.
+
+    Raises:
+        AttributeError: If ``val`` does not expose an ``id`` attribute.
+    """
+    if isinstance(val, _TracedIdProtocol):
+        return str(val.id)
+    raise AttributeError(f"'{type(val).__name__}' object has no attribute 'id'")
 
 
 def _trace_vmap(
-    func: TensorOrScalar,
+    func: OpValue,
     in_axes: int | tuple[int, ...],
     out_axes: int | tuple[int, ...],
-    args: Sequence[TensorOrScalar],
-) -> TensorOrScalar:
+    args: Sequence[OpValue],
+) -> OpValue:
     """Compute the trace vmap tensor operation.
 
     Args:
-        func (TensorOrScalar): Input `func` argument (func).
+        func (OpValue): Input `func` argument (func).
         in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
         out_axes (int | tuple[int, ...]): Input `out_axes` argument (out axes).
-        args (Sequence[TensorOrScalar]): Input `args` argument (args).
+        args (Sequence[OpValue]): Input `args` argument (args).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -216,7 +226,7 @@ def _trace_vmap(
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
     body_graph = _trace_function(func, tuple(symbolic_args), "vmap_body")
     out_id = str(uuid.uuid4())
-    node_inputs: list[str] = [_as_traced_data(a.data).id for a in args if isinstance(a, Tensor)]
+    node_inputs: list[str] = [_extract_traced_id(a.data) for a in args if isinstance(a, Tensor)]
     node = LogicalNode(
         id=out_id,
         op_type="Vmap",
@@ -235,14 +245,14 @@ def _trace_vmap(
 
 
 def vmap(
-    func: TensorOrScalar,
+    func: OpValue,
     in_axes: int | tuple[int, ...] = 0,
     out_axes: int | tuple[int, ...] = 0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Create a vectorized version of a function mapped over specified axes.
 
     Args:
-        func (Callable): Input `func` argument (func).
+        func (OpValue): Input `func` argument (func).
         in_axes (int | tuple[int, ...]): Input `in_axes` argument (in axes).
         out_axes (int | tuple[int, ...]): Input `out_axes` argument (out axes).
 
@@ -250,14 +260,17 @@ def vmap(
         Callable: Computed `Callable` output.
     """
 
-    def wrapped(*args: TensorOrScalar) -> TensorOrScalar:
+    def wrapped(*args: OpValue) -> OpValue:
         """Wrap.
 
         Args:
-            *args (TensorOrScalar): Positional args.
+            *args (OpValue): Positional args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
+
+        Raises:
+            RuntimeError: If execution or validation fails in `wrapped`.
         """
         if config.eager_mode:
             return _eager_vmap(func, in_axes, out_axes, args)

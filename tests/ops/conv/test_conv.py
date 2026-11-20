@@ -3,21 +3,18 @@
 from __future__ import annotations
 
 import typing
-
-# ruff: noqa: E501
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
-import ml_switcheroo_compiler.ops.nn.conv1d as conv1d_mod
-import ml_switcheroo_compiler.ops.nn.conv2d as conv2d_mod
-import ml_switcheroo_compiler.ops.nn.conv3d as conv3d_mod
+import ml_switcheroo_compiler.ops.nn.conv as conv1d_mod
+import ml_switcheroo_compiler.ops.nn.conv as conv2d_mod
+import ml_switcheroo_compiler.ops.nn.conv as conv3d_mod
 import ml_switcheroo_compiler.ops.nn.conv_lstm as conv_lstm_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.clip_grad import clip_grad_norm
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -89,8 +86,12 @@ def test_conv2d_coverage() -> None:
 def test_conv3d_coverage() -> None:
     """Test function test_conv3d_coverage."""
     config.eager_mode = True
-    t_in = Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-    t_w = Tensor(np.ones((2, 2, 2, 2, 4)), TensorConfig(shape=(2, 2, 2, 2, 4), dtype=DType("float32"), device=Device("cpu")))
+    t_in = Tensor(
+        np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))
+    )
+    t_w = Tensor(
+        np.ones((2, 2, 2, 2, 4)), TensorConfig(shape=(2, 2, 2, 2, 4), dtype=DType("float32"), device=Device("cpu"))
+    )
 
     res = conv3d_mod.conv3d(t_in, t_w)
     assert res is not None
@@ -108,40 +109,87 @@ def test_conv_lstm_coverage() -> None:
 
     weights_1d = RNNWeights(
         kernel=Tensor(np.ones((2, 2, 8)), TensorConfig(shape=(2, 2, 8), dtype=DType("float32"), device=Device("cpu"))),
-        recurrent_kernel=Tensor(np.ones((2, 2, 8)), TensorConfig(shape=(2, 2, 8), dtype=DType("float32"), device=Device("cpu"))),
+        recurrent_kernel=Tensor(
+            np.ones((2, 2, 8)), TensorConfig(shape=(2, 2, 8), dtype=DType("float32"), device=Device("cpu"))
+        ),
         bias=Tensor(np.ones((8,)), TensorConfig(shape=(8,), dtype=DType("float32"), device=Device("cpu"))),
     )
     t_in_1d = Tensor(np.ones((1, 3, 2)), TensorConfig(shape=(1, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-    state_1d = (Tensor(np.ones((1, 3, 2)), TensorConfig(shape=(1, 3, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 3, 2)), TensorConfig(shape=(1, 3, 2), dtype=DType("float32"), device=Device("cpu"))))
+    state_1d = (
+        Tensor(np.ones((1, 3, 2)), TensorConfig(shape=(1, 3, 2), dtype=DType("float32"), device=Device("cpu"))),
+        Tensor(np.ones((1, 3, 2)), TensorConfig(shape=(1, 3, 2), dtype=DType("float32"), device=Device("cpu"))),
+    )
 
-    # Needs valid dimensions to pass the gates, which split features into 4 chunks (so output channels should be multiple of 4)
-    # Our weights_1d output channels is 8. And state has channels 2, but Wait, we need it to split properly!
+    # Needs valid dimensions to pass the gates, which split features into 4 chunks
+    # (so output channels should be a multiple of 4).
+
+    mock_hidden = Tensor(np.ones((1,)), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
+    mock_cell = Tensor(np.zeros((1,)), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
+    expected_out = (mock_hidden, (mock_hidden, mock_cell))
 
     with patch("ml_switcheroo_compiler.ops.nn.conv_lstm._apply_conv_lstm_gates") as mock_gates:
-        mock_gates.return_value = ("hidden", "cell")
+        mock_gates.return_value = expected_out
 
         # 1D
-        assert ensure_eager_tensor(conv_lstm_mod.conv_lstm_cell(t_in_1d, state_1d, weights_1d)) == ensure_eager_tensor(("hidden", "cell"))
+        assert conv_lstm_mod.conv_lstm_cell(t_in_1d, state_1d, weights_1d) == expected_out
 
         # 2D
         weights_2d = RNNWeights(
-            kernel=Tensor(np.ones((2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))),
-            recurrent_kernel=Tensor(np.ones((2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))),
+            kernel=Tensor(
+                np.ones((2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))
+            ),
+            recurrent_kernel=Tensor(
+                np.ones((2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))
+            ),
             bias=Tensor(np.ones((8,)), TensorConfig(shape=(8,), dtype=DType("float32"), device=Device("cpu"))),
         )
-        t_in_2d = Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-        state_2d = (Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))))
-        assert ensure_eager_tensor(conv_lstm_mod.conv_lstm_cell(t_in_2d, state_2d, weights_2d)) == ensure_eager_tensor(("hidden", "cell"))
+        t_in_2d = Tensor(
+            np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))
+        )
+        state_2d = (
+            Tensor(
+                np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))
+            ),
+            Tensor(
+                np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))
+            ),
+        )
+        assert conv_lstm_mod.conv_lstm_cell(t_in_2d, state_2d, weights_2d) == expected_out
 
         # 3D
-        weights_3d = RNNWeights(kernel=Tensor(np.ones((2, 2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))), recurrent_kernel=Tensor(np.ones((2, 2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))), bias=None)
-        t_in_3d = Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
-        state_3d = (Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))))
-        assert ensure_eager_tensor(conv_lstm_mod.conv_lstm_cell(t_in_3d, state_3d, weights_3d)) == ensure_eager_tensor(("hidden", "cell"))
+        weights_3d = RNNWeights(
+            kernel=Tensor(
+                np.ones((2, 2, 2, 2, 8)),
+                TensorConfig(shape=(2, 2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu")),
+            ),
+            recurrent_kernel=Tensor(
+                np.ones((2, 2, 2, 2, 8)),
+                TensorConfig(shape=(2, 2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu")),
+            ),
+            bias=None,
+        )
+        t_in_3d = Tensor(
+            np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))
+        )
+        state_3d = (
+            Tensor(
+                np.ones((1, 3, 3, 3, 2)),
+                TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")),
+            ),
+            Tensor(
+                np.ones((1, 3, 3, 3, 2)),
+                TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")),
+            ),
+        )
+        assert conv_lstm_mod.conv_lstm_cell(t_in_3d, state_3d, weights_3d) == expected_out
 
         # Unsupported
         with pytest.raises(ValueError):
-            conv_lstm_mod.conv_lstm_cell(Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))), state_1d, weights_1d)
+            conv_lstm_mod.conv_lstm_cell(
+                Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))),
+                state_1d,
+                weights_1d,
+            )
 
     # Test _apply_conv_lstm_gates
     x_conv = Tensor(np.ones((1, 3, 8)), TensorConfig(shape=(1, 3, 8), dtype=DType("float32"), device=Device("cpu")))

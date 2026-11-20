@@ -4,34 +4,23 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
-from ml_switcheroo_compiler.core.shape import has_backend_member
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.interpreter import evaluate_graph
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.interpreter.evaluator import InterpreterValue
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _is_attr_dict(val: dict[str, AttributeValue]) -> typing.TypeGuard[dict[str, EvalValue | AttributeValue]]:
-    """Type guard narrowing node attributes dict to accept `EvalValue`.
-
-    Args:
-        val (dict[str, AttributeValue]): Attributes dict.
-
-    Returns:
-        bool: True if val is a dict.
-    """
-    return isinstance(val, dict)
-
-
+@typing.runtime_checkable
 class _SizeOneProtocol(typing.Protocol):
     """Protocol for tensor/array values exposing a `size` attribute."""
 
     size: int
 
 
+@typing.runtime_checkable
 class _NumelProtocol(typing.Protocol):
     """Protocol for tensor values exposing a `.numel()` method."""
 
@@ -44,79 +33,81 @@ class _NumelProtocol(typing.Protocol):
         ...
 
 
+@typing.runtime_checkable
 class _BackendItemProtocol(typing.Protocol):
     """Protocol for backend classes/modules exposing `.item(val)`."""
 
-    def item(self, val: EvalValue) -> EvalValue:
+    def item(self, val: InterpreterValue) -> InterpreterValue:
         """Extract scalar item from a 1-element array.
 
         Args:
-            val (EvalValue): Array value.
+            val (InterpreterValue): Array value.
 
         Returns:
-            EvalValue: Extracted scalar value.
+            InterpreterValue: Extracted scalar value.
         """
         ...
 
 
+@typing.runtime_checkable
 class _ScalarItemProtocol(typing.Protocol):
     """Protocol for array values exposing `.item()`."""
 
-    def item(self) -> EvalValue:
+    def item(self) -> InterpreterValue:
         """Extract scalar item.
 
         Returns:
-            EvalValue: Extracted scalar value.
+            InterpreterValue: Extracted scalar value.
         """
         ...
 
 
-def _has_size_attr(val: EvalValue) -> typing.TypeGuard[_SizeOneProtocol]:
+def _has_size_attr(val: InterpreterValue) -> typing.TypeGuard[_SizeOneProtocol]:
     """Check whether `val` exposes a `size` attribute.
 
     Args:
-        val (EvalValue): Evaluated array or scalar.
+        val (InterpreterValue): Evaluated array or scalar.
 
     Returns:
-        bool: True if `val` has `size`.
+        bool: True if `val` satisfies `_SizeOneProtocol`.
     """
-    return has_backend_member(val, "size")
+    return isinstance(val, _SizeOneProtocol)
 
 
-def _has_numel_method(val: EvalValue) -> typing.TypeGuard[_NumelProtocol]:
+def _has_numel_method(val: InterpreterValue) -> typing.TypeGuard[_NumelProtocol]:
     """Check whether `val` exposes a `numel` method.
 
     Args:
-        val (EvalValue): Evaluated array or scalar.
+        val (InterpreterValue): Evaluated array or scalar.
 
     Returns:
-        bool: True if `val` has `numel`.
+        bool: True if `val` satisfies `_NumelProtocol`.
     """
-    return has_backend_member(val, "numel")
+    return isinstance(val, _NumelProtocol)
 
 
-def _has_backend_item(val: type) -> typing.TypeGuard[_BackendItemProtocol]:
+def _has_backend_item(val: type | OpValue) -> typing.TypeGuard[_BackendItemProtocol]:
     """Check whether `val` exposes an `item` method.
 
     Args:
-        val (type): Backend class.
+        val (type | OpValue): Backend class or instance.
 
     Returns:
-        bool: True if `val` has `item`.
+        bool: True if `val` satisfies `_BackendItemProtocol`.
     """
-    return has_backend_member(val, "item")
+    return isinstance(val, _BackendItemProtocol)
 
 
-def _has_scalar_item(val: EvalValue) -> typing.TypeGuard[_ScalarItemProtocol]:
+def _has_scalar_item(val: InterpreterValue) -> typing.TypeGuard[_ScalarItemProtocol]:
     """Check whether `val` exposes an `item` method.
 
     Args:
-        val (EvalValue): Evaluated array.
+        val (InterpreterValue): Evaluated array.
 
     Returns:
-        bool: True if `val` has `item`.
+        bool: True if `val` satisfies `_ScalarItemProtocol`.
     """
-    return has_backend_member(val, "item")
+    return isinstance(val, _ScalarItemProtocol)
 
 
 def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> bool:
@@ -141,18 +132,18 @@ def _evaluate_constant_node(
     node: IRNode,
     canonical_inputs: list[str],
     graph: IRGraph,
-    backend: type,
-) -> EvalValue:
+    backend: type | OpValue,
+) -> InterpreterValue:
     """Evaluate a constant node using the reference eager backend.
 
     Args:
         node (IRNode): Primal IR node to fold.
         canonical_inputs (list[str]): Input node IDs.
         graph (IRGraph): Parent computation graph.
-        backend (type): Reference eager backend generator.
+        backend (type | OpValue): Reference eager backend generator or instance.
 
     Returns:
-        EvalValue: Evaluated concrete value.
+        InterpreterValue: Evaluated concrete value.
     """
     subgraph = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:
@@ -165,11 +156,11 @@ def _evaluate_constant_node(
         shape_metadata=node.shape_metadata,
     )
     outputs = evaluate_graph(subgraph, {}, backend=backend)
-    val: EvalValue = outputs[node.id]
-    raw_val: EvalValue = val
+    val: InterpreterValue = outputs[node.id]
+    raw_val: InterpreterValue = val
     is_scalar_one = (_has_size_attr(raw_val) and raw_val.size == 1) or (_has_numel_method(val) and val.numel() == 1)
     if is_scalar_one:
-        raw_out: EvalValue = outputs[node.id]
+        raw_out: InterpreterValue = outputs[node.id]
         if _has_backend_item(backend):
             val = backend.item(raw_out)
         elif _has_scalar_item(raw_out):
@@ -187,7 +178,17 @@ def _resolve_folding_backend() -> type | None:
     if backend is None:
         try:
             backend = BackendRegistry.get("pure_python")
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             backend = None
     return backend
 
@@ -214,25 +215,26 @@ def _try_fold_single_node(
     if node.op_type == "Constant" or not _are_all_inputs_constant(canonical_inputs, graph):
         return False
 
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
     try:
         if backend is None:
             return False
+
+        from ml_switcheroo_compiler.ir.core import ensure_attr_val
+
         val = _evaluate_constant_node(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
-        new_attrs: dict[str, AttributeValue] = {}
+        new_attrs: dict[str, AttributeValue] = {"value": ensure_attr_val(val)}
         graph.nodes[node.id].attributes = new_attrs
-        assert _is_attr_dict(new_attrs)
-        new_attrs["value"] = val
         graph.nodes[node.id].inputs = []
         return True
-    except (ValueError, TypeError, RuntimeError) as e:
+    except UnimplementedMathError as e:
+        logging.getLogger(__name__).debug(f"Unimplemented math for constant folding {node.op_type}: {e}")
+        return False
+    except (ValueError, TypeError, RuntimeError, ArithmeticError) as e:
         logging.getLogger(__name__).debug(f"Failed to constant fold {node.op_type}: {e}")
         return False
-    except Exception as e:
-        if type(e).__name__ == "UnimplementedMathError":
-            logging.getLogger(__name__).debug(f"Unimplemented math for constant folding {node.op_type}: {e}")
-            return False
-        raise
 
 
 def _fold_nested_subgraphs(graph: IRGraph) -> bool:

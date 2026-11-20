@@ -5,7 +5,8 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     DeclarativeTargetFusionRule,
     MemoryAwareCostModel,
@@ -13,16 +14,15 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _discover_fusion_patterns,
     match_pattern,
 )
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_operator_fusion_memory_aware() -> None:
     """Verify memory-aware cost model validation with thresholds and symbolic shapes."""
-    config: dict[str, EagerValue] = {"max_fusion_memory_bytes": 1024, "memory_sizes": {"float32": 4}}
-    cost = ensure_callable(MemoryAwareCostModel)(config)
+    config: dict[str, BackendArg] = {"max_fusion_memory_bytes": 1024, "memory_sizes": {"float32": 4}}
+    cost = MemoryAwareCostModel(config)
 
     node = IRNode("mul1", "Multiply", inputs=["a", "b"], attributes={}, shape_metadata=(1024,))
     node.attributes["dtype"] = "float32"
@@ -36,7 +36,7 @@ def test_operator_fusion_memory_aware() -> None:
     assert bool(cost.is_fusion_valid({"mul3": node3})) is True
 
     cost2 = MemoryAwareCostModel(None)
-    assert bool(ensure_callable(cost2.is_fusion_valid)({"mul1": node})) is True
+    assert bool(cost2.is_fusion_valid({"mul1": node})) is True
 
 
 def test_commutative_pattern_matching() -> None:
@@ -93,6 +93,8 @@ def test_declarative_target_fusion_rule_and_discovery() -> None:
         rules = _discover_fusion_patterns(patterns_dir=None)
         assert any(isinstance(r, DeclarativeTargetFusionRule) and r.name == "valid_target_pat" for r in rules)
 
-    with patch("ml_switcheroo_compiler.transforms.passes.operator_fusion.yaml.safe_load", side_effect=ValueError("corrupt")):
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.operator_fusion.yaml.safe_load", side_effect=ValueError("corrupt")
+    ):
         rules_exc = _discover_fusion_patterns(patterns_dir=None)
         assert rules_exc == []

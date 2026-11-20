@@ -10,8 +10,6 @@ import numpy as np
 import pytest
 import yaml
 
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
-
 yaml.safe_load("dummy: 1")
 sys.modules.setdefault("dpnp", np)
 
@@ -39,34 +37,38 @@ def reset_global_tracing_state() -> Iterator[None]:
     import ml_switcheroo_compiler.backends.numpy.eager.distributed as np_dist
     import ml_switcheroo_compiler.backends.registry as reg
     import ml_switcheroo_compiler.tracing.state as state
-    from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
     from ml_switcheroo_compiler.core.config import config
 
-    old_is_tracing = state.global_tracing_state.is_tracing
-    old_graph = state.global_tracing_state.active_graph
-    old_add_node = state.global_tracing_state.add_node
-
-    old_backend = config.backend
-    old_eager = config.eager_mode
-    had_active_backend = has_backend_member(reg, "_ACTIVE_BACKEND")
-    old_active_backend = get_backend_member(reg, "_ACTIVE_BACKEND", None)
+    old_is_tracing, old_graph, old_add_node = (
+        state.global_tracing_state.is_tracing,
+        state.global_tracing_state.active_graph,
+        state.global_tracing_state.add_node,
+    )
+    old_backend, old_eager = config.backend, config.eager_mode
+    had_active_backend = adapt_backend_module(reg).has_symbol("_ACTIVE_BACKEND")
+    old_active_backend = adapt_backend_module(reg).get_symbol("_ACTIVE_BACKEND", None)
     np_dist._tcp_dist_ctx = np_dist.TCPDistributedContext()
 
     import os
 
+    import ml_switcheroo_compiler.ops as _preload_ops
+    import ml_switcheroo_compiler.ops.base as _preload_ops_base
+    import ml_switcheroo_compiler.ops.nn as _preload_ops_nn
     import ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider as ad_prov
     import ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry as jvp_reg
     import ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry as vjp_reg
     from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, _YAML_REGISTRY
-    from ml_switcheroo_compiler.utils.generic_utils import get_custom_objects
+
+    assert (_preload_ops, _preload_ops_base, _preload_ops_nn) is not None
 
     for _tmp_file in ("/tmp/ml_switcheroo_test_file.txt", "/tmp/ml_switcheroo_test_file2.txt"):
         if not os.path.exists(_tmp_file):
             with open(_tmp_file, "wb") as _f:
                 _f.write(b"content")
 
-    get_custom_objects().clear()
     orig_yaml_registry = dict(_YAML_REGISTRY)
+    orig_backends = dict(reg.BackendRegistry._registry)
     orig_vjp_reg, orig_jvp_reg = dict(vjp_reg._VJP_REGISTRY), dict(jvp_reg._JVP_REGISTRY)
     orig_caches = (
         vjp_reg.load_primitive_vjp_rules(),
@@ -79,7 +81,8 @@ def reset_global_tracing_state() -> Iterator[None]:
 
     yield
 
-    get_custom_objects().clear()
+    reg.BackendRegistry._registry.clear()
+    reg.BackendRegistry._registry.update(orig_backends)
     _YAML_REGISTRY.clear()
     _YAML_REGISTRY.update(orig_yaml_registry)
     for _cg_key in [k for k in _OP_REGISTRY if k.startswith("CustomGradient_")]:
@@ -96,13 +99,13 @@ def reset_global_tracing_state() -> Iterator[None]:
     ) = orig_caches
     state.global_tracing_state.is_tracing = old_is_tracing
     state.global_tracing_state.active_graph = old_graph
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(old_add_node)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", old_add_node, raising=False)
 
     config.backend = old_backend
     config.eager_mode = old_eager
 
     if had_active_backend:
-        ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(old_active_backend)
-    elif has_backend_member(reg, "_ACTIVE_BACKEND"):
-        del ensure_mutable(reg)._ACTIVE_BACKEND
+        pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", old_active_backend, raising=False)
+    elif adapt_backend_module(reg).has_symbol("_ACTIVE_BACKEND"):
+        pytest.MonkeyPatch().delattr(reg, "_ACTIVE_BACKEND")
     np_dist._tcp_dist_ctx = np_dist.TCPDistributedContext()

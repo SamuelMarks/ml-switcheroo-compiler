@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import typing
 
+from pytest_mock import MockerFixture
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.stats.descriptive import (
@@ -27,16 +29,16 @@ from ml_switcheroo_compiler.ops.stats.descriptive import (
     moments,
     trapezoidal_integral,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub, unpack_pair
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class MockTensor:
+class MockTensor(MockTestStub):
     """Mock tensor object with shape property."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -48,10 +50,10 @@ class MockTensor:
         self.data = [1, 2]
 
 
-class MockShapeMeta:
+class MockShapeMeta(MockTestStub):
     """Mock tensor object with shape_metadata property."""
 
-    def __init__(self, shape_metadata: EagerValue = ()) -> None:
+    def __init__(self, shape_metadata: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -60,7 +62,7 @@ class MockShapeMeta:
         self.shape_metadata = shape_metadata
 
 
-class PlainObj:
+class PlainObj(MockTestStub):
     """Plain object without shape information."""
 
     pass
@@ -71,14 +73,18 @@ def test_classes_infer_shape() -> None:
     # ApplyOverAxes
     aoa = ApplyOverAxes()
     assert aoa.infer_shape() == ()
-    assert ensure_callable(aoa.infer_shape)(func=lambda x: x, a=ensure_callable(MockTensor)((2, 3, 4)), axes=1) == (2, 1, 4)
-    assert ensure_callable(aoa.infer_shape)(func=ensure_callable(MockTensor)((2, 3, 4)), axes=-1) == (2, 3, 1)
-    assert ensure_callable(aoa.infer_shape)(x=ensure_callable(MockTensor)((2, 3)), axes=0) == (1, 3)
+    assert aoa.infer_shape(func=lambda x: x, a=MockTensor((2, 3, 4)), axes=1) == (
+        2,
+        1,
+        4,
+    )
+    assert aoa.infer_shape(func=MockTensor((2, 3, 4)), axes=-1) == (2, 3, 1)
+    assert aoa.infer_shape(x=MockTensor((2, 3)), axes=0) == (1, 3)
     assert aoa.infer_shape(a=(2, 3, 4), axes=[0, 2]) == (1, 3, 1)
     assert aoa.infer_shape(a=[2, 3, 4], axes=(1,)) == (2, 1, 4)
-    assert ensure_callable(aoa.infer_shape)(a=ensure_callable(MockShapeMeta)((5, 6)), axes=0) == (1, 6)
-    assert ensure_callable(aoa.infer_shape)(a=ensure_callable(MockShapeMeta)(()), axes=0) == ()
-    assert ensure_callable(aoa.infer_shape)(a=ensure_callable(PlainObj)(), axes=0) == ()
+    assert aoa.infer_shape(a=MockShapeMeta((5, 6)), axes=0) == (1, 6)
+    assert aoa.infer_shape(a=MockShapeMeta(()), axes=0) == ()
+    assert aoa.infer_shape(a=PlainObj(), axes=0) == ()
     assert aoa.infer_shape(a=(2, 3), axes=99) == (2, 3)
     assert aoa.infer_shape(a=(2, 3), axes=None) == (2, 3)
     assert aoa.infer_shape(a=(), axes=0) == ()
@@ -109,7 +115,7 @@ def test_classes_infer_shape() -> None:
     assert Distributions.op_name == "Distributions"
 
 
-def test_funcs(mocker: EagerTensorProtocol) -> None:
+def test_funcs(mocker: MockerFixture) -> None:
     """Test eager dispatcher wrappers and moments utility function.
 
     Args:
@@ -121,11 +127,11 @@ def test_funcs(mocker: EagerTensorProtocol) -> None:
         config.eager_mode = False
         mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.stats.descriptive.get_op")
         mock_op = mocker.MagicMock()
-        ensure_mutable(mock_get_op).return_value = ensure_eager_tensor(mocker.MagicMock(return_value=mock_op))
+        mock_get_op.return_value = mocker.MagicMock(return_value=mock_op)
 
         assert trapezoidal_integral(t, x=t, dx=2.0, axis=1) == mock_op()
         assert confusion_matrix(t, t, 5, weights=t) == mock_op()
-        (m1, v1) = ensure_callable(moments)(t, axes=[0], keepdims=True)
+        (m1, v1) = unpack_pair(moments(t, axes=[0], keepdims=True))
         assert m1 == mock_op()
         assert v1 == mock_op()
         assert descriptive(t) == mock_op()

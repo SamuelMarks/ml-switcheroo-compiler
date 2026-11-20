@@ -25,9 +25,15 @@ from ml_switcheroo_compiler.core.device import (
     get_physical_devices,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ops.device import DeviceContextOp, DeviceTransferOp, device_transfer, get_peak_memory, synchronize
+from ml_switcheroo_compiler.ops.device import (
+    DeviceContextOp,
+    DeviceTransferOp,
+    device_transfer,
+    get_peak_memory,
+    synchronize,
+)
 from ml_switcheroo_compiler.ops.device import eval as ops_eval
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTensorStub, MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -160,13 +166,13 @@ def test_ops_device_eval() -> None:
 
         del mock_backend.eval
 
-        class Dummy:
+        class Dummy(MockTestStub):
             """Test class Dummy."""
 
             data = "dummy_data"
 
         d = Dummy()
-        ensure_callable(ops_eval)(d)
+        ops_eval(d)
         assert d.data == "dummy_data"
 
 
@@ -200,7 +206,7 @@ def test_ops_device_get_peak_memory() -> None:
 def test_ops_device_infer_shapes() -> None:
     """Test ops.device infer_shape methods."""
 
-    class Dummy:
+    class Dummy(MockTestStub):
         """Test class Dummy."""
 
         shape = (1, 2)
@@ -212,16 +218,19 @@ def test_ops_device_infer_shapes() -> None:
 def test_ops_device_device_transfer() -> None:
     """Test ops.device device_transfer dispatch."""
 
-    class DummyTensor:
+    class DummyTensor(MockTensorStub):
         """Test class DummyTensor."""
 
-        shape = (1, 2)
-        dtype = "float32"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = (1, 2)
+            self.dtype = "float32"
 
     with patch("ml_switcheroo_compiler.ops.device._emit_shape_node") as mock_emit:
         mock_emit.return_value = "emitted"
         t = DummyTensor()
-        assert ensure_callable(device_transfer)(t, "cuda:0") == "emitted"
+        assert device_transfer(t, "cuda:0") == "emitted"
         mock_emit.assert_called_once_with(
             "DeviceTransfer",
             [t],

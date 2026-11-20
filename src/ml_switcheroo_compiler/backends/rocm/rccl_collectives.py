@@ -6,8 +6,8 @@ import ctypes
 import logging
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_int
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_int
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # RCCL Data types
@@ -32,46 +32,36 @@ class _RcclUniqueId(ctypes.Structure):
 _CArgT = typing.TypeVar("_CArgT")
 
 
+@typing.runtime_checkable
 class _CtypesFuncProtocol(typing.Protocol):
     """Protocol for ctypes C function objects."""
 
-    argtypes: EagerValue
-    restype: EagerValue
+    argtypes: BackendArg
+    restype: BackendArg
 
-    def __call__(self, *args: _CArgT) -> EagerValue:
+    def __call__(self, *args: _CArgT) -> BackendArg:
         """Invoke ctypes C function.
 
         Args:
             *args (_CArgT): C function arguments.
 
         Returns:
-            EagerValue: Return value.
+            BackendArg: Return value.
         """
         ...
 
 
-def _as_rccl_fn(val: EagerValue) -> _CtypesFuncProtocol | None:
+def _as_rccl_fn(val: BackendArg) -> _CtypesFuncProtocol | None:
     """Narrow `val` to `_CtypesFuncProtocol | None`.
 
     Args:
-        val (EagerValue): Candidate C function symbol.
+        val (BackendArg): Candidate C function symbol.
 
     Returns:
         _CtypesFuncProtocol | None: Typed ctypes function or `None`.
     """
-
-    def _guard(v: EagerValue) -> typing.TypeGuard[_CtypesFuncProtocol]:
-        """Type guard narrowing `v` to `_CtypesFuncProtocol`.
-
-        Args:
-            v (EagerValue): Candidate value.
-
-        Returns:
-            bool: True if non-None.
-        """
-        return v is not None
-
-    return val if _guard(val) else None
+    cand: BackendArg | _CtypesFuncProtocol = val
+    return cand if isinstance(cand, _CtypesFuncProtocol) else None
 
 
 class RCCLDriver:
@@ -84,23 +74,25 @@ class RCCLDriver:
             lib_path (str | None): Custom path to librccl.so or None for discovery.
         """
         self.rccl_lib: ctypes.CDLL | None = None
-        self._allocated_buffers: dict[int, EagerValue] = {}
+        self._allocated_buffers: dict[int, BackendArg] = {}
         self.hip_rt: ctypes.CDLL | None = None
         for rt in ["libamdhip64.so.6", "libamdhip64.so.5", "libamdhip64.so", "libhip_hcc.so", "hip.dll"]:
             try:
                 self.hip_rt = ctypes.CDLL(rt)
                 break
-            except (OSError, Exception):
+            except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
                 continue
 
-        paths: list[str] = [lib_path] if lib_path is not None else ["librccl.so.1", "librccl.so", "librccl.dylib", "rccl.dll"]
+        paths: list[str] = (
+            [lib_path] if lib_path is not None else ["librccl.so.1", "librccl.so", "librccl.dylib", "rccl.dll"]
+        )
         for p in paths:
             if not p:
                 continue
             try:
                 self.rccl_lib = ctypes.CDLL(p)
                 break
-            except (OSError, Exception):
+            except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
                 continue
 
     def is_available(self) -> bool:
@@ -120,12 +112,12 @@ class RCCLDriver:
         Returns:
             int: Memory address pointer value.
         """
-        if self.hip_rt is not None and has_backend_member(self.hip_rt, "hipMalloc"):
+        if self.hip_rt is not None and adapt_backend_module(self.hip_rt).has_symbol("hipMalloc"):
             ptr = ctypes.c_void_p()
             fn = self.hip_rt.hipMalloc
             fn.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_size_t]
             fn.restype = ctypes.c_int
-            status = int(ensure_int(fn(ctypes.byref(ptr), max(1, size_bytes))))
+            status = int(coerce_int(fn(ctypes.byref(ptr), max(1, size_bytes))))
             if status == 0 and ptr.value is not None:
                 return int(ptr.value)
 
@@ -140,7 +132,11 @@ class RCCLDriver:
         Args:
             ptr (int): Pointer address to free.
         """
-        if self.hip_rt is not None and has_backend_member(self.hip_rt, "hipFree") and ptr not in self._allocated_buffers:
+        if (
+            self.hip_rt is not None
+            and adapt_backend_module(self.hip_rt).has_symbol("hipFree")
+            and ptr not in self._allocated_buffers
+        ):
             try:
                 fn = self.hip_rt.hipFree
                 fn.argtypes = [ctypes.c_void_p]
@@ -151,18 +147,22 @@ class RCCLDriver:
         else:
             self._allocated_buffers.pop(ptr, None)
 
-    def copy_host_to_device(self, host_array: EagerValue, dev_ptr: int) -> None:
+    def copy_host_to_device(self, host_array: BackendArg, dev_ptr: int) -> None:
         """Transfer memory buffer from host NumPy array to accelerator device pointer.
 
         Args:
-            host_array (EagerValue): Source host NumPy array or buffer.
+            host_array (BackendArg): Source host NumPy array or buffer.
             dev_ptr (int): Destination accelerator device pointer address.
         """
-        raw_ct = get_backend_member(host_array, "ctypes", None)
-        raw_dp = get_backend_member(raw_ct, "data", None) if raw_ct is not None else None
-        buf_ptr: int | None = int(ensure_int(raw_dp)) if raw_dp is not None else None
-        nbytes = int(ensure_int(get_backend_member(host_array, "nbytes", 0)))
-        if self.hip_rt is not None and has_backend_member(self.hip_rt, "hipMemcpy") and dev_ptr not in self._allocated_buffers:
+        raw_ct = adapt_backend_module(host_array).get_symbol("ctypes", None)
+        raw_dp = adapt_backend_module(raw_ct).get_symbol("data", None) if raw_ct is not None else None
+        buf_ptr: int | None = int(coerce_int(raw_dp)) if raw_dp is not None else None
+        nbytes = int(coerce_int(adapt_backend_module(host_array).get_symbol("nbytes", 0)))
+        if (
+            self.hip_rt is not None
+            and adapt_backend_module(self.hip_rt).has_symbol("hipMemcpy")
+            and dev_ptr not in self._allocated_buffers
+        ):
             try:
                 fn = self.hip_rt.hipMemcpy
                 fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
@@ -172,20 +172,24 @@ class RCCLDriver:
                 return
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        ensure_callable(get_backend_member(ctypes, "memmove"))(dev_ptr, buf_ptr, nbytes)
+        adapt_backend_module(ctypes).require_op("memmove")(dev_ptr, buf_ptr, nbytes)
 
-    def copy_device_to_host(self, dev_ptr: int, out_array: EagerValue) -> None:
+    def copy_device_to_host(self, dev_ptr: int, out_array: BackendArg) -> None:
         """Transfer memory buffer from accelerator device pointer to destination host NumPy array.
 
         Args:
             dev_ptr (int): Source accelerator device pointer address.
-            out_array (EagerValue): Destination host NumPy array or buffer.
+            out_array (BackendArg): Destination host NumPy array or buffer.
         """
-        raw_ct = get_backend_member(out_array, "ctypes", None)
-        raw_dp = get_backend_member(raw_ct, "data", None) if raw_ct is not None else None
-        buf_ptr: int | None = int(ensure_int(raw_dp)) if raw_dp is not None else None
-        nbytes = int(ensure_int(get_backend_member(out_array, "nbytes", 0)))
-        if self.hip_rt is not None and has_backend_member(self.hip_rt, "hipMemcpy") and dev_ptr not in self._allocated_buffers:
+        raw_ct = adapt_backend_module(out_array).get_symbol("ctypes", None)
+        raw_dp = adapt_backend_module(raw_ct).get_symbol("data", None) if raw_ct is not None else None
+        buf_ptr: int | None = int(coerce_int(raw_dp)) if raw_dp is not None else None
+        nbytes = int(coerce_int(adapt_backend_module(out_array).get_symbol("nbytes", 0)))
+        if (
+            self.hip_rt is not None
+            and adapt_backend_module(self.hip_rt).has_symbol("hipMemcpy")
+            and dev_ptr not in self._allocated_buffers
+        ):
             try:
                 fn = self.hip_rt.hipMemcpy
                 fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
@@ -195,7 +199,7 @@ class RCCLDriver:
                 return
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        ensure_callable(get_backend_member(ctypes, "memmove"))(buf_ptr, dev_ptr, nbytes)
+        adapt_backend_module(ctypes).require_op("memmove")(buf_ptr, dev_ptr, nbytes)
 
     def stream_synchronize(self, stream: int | None = None) -> int:
         """Synchronize HIP compute stream.
@@ -208,13 +212,23 @@ class RCCLDriver:
         """
         if stream is None:
             return 0
-        if self.hip_rt is not None and has_backend_member(self.hip_rt, "hipStreamSynchronize"):
+        if self.hip_rt is not None and adapt_backend_module(self.hip_rt).has_symbol("hipStreamSynchronize"):
             try:
                 fn = self.hip_rt.hipStreamSynchronize
                 fn.argtypes = [ctypes.c_void_p]
                 fn.restype = ctypes.c_int
-                return int(ensure_int(fn(ctypes.c_void_p(stream))))
-            except Exception:
+                return int(coerce_int(fn(ctypes.c_void_p(stream))))
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 return -1
         return 0
 
@@ -253,7 +267,11 @@ class RCCLDriver:
         """
         self._check_available()
         try:
-            fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclAllReduce", get_backend_member(self.rccl_lib, "rcclAllReduce", None)))
+            fn = _as_rccl_fn(
+                adapt_backend_module(self.rccl_lib).get_symbol(
+                    "ncclAllReduce", adapt_backend_module(self.rccl_lib).get_symbol("rcclAllReduce", None)
+                )
+            )
             if fn is None:
                 return -1
             fn.argtypes = [
@@ -266,8 +284,8 @@ class RCCLDriver:
                 ctypes.c_void_p,
             ]
             fn.restype = ctypes.c_int
-            return int(ensure_int(fn(sendbuff, recvbuff, count, datatype, op, comm or 0, stream or 0)))
-        except Exception:
+            return int(coerce_int(fn(sendbuff, recvbuff, count, datatype, op, comm or 0, stream or 0)))
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def all_gather(
@@ -294,7 +312,11 @@ class RCCLDriver:
         """
         self._check_available()
         try:
-            fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclAllGather", get_backend_member(self.rccl_lib, "rcclAllGather", None)))
+            fn = _as_rccl_fn(
+                adapt_backend_module(self.rccl_lib).get_symbol(
+                    "ncclAllGather", adapt_backend_module(self.rccl_lib).get_symbol("rcclAllGather", None)
+                )
+            )
             if fn is None:
                 return -1
             fn.argtypes = [
@@ -306,8 +328,8 @@ class RCCLDriver:
                 ctypes.c_void_p,
             ]
             fn.restype = ctypes.c_int
-            return int(ensure_int(fn(sendbuff, recvbuff, sendcount, datatype, comm or 0, stream or 0)))
-        except Exception:
+            return int(coerce_int(fn(sendbuff, recvbuff, sendcount, datatype, comm or 0, stream or 0)))
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def broadcast(
@@ -336,7 +358,11 @@ class RCCLDriver:
         """
         self._check_available()
         try:
-            fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclBroadcast", get_backend_member(self.rccl_lib, "rcclBroadcast", None)))
+            fn = _as_rccl_fn(
+                adapt_backend_module(self.rccl_lib).get_symbol(
+                    "ncclBroadcast", adapt_backend_module(self.rccl_lib).get_symbol("rcclBroadcast", None)
+                )
+            )
             if fn is None:
                 return -1
             fn.argtypes = [
@@ -349,8 +375,8 @@ class RCCLDriver:
                 ctypes.c_void_p,
             ]
             fn.restype = ctypes.c_int
-            return int(ensure_int(fn(sendbuff, recvbuff, count, datatype, root, comm or 0, stream or 0)))
-        except Exception:
+            return int(coerce_int(fn(sendbuff, recvbuff, count, datatype, root, comm or 0, stream or 0)))
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def reduce_scatter(
@@ -379,7 +405,11 @@ class RCCLDriver:
         """
         self._check_available()
         try:
-            fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclReduceScatter", get_backend_member(self.rccl_lib, "rcclReduceScatter", None)))
+            fn = _as_rccl_fn(
+                adapt_backend_module(self.rccl_lib).get_symbol(
+                    "ncclReduceScatter", adapt_backend_module(self.rccl_lib).get_symbol("rcclReduceScatter", None)
+                )
+            )
             if fn is None:
                 return -1
             fn.argtypes = [
@@ -392,8 +422,8 @@ class RCCLDriver:
                 ctypes.c_void_p,
             ]
             fn.restype = ctypes.c_int
-            return int(ensure_int(fn(sendbuff, recvbuff, recvcount, datatype, op, comm or 0, stream or 0)))
-        except Exception:
+            return int(coerce_int(fn(sendbuff, recvbuff, recvcount, datatype, op, comm or 0, stream or 0)))
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def all_to_all(
@@ -420,7 +450,11 @@ class RCCLDriver:
         """
         self._check_available()
         try:
-            fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclAllToAll", get_backend_member(self.rccl_lib, "rcclAllToAll", None)))
+            fn = _as_rccl_fn(
+                adapt_backend_module(self.rccl_lib).get_symbol(
+                    "ncclAllToAll", adapt_backend_module(self.rccl_lib).get_symbol("rcclAllToAll", None)
+                )
+            )
             if fn is not None:
                 fn.argtypes = [
                     ctypes.c_void_p,
@@ -431,9 +465,9 @@ class RCCLDriver:
                     ctypes.c_void_p,
                 ]
                 fn.restype = ctypes.c_int
-                return int(ensure_int(fn(sendbuff, recvbuff, count, datatype, comm or 0, stream or 0)))
+                return int(coerce_int(fn(sendbuff, recvbuff, count, datatype, comm or 0, stream or 0)))
             return 0
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def get_unique_id(self) -> bytes:
@@ -447,12 +481,16 @@ class RCCLDriver:
         """
         self._check_available()
         uid: _RcclUniqueId = _RcclUniqueId()
-        fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclGetUniqueId", get_backend_member(self.rccl_lib, "rcclGetUniqueId", None)))
+        fn = _as_rccl_fn(
+            adapt_backend_module(self.rccl_lib).get_symbol(
+                "ncclGetUniqueId", adapt_backend_module(self.rccl_lib).get_symbol("rcclGetUniqueId", None)
+            )
+        )
         if fn is None:
             raise RuntimeError("ncclGetUniqueId not found in rccl library")
         fn.argtypes = [ctypes.POINTER(_RcclUniqueId)]
         fn.restype = ctypes.c_int
-        status: int = int(ensure_int(fn(ctypes.byref(uid))))
+        status: int = int(coerce_int(fn(ctypes.byref(uid))))
         if status != 0:
             raise RuntimeError(f"rcclGetUniqueId failed with status {status}")
         return bytes(uid.internal)
@@ -476,12 +514,16 @@ class RCCLDriver:
         ctypes.memmove(ctypes.byref(uid), comm_id[:128], min(128, len(comm_id)))
 
         comm = ctypes.c_void_p()
-        fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclCommInitRank", get_backend_member(self.rccl_lib, "rcclCommInitRank", None)))
+        fn = _as_rccl_fn(
+            adapt_backend_module(self.rccl_lib).get_symbol(
+                "ncclCommInitRank", adapt_backend_module(self.rccl_lib).get_symbol("rcclCommInitRank", None)
+            )
+        )
         if fn is None:
             raise RuntimeError("ncclCommInitRank not found in rccl library")
         fn.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_int, _RcclUniqueId, ctypes.c_int]
         fn.restype = ctypes.c_int
-        status: int = int(ensure_int(fn(ctypes.byref(comm), nranks, uid, rank)))
+        status: int = int(coerce_int(fn(ctypes.byref(comm), nranks, uid, rank)))
         if status != 0:
             raise RuntimeError(f"rcclCommInitRank failed with status {status}")
         return int(comm.value or 0)
@@ -497,11 +539,15 @@ class RCCLDriver:
         """
         self._check_available()
         try:
-            fn = _as_rccl_fn(get_backend_member(self.rccl_lib, "ncclCommDestroy", get_backend_member(self.rccl_lib, "rcclCommDestroy", None)))
+            fn = _as_rccl_fn(
+                adapt_backend_module(self.rccl_lib).get_symbol(
+                    "ncclCommDestroy", adapt_backend_module(self.rccl_lib).get_symbol("rcclCommDestroy", None)
+                )
+            )
             if fn is None:
                 return -1
             fn.argtypes = [ctypes.c_void_p]
             fn.restype = ctypes.c_int
-            return int(ensure_int(fn(ctypes.c_void_p(comm))))
-        except Exception:
+            return int(coerce_int(fn(ctypes.c_void_p(comm))))
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1

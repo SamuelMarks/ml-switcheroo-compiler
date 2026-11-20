@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ml_switcheroo_compiler.backends.transpiler_config_models import FrameworkConfig, TranspilerConfig, load_transpiler_config
+from ml_switcheroo_compiler.backends.transpiler_config_models import (
+    FrameworkConfig,
+    TranspilerConfig,
+    load_transpiler_config,
+)
 
 
 def test_framework_config() -> None:
@@ -95,7 +99,9 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
     (rules_dir / "ignored.txt").write_text("not yaml")
-    (rules_dir / "valid.yaml").write_text('ast_to_ir_ops:\n  torch.mul: Mul\nir_to_ast_ops:\n  Mul:\n    torch: ["torch.mul"]\n')
+    (rules_dir / "valid.yaml").write_text(
+        'ast_to_ir_ops:\n  torch.mul: Mul\nir_to_ast_ops:\n  Mul:\n    torch: ["torch.mul"]\n'
+    )
     (rules_dir / "only_ast.yaml").write_text("ast_to_ir_ops:\n  torch.sin: Sin\n")
     (rules_dir / "only_ir.yaml").write_text("ir_to_ast_ops:\n  Cos:\n    torch: ['torch.cos']\n")
     (rules_dir / "non_dict.yaml").write_text("- not a dict\n")
@@ -147,7 +153,11 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
             return ["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]
         return real_listdir(path)
 
-    with patch("os.path.isdir", side_effect=mock_isdir), patch("os.listdir", side_effect=mock_listdir), patch("os.path.join", side_effect=mock_join):
+    with (
+        patch("os.path.isdir", side_effect=mock_isdir),
+        patch("os.listdir", side_effect=mock_listdir),
+        patch("os.path.join", side_effect=mock_join),
+    ):
         cfg = load_transpiler_config(str(cfg_file))
         assert "torch.mul" in cfg.ast_to_ir_ops
         assert "torch.sin" in cfg.ast_to_ir_ops
@@ -262,14 +272,18 @@ def test_cst_rewrite_rules_models_and_loader() -> None:
     # Test with explicit path
     import os
 
-    explicit_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "cst_rewrite_rules.yaml")
+    explicit_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "cst_rewrite_rules.yaml"
+    )
     if os.path.exists(explicit_path):
         config_explicit = load_cst_rewrite_rules(path=explicit_path)
         assert len(config_explicit.method_substitutions) >= 1
 
     arg_rewrites_default = load_argument_rewrites()
     assert arg_rewrites_default is not None
-    explicit_arg_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "argument_rewrites.yaml")
+    explicit_arg_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "argument_rewrites.yaml"
+    )
     if os.path.exists(explicit_arg_path):
         arg_rewrites_explicit = load_argument_rewrites(path=explicit_arg_path)
         assert arg_rewrites_explicit is not None

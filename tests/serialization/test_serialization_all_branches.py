@@ -11,9 +11,9 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import IRGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.serialization import (
     SavedModel,
     _serialize_nested_config,
@@ -25,10 +25,10 @@ from ml_switcheroo_compiler.serialization import (
     run_restore_ops,
     serialize_object,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_load_model_edge_branches() -> None:
@@ -47,25 +47,25 @@ def test_load_model_edge_branches() -> None:
             zf.writestr("model.weights.h5", b"")
 
         # Test case 1: tmp_path exists and is removed
-        with patch("ml_switcheroo_compiler.serialization._load_h5_weights", return_value={"w": 1}):
+        with patch("ml_switcheroo_compiler.serialization.model_archive._load_h5_weights", return_value={"w": 1}):
             loaded_h5 = load_model(h5_model_path)
             assert loaded_h5.weights == {"w": 1}
 
         # Test case 2: tmp_path does not exist when entering finally (e.g. removed beforehand)
-        def remove_and_load(p: EagerValue) -> EagerValue:
+        def remove_and_load(p: str) -> dict[str, int]:
             """Test function remove_and_load.
 
             Args:
                 p: Test parameter `p`.
 
             Returns:
-                EagerValue: Computed output value from `remove_and_load`.
+                dict[str, int]: Computed output value from `remove_and_load`.
             """
-            if ensure_callable(os.path.exists)(p):
-                ensure_callable(os.remove)(p)
+            if os.path.exists(p):
+                os.remove(p)
             return {"w": 2}
 
-        with patch("ml_switcheroo_compiler.serialization._load_h5_weights", side_effect=remove_and_load):
+        with patch("ml_switcheroo_compiler.serialization.model_archive._load_h5_weights", side_effect=remove_and_load):
             loaded_h5_2 = load_model(h5_model_path)
             assert loaded_h5_2.weights == {"w": 2}
 
@@ -111,49 +111,54 @@ def test_register_serializable_empty_package() -> None:
 def test_serialize_and_deserialize_nested_and_lists() -> None:
     """Test nested configs, lists, tuples, custom classes in serialization/deserialization."""
 
-    class NestedObject:
+    class NestedObject(MockTestStub):
         """Class with get_config method."""
 
-        def get_config(self) -> dict[str, EagerValue]:
+        def get_config(self) -> dict[str, BackendArg]:
             """Return config dictionary.
 
             Returns:
-                dict[str, EagerValue]: Computed output value from `get_config`.
+                dict[str, BackendArg]: Computed output value from `get_config`.
             """
             return {"inner_val": 42}
 
+    from ml_switcheroo_compiler.core.shape import OpValue
+    from tests.testing_utils import coerce_operand_list
+
     # serialize_object with dict and list/tuple
-    obj_dict = {"layer": NestedObject(), "list_items": [NestedObject(), 10]}
-    ser_dict = serialize_object(ensure_eager_tensor(obj_dict))
+    obj_dict: dict[str, OpValue] = {"layer": NestedObject(), "list_items": [NestedObject(), 10]}
+    ser_dict = serialize_object(obj_dict)
     assert isinstance(ser_dict, dict)
     assert ser_dict["layer"] == {"inner_val": 42}
-    assert ser_dict["list_items"][0] == {"inner_val": 42}
+    assert coerce_operand_list(ser_dict["list_items"])[0] == {"inner_val": 42}
 
-    ser_list = serialize_object([ensure_eager_tensor(NestedObject()), ensure_eager_tensor((NestedObject(),))])
+    ser_list = serialize_object([NestedObject(), (NestedObject(),)])
     assert isinstance(ser_list, list)
     assert ser_list[0] == {"inner_val": 42}
 
     # Test _serialize_nested_config fallback on an object without get_config, not dict/list/primitive (line 620)
-    class CustomArbitrary:
+    class CustomArbitrary(MockTestStub):
         """Arbitrary object."""
 
         pass
 
     arbitrary_inst = CustomArbitrary()
-    assert _serialize_nested_config(ensure_eager_tensor(arbitrary_inst)) == ensure_eager_tensor(arbitrary_inst)
+    assert _serialize_nested_config(arbitrary_inst) == arbitrary_inst
 
     # Deserialization with custom_objects dict and non-callable class
     dummy_constant = "CONSTANT_OBJ"
-    config = {
+    empty_cfg: dict[str, OpValue] = {}
+    config: dict[str, OpValue] = {
         "class_name": "MyConstant",
-        "config": {},
+        "config": empty_cfg,
     }
-    res = deserialize_object(ensure_eager_tensor(config), custom_objects={"MyConstant": dummy_constant})
+    res = deserialize_object(config, custom_objects={"MyConstant": dummy_constant})
     assert res == dummy_constant
 
     # Deserialization of list / tuple
-    list_config = [{"class_name": "MyConstant", "config": {}}, 123]
-    res_list = deserialize_object(ensure_eager_tensor(list_config), custom_objects={"MyConstant": dummy_constant})
+    sub_cfg: dict[str, OpValue] = {"class_name": "MyConstant", "config": {}}
+    list_config: list[OpValue] = [sub_cfg, 123]
+    res_list = deserialize_object(list_config, custom_objects={"MyConstant": dummy_constant})
     assert res_list == [dummy_constant, 123]
 
 
@@ -161,21 +166,21 @@ def test_saved_model_topology_branches() -> None:
     """Test SavedModel with model.graph, model.to_json, model.get_config, and empty pb bytes."""
     with tempfile.TemporaryDirectory() as tmpdir:
         # 1. model with .graph
-        class ModelWithGraph:
+        class ModelWithGraph(MockTestStub):
             """Test class ModelWithGraph."""
 
             def __init__(self) -> None:
                 """Test function __init__."""
                 self.graph = IRGraph(name="test_graph")
 
-        sm1 = SavedModel(model=ensure_eager_tensor(ModelWithGraph()))
+        sm1 = SavedModel(model=ModelWithGraph())
         save_path1 = os.path.join(tmpdir, "model1")
         sm1.save(save_path1)
         loaded1 = SavedModel.load(save_path1)
         assert loaded1.model is not None
 
         # 2. model with .to_json()
-        class ModelWithToJson:
+        class ModelWithToJson(MockTestStub):
             """Test class ModelWithToJson."""
 
             def to_json(self) -> str:
@@ -186,37 +191,37 @@ def test_saved_model_topology_branches() -> None:
                 """
                 return json.dumps({"class_name": "DenseModel"})
 
-        sm2 = SavedModel(model=ensure_eager_tensor(ModelWithToJson()))
+        sm2 = SavedModel(model=ModelWithToJson())
         save_path2 = os.path.join(tmpdir, "model2")
         sm2.save(save_path2)
         loaded2 = SavedModel.load(save_path2)
         assert loaded2.model is not None
 
         # 3. model with .get_config() (line 835)
-        class ModelWithGetConfig:
+        class ModelWithGetConfig(MockTestStub):
             """Test class ModelWithGetConfig."""
 
-            def get_config(self) -> dict[str, EagerValue]:
+            def get_config(self) -> dict[str, BackendArg]:
                 """Test function get_config.
 
                 Returns:
-                    dict[str, EagerValue]: Computed output value from `get_config`.
+                    dict[str, BackendArg]: Computed output value from `get_config`.
                 """
                 return {"class_name": "ConfigOnlyModel"}
 
-        sm3 = SavedModel(model=ensure_eager_tensor(ModelWithGetConfig()))
+        sm3 = SavedModel(model=ModelWithGetConfig())
         save_path3 = os.path.join(tmpdir, "model3")
         sm3.save(save_path3)
         loaded3 = SavedModel.load(save_path3)
         assert loaded3.model is not None
 
         # 4. model that is None or has none of graph/to_json/get_config (line 835 false branch)
-        class EmptyModel:
+        class EmptyModel(MockTestStub):
             """Test class EmptyModel."""
 
             pass
 
-        sm4 = SavedModel(model=ensure_eager_tensor(EmptyModel()))
+        sm4 = SavedModel(model=EmptyModel())
         save_path4 = os.path.join(tmpdir, "model4")
         sm4.save(save_path4)
         loaded4 = SavedModel.load(save_path4)
@@ -274,8 +279,13 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
         from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
         from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
-        SafetensorsWeightFormat().save({"st_w": np.ones((1,), dtype=np.float32)}, os.path.join(ckpt_dir, "model.safetensors"))
-        ensure_callable(H5WeightFormat)().save({"h5_w": ensure_callable(np.ones)((1,), dtype=np.float32)}, ensure_callable(os.path.join)(ckpt_dir, "model.h5"))
+        SafetensorsWeightFormat().save(
+            {"st_w": np.ones((1,), dtype=np.float32)}, os.path.join(ckpt_dir, "model.safetensors")
+        )
+        H5WeightFormat().save(
+            {"h5_w": np.ones((1,), dtype=np.float32)},
+            os.path.join(ckpt_dir, "model.h5"),
+        )
 
         restored = run_restore_ops(ckpt_dir)
         assert "w1" in restored
@@ -296,9 +306,21 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
                 """
                 self.name = name
                 self.shape = shape
-                self.assigned_val: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
+                self.assigned_val: (
+                    np.ndarray[
+                        tuple[int, ...],
+                        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+                    ]
+                    | None
+                ) = None
 
-            def assign(self, val: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+            def assign(
+                self,
+                val: np.ndarray[
+                    tuple[int, ...],
+                    np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+                ],
+            ) -> None:
                 """Test function assign.
 
                 Args:
@@ -327,23 +349,25 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
                 self.name = "missing_var"
                 self.shape = (1, 1)
 
-        class DummyModel:
+        w_assign = DummyWeightWithAssign("w1", (2, 3))
+
+        class DummyModel(MockTestStub):
             """Test class DummyModel."""
 
             def __init__(self) -> None:
                 """Test function __init__."""
                 self.weights = [
-                    DummyWeightWithAssign("w1", (2, 3)),
+                    w_assign,
                     DummyWeightNoAssign("w2", (4, 4)),
                     DummyWeightNoNameOrMissing(),
                 ]
 
         model_ok = DummyModel()
-        run_restore_ops(ckpt_dir, target_model=ensure_eager_tensor(model_ok))
-        assert ensure_eager_tensor(ensure_eager_tensor(model_ok.weights[0]).assigned_val) is not None
+        run_restore_ops(ckpt_dir, target_model=model_ok)
+        assert w_assign.assigned_val is not None
 
         # 3. Validate shape mismatch in target_model
-        class DummyModelMismatch:
+        class DummyModelMismatch(MockTestStub):
             """Test class DummyModelMismatch."""
 
             def __init__(self) -> None:
@@ -351,7 +375,7 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
                 self.weights = [DummyWeightWithAssign("w1", (5, 5))]
 
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'w1'"):
-            run_restore_ops(ckpt_dir, target_model=ensure_eager_tensor(DummyModelMismatch()))
+            run_restore_ops(ckpt_dir, target_model=DummyModelMismatch())
 
         # 4. Validate variables dict matching shape, mismatching shape, and missing key
         class DummyVar:

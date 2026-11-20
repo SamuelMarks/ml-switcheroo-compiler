@@ -10,7 +10,9 @@ from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
+    ShapeDim,
+    ShapeTuple,
     is_traced_data,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -19,11 +21,11 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
-def _extract_proxy_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+def _extract_proxy_shape(seq: Sequence[ShapeDim]) -> tuple[int, ...]:
     """Convert a shape sequence into a concrete integer shape tuple.
 
     Args:
-        seq (Sequence[int | str | None]): Input shape sequence.
+        seq (Sequence[ShapeDim]): Input shape sequence.
 
     Returns:
         tuple[int, ...]: Extracted integer shape tuple.
@@ -49,14 +51,14 @@ class ProxyMathOverloadsMixin:
     """Math Overloads Mixin."""
 
     id: str
-    shape: tuple[int | str, ...]
+    shape: ShapeTuple
     dtype: str
 
-    def _binary_op(self, other: TensorOrScalar, op_type: str) -> ProxyTensor:
+    def _binary_op(self, other: OpValue, op_type: str) -> ProxyTensor:
         """Trace a binary mathematical operation and append it to the computation graph.
 
         Args:
-            other (TensorOrScalar): The right-hand side operand (either a ProxyTensor or a scalar constant).
+            other (OpValue): The right-hand side operand (either a ProxyTensor or a scalar constant).
             op_type (str): The name of the binary operation (e.g., 'Add', 'Mul').
 
         Returns:
@@ -79,7 +81,10 @@ class ProxyMathOverloadsMixin:
         # Broadcast shapes
         from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
 
-        out_shape_raw = broadcast_shapes(self.shape, other_shape)
+        lhs_shape: tuple[int | str, ...] = tuple(
+            d if isinstance(d, int) else (str(d) if d is not None else "?") for d in self.shape
+        )
+        out_shape_raw = broadcast_shapes(lhs_shape, other_shape)
         out_shape: tuple[int | str, ...] = tuple(d if isinstance(d, (int, str)) else str(d) for d in out_shape_raw)
         out_dtype = self.dtype
 
@@ -87,9 +92,11 @@ class ProxyMathOverloadsMixin:
             # Constant scalar logic would wrap 'other' in a Constant node
             other_id = str(uuid.uuid4())
 
-            from ml_switcheroo_compiler.ir.core import IRNode
+            from ml_switcheroo_ir import IRNode
 
-            const_val: AttributeValue = other if isinstance(other, (int, float, str, bool, bytes)) or other is None else str(other)
+            const_val: AttributeValue = (
+                other if isinstance(other, (int, float, str, bool, bytes)) or other is None else str(other)
+            )
             const_attrs: dict[str, AttributeValue] = {"value": const_val}
             const_node = IRNode(
                 id=other_id,
@@ -101,7 +108,7 @@ class ProxyMathOverloadsMixin:
 
         out_id = str(uuid.uuid4())
 
-        from ml_switcheroo_compiler.ir.core import IRNode
+        from ml_switcheroo_ir import IRNode
 
         node = IRNode(
             id=out_id,
@@ -137,24 +144,26 @@ class ProxyMathOverloadsMixin:
 
         out_id = str(uuid.uuid4())
 
-        from ml_switcheroo_compiler.ir.core import IRNode
+        from ml_switcheroo_ir import IRNode
+
+        from ml_switcheroo_compiler.ir.core import normalize_shape_metadata
 
         node = IRNode(
             id=out_id,
             op_type=op_type,
             inputs=[self.id],
-            shape_metadata=self.shape,
+            shape_metadata=normalize_shape_metadata(self.shape),
         )
         global_tracing_state.add_node(node)
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __getitem__(self, key: TensorOrScalar) -> ProxyTensor:
+    def __getitem__(self, key: OpValue) -> ProxyTensor:
         """Trace a tensor slicing or indexing operation.
 
         Args:
-            key (TensorOrScalar): The slice, integer, or tuple defining the sub-region to extract.
+            key (OpValue): The slice, integer, or tuple defining the sub-region to extract.
 
         Returns:
             ProxyTensor: A new proxy tensor representing the sliced result.
@@ -170,25 +179,27 @@ class ProxyMathOverloadsMixin:
 
         out_id = str(uuid.uuid4())
 
-        from ml_switcheroo_compiler.ir.core import IRNode
+        from ml_switcheroo_ir import IRNode
+
+        from ml_switcheroo_compiler.ir.core import normalize_shape_metadata
 
         node = IRNode(
             id=out_id,
             op_type="Slice",
             inputs=[self.id],
             attributes={"slices": str(key)},
-            shape_metadata=self.shape,
+            shape_metadata=normalize_shape_metadata(self.shape),
         )
         global_tracing_state.add_node(node)
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __matmul__(self, other: TensorOrScalar) -> ProxyTensor:
+    def __matmul__(self, other: OpValue) -> ProxyTensor:
         """Trace a matrix multiplication operation.
 
         Args:
-            other (TensorOrScalar): The right-hand side proxy tensor.
+            other (OpValue): The right-hand side proxy tensor.
 
         Returns:
             ProxyTensor: A new proxy tensor representing the matrix multiplication result.
@@ -212,13 +223,14 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 
-        out_shape = matmul_shape(self.shape, other_shape)
+        lhs_mm_shape = tuple(d if d is not None else "?" for d in self.shape)
+        out_shape = matmul_shape(lhs_mm_shape, other_shape)
         out_dtype = self.dtype
 
         out_id = str(uuid.uuid4())
         out_shape_tuple: tuple[int | str, ...] = tuple(d if isinstance(d, (int, str)) else str(d) for d in out_shape)
 
-        from ml_switcheroo_compiler.ir.core import IRNode
+        from ml_switcheroo_ir import IRNode
 
         node = IRNode(
             id=out_id,
@@ -232,11 +244,11 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=out_shape_tuple, dtype=out_dtype)
 
-    def assign(self, value: ProxyTensor | TensorOrScalar) -> ProxyTensor:
+    def assign(self, value: ProxyTensor | OpValue) -> ProxyTensor:
         """Trace an assignment operation, updating a variable's state.
 
         Args:
-            value (ProxyTensor | TensorOrScalar): The incoming tensor to assign to the variable.
+            value (ProxyTensor | OpValue): The incoming tensor to assign to the variable.
 
         Returns:
             ProxyTensor: A proxy tensor representing the updated state.
@@ -262,15 +274,21 @@ class ProxyMathOverloadsMixin:
 
         # Constant wrapping if not a proxy tensor
         value_id = value.id if isinstance(value, ProxyTensor) else (value.id if is_traced_data(value) else None)
-        value_shape = value.shape if isinstance(value, ProxyTensor) else (_extract_proxy_shape(value.shape) if isinstance(value, ShapeProtocol) else ())
+        value_shape = (
+            value.shape
+            if isinstance(value, ProxyTensor)
+            else (_extract_proxy_shape(value.shape) if isinstance(value, ShapeProtocol) else ())
+        )
         value_dtype = str(value.dtype) if isinstance(value, (ProxyTensor, _HasStrDTypeProtocol)) else self.dtype
 
         if value_id is None:
             value_id = str(uuid.uuid4())
 
-            from ml_switcheroo_compiler.ir.core import IRNode
+            from ml_switcheroo_ir import IRNode
 
-            const_val: AttributeValue = value if isinstance(value, (int, float, str, bool, bytes)) or value is None else str(value)
+            const_val: AttributeValue = (
+                value if isinstance(value, (int, float, str, bool, bytes)) or value is None else str(value)
+            )
             const_attrs: dict[str, AttributeValue] = {"value": const_val}
             const_node = IRNode(
                 id=value_id,
@@ -282,14 +300,16 @@ class ProxyMathOverloadsMixin:
 
         out_id = str(uuid.uuid4())
 
-        from ml_switcheroo_compiler.ir.core import IRNode
+        from ml_switcheroo_ir import IRNode
+
+        from ml_switcheroo_compiler.ir.core import normalize_shape_metadata
 
         assign_node = IRNode(
             id=out_id,
             op_type="AssignVariable",
             inputs=[value_id],
             attributes={"variable_name": var_name},
-            shape_metadata=value_shape,
+            shape_metadata=normalize_shape_metadata(value_shape),
         )
         global_tracing_state.add_node(assign_node)
 

@@ -5,10 +5,10 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph
 
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     pass
@@ -45,7 +45,7 @@ def test_pytorch_generator_no_numpy_crashes() -> None:
         if importlib.util.find_spec("torch") is None
         else MagicMock()
     )
-    exec_globals = ensure_tensor_dict({})
+    exec_globals: dict[str, BackendArg] = {}
     with ctx:
         try:
             exec(prefix_str, exec_globals)
@@ -56,4 +56,6 @@ def test_pytorch_generator_no_numpy_crashes() -> None:
         except Exception as e:
             pytest.fail(f"Unexpected error during PyTorch AST prefix execution: {e}")
 
-    assert "np" not in exec_globals and "numpy" not in exec_globals, "Numpy import should not be in prefix to prevent leaks."
+    assert "np" not in exec_globals and "numpy" not in exec_globals, (
+        "Numpy import should not be in prefix to prevent leaks."
+    )

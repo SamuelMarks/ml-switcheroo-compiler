@@ -7,24 +7,24 @@ import os
 import shutil
 
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_dtype,
     extract_shape,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor, as_opt_tensor_obj
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def read_file(filename: str | Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
+def read_file(filename: str | Tensor, name: OpValue = None) -> OpValue:
     """Read the entire contents of a file into a byte tensor.
 
     Args:
         filename (str | Tensor): Path to the file to read.
-        name (TensorOrScalar): Optional operation name.
+        name (OpValue): Optional operation name.
 
     Returns:
-        TensorOrScalar: Tensor containing the raw file contents.
+        OpValue: Tensor containing the raw file contents.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -43,7 +43,7 @@ def read_file(filename: str | Tensor, name: TensorOrScalar = None) -> TensorOrSc
     )
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None) -> Tensor | None:
+def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None) -> OpValue:
     """Write byte or string tensor contents to a file at the given path.
 
     Args:
@@ -52,14 +52,14 @@ def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None
         name (str | None): Optional operation name.
 
     Returns:
-        Tensor | None: Symbolic operation node when tracing, or None in eager mode.
+        OpValue: Symbolic operation node when tracing, or backend result in eager mode.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_opt_tensor_obj(get_active_backend().execute_op("WriteFile", filename, contents, name=name))
+        return get_active_backend().execute_op("WriteFile", filename, contents, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")
@@ -121,15 +121,15 @@ class ReadFile(OpDef):
 
     op_name = "ReadFile"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for ReadFile.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -139,7 +139,7 @@ class ReadFile(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_1: TensorOrScalar = res
+        _typed_ret_1: OpValue = res
         return _typed_ret_1
 
 
@@ -149,15 +149,15 @@ class WriteFile(OpDef):
 
     op_name = "WriteFile"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for WriteFile.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -167,5 +167,5 @@ class WriteFile(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_2: TensorOrScalar = res
+        _typed_ret_2: OpValue = res
         return _typed_ret_2

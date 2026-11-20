@@ -11,8 +11,14 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.linalg.decompositions.norms import _norm_out_shape, matrix_exp, matrix_exponential, matrix_power, norm, power_iteration
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.ops.linalg.decompositions.norms import (
+    _norm_out_shape,
+    matrix_exp,
+    matrix_exponential,
+    matrix_power,
+    norm,
+    power_iteration,
+)
 
 if typing.TYPE_CHECKING:
     pass
@@ -40,11 +46,13 @@ def test_norms_eager() -> None:
         assert isinstance(res, Tensor)
         res = matrix_exp(t)
         assert isinstance(res, Tensor)
+        from tests.testing_utils import coerce_operand_list
+
         mock_backend.return_value.execute_op.return_value = (np.zeros((2,)), np.zeros((2,)), np.zeros(()))
-        (res1, res2, res3) = ensure_callable(power_iteration)(t, num_iters=1, u=None)
-        assert isinstance(ensure_eager_tensor(res1), Tensor)
-        (res1, res2, res3) = ensure_callable(power_iteration)(t, num_iters=1, u=t)
-        assert isinstance(ensure_eager_tensor(res1), Tensor)
+        (res1, res2, res3) = coerce_operand_list(power_iteration(t, num_iters=1, u=None))
+        assert isinstance(res1, Tensor)
+        (res1, res2, res3) = coerce_operand_list(power_iteration(t, num_iters=1, u=t))
+        assert isinstance(res1, Tensor)
 
 
 def test_norms_trace() -> None:

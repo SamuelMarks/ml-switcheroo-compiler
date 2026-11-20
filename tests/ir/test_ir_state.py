@@ -9,7 +9,7 @@ def test_state_creation() -> None:
     """Test the state creation behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     read_var = create_read_variable("var1", (2, 2), "float32")
     assert read_var.op_type == "ReadVariable"

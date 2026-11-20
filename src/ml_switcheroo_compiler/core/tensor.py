@@ -7,12 +7,11 @@ from collections.abc import Iterable, Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device as Device
 from ml_switcheroo_compiler.core.device import DeviceType as DeviceType
@@ -23,8 +22,11 @@ from ml_switcheroo_compiler.core.mixins import (
     TensorLogicalMixin,
 )
 from ml_switcheroo_compiler.core.shape import (
-    AttrValue,
+    IRAttrValue,
     ShapeLike,
+    extract_device,
+    extract_dtype,
+    extract_shape,
     is_traced_data,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -35,28 +37,103 @@ from .tensor_mixins import (
 )
 
 
-def _is_core_eager_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
-    """Type guard narrowing `val` to `EagerTensorProtocol`.
+@typing.runtime_checkable
+class _IndexedBufferElementProtocol(typing.Protocol):
+    """Protocol for scalar/subarray elements supporting arithmetic and ordering in ``ArrayAt``."""
+
+    def __add__(self, other: OpValue) -> OpValue:
+        """Add ``other`` to ``self``.
+
+        Args:
+            other (OpValue): Right-hand operand.
+
+        Returns:
+            OpValue: Sum value.
+        """
+        ...
+
+    def __mul__(self, other: OpValue) -> OpValue:
+        """Multiply ``self`` by ``other``.
+
+        Args:
+            other (OpValue): Right-hand operand.
+
+        Returns:
+            OpValue: Product value.
+        """
+        ...
+
+    def __ge__(self, other: OpValue) -> bool:
+        """Compare ``self >= other``.
+
+        Args:
+            other (OpValue): Right-hand operand.
+
+        Returns:
+            bool: Comparison result.
+        """
+        ...
+
+    def __le__(self, other: OpValue) -> bool:
+        """Compare ``self <= other``.
+
+        Args:
+            other (OpValue): Right-hand operand.
+
+        Returns:
+            bool: Comparison result.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _MutableIndexedBufferProtocol(typing.Protocol):
+    """Protocol for copied buffers supporting indexed read and write in ``ArrayAt``."""
+
+    def __getitem__(self, key: OpValue) -> OpValue:
+        """Read element or slice at ``key``.
+
+        Args:
+            key (OpValue): Index specification.
+
+        Returns:
+            OpValue: Current element or slice.
+        """
+        ...
+
+    def __setitem__(self, key: OpValue, val: OpValue) -> None:
+        """Write ``val`` at ``key``.
+
+        Args:
+            key (OpValue): Index specification.
+            val (OpValue): Replacement value.
+        """
+        ...
+
+
+def _as_mutable_indexed_buffer(val: OpValue | _MutableIndexedBufferProtocol) -> _MutableIndexedBufferProtocol:
+    """Verify and narrow ``val`` to ``_MutableIndexedBufferProtocol``.
 
     Args:
-        val (TensorOrScalar): Candidate array value.
+        val (OpValue | _MutableIndexedBufferProtocol): Candidate copied buffer.
 
     Returns:
-        bool: True if non-None or None.
+        _MutableIndexedBufferProtocol: Verified mutable buffer.
     """
-    return not isinstance(val, type(Ellipsis))
+    assert isinstance(val, _MutableIndexedBufferProtocol)
+    return val
 
 
-def _ensure_core_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
-    """Narrow `val` to `EagerTensorProtocol`.
+def _as_indexed_element(val: OpValue | _IndexedBufferElementProtocol) -> _IndexedBufferElementProtocol:
+    """Verify and narrow ``val`` to ``_IndexedBufferElementProtocol``.
 
     Args:
-        val (TensorOrScalar): Candidate array value.
+        val (OpValue | _IndexedBufferElementProtocol): Candidate element or slice.
 
     Returns:
-        EagerTensorProtocol: Narrowed tensor.
+        _IndexedBufferElementProtocol: Verified element supporting arithmetic/comparison.
     """
-    assert _is_core_eager_tensor(val)
+    assert isinstance(val, _IndexedBufferElementProtocol)
     return val
 
 
@@ -65,19 +142,19 @@ class _CopyableArrayProtocol(typing.Protocol):
     """Protocol for multi-dimensional array buffers supporting `.copy()` and `.ndim`."""
 
     @property
-    def ndim(self) -> int:
+    def ndim(self) -> int | OpValue:
         """Return number of dimensions.
 
         Returns:
-            int: Number of dimensions.
+            int | OpValue: Number of dimensions.
         """
         ...
 
-    def copy(self) -> TensorOrScalar:
+    def copy(self) -> OpValue:
         """Return a shallow copy of the buffer.
 
         Returns:
-            TensorOrScalar: Copied buffer.
+            OpValue: Copied buffer.
         """
         ...
 
@@ -124,235 +201,168 @@ class _DeviceLikeProtocol(typing.Protocol):
         ...
 
 
-def _is_dtype_inst(val: TensorOrScalar) -> typing.TypeGuard[DType]:
-    """Type guard narrowing `val` to `DType`.
+def ensure_tensor(val: OpValue) -> Tensor:
+    """Return ``val`` directly if already a ``Tensor``, otherwise wrap it in a ``Tensor``.
 
     Args:
-        val (TensorOrScalar): Candidate value.
+        val (OpValue): Input tensor, backend array, or scalar operand.
 
     Returns:
-        bool: True for runtime dtype objects.
+        Tensor: Canonical ``Tensor`` instance.
     """
-    return isinstance(val, (DType, str)) or not isinstance(val, type(Ellipsis))
+    if isinstance(val, Tensor):
+        return val
+    return Tensor(val, TensorConfig(extract_shape(val), extract_dtype(val), extract_device(val)))
 
 
-def _as_dtype_obj(val: TensorOrScalar) -> DType:
-    """Narrow a `TensorOrScalar` value to `DType` without `typing.cast`.
+def as_opt_tensor_obj(val: OpValue) -> Tensor | None:
+    """Convert an optional ``OpValue`` operand into ``Tensor | None``.
 
     Args:
-        val (TensorOrScalar): Input dtype value.
+        val (OpValue): Input optional tensor operand.
 
     Returns:
-        DType: Narrowed DType instance.
+        Tensor | None: ``None`` if ``val`` is ``None``, otherwise a ``Tensor``.
     """
-    assert _is_dtype_inst(val)
-    return val
+    if val is None:
+        return None
+    return ensure_tensor(val)
 
 
-def _is_device_inst(val: TensorOrScalar) -> typing.TypeGuard[Device]:
-    """Type guard narrowing `val` to `Device`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        bool: True for runtime device objects.
-    """
-    return isinstance(val, (Device, str)) or not isinstance(val, type(Ellipsis))
+_AtTensorT = typing.TypeVar("_AtTensorT", bound=TensorIndexingMixin)
 
 
-def _as_device_obj(val: TensorOrScalar) -> Device:
-    """Narrow a `TensorOrScalar` value to `Device` without `typing.cast`.
-
-    Args:
-        val (TensorOrScalar): Input device value.
-
-    Returns:
-        Device: Narrowed Device instance.
-    """
-    assert _is_device_inst(val)
-    return val
-
-
-def _is_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
-    """Type guard narrowing `val` to `Tensor`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        bool: Always True for runtime tensor values.
-    """
-    return isinstance(val, Tensor) or not isinstance(val, type(Ellipsis))
-
-
-def ensure_tensor(val: TensorOrScalar) -> Tensor:
-    """Narrow a `TensorOrScalar` operand to `Tensor` without `typing.cast`.
-
-    Args:
-        val (TensorOrScalar): Input tensor operand.
-
-    Returns:
-        Tensor: Narrowed Tensor instance.
-    """
-    assert _is_tensor_inst(val)
-    return val
-
-
-def _is_opt_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
-    """Type guard narrowing `val` to `Tensor | None`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        bool: Always True for optional tensor values.
-    """
-    return val is None or isinstance(val, Tensor) or not isinstance(val, type(Ellipsis))
-
-
-def as_opt_tensor_obj(val: TensorOrScalar) -> Tensor | None:
-    """Narrow an optional `TensorOrScalar` operand to `Tensor | None` without `typing.cast`.
-
-    Args:
-        val (TensorOrScalar): Input optional tensor operand.
-
-    Returns:
-        Tensor | None: Narrowed Tensor or None.
-    """
-    assert _is_opt_tensor_inst(val)
-    return val
-
-
-class ArrayAt:
+class ArrayAt(typing.Generic[_AtTensorT]):
     """Provide a helper object to apply updates at specific indices."""
 
-    def __init__(self, tensor: Tensor, indices: TensorOrScalar) -> None:
+    def __init__(self, tensor: _AtTensorT, indices: OpValue) -> None:
         """Initialize ArrayAt.
 
         Args:
-            tensor (Tensor): The tensor to update.
-            indices (TensorOrScalar): The indices to update at.
+            tensor (_AtTensorT): The tensor to update.
+            indices (OpValue): The indices to update at.
         """
-        self.tensor = tensor
+        self.tensor: _AtTensorT = tensor
         self.indices = indices
 
-    def _apply_update(self, op_name: str, value: TensorOrScalar) -> Tensor:
+    def _apply_update(self, op_name: str, value: OpValue) -> _AtTensorT:
         """Apply indexed update on multi-dimensional tensor and return the tensor.
 
         Args:
             op_name (str): Update operation kind ('add', 'mul', 'set', 'max', 'min').
-            value (TensorOrScalar): Value to apply at indices.
+            value (OpValue): Value to apply at indices.
 
         Returns:
-            Tensor: Updated tensor.
+            _AtTensorT: Updated tensor.
         """
-        raw_tensor: TensorOrScalar = self.tensor
-        data: TensorOrScalar = raw_tensor.data if isinstance(raw_tensor, _DataWrapperProtocol) else None
+        raw_tensor: OpValue = self.tensor
+        data: OpValue | _CopyableArrayProtocol = (
+            raw_tensor.data if isinstance(raw_tensor, _DataWrapperProtocol) else None
+        )
         idx = self.indices.data if isinstance(self.indices, _DataWrapperProtocol) else self.indices
         val = value.data if isinstance(value, _DataWrapperProtocol) else value
         if isinstance(data, _CopyableArrayProtocol) and isinstance(data.ndim, int) and data.ndim > 0:
-            copied = _ensure_core_tensor(data.copy())
-            cur = copied[idx]
-            val_t = _ensure_core_tensor(val)
+            copied_raw = data.copy()
+            copied = _as_mutable_indexed_buffer(copied_raw)
+            cur = _as_indexed_element(copied[idx])
             if op_name == "add":
-                new_val = cur + val_t
+                new_val = cur + val
             elif op_name == "mul":
-                new_val = cur * val_t
+                new_val = cur * val
             elif op_name == "set":
-                new_val = val_t
+                new_val = val
             elif op_name == "max":
-                new_val = cur if bool(cur >= val_t) else val_t
+                new_val = copied[idx] if bool(cur >= val) else val
             else:
-                new_val = cur if bool(cur <= val_t) else val_t
+                new_val = copied[idx] if bool(cur <= val) else val
             copied[idx] = new_val
-            self.tensor._data = copied
+            self.tensor._data = copied_raw
         return self.tensor
 
-    def add(self, value: TensorOrScalar) -> Tensor:
+    def add(self, value: OpValue) -> _AtTensorT:
         """Add value at indices.
 
         Args:
-            value (TensorOrScalar): Input `value` argument (value).
+            value (OpValue): Input `value` argument (value).
 
         Returns:
-            Tensor: Updated tensor.
+            _AtTensorT: Updated tensor.
         """
         return self._apply_update("add", value)
 
-    def multiply(self, value: TensorOrScalar) -> Tensor:
+    def multiply(self, value: OpValue) -> _AtTensorT:
         """Multiply value at indices.
 
         Args:
-            value (TensorOrScalar): Input `value` argument (value).
+            value (OpValue): Input `value` argument (value).
 
         Returns:
-            Tensor: Updated tensor.
+            _AtTensorT: Updated tensor.
         """
         return self._apply_update("mul", value)
 
-    def set(self, value: TensorOrScalar) -> Tensor:
+    def set(self, value: OpValue) -> _AtTensorT:
         """Set value at indices.
 
         Args:
-            value (TensorOrScalar): Input `value` argument (value).
+            value (OpValue): Input `value` argument (value).
 
         Returns:
-            Tensor: Updated tensor.
+            _AtTensorT: Updated tensor.
         """
         return self._apply_update("set", value)
 
-    def maximum(self, value: TensorOrScalar) -> Tensor:
+    def maximum(self, value: OpValue) -> _AtTensorT:
         """Maximum value at indices.
 
         Args:
-            value (TensorOrScalar): Input `value` argument (value).
+            value (OpValue): Input `value` argument (value).
 
         Returns:
-            Tensor: Updated tensor.
+            _AtTensorT: Updated tensor.
         """
         return self._apply_update("max", value)
 
-    def minimum(self, value: TensorOrScalar) -> Tensor:
+    def minimum(self, value: OpValue) -> _AtTensorT:
         """Minimum value at indices.
 
         Args:
-            value (TensorOrScalar): Input `value` argument (value).
+            value (OpValue): Input `value` argument (value).
 
         Returns:
-            Tensor: Updated tensor.
+            _AtTensorT: Updated tensor.
         """
         return self._apply_update("min", value)
 
 
-class ArrayAtIndexer:
+class ArrayAtIndexer(typing.Generic[_AtTensorT]):
     """Provide a helper object to index a tensor for ArrayAt."""
 
-    def __init__(self, tensor: Tensor) -> None:
+    def __init__(self, tensor: _AtTensorT) -> None:
         """Initialize ArrayAtIndexer.
 
         Args:
-            tensor (Tensor): The tensor to index.
+            tensor (_AtTensorT): The tensor to index.
         """
-        self.tensor = tensor
+        self.tensor: _AtTensorT = tensor
 
-    def __getitem__(self, indices: TensorOrScalar) -> ArrayAt:
+    def __getitem__(self, indices: OpValue) -> ArrayAt[_AtTensorT]:
         """Get ArrayAt for indices.
 
         Args:
-            indices (TensorOrScalar): Input `indices` argument (indices).
+            indices (OpValue): Input `indices` argument (indices).
 
         Returns:
-            ArrayAt: Indexed updater helper.
+            ArrayAt[_AtTensorT]: Indexed updater helper.
         """
         return ArrayAt(self.tensor, indices)
 
 
-def _extract_dtype_str(dt: DType | str | TensorOrScalar | None) -> str:
+def _extract_dtype_str(dt: DType | str | _DTypeNameProtocol | OpValue | None) -> str:
     """Extract string representation from a dtype specification.
 
     Args:
-        dt (DType | str | TensorOrScalar | None): Dtype specification.
+        dt (DType | str | _DTypeNameProtocol | OpValue | None): Dtype specification.
 
     Returns:
         str: Extracted dtype string.
@@ -361,20 +371,22 @@ def _extract_dtype_str(dt: DType | str | TensorOrScalar | None) -> str:
         return "float32"
     if isinstance(dt, str):
         return dt
-    raw_dt: TensorOrScalar = dt
+    raw_dt: OpValue | _DTypeNameProtocol = dt
     if isinstance(raw_dt, _DTypeValueProtocol):
         return str(raw_dt.value)
     return str(raw_dt.name) if isinstance(raw_dt, _DTypeNameProtocol) else str(dt)
 
 
-def _normalize_config_dtype(dt: DType | str | TensorOrScalar | None) -> DType | str | TensorOrScalar:
+def _normalize_config_dtype(
+    dt: DType | str | _DTypeNameProtocol | OpValue | None,
+) -> DType | str | _DTypeNameProtocol | OpValue:
     """Normalize a raw dtype specification into a `DType` enum when valid.
 
     Args:
-        dt (Union[DType, str, TensorOrScalar, None]): Raw dtype specification.
+        dt (DType | str | _DTypeNameProtocol | OpValue | None): Raw dtype specification.
 
     Returns:
-        Union[DType, str, TensorOrScalar]: Normalized `DType` or original dtype object.
+        DType | str | _DTypeNameProtocol | OpValue: Normalized `DType` or original dtype object.
     """
     raw_val = _extract_dtype_str(dt)
     try:
@@ -389,16 +401,16 @@ class TensorConfig(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     shape: ShapeLike = ()
-    dtype: TensorOrScalar = DType.Float32
-    device: TensorOrScalar = "cpu"
+    dtype: OpValue = DType.Float32
+    device: OpValue = "cpu"
     requires_grad: bool = False
     trainable: bool = False
 
     def __init__(
         self,
         shape: ShapeLike = (),
-        dtype: TensorOrScalar = DType.Float32,
-        device: TensorOrScalar = "cpu",
+        dtype: OpValue = DType.Float32,
+        device: OpValue = "cpu",
         requires_grad: bool = False,
         trainable: bool = False,
     ) -> None:
@@ -406,8 +418,8 @@ class TensorConfig(pydantic.BaseModel):
 
         Args:
             shape (ShapeLike): Tensor shape specification.
-            dtype (TensorOrScalar): Data type specification.
-            device (TensorOrScalar): Execution device specification.
+            dtype (OpValue): Data type specification.
+            device (OpValue): Execution device specification.
             requires_grad (bool): Whether gradient tracking is enabled.
             trainable (bool): Whether tensor is a trainable parameter.
         """
@@ -418,13 +430,15 @@ class TensorConfig(pydantic.BaseModel):
             if isinstance(shape, Iterable) and not isinstance(shape, (str, bytes)):
                 from ml_switcheroo_compiler.ir.shape_system import SymNode
 
-                norm_shape = tuple(d if isinstance(d, SymNode) else (int(d) if isinstance(d, (int, float)) else str(d)) for d in shape)
+                norm_shape = tuple(
+                    d if isinstance(d, SymNode) else (int(d) if isinstance(d, (int, float)) else str(d)) for d in shape
+                )
             else:
                 norm_shape = ()
         else:
             norm_shape = shape
         norm_dtype = _normalize_config_dtype(dtype)
-        norm_device: TensorOrScalar
+        norm_device: OpValue
         if device is None:
             norm_device = Device("cpu")
         elif isinstance(device, str):
@@ -454,22 +468,22 @@ class Tensor(
     data payloads, supporting both eager execution and lazy tracing
     """
 
-    grad: TensorOrScalar = None
+    grad: OpValue = None
 
-    def __init__(self, data: TensorOrScalar, config: TensorConfig) -> None:
+    def __init__(self, data: OpValue, config: TensorConfig) -> None:
         """Initialize the Tensor.
 
         Args:
-            data (TensorOrScalar): The actual data payload.
+            data (OpValue): The actual data payload.
             config (TensorConfig): The tensor configuration.
         """
         self._data = data
 
-        def _parse_dim(s: int | str | SymNode | TensorOrScalar) -> int | str | SymNode:
+        def _parse_dim(s: int | str | SymNode | OpValue) -> int | str | SymNode:
             """Parse dimension.
 
             Args:
-                s (int | str | SymNode | TensorOrScalar): Input `s` argument (s).
+                s (int | str | SymNode | OpValue): Input `s` argument (s).
 
             Returns:
                 Union[int, str, SymNode]: Result dimension.
@@ -485,8 +499,9 @@ class Tensor(
 
         shape_tuple = config.shape if isinstance(config.shape, tuple) else ()
         self._shape: tuple[int | str | SymNode, ...] = tuple(_parse_dim(s) for s in shape_tuple)
-        self._dtype: DType = _as_dtype_obj(_normalize_config_dtype(config.dtype))
-        self._device: Device = _as_device_obj(config.device)
+        norm_dt = _normalize_config_dtype(config.dtype)
+        self._dtype: DType = norm_dt if isinstance(norm_dt, DType) else DType.Float32
+        self._device: Device = config.device if isinstance(config.device, Device) else Device("cpu")
         self._requires_grad = config.requires_grad
         self.config = config
 
@@ -506,12 +521,12 @@ class Tensor(
                 graph.outputs = [*list(graph.outputs), node_id]
         return self
 
-    def backward(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+    def backward(self, *args: OpValue, **kwargs: IRAttrValue) -> None:
         """Trigger the reverse-mode auto-differentiation.
 
         Args:
-            *args (TensorOrScalar): Additional arguments.
-            **kwargs (AttrValue): Additional keyword arguments.
+            *args (OpValue): Additional arguments.
+            **kwargs (IRAttrValue): Additional keyword arguments.
         """
         import ml_switcheroo_compiler.grad.api  # noqa: F401
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -524,14 +539,14 @@ class Tensor(
 
             logging.getLogger(__name__).debug("Ignored TracingError in Tensor.backward")
 
-    def view(self, *shape: int | Sequence[int]) -> Tensor:
+    def view(self, *shape: int | Sequence[int]) -> OpValue:
         """Return a new tensor with the same data but different size.
 
         Args:
             *shape (int | Sequence[int]): Target shape dimensions.
 
         Returns:
-            Tensor: A tensor containing the reshaped view.
+            OpValue: A tensor containing the reshaped view.
         """
         flat_shape: list[int] = []
         for s in shape:
@@ -541,7 +556,7 @@ class Tensor(
                 flat_shape.append(s)
             else:
                 flat_shape.extend(s)
-        from ml_switcheroo_compiler.core.shape import invoke_callable
+        from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
         from ml_switcheroo_compiler.ops.base import OpDef
         from ml_switcheroo_compiler.ops.registry import get_frontend, get_op
 
@@ -551,9 +566,8 @@ class Tensor(
         except KeyError:
             reshape_fn = get_op("Reshape")()
 
-        res_view = invoke_callable(reshape_fn, self, tuple(flat_shape))
-        assert _is_tensor_inst(res_view)
-        return res_view
+        assert isinstance(reshape_fn, VariadicCallableProtocol)
+        return reshape_fn(self, tuple(flat_shape))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous in memory tensor.
@@ -575,21 +589,21 @@ class Tensor(
 class Variable(Tensor):
     """Provide a mutable variable tensor for tracking state."""
 
-    def __init__(self, data: TensorOrScalar, config: TensorConfig) -> None:
+    def __init__(self, data: OpValue, config: TensorConfig) -> None:
         """Initialize Variable.
 
         Args:
-            data (TensorOrScalar): The underlying data array or proxy object.
+            data (OpValue): The underlying data array or proxy object.
             config (TensorConfig): The tensor configuration.
         """
         super().__init__(data, config)
         self.trainable = config.trainable
 
-    def assign(self, value: TensorOrScalar) -> Variable:
+    def assign(self, value: OpValue) -> Variable:
         """Assign a new value to the variable.
 
         Args:
-            value (TensorOrScalar): The new value.
+            value (OpValue): The new value.
 
         Returns:
             Variable: The updated variable.
@@ -607,11 +621,11 @@ class Variable(Tensor):
             _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_add(self, value: TensorOrScalar) -> Variable:
+    def assign_add(self, value: OpValue) -> Variable:
         """Add a value to the variable in-place.
 
         Args:
-            value (TensorOrScalar): The value to add.
+            value (OpValue): The value to add.
 
         Returns:
             Variable: The updated variable.
@@ -629,11 +643,11 @@ class Variable(Tensor):
             _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_sub(self, value: TensorOrScalar) -> Variable:
+    def assign_sub(self, value: OpValue) -> Variable:
         """Subtract a value from the variable in-place.
 
         Args:
-            value (TensorOrScalar): The value to subtract.
+            value (OpValue): The value to subtract.
 
         Returns:
             Variable: The updated variable.
@@ -655,11 +669,11 @@ class Variable(Tensor):
 class Parameter(Variable):
     """Provide a trainable parameter tensor."""
 
-    def __init__(self, data: TensorOrScalar, config: TensorConfig) -> None:
+    def __init__(self, data: OpValue, config: TensorConfig) -> None:
         """Initialize Parameter.
 
         Args:
-            data (TensorOrScalar): The underlying data array or proxy object.
+            data (OpValue): The underlying data array or proxy object.
             config (TensorConfig): The tensor configuration.
         """
         # Override config.trainable to True for Parameter

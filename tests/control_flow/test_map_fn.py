@@ -6,6 +6,7 @@ import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -13,10 +14,10 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import map_fn
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import coerce_numeric, extract_test_data, extract_test_dtype
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 device = Device(DeviceType.CPU, 0)
 
 
@@ -24,48 +25,48 @@ def test_map_fn_eager() -> None:
     """Test the map fn eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def f(x: EagerValue) -> EagerValue:
+        def f(x: BackendArg) -> BackendArg:
             """Evaluate and process the f operation.
 
             Args:
-                x (EagerValue): Required parameter for x.
+                x (BackendArg): Required parameter for x.
 
             Returns:
-                EagerValue: The evaluated or processed output.
+                BackendArg: The evaluated or processed output.
             """
-            y = ensure_eager_tensor(x).data * 2
+            y = coerce_numeric(extract_test_data(x)) * 2
             return Tensor(y, TensorConfig((), DType.Int32, device))
 
         ys = map_fn(f, xs)
-        assert ensure_callable(np.array_equal)(ensure_eager_tensor(ensure_eager_tensor(ys).data), ensure_callable(np.array)([2, 4, 6]))
+        assert np.array_equal(ensure_ndarray(extract_test_data(ys)), np.array([2, 4, 6]))
 
 
 def test_map_fn_trace() -> None:
     """Test the map fn trace behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with ConfigContext(eager_mode=False):
         xs = Tensor(ProxyTensor(id="mock", shape=(), dtype="int32"), TensorConfig((3,), DType.Int32, device))
 
-        def f(x: EagerValue) -> EagerValue:
+        def f(x: BackendArg) -> BackendArg:
             """Evaluate and process the f operation.
 
             Args:
-                x (EagerValue): Required parameter for x.
+                x (BackendArg): Required parameter for x.
 
             Returns:
-                EagerValue: The evaluated or processed output.
+                BackendArg: The evaluated or processed output.
             """
             return x
 
         global_tracing_state.start_tracing()
         ys = map_fn(f, xs)
-        assert ensure_eager_tensor(ensure_eager_tensor(ys).dtype) == DType.Int32
+        assert extract_test_dtype(ys) == DType.Int32
         global_tracing_state.stop_tracing()

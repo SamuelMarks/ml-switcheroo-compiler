@@ -6,23 +6,14 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.edge.config_models import (
-    WebrtcCollectivesConfig,
-    load_webrtc_collectives,
-)
+from ml_switcheroo_compiler.backends.edge.config_models import WebrtcCollectivesConfig, load_webrtc_collectives
 from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_init, emit_webrtc_op
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.distributed.collectives import dispatch_collective
-from ml_switcheroo_compiler.ops.distributed_ops import (
-    AllGather,
-    AllReduce,
-    AllToAll,
-    Broadcast,
-    ReduceScatter,
-)
+from ml_switcheroo_compiler.ops.distributed_ops import AllGather, AllReduce, AllToAll, Broadcast, ReduceScatter
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -65,62 +56,62 @@ def test_collective_shape_inference() -> None:
 
     # 1. AllReduce preserves shape
     ar_op = AllReduce()
-    assert ensure_callable(ar_op.infer_shape)(t) == (8, 16)
+    assert ar_op.infer_shape(t) == (8, 16)
 
     # 2. Broadcast preserves shape
     bc_op = Broadcast()
-    assert ensure_callable(bc_op.infer_shape)(t) == (8, 16)
+    assert bc_op.infer_shape(t) == (8, 16)
 
     # 3. AllGather concatenates along axis
     ag_op = AllGather()
-    assert ensure_callable(ag_op.infer_shape)(t, axis=0, world_size=4) == (32, 16)
-    assert ensure_callable(ag_op.infer_shape)(t, axis=1, world_size=2) == (8, 32)
-    assert ensure_callable(ag_op.infer_shape)(t) == (8, 16)
+    assert ag_op.infer_shape(t, axis=0, world_size=4) == (32, 16)
+    assert ag_op.infer_shape(t, axis=1, world_size=2) == (8, 32)
+    assert ag_op.infer_shape(t) == (8, 16)
 
     # 4. ReduceScatter splits along axis
     rs_op = ReduceScatter()
-    assert ensure_callable(rs_op.infer_shape)(t, axis=0, world_size=4) == (2, 16)
-    assert ensure_callable(rs_op.infer_shape)(t, axis=1, world_size=2) == (8, 8)
-    assert ensure_callable(rs_op.infer_shape)(t) == (8, 16)
+    assert rs_op.infer_shape(t, axis=0, world_size=4) == (2, 16)
+    assert rs_op.infer_shape(t, axis=1, world_size=2) == (8, 8)
+    assert rs_op.infer_shape(t) == (8, 16)
 
     # 5. AllToAll preserves element count
     a2a_op = AllToAll()
-    assert ensure_callable(a2a_op.infer_shape)(t) == (8, 16)
+    assert a2a_op.infer_shape(t) == (8, 16)
 
 
 def test_collective_gradient_propagation() -> None:
     """Test VJP and JVP rules for collective operations."""
     # VJP checks
     vjp_ar = get_vjp("AllReduce")
-    assert vjp_ar is not None
+    assert type(vjp_ar).__name__ == "function"
 
     vjp_ag = get_vjp("AllGather")
-    assert vjp_ag is not None
+    assert type(vjp_ag).__name__ == "function"
 
     vjp_rs = get_vjp("ReduceScatter")
-    assert vjp_rs is not None
+    assert type(vjp_rs).__name__ == "function"
 
     vjp_bc = get_vjp("Broadcast")
-    assert vjp_bc is not None
+    assert type(vjp_bc).__name__ == "function"
 
     vjp_a2a = get_vjp("AllToAll")
-    assert vjp_a2a is not None
+    assert type(vjp_a2a).__name__ == "function"
 
     # JVP checks
     jvp_ar = get_jvp("AllReduce")
-    assert jvp_ar is not None
+    assert type(jvp_ar).__name__ == "function"
 
     jvp_ag = get_jvp("AllGather")
-    assert jvp_ag is not None
+    assert type(jvp_ag).__name__ == "function"
 
     jvp_rs = get_jvp("ReduceScatter")
-    assert jvp_rs is not None
+    assert type(jvp_rs).__name__ == "function"
 
     jvp_bc = get_jvp("Broadcast")
-    assert jvp_bc is not None
+    assert type(jvp_bc).__name__ == "function"
 
     jvp_a2a = get_jvp("AllToAll")
-    assert jvp_a2a is not None
+    assert type(jvp_a2a).__name__ == "function"
 
 
 def test_collective_communication_semantics_eager() -> None:
@@ -131,18 +122,22 @@ def test_collective_communication_semantics_eager() -> None:
 
     # AllReduce SUM
     ar_res = dispatch_collective("AllReduce", rank0_data, backend="numpy", op_type="SUM", all_ranks_data=ranks)
-    ensure_callable(np.testing.assert_allclose)(ar_res, ensure_callable(np.array)([40.0, 60.0]))
+    np.testing.assert_allclose(ensure_ndarray(ar_res), np.array([40.0, 60.0]))
 
     # AllGather
     ag_res = dispatch_collective("AllGather", rank0_data, backend="numpy", axis=0, all_ranks_data=ranks)
-    ensure_callable(np.testing.assert_allclose)(ag_res, ensure_callable(np.array)([10.0, 20.0, 30.0, 40.0]))
+    np.testing.assert_allclose(ensure_ndarray(ag_res), np.array([10.0, 20.0, 30.0, 40.0]))
 
     # ReduceScatter
-    rs_rank0 = dispatch_collective("ReduceScatter", rank0_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=ranks)
-    rs_rank1 = dispatch_collective("ReduceScatter", rank1_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=1, all_ranks_data=ranks)
-    ensure_callable(np.testing.assert_allclose)(rs_rank0, ensure_callable(np.array)([40.0]))
-    ensure_callable(np.testing.assert_allclose)(rs_rank1, ensure_callable(np.array)([60.0]))
+    rs_rank0 = dispatch_collective(
+        "ReduceScatter", rank0_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=ranks
+    )
+    rs_rank1 = dispatch_collective(
+        "ReduceScatter", rank1_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=1, all_ranks_data=ranks
+    )
+    np.testing.assert_allclose(ensure_ndarray(rs_rank0), np.array([40.0]))
+    np.testing.assert_allclose(ensure_ndarray(rs_rank1), np.array([60.0]))
 
     # Broadcast from rank 1 to all
     bc_res = dispatch_collective("Broadcast", rank0_data, backend="numpy", root=1, all_ranks_data=ranks)
-    ensure_callable(np.testing.assert_allclose)(bc_res, rank1_data)
+    np.testing.assert_allclose(ensure_ndarray(bc_res), rank1_data)

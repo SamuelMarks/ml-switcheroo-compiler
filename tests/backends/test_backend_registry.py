@@ -7,8 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.testing_utils import ensure_callable
-
 if typing.TYPE_CHECKING:
     pass
 
@@ -19,7 +17,7 @@ def test_backend_registry() -> None:
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend, register_backend
     from ml_switcheroo_compiler.core.config import config
 
-    @ensure_callable(register_backend)("dummy_decorator")
+    @register_backend("dummy_decorator")
     class DummyBackend(BaseGenerator):
         """Dummy backend for registry testing."""
 
@@ -35,14 +33,17 @@ def test_backend_registry() -> None:
 
 
 def test_safe_import_backend() -> None:
-    """Verify safe backend import suppresses ImportError."""
+    """Verify safe backend import suppresses ImportError and load_scoped_module blocks upward imports."""
     from ml_switcheroo_compiler.backends import _safe_import_backend
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
     with patch("importlib.import_module", side_effect=ImportError) as mock_imp:
         _safe_import_backend("missing")
-        mock_imp.assert_called_once_with("missing")
+        mock_imp.assert_called_once_with("ml_switcheroo_compiler.backends.missing")
     assert "missing" not in BackendRegistry._registry
+
+    with pytest.raises(ImportError, match="Upward import"):
+        BackendRegistry.load_scoped_module("zero_pytorch")
 
 
 def test_loaders_and_lazy_loading() -> None:
@@ -52,10 +53,12 @@ def test_loaders_and_lazy_loading() -> None:
     for _name, loader in _LOADERS.items():
         loader()
     fail_loader = MagicMock(side_effect=ImportError("mock error"))
-    with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}):
+    with patch.dict(
+        BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}
+    ):
         with patch.dict(_LOADERS, {"test_lazy_fail": fail_loader}):
-            ensure_callable(BackendRegistry._try_load_lazy)("test_lazy_fail")
-            ensure_callable(BackendRegistry._try_load_lazy)("test_lazy_no_loader")
+            BackendRegistry._try_load_lazy("test_lazy_fail")
+            BackendRegistry._try_load_lazy("test_lazy_no_loader")
     fail_loader.assert_called_once()
     assert "test_lazy_fail" not in BackendRegistry._registry
 
@@ -81,7 +84,14 @@ def test_get_all_loaders() -> None:
 
 def test_all_hardware_and_edge_loaders() -> None:
     """Verify lazy-loading invocations for hardware and edge backends."""
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry, _load_cuda, _load_edge_webgl, _load_metal, _load_rocm, _load_webgpu
+    from ml_switcheroo_compiler.backends.registry import (
+        BackendRegistry,
+        _load_cuda,
+        _load_edge_webgl,
+        _load_metal,
+        _load_rocm,
+        _load_webgpu,
+    )
 
     _load_cuda()
     _load_rocm()

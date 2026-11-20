@@ -7,26 +7,26 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 pytest.importorskip("mlx.core", exc_type=ImportError)
 
 
 def test_mlx_types() -> None:
     """Test mlx types."""
-    assert array is not None
-    assert asarray is not None
-    assert item is not None
-    assert zeros is not None
+    assert array.__name__ == "array"
+    assert asarray.__name__ == "asarray"
+    assert item.__name__ == "item"
+    assert zeros.__name__ == "zeros"
     import mlx.core as mx
 
-    ensure_callable(array)(None, [1, 2])
-    ensure_callable(asarray)(None, [3, 4])
-    ensure_callable(zeros)(None, (2,))
-    ensure_callable(item)(None, ensure_callable(mx.array)([5]))
+    array(None, [1, 2])
+    asarray(None, [3, 4])
+    zeros(None, (2,))
+    item(None, mx.array([5]))
 
 
 def test_mlx_types_asarray_mock() -> None:
@@ -35,13 +35,13 @@ def test_mlx_types_asarray_mock() -> None:
 
     from ml_switcheroo_compiler.backends.mlx.types import asarray
 
-    ensure_mutable(mx).asarray = ensure_eager_tensor(lambda x: mx.array(x))
-    ensure_callable(asarray)(None, [1, 2])
-    del ensure_mutable(mx).asarray
+    pytest.MonkeyPatch().setattr(mx, "asarray", lambda x: mx.array(x), raising=False)
+    asarray(None, [1, 2])
+    pytest.MonkeyPatch().delattr(mx, "asarray")
     assert callable(asarray)
 
 
-def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_init_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_mlx_init_import_error.
 
     Args:
@@ -53,7 +53,7 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
     # Force the module to be reloaded without mlx
     monkeypatch.delitem(sys.modules, "ml_switcheroo_compiler.backends.mlx", raising=False)
 
-    def mock_find_spec(name: EagerValue, package: EagerValue = None) -> EagerValue:
+    def mock_find_spec(name: BackendArg, package: BackendArg = None) -> BackendArg:
         """Test function mock_find_spec.
 
         Args:
@@ -61,11 +61,11 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
             package: Test parameter `package`.
 
         Returns:
-            EagerValue: Computed output value from `mock_find_spec`.
+            BackendArg: Computed output value from `mock_find_spec`.
         """
         if name == "mlx":
             return None
-        return ensure_eager_tensor(ensure_eager_tensor(importlib.util)._find_spec(name, package))
+        return adapt_backend_module(importlib.util).require_symbol("_find_spec")(name, package)
 
     monkeypatch.setattr(importlib.util, "find_spec", mock_find_spec)
     monkeypatch.delitem(sys.modules, "pytest", raising=False)

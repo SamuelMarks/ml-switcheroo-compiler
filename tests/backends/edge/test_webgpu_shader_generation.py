@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import SymInt
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_webgpu_missing_coverage() -> None:
@@ -28,11 +28,16 @@ def test_webgpu_missing_coverage() -> None:
     g.outputs = ["n_linear"]
 
     gen = WebGPUCodeGenerator(g)
-    gen.generate()
+    out1 = gen.generate()
+    assert "@compute" in out1 or len(out1) > 0
 
     # Also test webrtc ops mock coverage
-    with patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value="init_line1\ninit_line2"):
-        with patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value="op_line1\nop_line2"):
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value="init_line1\ninit_line2"
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value="op_line1\nop_line2"
+        ):
             # Set up a distributed graph
             g2 = IRGraph()
             n_allreduce = IRNode(id="ar", op_type="AllReduce", inputs=["dummy"])
@@ -41,10 +46,10 @@ def test_webgpu_missing_coverage() -> None:
             g2.nodes["dummy"] = n_dummy2
             g2.inputs = ["dummy"]
             g2.outputs = ["ar"]
-            ensure_mutable(g2).attributes = ensure_eager_tensor({"distributed": True})
+            g2.attributes = {"distributed": True}
             gen2 = WebGPUCodeGenerator(g2)
-            gen2.generate()
-    assert gen is not None
+            out2 = gen2.generate()
+    assert "init_line1" in out2 and "op_line1" in out2
 
 
 def test_webgpu_attention_shared_memory_reduction() -> None:

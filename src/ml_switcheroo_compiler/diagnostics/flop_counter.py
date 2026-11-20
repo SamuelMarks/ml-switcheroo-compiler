@@ -1,4 +1,4 @@
-"""Implementation of flop counter operations and utilities for the diagnostics subsystem (`ml_switcheroo_compiler.diagnostics.flop_counter`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.diagnostics.flop_counter`."""
 
 from __future__ import annotations
 
@@ -6,7 +6,9 @@ import math
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-_ZERO_FLOP_OPS: frozenset[str] = frozenset({"Input", "Output", "Constant", "NoOp", "Identity", "Reshape", "Squeeze", "ExpandDims", "Transpose"})
+_ZERO_FLOP_OPS: frozenset[str] = frozenset(
+    {"Input", "Output", "Constant", "NoOp", "Identity", "Reshape", "Squeeze", "ExpandDims", "Transpose"}
+)
 
 
 def _parse_shape_dims(node: LogicalNode | None) -> list[int] | None:
@@ -67,7 +69,11 @@ def _estimate_conv2d_flops(node: LogicalNode, graph: LogicalGraph | None) -> int
         w_dims = _parse_shape_dims(graph.nodes.get(node.inputs[1]))
         if w_dims and len(w_dims) == 4:
             # Filter shape is (O, I, Kh, Kw) or (Kh, Kw, I, O)
-            kernel_ops = w_dims[1] * w_dims[2] * w_dims[3] if w_dims[0] == out_dims[-1] or (len(out_dims) == 4 and w_dims[0] == out_dims[1]) else w_dims[0] * w_dims[1] * w_dims[2]
+            kernel_ops = (
+                w_dims[1] * w_dims[2] * w_dims[3]
+                if w_dims[0] == out_dims[-1] or (len(out_dims) == 4 and w_dims[0] == out_dims[1])
+                else w_dims[0] * w_dims[1] * w_dims[2]
+            )
             return 2 * math.prod(out_dims) * kernel_ops
     if out_dims:
         return 2 * math.prod(out_dims)

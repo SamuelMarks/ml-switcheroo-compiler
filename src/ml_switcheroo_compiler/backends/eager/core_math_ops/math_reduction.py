@@ -1,26 +1,28 @@
-"""Implementation of math reduction operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_reduction`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_math_ops.math_reduction`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 import typing  # noqa: F401
 from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
     EagerTensorProtocol,
-    EagerValue,
-    ensure_eager_tensor,
-    ensure_shape,
+    coerce_shape,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 from .math_nn import _global_adaptive_pool
 
 
 @global_eager_registry.register("Psum")
-def _psum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _psum(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager psum operation on the active backend array.
 
     Args:
@@ -29,13 +31,15 @@ def _psum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return backend_module.array(args[0])
+    return adapt_backend_module(backend_module).require_symbol("array")(args[0])
 
 
 @global_eager_registry.register("ReduceSum")
-def _reduce_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_sum(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate reduce sum.
 
     Args:
@@ -44,18 +48,22 @@ def _reduce_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword arguments (axis, keepdims).
 
     Returns:
-        EagerValue: Reduced tensor.
+        BackendArg: Reduced tensor.
     """
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
-    if has_backend_member(backend_module, "sum"):
-        _typed_ret_1: EagerValue = backend_module.sum(args[0], axis=axis, keepdims=keepdims)
+    if adapt_backend_module(backend_module).has_symbol("sum"):
+        _typed_ret_1: BackendArg = adapt_backend_module(backend_module).require_symbol("sum")(
+            args[0], axis=axis, keepdims=keepdims
+        )
         return _typed_ret_1
     return args[0]
 
 
 @global_eager_registry.register("ReduceMean")
-def _reduce_mean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_mean(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate reduce mean.
 
     Args:
@@ -64,18 +72,22 @@ def _reduce_mean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         **kwargs: Keyword arguments (axis, keepdims).
 
     Returns:
-        EagerValue: Reduced tensor.
+        BackendArg: Reduced tensor.
     """
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
-    if has_backend_member(backend_module, "mean"):
-        _typed_ret_2: EagerValue = backend_module.mean(args[0], axis=axis, keepdims=keepdims)
+    if adapt_backend_module(backend_module).has_symbol("mean"):
+        _typed_ret_2: BackendArg = adapt_backend_module(backend_module).require_symbol("mean")(
+            args[0], axis=axis, keepdims=keepdims
+        )
         return _typed_ret_2
     return args[0]
 
 
 @global_eager_registry.register("ReduceProd")
-def _reduce_prod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_prod(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate reduce product.
 
     Args:
@@ -84,18 +96,22 @@ def _reduce_prod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         **kwargs: Keyword arguments (axis, keepdims).
 
     Returns:
-        EagerValue: Reduced tensor.
+        BackendArg: Reduced tensor.
     """
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
-    if has_backend_member(backend_module, "prod"):
-        _typed_ret_3: EagerValue = backend_module.prod(args[0], axis=axis, keepdims=keepdims)
+    if adapt_backend_module(backend_module).has_symbol("prod"):
+        _typed_ret_3: BackendArg = adapt_backend_module(backend_module).require_symbol("prod")(
+            args[0], axis=axis, keepdims=keepdims
+        )
         return _typed_ret_3
     return args[0]
 
 
 @global_eager_registry.register("ReduceMax")
-def _reduce_max(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_max(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate reduce max.
 
     Args:
@@ -104,18 +120,22 @@ def _reduce_max(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword arguments (axis, keepdims).
 
     Returns:
-        EagerValue: Reduced tensor.
+        BackendArg: Reduced tensor.
     """
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
-    if has_backend_member(backend_module, "max"):
-        _typed_ret_4: EagerValue = backend_module.max(args[0], axis=axis, keepdims=keepdims)
+    if adapt_backend_module(backend_module).has_symbol("max"):
+        _typed_ret_4: BackendArg = adapt_backend_module(backend_module).require_symbol("max")(
+            args[0], axis=axis, keepdims=keepdims
+        )
         return _typed_ret_4
     return args[0]
 
 
 @global_eager_registry.register("ReduceMin")
-def _reduce_min(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_min(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate reduce min.
 
     Args:
@@ -124,18 +144,22 @@ def _reduce_min(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword arguments (axis, keepdims).
 
     Returns:
-        EagerValue: Reduced tensor.
+        BackendArg: Reduced tensor.
     """
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
-    if has_backend_member(backend_module, "min"):
-        _typed_ret_5: EagerValue = backend_module.min(args[0], axis=axis, keepdims=keepdims)
+    if adapt_backend_module(backend_module).has_symbol("min"):
+        _typed_ret_5: BackendArg = adapt_backend_module(backend_module).require_symbol("min")(
+            args[0], axis=axis, keepdims=keepdims
+        )
         return _typed_ret_5
     return args[0]
 
 
 @global_eager_registry.register("Norm")
-def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _norm(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate Frobenius or Euclidean norm.
 
     Args:
@@ -144,17 +168,25 @@ def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword arguments (ord, axis, keepdims).
 
     Returns:
-        EagerValue: Norm result.
+        BackendArg: Norm result.
     """
     mod = backend_module
-    if has_backend_member(backend_module, "linalg") and has_backend_member(mod.linalg, "norm"):
-        _typed_ret_6: EagerValue = mod.linalg.norm(*args, **kwargs)
+    if adapt_backend_module(backend_module).has_symbol("linalg") and adapt_backend_module(
+        adapt_backend_module(mod).require_symbol("linalg")
+    ).has_symbol("norm"):
+        _typed_ret_6: BackendArg = adapt_backend_module(mod).require_symbol("linalg").norm(*args, **kwargs)
         return _typed_ret_6
-    return mod.sqrt(mod.sum(ensure_eager_tensor(args[0]) ** 2))
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_numeric
+
+    return adapt_backend_module(mod).require_symbol("sqrt")(
+        adapt_backend_module(mod).require_symbol("sum")(coerce_numeric(args[0]) ** 2)
+    )
 
 
 @global_eager_registry.register("Numel")
-def _numel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _numel(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate numel (total number of elements).
 
     Args:
@@ -163,19 +195,24 @@ def _numel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: Total count of elements.
+        BackendArg: Total count of elements.
     """
     del kwargs
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_float
+
     x = args[0]
-    if has_backend_member(x, "size"):
-        return float(ensure_eager_tensor(x).size)
-    if has_backend_member(x, "numel"):
-        return float(ensure_mod(x).numel())
-    return float(_resolve_eager_mod(backend_module).asarray(x).size)
+    x_adp = adapt_backend_module(x)
+    if x_adp.has_symbol("size"):
+        return coerce_float(x_adp.require_symbol("size"))
+    if x_adp.has_symbol("numel"):
+        return coerce_float(x_adp.require_symbol("numel")())
+    return coerce_float(adapt_backend_module(_resolve_eager_mod(backend_module).asarray(x)).require_symbol("size"))
 
 
 @global_eager_registry.register("Pmean")
-def _pmean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _pmean(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager pmean operation on the active backend array.
 
     Args:
@@ -184,13 +221,15 @@ def _pmean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return backend_module.array(args[0])
+    return adapt_backend_module(backend_module).require_symbol("array")(args[0])
 
 
 @global_eager_registry.register("BroadcastReduce")
-def _broadcast_reduce(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _broadcast_reduce(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Reduce cotangent tensor along dimensions that were broadcast relative to target.
 
     Args:
@@ -199,7 +238,7 @@ def _broadcast_reduce(backend_module: BackendModuleProtocol, *args: EagerValue, 
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Resulting reduced tensor.
+        BackendArg: Resulting reduced tensor.
     """
     del kwargs
     if len(args) < 2:
@@ -207,8 +246,8 @@ def _broadcast_reduce(backend_module: BackendModuleProtocol, *args: EagerValue, 
     mod = backend_module
     cot = args[0]
     tgt = args[1]
-    cot_shape = ensure_shape(get_backend_member(cot, "shape", ()))
-    tgt_shape = ensure_shape(get_backend_member(tgt, "shape", ()))
+    cot_shape = coerce_shape(adapt_backend_module(cot).get_symbol("shape", ()))
+    tgt_shape = coerce_shape(adapt_backend_module(tgt).get_symbol("shape", ()))
     if cot_shape == tgt_shape:
         return cot
     cot_ndim = len(cot_shape)
@@ -216,16 +255,18 @@ def _broadcast_reduce(backend_module: BackendModuleProtocol, *args: EagerValue, 
     res = cot
     if cot_ndim > tgt_ndim:
         axes_to_sum = tuple(range(cot_ndim - tgt_ndim))
-        res = mod.sum(res, axis=axes_to_sum)
-    cot_shape_now = ensure_shape(get_backend_member(res, "shape", ()))
+        res = adapt_backend_module(mod).require_symbol("sum")(res, axis=axes_to_sum)
+    cot_shape_now = coerce_shape(adapt_backend_module(res).get_symbol("shape", ()))
     for i, (cd, td) in enumerate(zip(cot_shape_now, tgt_shape)):
         if td == 1 and cd > 1:
-            res = mod.sum(res, axis=i, keepdims=True)
+            res = adapt_backend_module(mod).require_symbol("sum")(res, axis=i, keepdims=True)
     return res
 
 
 @global_eager_registry.register("BroadcastLike")
-def _broadcast_like(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _broadcast_like(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Broadcast source tensor to match the shape of target tensor.
 
     Args:
@@ -234,24 +275,26 @@ def _broadcast_like(backend_module: BackendModuleProtocol, *args: EagerValue, **
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Resulting broadcasted tensor.
+        BackendArg: Resulting broadcasted tensor.
     """
     del kwargs
     if len(args) < 2:
         return args[0] if args else None
     src = args[0]
     tgt = args[1]
-    tgt_shape = get_backend_member(tgt, "shape", ())
-    if get_backend_member(src, "shape", ()) == tgt_shape:
+    tgt_shape = adapt_backend_module(tgt).get_symbol("shape", ())
+    if adapt_backend_module(src).get_symbol("shape", ()) == tgt_shape:
         return src
-    if has_backend_member(backend_module, "broadcast_to"):
-        _typed_ret_7: EagerValue = backend_module.broadcast_to(src, tgt_shape)
+    if adapt_backend_module(backend_module).has_symbol("broadcast_to"):
+        _typed_ret_7: BackendArg = adapt_backend_module(backend_module).require_symbol("broadcast_to")(src, tgt_shape)
         return _typed_ret_7
     return src
 
 
 @global_eager_registry.register("SegmentSum")
-def _segment_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _segment_sum(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager segment sum operation on the active backend array.
 
     Args:
@@ -260,21 +303,28 @@ def _segment_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
     if len(args) < 2:
-        return mod.asarray(args[0]) if args else None
-    data: EagerTensorProtocol = mod.asarray(args[0])
-    segment_ids: EagerTensorProtocol = mod.asarray(args[1])
-    num_segments = kwargs.get("num_segments", args[2] if len(args) > 2 else mod.max(segment_ids) + 1) if has_backend_member(kwargs, "get") else (args[2] if len(args) > 2 else mod.max(segment_ids) + 1)
+        return adapt_backend_module(mod).require_symbol("asarray")(args[0]) if args else None
+    data: EagerTensorProtocol = adapt_backend_module(mod).require_symbol("asarray")(args[0])
+    segment_ids: EagerTensorProtocol = adapt_backend_module(mod).require_symbol("asarray")(args[1])
+    num_segments = (
+        kwargs.get(
+            "num_segments",
+            args[2] if len(args) > 2 else adapt_backend_module(mod).require_symbol("max")(segment_ids) + 1,
+        )
+        if adapt_backend_module(kwargs).has_symbol("get")
+        else (args[2] if len(args) > 2 else adapt_backend_module(mod).require_symbol("max")(segment_ids) + 1)
+    )
 
-    out = mod.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
-    mod.add.at(out, segment_ids, data)
-    return mod.asarray(out)
+    out = adapt_backend_module(mod).require_symbol("zeros")((num_segments,) + data.shape[1:], dtype=data.dtype)
+    adapt_backend_module(mod).require_symbol("add").at(out, segment_ids, data)
+    return adapt_backend_module(mod).require_symbol("asarray")(out)
 
 
-def _apply_softmax(backend_module: BackendModuleProtocol, scores: EagerValue) -> EagerValue:
+def _apply_softmax(backend_module: BackendModuleProtocol | types.ModuleType | None, scores: BackendArg) -> BackendArg:
     """Apply softmax to attention scores.
 
     Args:
@@ -282,22 +332,32 @@ def _apply_softmax(backend_module: BackendModuleProtocol, scores: EagerValue) ->
         scores: Input `scores` argument (scores).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    if has_backend_member(backend_module, "softmax"):
-        return mod.softmax(scores, axis=-1)
-    if has_backend_member(backend_module, "nn") and has_backend_member(mod.nn, "softmax"):
-        _typed_ret_8: EagerValue = mod.nn.softmax(scores, axis=-1)
+    if adapt_backend_module(backend_module).has_symbol("softmax"):
+        return adapt_backend_module(mod).require_symbol("softmax")(scores, axis=-1)
+    if adapt_backend_module(backend_module).has_symbol("nn") and adapt_backend_module(
+        adapt_backend_module(mod).require_symbol("nn")
+    ).has_symbol("softmax"):
+        _typed_ret_8: BackendArg = adapt_backend_module(mod).require_symbol("nn").softmax(scores, axis=-1)
         return _typed_ret_8
-    if has_backend_member(backend_module, "exp") and has_backend_member(backend_module, "sum") and has_backend_member(backend_module, "max"):
-        exps: EagerTensorProtocol = mod.exp(ensure_eager_tensor(scores) - mod.max(scores, axis=-1, keepdims=True))
-        return exps / mod.sum(exps, axis=-1, keepdims=True)
+    if (
+        adapt_backend_module(backend_module).has_symbol("exp")
+        and adapt_backend_module(backend_module).has_symbol("sum")
+        and adapt_backend_module(backend_module).has_symbol("max")
+    ):
+        exps: EagerTensorProtocol = adapt_backend_module(mod).require_symbol("exp")(
+            scores - adapt_backend_module(mod).require_symbol("max")(scores, axis=-1, keepdims=True)
+        )
+        return exps / adapt_backend_module(mod).require_symbol("sum")(exps, axis=-1, keepdims=True)
     return scores
 
 
 @global_eager_registry.register("Fmax")
-def _fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fmax(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fmax operation on the active backend array.
 
     Args:
@@ -306,14 +366,18 @@ def _fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "fmax", get_backend_member(backend_module, "maximum", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "fmax", adapt_backend_module(backend_module).get_symbol("maximum", None)
+    )
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Fmin")
-def _fmin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fmin(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager fmin operation on the active backend array.
 
     Args:
@@ -322,14 +386,21 @@ def _fmin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "fmin", get_backend_member(backend_module, "minimum", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "fmin", adapt_backend_module(backend_module).get_symbol("minimum", None)
+    )
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("AdaptiveMaxPool2D")
-def _adaptive_max_pool2d(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_max_pool2d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArg,
+    output_size: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager adaptive max pool2d operation on the active backend array.
 
     Args:
@@ -339,13 +410,18 @@ def _adaptive_max_pool2d(backend_module: BackendModuleProtocol, operand: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D")
-def _adaptive_max_pool3d(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_max_pool3d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArg,
+    output_size: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager adaptive max pool3d operation on the active backend array.
 
     Args:
@@ -355,13 +431,18 @@ def _adaptive_max_pool3d(backend_module: BackendModuleProtocol, operand: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D_Indices")
-def _adaptive_max_pool3d_indices(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_max_pool3d_indices(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArg,
+    output_size: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager adaptive max pool3d indices operation on the active backend array.
 
     Args:
@@ -371,14 +452,20 @@ def _adaptive_max_pool3d_indices(backend_module: BackendModuleProtocol, operand:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     res = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
     return (res, res)
 
 
 @global_eager_registry.register("AdaptiveLogSoftmaxWithLoss")
-def _adaptive_log_softmax_with_loss(backend_module: BackendModuleProtocol, input: EagerValue, target: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_log_softmax_with_loss(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    input: BackendArg,
+    target: BackendArg,
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager adaptive log softmax with loss operation on the active backend array.
 
     Args:
@@ -389,14 +476,22 @@ def _adaptive_log_softmax_with_loss(backend_module: BackendModuleProtocol, input
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    loss = backend_module.zeros((), dtype=get_backend_member(target, "dtype", None)) if has_backend_member(backend_module, "zeros") else 0.0
+    loss = (
+        adapt_backend_module(backend_module).require_symbol("zeros")(
+            (), dtype=adapt_backend_module(target).get_symbol("dtype", None)
+        )
+        if adapt_backend_module(backend_module).has_symbol("zeros")
+        else 0.0
+    )
     return (target, loss)
 
 
 @global_eager_registry.register("HouseholderProduct")
-def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _householder_product(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager householder product operation on the active backend array.
 
     Args:
@@ -405,21 +500,30 @@ def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    func = get_backend_member(backend_module, "linalg", None)
-    if func and has_backend_member(func, "householder_product"):
-        return ensure_eager_tensor(func.householder_product(*args, **kwargs))
-    if has_backend_member(backend_module, "householder_product"):
-        return mod.householder_product(*args, **kwargs)
+    func = adapt_backend_module(backend_module).get_symbol("linalg", None)
+    if func and adapt_backend_module(func).has_symbol("householder_product"):
+        return func.householder_product(*args, **kwargs)
+    if adapt_backend_module(backend_module).has_symbol("householder_product"):
+        return adapt_backend_module(mod).require_symbol("householder_product")(*args, **kwargs)
 
-    v, tau = mod.asarray(args[0]), mod.asarray(args[1])
+    v, tau = (
+        adapt_backend_module(mod).require_symbol("asarray")(args[0]),
+        adapt_backend_module(mod).require_symbol("asarray")(args[1]),
+    )
     m, n = v.shape[-2:]
     k = tau.shape[-1]
 
     batch_shape = v.shape[:-2]
-    identity = mod.broadcast_to(mod.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
+    identity = (
+        adapt_backend_module(mod)
+        .require_symbol("broadcast_to")(
+            adapt_backend_module(mod).require_symbol("eye")(m, dtype=v.dtype), batch_shape + (m, m)
+        )
+        .copy()
+    )
     q = identity.copy()
 
     for i in range(k):
@@ -427,10 +531,16 @@ def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValu
         v_i[..., :i] = 0
         v_i[..., i] = 1
 
-        v_i_expanded = v_i[..., mod.newaxis]
-        v_i_h = get_backend_member(backend_module, "conjugate")(v_i_expanded.swapaxes(-1, -2))
+        newaxis = adapt_backend_module(mod).get_symbol("newaxis", None)
+        v_i_expanded = v_i[..., newaxis]
+        v_i_h = adapt_backend_module(backend_module).require_symbol("conjugate")(v_i_expanded.swapaxes(-1, -2))
 
-        tau_i = tau[..., i, mod.newaxis, mod.newaxis]
+        tau_i = tau[
+            ...,
+            i,
+            newaxis,
+            newaxis,
+        ]
 
         h_i = identity - tau_i * (v_i_expanded @ v_i_h)
         q = q @ h_i
@@ -439,7 +549,9 @@ def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValu
 
 
 @global_eager_registry.register("Cummax")
-def _cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cummax(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager cummax operation on the active backend array.
 
     Args:
@@ -448,18 +560,24 @@ def _cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    func = get_backend_member(backend_module, "maximum", None)
-    if func and has_backend_member(func, "accumulate"):
-        return ensure_eager_tensor(func.accumulate(*args, **kwargs))
+    func = adapt_backend_module(backend_module).get_symbol("maximum", None)
+    if func and adapt_backend_module(func).has_symbol("accumulate"):
+        return func.accumulate(*args, **kwargs)
 
-    return mod.maximum.accumulate(mod.asarray(args[0]), **kwargs)
+    return (
+        adapt_backend_module(mod)
+        .require_symbol("maximum")
+        .accumulate(adapt_backend_module(mod).require_symbol("asarray")(args[0]), **kwargs)
+    )
 
 
 @global_eager_registry.register("Cummin")
-def _cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cummin(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager cummin operation on the active backend array.
 
     Args:
@@ -468,18 +586,24 @@ def _cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    func = get_backend_member(backend_module, "minimum", None)
-    if func and has_backend_member(func, "accumulate"):
-        return ensure_eager_tensor(func.accumulate(*args, **kwargs))
+    func = adapt_backend_module(backend_module).get_symbol("minimum", None)
+    if func and adapt_backend_module(func).has_symbol("accumulate"):
+        return func.accumulate(*args, **kwargs)
 
-    return mod.minimum.accumulate(mod.asarray(args[0]), **kwargs)
+    return (
+        adapt_backend_module(mod)
+        .require_symbol("minimum")
+        .accumulate(adapt_backend_module(mod).require_symbol("asarray")(args[0]), **kwargs)
+    )
 
 
 @global_eager_registry.register("Cumlogsumexp")
-def _cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cumlogsumexp(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager cumlogsumexp operation on the active backend array.
 
     Args:
@@ -488,21 +612,27 @@ def _cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    func = get_backend_member(backend_module, "cumlogsumexp", None)
+    func = adapt_backend_module(backend_module).get_symbol("cumlogsumexp", None)
     if func:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
 
-    x = mod.asarray(args[0])
-    axis = kwargs.get("axis", 0) if has_backend_member(kwargs, "get") else 0
+    x = adapt_backend_module(mod).require_symbol("asarray")(args[0])
+    axis = kwargs.get("axis", 0)
 
-    return mod.ufunc.accumulate(mod.logaddexp, x, axis=axis)
+    return (
+        adapt_backend_module(mod)
+        .require_symbol("ufunc")
+        .accumulate(adapt_backend_module(mod).require_symbol("logaddexp"), x, axis=axis)
+    )
 
 
 @global_eager_registry.register("CumulativeLogsumexp")
-def _cumulative_logsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cumulative_logsumexp(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager cumulative logsumexp operation on the active backend array.
 
     Args:
@@ -511,13 +641,15 @@ def _cumulative_logsumexp(backend_module: BackendModuleProtocol, *args: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _cumlogsumexp(backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("PsumScatter")
-def _psumscatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _psumscatter(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager psumscatter operation on the active backend array.
 
     Args:
@@ -526,17 +658,21 @@ def _psumscatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    if has_backend_member(backend_module, "lax") and has_backend_member(mod.lax, "psum_scatter"):
-        _typed_ret_9: EagerValue = mod.lax.psum_scatter(*args, **kwargs)
+    if adapt_backend_module(backend_module).has_symbol("lax") and adapt_backend_module(
+        adapt_backend_module(mod).require_symbol("lax")
+    ).has_symbol("psum_scatter"):
+        _typed_ret_9: BackendArg = adapt_backend_module(mod).require_symbol("lax").psum_scatter(*args, **kwargs)
         return _typed_ret_9
     return args[0] if args else None
 
 
 @global_eager_registry.register("Fmax")
-def _np_fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_fmax(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np fmax operation on the active backend array.
 
     Args:
@@ -545,16 +681,20 @@ def _np_fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "fmax", get_backend_member(backend_module, "fmax", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "fmax", adapt_backend_module(backend_module).get_symbol("fmax", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).fmax(args[0], args[1])
 
 
 @global_eager_registry.register("ScatterMax")
-def _np_scattermax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scattermax(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np scattermax operation on the active backend array.
 
     Args:
@@ -563,16 +703,20 @@ def _np_scattermax(backend_module: BackendModuleProtocol, *args: EagerValue, **k
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "scattermax", get_backend_member(backend_module, "scattermax", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "scattermax", adapt_backend_module(backend_module).get_symbol("scattermax", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return args[0]
 
 
 @global_eager_registry.register("ScatterMin")
-def _np_scattermin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scattermin(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np scattermin operation on the active backend array.
 
     Args:
@@ -581,16 +725,20 @@ def _np_scattermin(backend_module: BackendModuleProtocol, *args: EagerValue, **k
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "scattermin", get_backend_member(backend_module, "scattermin", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "scattermin", adapt_backend_module(backend_module).get_symbol("scattermin", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return args[0]
 
 
 @global_eager_registry.register("WeibullMin")
-def _np_weibullmin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_weibullmin(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np weibullmin operation on the active backend array.
 
     Args:
@@ -599,16 +747,20 @@ def _np_weibullmin(backend_module: BackendModuleProtocol, *args: EagerValue, **k
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "weibullmin", get_backend_member(backend_module, "weibullmin", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "weibullmin", adapt_backend_module(backend_module).get_symbol("weibullmin", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).random.weibull(*args, **kwargs)
 
 
 @global_eager_registry.register("WindowHamming")
-def _np_windowhamming(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_windowhamming(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np windowhamming operation on the active backend array.
 
     Args:
@@ -617,9 +769,11 @@ def _np_windowhamming(backend_module: BackendModuleProtocol, *args: EagerValue, 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "windowhamming", get_backend_member(backend_module, "windowhamming", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "windowhamming", adapt_backend_module(backend_module).get_symbol("windowhamming", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return _resolve_eager_mod(backend_module).hamming(*args, **kwargs)

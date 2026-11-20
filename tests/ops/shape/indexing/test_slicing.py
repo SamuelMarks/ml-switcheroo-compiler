@@ -6,20 +6,29 @@ import typing
 
 # ruff: noqa: E501
 import numpy as np
+from pytest_mock import MockerFixture
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.slicing import Choose, IndexInDim, Slice, StridedSlice, UpdateSlice, slice, strided_slice
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.ops.shape.slicing import (
+    Choose,
+    IndexInDim,
+    Slice,
+    StridedSlice,
+    UpdateSlice,
+    slice,
+    strided_slice,
+)
+from tests.testing_utils import MockTestStub, coerce_int_list, ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class MockTensor:
+class MockTensor(MockTestStub):
     """MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """__init__.
 
         Args:
@@ -28,10 +37,10 @@ class MockTensor:
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
-        self.data = ensure_callable(np.zeros)(shape)
+        self.data = np.zeros(coerce_int_list(shape))
 
 
-def test_slice(mocker: EagerTensorProtocol) -> None:
+def test_slice(mocker: MockerFixture) -> None:
     """test_slice.
 
     Args:
@@ -43,10 +52,10 @@ def test_slice(mocker: EagerTensorProtocol) -> None:
     assert slice(t, 0, 1, 3, 1) == "sliced"
     config.eager_mode = True
     res = slice(t, 0, 1, 3, 1)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).config).shape == (2, 5)
+    assert ensure_tensor(res).config.shape == (2, 5)
 
 
-def test_strided_slice(mocker: EagerTensorProtocol) -> None:
+def test_strided_slice(mocker: MockerFixture) -> None:
     """test_strided_slice.
 
     Args:
@@ -58,7 +67,7 @@ def test_strided_slice(mocker: EagerTensorProtocol) -> None:
     assert strided_slice(t, [1, 1], [3, 3], [1, 1]) == "strided"
     config.eager_mode = True
     res = strided_slice(t, [1, 1], [3, 3], [1, 1])
-    assert ensure_eager_tensor(ensure_eager_tensor(res).config).shape == (2, 2)
+    assert ensure_tensor(res).config.shape == (2, 2)
 
 
 def test_slice_class() -> None:
@@ -74,25 +83,25 @@ def test_strided_slice_class() -> None:
 def test_choose_class() -> None:
     """test_choose_class."""
     op = Choose()
-    assert ensure_callable(op.infer_shape)(ensure_callable(MockTensor)((2, 3)), None) == (2, 3)
+    assert op.infer_shape(MockTensor((2, 3)), None) == (2, 3)
 
-    class NoShape:
+    class NoShape(MockTestStub):
         """NoShape."""
 
         pass
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(NoShape)(), None) == ()
+    assert op.infer_shape(NoShape(), None) == ()
 
 
 def test_index_in_dim_update_slice_coverage() -> None:
     """test_index_in_dim_update_slice_coverage."""
-    assert ensure_callable(IndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)((2,))) == (2, 3)
-    assert ensure_callable(IndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)((2,)), axis=1, keepdims=False) == (2, 2)
-    assert ensure_callable(IndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)(()), keepdims=False) == (3,)
-    assert ensure_callable(IndexInDim)().infer_shape(ensure_callable(MockTensor)(()), ensure_callable(MockTensor)(())) == ()
-    assert ensure_callable(UpdateSlice)().infer_shape(ensure_callable(MockTensor)((2, 3))) == (2, 3)
-    assert ensure_callable(UpdateSlice)().infer_shape(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)((2, 3))) == (2, 3)
-    assert ensure_callable(UpdateSlice)().infer_shape(ensure_callable(MockTensor)(())) == ()
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor((2,))) == (2, 3)
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor((2,)), axis=1, keepdims=False) == (2, 2)
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor(()), keepdims=False) == (3,)
+    assert IndexInDim().infer_shape(MockTensor(()), MockTensor(())) == ()
+    assert UpdateSlice().infer_shape(MockTensor((2, 3))) == (2, 3)
+    assert UpdateSlice().infer_shape(MockTensor((2, 3)), MockTensor((2, 3))) == (2, 3)
+    assert UpdateSlice().infer_shape(MockTensor(())) == ()
 
 
 def test_slicing_dispatcher() -> None:
@@ -111,15 +120,17 @@ def test_slicing_dispatcher() -> None:
         mock_dispatch.assert_called_with("UpdateSlice", 1, 2)
 
 
-def test_slice_and_strided_slice_exact_shapes(mocker: EagerTensorProtocol) -> None:
+def test_slice_and_strided_slice_exact_shapes(mocker: MockerFixture) -> None:
     """Verify exact output shapes for slice and strided_slice in graph mode.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:
@@ -178,7 +189,7 @@ def test_slice_and_strided_slice_exact_shapes(mocker: EagerTensorProtocol) -> No
     assert captured_shapes.get("Slice") == ()
 
     # 9. IndexInDim with negative axis
-    assert ensure_callable(IndexInDim)().infer_shape(ensure_callable(MockTensor)((2, 3)), ensure_callable(MockTensor)((1,)), axis=-1) == (2, 1)
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor((1,)), axis=-1) == (2, 1)
 
     # 10. UpdateSlice with None operand
-    assert ensure_callable(UpdateSlice)().infer_shape(None) == ()
+    assert UpdateSlice().infer_shape(None) == ()

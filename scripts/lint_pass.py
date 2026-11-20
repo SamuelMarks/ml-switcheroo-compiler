@@ -62,7 +62,9 @@ def _node_is_verification(
     target: ast.expr = sub.func.args[-1] if isinstance(sub.func, ast.Call) and sub.func.args else sub.func
     if isinstance(target, ast.Name):
         return _is_verified_helper_call(target.id, local_funcs, visited_helpers)
-    return isinstance(target, ast.Attribute) and (target.attr.startswith(("assert", "check", "verify")) or target.attr in ("raises", "warns", "fail", "approx"))
+    return isinstance(target, ast.Attribute) and (
+        target.attr.startswith(("assert", "check", "verify")) or target.attr in ("raises", "warns", "fail", "approx")
+    )
 
 
 def _has_assertion_or_verification(
@@ -148,9 +150,21 @@ def _is_nonneg_len_compare(expr: ast.Compare) -> bool:
         return False
     op = expr.ops[0]
     rhs = expr.comparators[0]
-    if isinstance(op, ast.GtE) and _is_len_call(expr.left) and isinstance(rhs, ast.Constant) and rhs.value == 0 and not isinstance(rhs.value, bool):
+    if (
+        isinstance(op, ast.GtE)
+        and _is_len_call(expr.left)
+        and isinstance(rhs, ast.Constant)
+        and rhs.value == 0
+        and not isinstance(rhs.value, bool)
+    ):
         return True
-    return isinstance(op, ast.LtE) and isinstance(expr.left, ast.Constant) and expr.left.value == 0 and not isinstance(expr.left.value, bool) and _is_len_call(rhs)
+    return (
+        isinstance(op, ast.LtE)
+        and isinstance(expr.left, ast.Constant)
+        and expr.left.value == 0
+        and not isinstance(expr.left.value, bool)
+        and _is_len_call(rhs)
+    )
 
 
 def _is_ellipsis_expr(expr: ast.expr) -> bool:
@@ -204,7 +218,12 @@ def _check_call_assert(path: str, lineno: int, expr: ast.Call) -> str | None:
     """
     if not isinstance(expr.func, ast.Name):
         return None
-    if expr.func.id == "callable" and len(expr.args) == 1 and isinstance(expr.args[0], ast.Name) and expr.args[0].id.startswith("test_"):
+    if (
+        expr.func.id == "callable"
+        and len(expr.args) == 1
+        and isinstance(expr.args[0], ast.Name)
+        and expr.args[0].id.startswith("test_")
+    ):
         return f"FAILED: Self-referential 'assert callable({expr.args[0].id})' found in {path}:{lineno}"
     if expr.func.id == "isinstance" and len(expr.args) == 2:
         if isinstance(expr.args[0], ast.Name) and expr.args[0].id == "_state":
@@ -248,7 +267,9 @@ def _is_dummy_swallow_assign(stmt: ast.stmt) -> bool:
     if not isinstance(stmt, ast.Assign):
         return False
     for target in stmt.targets:
-        if isinstance(target, ast.Name) and (target.id == "_" or target.id.startswith(("_caught", "_ignore", "_unused"))):
+        if isinstance(target, ast.Name) and (
+            target.id == "_" or target.id.startswith(("_caught", "_ignore", "_unused"))
+        ):
             return True
     return False
 
@@ -303,7 +324,142 @@ def _check_try_node(path: str, node: ast.Try) -> list[str]:
     Returns:
         list[str]: List of violation messages.
     """
-    return [f"FAILED: Stray string literal inside try block at {path}:{s.lineno}" for s in node.body if isinstance(s, ast.Expr) and isinstance(s.value, ast.Constant) and isinstance(s.value.value, str)]
+    return [
+        f"FAILED: Stray string literal inside try block at {path}:{s.lineno}"
+        for s in node.body
+        if isinstance(s, ast.Expr) and isinstance(s.value, ast.Constant) and isinstance(s.value.value, str)
+    ]
+
+
+def _collect_known_classes(tree: ast.Module) -> set[str]:
+    """Collect locally defined and imported UpperCamelCase class symbols in ``tree``.
+
+    Args:
+        tree (ast.Module): Parsed Python module AST.
+
+    Returns:
+        set[str]: Known class symbol names in the module.
+    """
+    classes: set[str] = {n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.ImportFrom):
+            for alias in n.names:
+                bound = alias.asname or alias.name
+                if bound[:1].isupper():
+                    classes.add(bound)
+    return classes
+
+
+def _extract_sole_is_not_none_var(
+    func_node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> tuple[int, str] | None:
+    """Return ``(lineno, var_name)`` if ``func_node``'s sole verification is ``assert <var> is not None``.
+
+    Args:
+        func_node (ast.FunctionDef | ast.AsyncFunctionDef): Test function AST node.
+
+    Returns:
+        tuple[int, str] | None: Assertion line and variable name when sole check is ``is not None``, else ``None``.
+    """
+    asserts: list[ast.Assert] = []
+    for sub in ast.walk(func_node):
+        if isinstance(sub, ast.Assert):
+            asserts.append(sub)
+        elif (
+            isinstance(sub, ast.Call)
+            and isinstance(sub.func, ast.Attribute)
+            and (sub.func.attr in ("raises", "warns") or sub.func.attr.startswith("assert"))
+        ):
+            return None
+    if len(asserts) != 1:
+        return None
+    cmp = asserts[0].test
+    if (
+        isinstance(cmp, ast.Compare)
+        and len(cmp.ops) == 1
+        and isinstance(cmp.ops[0], ast.IsNot)
+        and isinstance(cmp.comparators[0], ast.Constant)
+        and cmp.comparators[0].value is None
+        and isinstance(cmp.left, ast.Name)
+    ):
+        return asserts[0].lineno, cmp.left.id
+    return None
+
+
+def _is_class_instantiation_call(call_node: ast.Call, known_classes: set[str]) -> bool:
+    """Return True when ``call_node`` directly instantiates a class constructor.
+
+    Args:
+        call_node (ast.Call): Candidate constructor call AST node.
+        known_classes (set[str]): Known class identifiers in the module.
+
+    Returns:
+        bool: True if ``call_node`` invokes a class constructor.
+    """
+    callee = call_node.func
+    name = callee.id if isinstance(callee, ast.Name) else (callee.attr if isinstance(callee, ast.Attribute) else "")
+    return bool(name[:1].isupper() or name in known_classes)
+
+
+def _check_instantiation_only_assert(
+    path: str,
+    func_node: ast.FunctionDef | ast.AsyncFunctionDef,
+    known_classes: set[str],
+) -> str | None:
+    """Flag test functions whose only assertion is ``assert <var> is not None`` on a class instantiation.
+
+    Args:
+        path (str): File path of the test module.
+        func_node (ast.FunctionDef | ast.AsyncFunctionDef): Test function AST node.
+        known_classes (set[str]): Known class identifiers in the module.
+
+    Returns:
+        str | None: Violation string if vacuous instantiation assertion is found, else ``None``.
+    """
+    sole = _extract_sole_is_not_none_var(func_node)
+    if sole is None:
+        return None
+    assert_lineno, var_name = sole
+    for stmt in ast.walk(func_node):
+        if isinstance(stmt, (ast.Assign, ast.AnnAssign)) and isinstance(stmt.value, ast.Call):
+            targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+            if any(isinstance(t, ast.Name) and t.id == var_name for t in targets) and _is_class_instantiation_call(
+                stmt.value,
+                known_classes,
+            ):
+                return (
+                    f"FAILED: Vacuous 'assert {var_name} is not None' on direct class instantiation in "
+                    f"'{func_node.name}' at {path}:{assert_lineno}"
+                )
+    return None
+
+
+def _inspect_test_function(
+    path: str,
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    local_funcs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef],
+    known_classes: set[str],
+    check_zero_assertions: bool,
+) -> list[str]:
+    """Validate assertion presence and non-vacuousness on a ``test_*`` AST function node.
+
+    Args:
+        path (str): File path of the Python test module.
+        node (ast.FunctionDef | ast.AsyncFunctionDef): Test function AST node.
+        local_funcs (dict[str, ast.FunctionDef | ast.AsyncFunctionDef]): Module-level helper definitions.
+        known_classes (set[str]): Known class identifiers in the module.
+        check_zero_assertions (bool): Whether to flag functions with zero assertions.
+
+    Returns:
+        list[str]: Violations found on ``node``.
+    """
+    errs: list[str] = []
+    if check_zero_assertions and not _has_assertion_or_verification(node, local_funcs):
+        errs.append(f"FAILED: Zero assertions in test function '{node.name}' at {path}:{node.lineno}")
+    inst_err = _check_instantiation_only_assert(path, node, known_classes)
+    if inst_err is not None:
+        errs.append(inst_err)
+    return errs
 
 
 def check_test_file_ast(
@@ -329,7 +485,10 @@ def check_test_file_ast(
     except SyntaxError:
         return []
 
-    local_funcs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {stmt.name: stmt for stmt in tree.body if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    local_funcs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {
+        stmt.name: stmt for stmt in tree.body if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    known_classes: set[str] = _collect_known_classes(tree)
 
     errors: list[str] = []
     for node in ast.walk(tree):
@@ -343,15 +502,16 @@ def check_test_file_ast(
             errors.append(f"FAILED: Prohibited contextlib.suppress usage in {path}:{node.lineno}")
         elif check_swallowed_exceptions and isinstance(node, ast.ExceptHandler):
             errors.extend(_check_except_handler(path, node))
-        elif check_zero_assertions and isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if node.name.startswith("test_") and not _has_assertion_or_verification(node, local_funcs):
-                errors.append(f"FAILED: Zero assertions in test function '{node.name}' at {path}:{node.lineno}")
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_"):
+            errors.extend(_inspect_test_function(path, node, local_funcs, known_classes, check_zero_assertions))
 
     return errors
 
 
 def _scan_dummy_swallows_in_dir(target_dir: str) -> list[str]:
-    """Scan Python modules in `target_dir` for dummy exception-swallowing assignments (`_ = None`, `_caught_err = True`).
+    """Scan Python modules in `target_dir` for dummy exception-swallowing assignments (`_ = None`, `_caught_err =.
+
+    True`).
 
     Args:
         target_dir (str): Directory root to scan recursively.
@@ -370,7 +530,11 @@ def _scan_dummy_swallows_in_dir(target_dir: str) -> list[str]:
             except SyntaxError:
                 continue
             for node in ast.walk(tree):
-                if isinstance(node, ast.ExceptHandler) and len(node.body) == 1 and _is_dummy_swallow_assign(node.body[0]):
+                if (
+                    isinstance(node, ast.ExceptHandler)
+                    and len(node.body) == 1
+                    and _is_dummy_swallow_assign(node.body[0])
+                ):
                     violations.append(f"FAILED: Swallowed exception via dummy assignment found in {path}:{node.lineno}")
     return violations
 
@@ -387,8 +551,12 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Run AST-based test and typing lint checks.")
     parser.add_argument("--tests-dir", type=str, default="tests", help="Tests directory to scan.")
     parser.add_argument("--src-dir", type=str, default="src/ml_switcheroo_compiler", help="Source directory to scan.")
-    parser.add_argument("--check-zero-assertions", action="store_true", default=True, help="Flag test functions with zero assertions.")
-    parser.add_argument("--check-any", action="store_true", default=True, help="Also fail if Any/object annotations are found in src.")
+    parser.add_argument(
+        "--check-zero-assertions", action="store_true", default=True, help="Flag test functions with zero assertions."
+    )
+    parser.add_argument(
+        "--check-any", action="store_true", default=True, help="Also fail if Any/object annotations are found in src."
+    )
     args, _ = parser.parse_known_args(argv if argv is not None else [])
 
     all_errors: list[str] = []

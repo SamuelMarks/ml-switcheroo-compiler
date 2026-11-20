@@ -8,7 +8,10 @@ import typing
 from unittest.mock import patch
 
 import numpy as np
+import pytest
+from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import (
@@ -39,10 +42,9 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
     rmsprop_update,
     sgd_update,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_optimizers_coverage() -> None:
@@ -52,18 +54,36 @@ def test_optimizers_coverage() -> None:
     grad = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
     assert sgd_update(t, grad, SGDConfig(lr=0.1, weight_decay=0.1, momentum=0.9, nesterov=True)) is not None
-    state = ensure_tensor_dict({})
-    assert ensure_callable(sgd_update)(t, grad, ensure_callable(SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
-    assert ensure_callable(sgd_update)(t, grad, ensure_callable(SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
+    state: dict[str, Tensor] = {}
+    assert sgd_update(t, grad, SGDConfig(lr=0.1, momentum=0.9, nesterov=False), state) is not None
+    assert sgd_update(t, grad, SGDConfig(lr=0.1, momentum=0.9, nesterov=False), state) is not None
 
     assert adam_update(t, grad, AdamHyperparams(lr=0.1, weight_decay=0.1)) is not None
     assert adamw_update(t, grad, AdamWHyperparams(lr=0.1, weight_decay=0.1)) is not None
     assert adagrad_update(t, grad, AdagradConfig(lr=0.1, weight_decay=0.1)) is not None
 
-    assert rmsprop_update(t, grad, RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9)) is not None
-    state_rms = ensure_tensor_dict({})
-    assert ensure_callable(rmsprop_update)(t, grad, ensure_callable(RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
-    assert ensure_callable(rmsprop_update)(t, grad, ensure_callable(RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
+    assert (
+        rmsprop_update(t, grad, RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9)) is not None
+    )
+    state_rms: dict[str, Tensor] = {}
+    assert (
+        rmsprop_update(
+            t,
+            grad,
+            RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9),
+            state_rms,
+        )
+        is not None
+    )
+    assert (
+        rmsprop_update(
+            t,
+            grad,
+            RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9),
+            state_rms,
+        )
+        is not None
+    )
 
     assert adadelta_update(t, grad, AdadeltaConfig(lr=0.1, weight_decay=0.1)) is not None
     assert adamax_update(t, grad, AdamaxHyperparams(lr=0.1, weight_decay=0.1)) is not None
@@ -71,13 +91,13 @@ def test_optimizers_coverage() -> None:
     assert adafactor_update(t, grad, 0.1) is not None
     assert muon_update(t, grad, 0.1) is not None
 
-    assert ensure_callable(ApplyAdam)().infer_shape(t, t, t) == (2, 2)
-    assert ensure_callable(ApplyAdagrad)().infer_shape(t, t) == (2, 2)
-    assert ensure_callable(ApplyFtrl)().infer_shape(t, t, t) == (2, 2)
-    assert ensure_callable(ApplyRMSProp)().infer_shape(t, t, t) == (2, 2)
+    assert ApplyAdam().infer_shape(t, t, t) == (2, 2)
+    assert ApplyAdagrad().infer_shape(t, t) == (2, 2)
+    assert ApplyFtrl().infer_shape(t, t, t) == (2, 2)
+    assert ApplyRMSProp().infer_shape(t, t, t) == (2, 2)
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
-        mock_backend.return_value.execute_op.side_effect = Exception("ValueError mock")
+        mock_backend.return_value.execute_op.side_effect = RuntimeError("ValueError mock")
 
         original_eager = config.eager_mode
         try:
@@ -90,9 +110,9 @@ def test_optimizers_coverage() -> None:
                 """Test class DummyGraph."""
 
                 name = "dummy"
-                nodes = ensure_tensor_dict({})
+                nodes: dict[str, LogicalNode] = {}
 
-                def add_node(self, node: EagerValue) -> None:
+                def add_node(self, node: BackendArg) -> None:
                     """Test function add_node.
 
                     Args:
@@ -100,7 +120,7 @@ def test_optimizers_coverage() -> None:
                     """
                     pass
 
-            ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+            pytest.MonkeyPatch().setattr(global_tracing_state, "active_graph", DummyGraph(), raising=False)
 
             assert apply_adam(t, t, t, grad, 0.1) is not None
             assert apply_adagrad(t, t, grad, 0.1) is not None

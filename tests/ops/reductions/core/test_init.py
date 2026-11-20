@@ -1,26 +1,28 @@
-"""Tests for test_init."""
+"""Tests for `ml_switcheroo_compiler.ops.reductions` package initialization and fallback behavior."""
 
 from __future__ import annotations
 
-from tests.testing_utils import ensure_eager_tensor
-
 
 def test_reductions_init() -> None:
-    """Test function test_reductions_init."""
+    """Verify standard reduction operator exports are initialized."""
     import ml_switcheroo_compiler.ops.reductions as red
 
     assert red.sum is not None
+    assert red.sum.op_type == "Sum"
 
 
 def test_reductions_init_missing() -> None:
-    """Test function test_reductions_init_missing."""
+    """Verify `_safe_get_op` constructs a fallback `OpDef` when `get_op` raises `KeyError`."""
     import importlib
     from unittest.mock import patch
 
     import ml_switcheroo_compiler.ops.reductions
+    from ml_switcheroo_compiler.ops.base import OpDef
 
     with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.reductions)
-        assert ensure_eager_tensor(ml_switcheroo_compiler.ops.reductions).sum is None
+        fallback_sum = ml_switcheroo_compiler.ops.reductions.sum
+        assert isinstance(fallback_sum, OpDef)
+        assert fallback_sum.op_type == "Sum"
 
     importlib.reload(ml_switcheroo_compiler.ops.reductions)

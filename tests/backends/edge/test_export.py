@@ -2,22 +2,15 @@
 
 from __future__ import annotations
 
-import typing
-
 import pytest
-from ml_switcheroo_ir import LogicalNode, NodeDict
+from ml_switcheroo_ir import IRGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import ensure_callable, ensure_node_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 @pytest.mark.parametrize("op_type", ["Add", "Exp", "Relu", "ReduceMax", "Where", "Cast"])
-def test_onnx_export_ops(op_type: EagerTensorProtocol) -> None:
+def test_onnx_export_ops(op_type: str) -> None:
     """Test function test_onnx_export_ops.
 
     Args:
@@ -26,8 +19,8 @@ def test_onnx_export_ops(op_type: EagerTensorProtocol) -> None:
     graph = IRGraph()
     n1 = LogicalNode(id="in1", op_type="Input")
     n1.shape_metadata = (10,)
-    n2 = ensure_callable(LogicalNode)(id="n2", op_type=op_type, inputs=["in1", "in1"])
-    graph.nodes = NodeDict(ensure_node_dict({"in1": n1, "n2": n2}))
+    n2 = LogicalNode(id="n2", op_type=op_type, inputs=["in1", "in1"])
+    graph.nodes = NodeDict({"in1": n1, "n2": n2})
 
     gen = ONNXCodeGenerator(graph)
     code = gen.generate()
@@ -37,11 +30,11 @@ def test_onnx_export_ops(op_type: EagerTensorProtocol) -> None:
         return  # Mocked
     assert "graph " in str(code)
     if op_type != "Where":  # Where output structure is slightly different depending on ONNX logic
-        assert op_type in ensure_callable(str)(code) or ensure_callable(op_type.upper)() in ensure_callable(str)(code).upper()
+        assert op_type in str(code) or op_type.upper() in str(code).upper()
 
 
 @pytest.mark.parametrize("op_type", ["Add", "Exp", "Relu", "ReduceMax", "Where", "Cast"])
-def test_stablehlo_export_ops(op_type: EagerTensorProtocol) -> None:
+def test_stablehlo_export_ops(op_type: str) -> None:
     """Test function test_stablehlo_export_ops.
 
     Args:
@@ -50,8 +43,8 @@ def test_stablehlo_export_ops(op_type: EagerTensorProtocol) -> None:
     graph = IRGraph()
     n1 = LogicalNode(id="in1", op_type="Input")
     n1.shape_metadata = (10,)
-    n2 = ensure_callable(LogicalNode)(id="n2", op_type=op_type, inputs=["in1", "in1"])
-    graph.nodes = NodeDict(ensure_node_dict({"in1": n1, "n2": n2}))
+    n2 = LogicalNode(id="n2", op_type=op_type, inputs=["in1", "in1"])
+    graph.nodes = NodeDict({"in1": n1, "n2": n2})
 
     gen = StableHLOCodeGenerator(graph)
     code = gen.generate()

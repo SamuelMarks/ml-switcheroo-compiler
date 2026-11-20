@@ -9,10 +9,10 @@ import pytest
 
 from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, get_op
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    pass
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_generated_registry_loaded() -> None:
@@ -22,51 +22,63 @@ def test_generated_registry_loaded() -> None:
 
 
 def test_dynamic_infer_shape() -> None:
-    # Force the registry to fallback to dynamic class creation for a known op
-    # Let's say "Add" which might not be registered yet or we can use a mock name
-
-    # We add a fake entry to OPS_REGISTRY just for the test
     """Test function test_dynamic_infer_shape."""
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
+    fake_entry: dict[str, dict[str, dict[str, str]]] = {
+        "metadata": {"operation": {"name": "FakeShapeOp"}},
+    }
     original = _YAML_REGISTRY.get("FakeShapeOp")
-    ensure_eager_tensor(_YAML_REGISTRY)["FakeShapeOp"] = {"operation": "FakeShapeOp"}
+    _YAML_REGISTRY["FakeShapeOp"] = fake_entry
 
     try:
         OpCls = get_op("FakeShapeOp")
         op = OpCls()
 
         # 1. inputs via list of args
-        class Dummy:
+        class Dummy(MockTestStub):
             """Test class Dummy."""
 
             pass
 
         d1 = Dummy()
-        ensure_mutable(d1).shape_metadata = ensure_eager_tensor((2, 2))
+        pytest.MonkeyPatch().setattr(d1, "shape_metadata", (2, 2), raising=False)
         d2 = Dummy()
-        ensure_mutable(d2).shape = ensure_eager_tensor((2, 2))
+        pytest.MonkeyPatch().setattr(d2, "shape", (2, 2), raising=False)
 
-        assert op.infer_shape(ensure_eager_tensor(d1)) == (2, 2)
-        assert op.infer_shape(inputs=[ensure_eager_tensor(d2)]) == (2, 2)
+        assert op.dispatch_infer_shape(d1) == (2, 2)
+        assert op.dispatch_infer_shape(inputs=[d2]) == (2, 2)
+
+        @typing.runtime_checkable
+        class _YamlDataProto(typing.Protocol):
+            """Protocol for DynamicOpDef exposing `get_yaml_data`."""
+
+            def get_yaml_data(self) -> BackendArg:
+                """Return backing YAML entry.
+
+                Returns:
+                    BackendArg: YAML dictionary.
+                """
+                ...
 
         # 2. list of ints
-        assert op.infer_shape([[2, 3]]) == (2, 3)
-        assert ensure_eager_tensor(ensure_eager_tensor(op).get_yaml_data)() == {"operation": "FakeShapeOp"}
+        assert op.dispatch_infer_shape([[2, 3]]) == (2, 3)
+        assert isinstance(op, _YamlDataProto)
+        assert op.get_yaml_data() == fake_entry
 
         # 3. broadcast
-        assert op.infer_shape(ensure_eager_tensor(d1), inputs=[ensure_eager_tensor(d2)]) == (2, 2)
+        assert op.dispatch_infer_shape(d1, inputs=[d2]) == (2, 2)
 
         # 4. no shapes
-        assert op.infer_shape(ensure_eager_tensor(Dummy())) == ()
+        assert op.dispatch_infer_shape(Dummy()) == ()
 
         # 5. Broadcast mismatch raises ValueError
         d3 = Dummy()
-        ensure_mutable(d3).shape = ensure_eager_tensor((3, 3))
+        pytest.MonkeyPatch().setattr(d3, "shape", (3, 3), raising=False)
         d4 = Dummy()
-        ensure_mutable(d4).shape = ensure_eager_tensor((2, 2))
+        pytest.MonkeyPatch().setattr(d4, "shape", (2, 2), raising=False)
         with pytest.raises(ValueError):
-            op.infer_shape(ensure_eager_tensor(d3), ensure_eager_tensor(d4))
+            op.dispatch_infer_shape(d3, d4)
 
     finally:
         if original is None:
@@ -95,7 +107,13 @@ def test_get_op_exceptions() -> None:
 
 def test_registry_shim_methods() -> None:
     """Test function test_registry_shim_methods."""
-    from ml_switcheroo_compiler.ops.registry import _RegistryShim, _RegistryShimFix, get_backend_mapping, get_frontend, register_frontend
+    from ml_switcheroo_compiler.ops.registry import (
+        _RegistryShim,
+        _RegistryShimFix,
+        get_backend_mapping,
+        get_frontend,
+        register_frontend,
+    )
 
     data = {"Op1": {"variants": {"np": {"generator": "np_gen", "eager": "np_eager"}}}}
 

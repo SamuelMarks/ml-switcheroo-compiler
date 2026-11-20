@@ -11,10 +11,10 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_random_sampling im
     _pshuffle,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from tests.testing_utils import ensure_eager_tensor, ensure_mod
+from tests.testing_utils import MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_math_random_sampling_coverage() -> None:
@@ -29,7 +29,7 @@ def test_math_random_sampling_coverage() -> None:
     class LaxObj:
         """Mock lax container."""
 
-        def pshuffle(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def pshuffle(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock pshuffle.
 
             Args:
@@ -41,28 +41,28 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "pshuffle_val"
 
-    class BackendWithLax:
+    class BackendWithLax(MockTestStub):
         """Mock backend with lax."""
 
         lax = LaxObj()
 
-    assert _pshuffle(ensure_mod(BackendWithLax()), [1, 2, 3]) == "pshuffle_val"
+    assert _pshuffle(BackendWithLax(), [1, 2, 3]) == "pshuffle_val"
 
     # Case B: backend lacks lax -> returns args[0] if args else None
-    class EmptyBackend:
+    class EmptyBackend(MockTestStub):
         """Empty backend."""
 
         pass
 
-    assert _pshuffle(ensure_mod(EmptyBackend()), [1, 2, 3]) == [1, 2, 3]
-    assert _pshuffle(ensure_mod(EmptyBackend())) is None
+    assert _pshuffle(EmptyBackend(), [1, 2, 3]) == [1, 2, 3]
+    assert _pshuffle(EmptyBackend()) is None
 
     # 2. _np_gumbel
     # Case A: backend has gumbel
-    class GumbelBackend:
+    class GumbelBackend(MockTestStub):
         """Backend with gumbel."""
 
-        def gumbel(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def gumbel(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock gumbel.
 
             Args:
@@ -74,18 +74,18 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "gumbel_val"
 
-    assert _np_gumbel(ensure_mod(GumbelBackend()), 0.0, 1.0) == "gumbel_val"
+    assert _np_gumbel(GumbelBackend(), 0.0, 1.0) == "gumbel_val"
 
     # Case B: backend lacks gumbel -> fallback to np.random.gumbel
-    g_res = _np_gumbel(ensure_mod(EmptyBackend()), 0.0, 1.0, size=(2, 2))
-    assert ensure_eager_tensor(g_res).shape == (2, 2)
+    g_res = _np_gumbel(EmptyBackend(), 0.0, 1.0, size=(2, 2))
+    assert extract_test_shape(g_res) == (2, 2)
 
     # 3. _np_rnguniform
     # Case A: backend has rnguniform
-    class RngUniformBackend:
+    class RngUniformBackend(MockTestStub):
         """Backend with rnguniform."""
 
-        def rnguniform(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def rnguniform(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock rnguniform.
 
             Args:
@@ -97,18 +97,18 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "rnguniform_val"
 
-    assert _np_rnguniform(ensure_mod(RngUniformBackend()), 0.0, 1.0) == "rnguniform_val"
+    assert _np_rnguniform(RngUniformBackend(), 0.0, 1.0) == "rnguniform_val"
 
     # Case B: backend lacks rnguniform -> fallback to np.random.uniform
-    u_res = _np_rnguniform(ensure_mod(EmptyBackend()), 0.0, 1.0, size=(3,))
-    assert ensure_eager_tensor(u_res).shape == (3,)
+    u_res = _np_rnguniform(EmptyBackend(), 0.0, 1.0, size=(3,))
+    assert extract_test_shape(u_res) == (3,)
 
     # 4. _np_wald
     # Case A: backend has wald
-    class WaldBackend:
+    class WaldBackend(MockTestStub):
         """Backend with wald."""
 
-        def wald(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def wald(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock wald.
 
             Args:
@@ -120,11 +120,11 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "wald_val"
 
-    assert _np_wald(ensure_mod(WaldBackend()), 1.0, 1.0) == "wald_val"
+    assert _np_wald(WaldBackend(), 1.0, 1.0) == "wald_val"
 
     # Case B: backend lacks wald -> fallback to np.random.wald
-    w_res = _np_wald(ensure_mod(EmptyBackend()), 1.0, 1.0, size=(2,))
-    assert ensure_eager_tensor(w_res).shape == (2,)
+    w_res = _np_wald(EmptyBackend(), 1.0, 1.0, size=(2,))
+    assert extract_test_shape(w_res) == (2,)
 
     # Registry verification
     assert global_eager_registry.get("Pshuffle") is not None

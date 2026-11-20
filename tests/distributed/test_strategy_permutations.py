@@ -6,10 +6,8 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
-from tests.testing_utils import ensure_eager_tensor
-
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_strategy_exhaustive_extra() -> None:
@@ -17,6 +15,7 @@ def test_strategy_exhaustive_extra() -> None:
     from unittest.mock import mock_open, patch
 
     import yaml
+    from ml_switcheroo_ir import IRGraph, IRNode
 
     from ml_switcheroo_compiler.distributed.strategy import (
         MultiWorkerMirroredStrategy,
@@ -24,47 +23,47 @@ def test_strategy_exhaustive_extra() -> None:
         _load_strategy_config,
         _load_webrtc_topology,
     )
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     # Test load yaml
     with patch("os.path.exists", return_value=True):
         with patch("builtins.open", mock_open(read_data=yaml.dump({"strategies": {"test": "val"}}))):
             res = _load_strategy_config()
-            assert ensure_eager_tensor(res) == ensure_eager_tensor({"test": "val"})
+            assert res == {"test": "val"}
 
         with patch("builtins.open", mock_open(read_data=yaml.dump({"test2": "val2"}))):
-            res2 = ensure_eager_tensor(_load_webrtc_topology())
-            assert res2 == ensure_eager_tensor({"test2": "val2"})
+            res2 = _load_webrtc_topology()
+            assert res2 == {"test2": "val2"}
 
     # Test PS Hooks
     ps = ParameterServerStrategy()
-    ps.config = {"registry_hooks": {"pull": "mock_pull", "push": "mock_push"}}
 
     class MockBackend:
         """Test class MockBackend."""
 
-        def mock_pull(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
-            """Test function mock_pull.
+        def ps_pull_weights(self, graph: BackendArg, resolver: BackendArg) -> BackendArg:
+            """Test function ps_pull_weights.
 
             Args:
                 graph: Test parameter `graph`.
                 resolver: Test parameter `resolver`.
 
             Returns:
-                EagerValue: Computed output value from `mock_pull`.
+                BackendArg: Computed output value from `ps_pull_weights`.
             """
+            del graph, resolver
             return True
 
-        def mock_push(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
-            """Test function mock_push.
+        def ps_push_gradients(self, graph: BackendArg, resolver: BackendArg) -> BackendArg:
+            """Test function ps_push_gradients.
 
             Args:
                 graph: Test parameter `graph`.
                 resolver: Test parameter `resolver`.
 
             Returns:
-                EagerValue: Computed output value from `mock_push`.
+                BackendArg: Computed output value from `ps_push_gradients`.
             """
+            del graph, resolver
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
@@ -84,21 +83,21 @@ def test_strategy_exhaustive_extra() -> None:
 
     # MWMS Hooks
     mwms = MultiWorkerMirroredStrategy()
-    mwms.config = {"registry_hooks": {"sync": "mock_sync"}}
 
     class MockBackendMWMS:
         """Test class MockBackendMWMS."""
 
-        def mock_sync(self, graph: EagerValue, resolver: EagerValue) -> EagerValue:
-            """Test function mock_sync.
+        def sync_gradients_hook(self, graph: BackendArg, resolver: BackendArg) -> BackendArg:
+            """Test function sync_gradients_hook.
 
             Args:
                 graph: Test parameter `graph`.
                 resolver: Test parameter `resolver`.
 
             Returns:
-                EagerValue: Computed output value from `mock_sync`.
+                BackendArg: Computed output value from `sync_gradients_hook`.
             """
+            del graph, resolver
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackendMWMS()):

@@ -10,99 +10,72 @@ import numpy as np
 
 _np_module = np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, global_eager_registry, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    BackendOperand,
+    numpy_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
-def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
-    """Type guard narrowing `val` to `np.ndarray`.
+@typing.runtime_checkable
+class _NumpyUnwrapProtocol(typing.Protocol):
+    """Protocol for tensor wrappers exposing a `.numpy()` conversion method."""
+
+    def numpy(self) -> BackendArg:
+        """Convert wrapper into a NumPy array.
+
+        Returns:
+            BackendArg: Underlying NumPy array.
+        """
+        ...
+
+
+def ensure_ndarray(
+    val: BackendOperand | _NumpyUnwrapProtocol,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    """Convert or narrow an eager operand to `np.ndarray` without unsound TypeGuards.
 
     Args:
-        val (EagerValue | np.ndarray): Candidate array value.
+        val (BackendOperand | _NumpyUnwrapProtocol): Input array or scalar operand.
 
     Returns:
-        bool: True for runtime array values.
+        np.ndarray: NumPy ndarray instance.
     """
-    return isinstance(val, np.ndarray) or not isinstance(val, type(Ellipsis))
+    if isinstance(val, np.ndarray):
+        return val
+    unwrapped = val.numpy() if isinstance(val, _NumpyUnwrapProtocol) else val
+    return unwrapped if isinstance(unwrapped, np.ndarray) else np.asarray(unwrapped)
 
 
-def ensure_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
-    """Narrow an `EagerValue` array to `np.ndarray` without `typing.cast`.
-
-    Args:
-        val (EagerValue | np.ndarray): Input array operand.
-
-    Returns:
-        np.ndarray: Narrowed numpy ndarray reference.
-    """
-    assert _is_ndarray(val)
-    return val
-
-
-import ml_switcheroo_compiler.backends.numpy.eager.activation_ops
-import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing
-import ml_switcheroo_compiler.backends.numpy.eager.array_manipulation
-import ml_switcheroo_compiler.backends.numpy.eager.audio_features
-import ml_switcheroo_compiler.backends.numpy.eager.control_flow
-import ml_switcheroo_compiler.backends.numpy.eager.conv
-import ml_switcheroo_compiler.backends.numpy.eager.distributed
-import ml_switcheroo_compiler.backends.numpy.eager.fft_ops
-import ml_switcheroo_compiler.backends.numpy.eager.indexing
-import ml_switcheroo_compiler.backends.numpy.eager.io_ops
-import ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced
-import ml_switcheroo_compiler.backends.numpy.eager.lookups
-import ml_switcheroo_compiler.backends.numpy.eager.loss_ops
-import ml_switcheroo_compiler.backends.numpy.eager.math_advanced
-import ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary
-import ml_switcheroo_compiler.backends.numpy.eager.math_binary
-import ml_switcheroo_compiler.backends.numpy.eager.math_fft
-import ml_switcheroo_compiler.backends.numpy.eager.math_logical
-import ml_switcheroo_compiler.backends.numpy.eager.math_logical_reductions
-import ml_switcheroo_compiler.backends.numpy.eager.math_nan
-import ml_switcheroo_compiler.backends.numpy.eager.math_reductions
-import ml_switcheroo_compiler.backends.numpy.eager.math_scatter
-import ml_switcheroo_compiler.backends.numpy.eager.math_special
-import ml_switcheroo_compiler.backends.numpy.eager.math_stats
-import ml_switcheroo_compiler.backends.numpy.eager.math_trig
-import ml_switcheroo_compiler.backends.numpy.eager.math_unary
-import ml_switcheroo_compiler.backends.numpy.eager.nn
-import ml_switcheroo_compiler.backends.numpy.eager.nn_ops
-import ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills
-import ml_switcheroo_compiler.backends.numpy.eager.optimizers_ops
-import ml_switcheroo_compiler.backends.numpy.eager.random_ops
-import ml_switcheroo_compiler.backends.numpy.eager.reductions
-import ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops
-import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged
-import ml_switcheroo_compiler.backends.numpy.eager.strings
-import ml_switcheroo_compiler.backends.numpy.eager.variable_ops
-import ml_switcheroo_compiler.backends.numpy.eager.vision
-import ml_switcheroo_compiler.backends.numpy.eager.vision_augmentation
-import ml_switcheroo_compiler.backends.numpy.eager.vision_bbox
-import ml_switcheroo_compiler.backends.numpy.eager.vision_color
-import ml_switcheroo_compiler.backends.numpy.eager.vision_common
-import ml_switcheroo_compiler.backends.numpy.eager.vision_filtering
-import ml_switcheroo_compiler.backends.numpy.eager.vision_filters
-import ml_switcheroo_compiler.backends.numpy.eager.vision_geometry
-import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms
-import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F401
+import ml_switcheroo_compiler.backends.eager  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager._indexing_parsing_utils  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.distributed  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.indexing  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.io_ops  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.scipy_bessel_poly_kernels  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.scipy_linalg_kernels  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.scipy_ndimage_kernels  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager.scipy_special_kernels  # noqa: E402, F401
 
 
 def execute_op(
-    cls: type,
+    cls: type | None,
     op_type: str,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-) -> EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Dispatch and execute an eager operation on the NumPy backend.
 
     Args:
-        cls (type): Backend class receiving the operation dispatch.
+        cls (type | None): Backend class receiving the operation dispatch.
         op_type (str): Canonical IR operation name to execute.
-        *args (EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Positional tensor or scalar operands.
-        **kwargs (EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Keyword operation attributes.
+        *args (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Positional tensor or scalar operands.
+        **kwargs (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Keyword operation attributes.
 
     Returns:
-        EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Evaluated NumPy array or scalar result.
+        BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Evaluated NumPy array or scalar result.
 
     Raises:
         UnimplementedMathError: If `op_type` is not registered and has no NumPy equivalent.
@@ -110,26 +83,23 @@ def execute_op(
     func_registry = numpy_eager_registry.get(op_type)
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
-    func_registry = global_eager_registry.get(op_type)
-    if func_registry is not None:
-        return func_registry(np, *args, **kwargs)
     try:
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-        func = get_backend_member(np, snake)
+        func = adapt_backend_module(np).require_symbol(snake)
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
         msg = f"Operation {op_type} is not implemented in interpreter."
         raise UnimplementedMathError(msg) from None
-    return ensure_callable(func)(*args, **kwargs)
+    return func(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Clone")
 def clone_op(
-    np_mod: BackendModuleProtocol | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    np_mod: BackendModuleProtocol | BackendArg,
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Clone an array using np.copy.
 
@@ -142,55 +112,55 @@ def clone_op(
         np.ndarray: Copied array.
     """
     del np_mod, kwargs
-    return ensure_ndarray(get_backend_member(np, "copy")(args[0]))
+    return ensure_ndarray(adapt_backend_module(np).require_op("copy")(args[0]))
 
 
 @numpy_eager_registry.register("Repeat")
 def repeat(
-    np_mod: BackendModuleProtocol | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    np_mod: BackendModuleProtocol | BackendArg,
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Repeat.
 
     Args:
-        np_mod (EagerValue | np.ndarray): Input `np` argument (np).
-        *args (EagerValue | np.ndarray): Positional args.
-        **kwargs (EagerValue | np.ndarray): Keyword args.
+        np_mod (BackendModuleProtocol | BackendArg): Input `np` argument (np).
+        *args (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Positional args.
+        **kwargs (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return ensure_ndarray(get_backend_member(np_mod, "repeat")(*args, **kwargs))
+    return ensure_ndarray(adapt_backend_module(np_mod).require_symbol("repeat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Searchsorted")
 def searchsorted(
-    np_mod: BackendModuleProtocol | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    np_mod: BackendModuleProtocol | BackendArg,
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Searchsorted.
 
     Args:
-        np_mod (EagerValue | np.ndarray): Input `np` argument (np).
-        *args (EagerValue | np.ndarray): Positional args.
-        **kwargs (EagerValue | np.ndarray): Keyword args.
+        np_mod (BackendModuleProtocol | BackendArg): Input `np` argument (np).
+        *args (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Positional args.
+        **kwargs (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return ensure_ndarray(get_backend_member(np_mod, "searchsorted")(*args, **kwargs))
+    return ensure_ndarray(adapt_backend_module(np_mod).require_symbol("searchsorted")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Split")
 def split(
-    np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
-    num_or_size_splits: int | list[int] | tuple[int, ...] | EagerValue,
+    np_mod: BackendModuleProtocol | BackendArg,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg,
+    num_or_size_splits: int | list[int] | tuple[int, ...] | BackendArg,
     axis: int = 0,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Split array.
 
@@ -205,17 +175,17 @@ def split(
     Returns:
         List of output arrays.
     """
-    split_fn = get_backend_member(np_mod, "split", get_backend_member(np, "split"))
+    split_fn = adapt_backend_module(np_mod).get_symbol("split", np.split)
     return [ensure_ndarray(s) for s in split_fn(x, num_or_size_splits, axis=axis)]
 
 
 @numpy_eager_registry.register("Squeeze")
 def squeeze(
-    np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
+    np_mod: BackendModuleProtocol | BackendArg,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg,
     axis: int | None = None,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Squeeze array.
 
@@ -229,16 +199,16 @@ def squeeze(
     Returns:
         Squeezed array.
     """
-    return ensure_ndarray(get_backend_member(np_mod, "squeeze")(x, axis=axis))
+    return ensure_ndarray(adapt_backend_module(np_mod).require_symbol("squeeze")(x, axis=axis))
 
 
 @numpy_eager_registry.register("Stack")
 def stack(
-    np_mod: BackendModuleProtocol | EagerValue,
-    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] | EagerValue,
+    np_mod: BackendModuleProtocol | BackendArg,
+    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] | BackendArg,
     axis: int = 0,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Stack arrays.
 
@@ -252,16 +222,16 @@ def stack(
     Returns:
         Stacked array.
     """
-    return ensure_ndarray(get_backend_member(np_mod, "stack")(arrays, axis=axis))
+    return ensure_ndarray(adapt_backend_module(np_mod).require_symbol("stack")(arrays, axis=axis))
 
 
 @numpy_eager_registry.register("Unstack")
 def unstack(
-    np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
+    np_mod: BackendModuleProtocol | BackendArg,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg,
     axis: int = 0,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], ...]:
     """Unstack array.
 
@@ -276,40 +246,38 @@ def unstack(
         List of unstacked arrays.
     """
     # unstack is basically split into 1-sized chunks along axis and squeezed
-    if has_backend_member(x, "shape"):
-        num_splits = get_backend_member(x, "shape")[axis]
-        split_fn = get_backend_member(np_mod, "split", get_backend_member(np, "split"))
+    if adapt_backend_module(x).has_symbol("shape"):
+        num_splits = adapt_backend_module(x).require_symbol("shape")[axis]
+        split_fn = adapt_backend_module(np_mod).get_symbol("split", np.split)
         splits = split_fn(x, num_splits, axis=axis)
-        squeeze_fn = get_backend_member(np_mod, "squeeze", get_backend_member(np, "squeeze"))
+        squeeze_fn = adapt_backend_module(np_mod).get_symbol("squeeze", np.squeeze)
         return tuple(ensure_ndarray(squeeze_fn(s, axis=axis)) for s in splits)
-    from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_list
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_operand_list
 
-    return tuple(ensure_ndarray(item) for item in ensure_eager_list(x))
+    return tuple(ensure_ndarray(item) for item in coerce_operand_list(x))
 
 
 @numpy_eager_registry.register("Equal")
 def equal(
-    np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
-    y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    np_mod: BackendModuleProtocol | BackendArg,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg,
+    y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg,
+    *args: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | bool:
     """Check if x and y are equal.
 
     Args:
-        np_mod (EagerValue | np.ndarray): The numpy module.
-        x (EagerValue | np.ndarray): The first array.
-        y (EagerValue | np.ndarray): The second array.
-        *args (EagerValue | np.ndarray): Additional arguments.
-        **kwargs (EagerValue | np.ndarray): Additional keyword arguments.
+        np_mod (BackendModuleProtocol | BackendArg): The numpy module.
+        x (np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg): The first array.
+        y (np.ndarray[tuple[int, ...], np.dtype[np.float64]] | BackendArg): The second array.
+        *args (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Additional arguments.
+        **kwargs (BackendArg | np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Additional keyword arguments.
 
     Returns: np.ndarray: A boolean array where x == y.
     """
     try:
-        return ensure_ndarray(get_backend_member(np_mod, "equal")(x, y))
-    except Exception:
-        from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_tensor
-
+        return ensure_ndarray(adapt_backend_module(np_mod).require_symbol("equal")(x, y))
+    except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError):
         # Fallback for incompatible types
-        return bool(ensure_eager_tensor(x) == ensure_eager_tensor(y))
+        return bool(x == y)

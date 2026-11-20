@@ -9,10 +9,16 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.normalization.frontend import NormConfig, group_mean, group_norm, group_variance, spectral_normalization
+from ml_switcheroo_compiler.ops.normalization.api import (
+    NormConfig,
+    group_mean,
+    group_norm,
+    group_variance,
+    spectral_normalization,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_normalization_frontend_brute() -> None:
@@ -28,7 +34,7 @@ def test_normalization_frontend_brute() -> None:
         class DummyBackend:
             """Test class DummyBackend."""
 
-            def execute_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def execute_op(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function execute_op.
 
                 Args:
@@ -36,18 +42,18 @@ def test_normalization_frontend_brute() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `execute_op`.
+                    BackendArg: Computed output value from `execute_op`.
                 """
                 return np.zeros((2, 4, 8, 8)).astype(np.float32)
 
-            def array(self, x: EagerValue) -> EagerValue:
+            def array(self, x: BackendArg) -> BackendArg:
                 """Test function array.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    EagerValue: Computed output value from `array`.
+                    BackendArg: Computed output value from `array`.
                 """
                 return x
 
@@ -60,7 +66,7 @@ def test_normalization_frontend_brute() -> None:
 
         import sys
 
-        norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.frontend"]
+        norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.api"]
         with patch.object(norm_frontend, "power_iteration") as mock_pi:
             mock_pi.return_value = (t_in, u_in, t_in)
             spectral_normalization(t_in, u_in)
@@ -69,7 +75,7 @@ def test_normalization_frontend_brute() -> None:
     config.eager_mode = False
     with patch.object(norm_frontend, "get_op") as mock_get_op:
 
-        def dummy_op(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def dummy_op(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function dummy_op.
 
             Args:
@@ -77,7 +83,7 @@ def test_normalization_frontend_brute() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `dummy_op`.
+                BackendArg: Computed output value from `dummy_op`.
             """
             return t_in
 
@@ -88,10 +94,10 @@ def test_normalization_frontend_brute() -> None:
         group_norm(t_in, 2)
         group_norm(t_in, 2, config=NormConfig())
 
-        norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.frontend"]
+        norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.api"]
         with patch.object(norm_frontend, "power_iteration") as mock_pi:
             mock_pi.return_value = (t_in, u_in, t_in)
             with patch.object(norm_frontend, "divide") as mock_div:
                 mock_div.return_value = t_in
                 res = spectral_normalization(t_in, u_in)
-    assert res is not None
+    assert len(res) == 2

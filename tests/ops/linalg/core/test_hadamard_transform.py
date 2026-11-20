@@ -9,7 +9,7 @@ import numpy as np
 import ml_switcheroo_compiler.ops.linalg.transform as transform_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import extract_test_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -43,16 +43,16 @@ def test_hadamard_transform_full_coverage() -> None:
         t4 = Tensor(np.ones((1, 4), dtype=np.float32), TensorConfig((1, 4), "float32", "cpu"))
         res_scaled = transform_mod.hadamard_transform(t4, scale=0.5)
         assert res_scaled is not None
-        assert ensure_eager_tensor(res_scaled).shape == (1, 4)
+        assert extract_test_shape(res_scaled) == (1, 4)
 
         t2 = Tensor(np.ones((1, 2), dtype=np.float32), TensorConfig((1, 2), "float32", "cpu"))
         res_noscale = transform_mod.hadamard_transform(t2, scale=1.0)
         assert res_noscale is not None
-        assert ensure_eager_tensor(res_noscale).shape == (1, 2)
+        assert extract_test_shape(res_noscale) == (1, 2)
 
         t1 = Tensor(np.ones((1, 1), dtype=np.float32), TensorConfig((1, 1), "float32", "cpu"))
         res_1 = transform_mod.hadamard_transform(t1, scale=1.0)
         assert res_1 is not None
-        assert ensure_eager_tensor(res_1).shape == (1, 1)
+        assert extract_test_shape(res_1) == (1, 1)
     finally:
         config.eager_mode = original_eager

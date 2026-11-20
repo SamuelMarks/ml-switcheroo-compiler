@@ -2,39 +2,52 @@
 
 from __future__ import annotations
 
+import types
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+)
+from ml_switcheroo_compiler.backends.protocols import (
+    BackendModuleProtocol,
+    EagerBackendAdapter,
+    StaticEagerBackendAdapter,
+    adapt_backend_module,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.backends.eager.types_utils import ZerosModule
+    from ml_switcheroo_ir import IRNode
+
+
+class _GeneratorVisitProto(typing.Protocol):
+    """Protocol for `GeneratorLifecycleMixin.visit` method implementations."""
+
+    def __call__(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
+        """Visit a logical IR node and return generated code.
+
+        Args:
+            node (IRNode): Target IR node.
+            input_vars (list[str]): Resolved input variable names.
+            **kwargs (BackendArg): Additional keyword attributes.
+
+        Returns:
+            str: Emitted code string.
+        """
+        ...
 
 
 @typing.runtime_checkable
 class _GetModuleClassProtocol(typing.Protocol):
     """Protocol for generator classes exposing `get_module()`."""
 
-    def get_module(self) -> ZerosModule:
+    def get_module(self) -> types.ModuleType | BackendModuleProtocol:
         """Return underlying backend module.
 
         Returns:
-            ZerosModule: Backend module.
+            types.ModuleType | BackendModuleProtocol: Backend module.
         """
         ...
-
-
-def _is_base_gen(val: GeneratorLifecycleMixin) -> typing.TypeGuard[BaseGenerator]:
-    """Type guard narrowing `GeneratorLifecycleMixin` receiver to `BaseGenerator`.
-
-    Args:
-        val (GeneratorLifecycleMixin): Mixin self instance.
-
-    Returns:
-        bool: True if instance is non-None.
-    """
-    return val is not None
 
 
 class GeneratorLifecycleMixin:
@@ -43,7 +56,29 @@ class GeneratorLifecycleMixin:
     header: str
     code: list[str]
     indent_level: int
+    input_idx: int
+    _output_returns: list[str] | None
+    sorted_nodes: list[IRNode]
+    var_names: dict[str, str]
     add_line: Callable[[str], None]
+    visit: _GeneratorVisitProto
+    emit_constant: Callable[[IRNode], str]
+    _emit_body_return: Callable[[list[str]], None]
+    _emit_constant_assignment: Callable[[str, str], None]
+    _emit_input_assignment: Callable[[str, IRNode, str, int], None]
+    _emit_output_assignment: Callable[[IRNode, list[str], str], None]
+
+    def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
+        """Assign a deterministic variable name for an IR node.
+
+        Args:
+            node_id (str): Target IR node identifier.
+            prefix (str): Variable name prefix.
+
+        Returns:
+            str: Assigned variable name.
+        """
+        return f"{prefix}_{node_id}"
 
     def generate(self) -> str:
         """Generate code from the IR graph.
@@ -99,8 +134,7 @@ class GeneratorLifecycleMixin:
         """
         from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
 
-        assert _is_base_gen(self)
-        walker: IRGraphWalker = IRGraphWalker(self)
+        walker = IRGraphWalker(self)
         walker.walk(input_prefix)
 
 
@@ -108,7 +142,22 @@ class EagerExecutionMixin:
     """Provide mixin for eager execution classmethods."""
 
     @classmethod
-    def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def get_eager_adapter(cls: type) -> EagerBackendAdapter:
+        """Return the `EagerBackendAdapter` bound for this backend generator.
+
+        Returns:
+            EagerBackendAdapter: Bound eager backend adapter.
+        """
+        bname = cls.__name__.lower()
+        if isinstance(cls, _GetModuleClassProtocol):
+            try:
+                return adapt_backend_module(cls.get_module(), backend_name=bname)
+            except (ImportError, AttributeError, RuntimeError):
+                return StaticEagerBackendAdapter(backend_name=bname)
+        return StaticEagerBackendAdapter(backend_name=bname)
+
+    @classmethod
+    def execute_op(cls: type, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute an operation eagerly.
 
         Args:
@@ -117,20 +166,20 @@ class EagerExecutionMixin:
             **kwargs: Keyword arguments.
 
         Returns:
-            EagerValue: The eager evaluation result.
+            BackendArg: The eager evaluation result.
         """
         del args, kwargs
         return None
 
     @classmethod
-    def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
+    def zeros(cls: type, shape: tuple[int, ...]) -> BackendArg:
         """Execute zeros for compiler processing.
 
         Args:
             shape (tuple[int, ...]): Input `shape` argument (shape).
 
         Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -139,7 +188,7 @@ class EagerExecutionMixin:
         return generic_zeros(mod, shape)
 
     @classmethod
-    def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+    def array(cls: type, data: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
         """Execute array for compiler processing.
 
         Args:
@@ -147,32 +196,32 @@ class EagerExecutionMixin:
             dtype: Input `dtype` argument (dtype).
 
         Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
-        return ensure_eager_tensor(ensure_callable(generic_array)(mod, data, dtype))
+        return generic_array(mod, data, dtype)
 
     @classmethod
-    def asarray(cls: type, data: EagerValue) -> EagerValue:
+    def asarray(cls: type, data: BackendArg) -> BackendArg:
         """Execute asarray for compiler processing.
 
         Args:
             data: Input `data` argument (data).
 
         Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
-        return ensure_eager_tensor(ensure_callable(generic_asarray)(mod, data))
+        return generic_asarray(mod, data)
 
     @classmethod
-    def item(cls: type, data: EagerValue) -> float:
+    def item(cls: type, data: BackendArg) -> float:
         """Execute item for compiler processing.
 
         Args:
@@ -185,4 +234,4 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else get_active_backend().get_module()
-        return ensure_float(ensure_callable(generic_item)(mod, data))
+        return generic_item(mod, data)

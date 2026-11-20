@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_device,
     extract_dtype,
@@ -22,31 +22,31 @@ from .common_ops import _emit_signal_node
 class Fftconvolve(OpDef):
     """FFT-based N-dimensional convolution operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Fftconvolve` from the first input tensor.
 
         Args:
-            *args (EagerTensorProtocol): Input signal and kernel tensors.
-            **kwargs (TensorOrScalar): Keyword mode and axis attributes.
+            *args (OpValue): Input signal and kernel tensors.
+            **kwargs (OpValue): Keyword mode and axis attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
-def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: TensorOrScalar = None) -> TensorOrScalar:
+def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: OpValue = None) -> OpValue:
     """Convolve two N-dimensional arrays using the Fast Fourier Transform.
 
     Args:
         in1 (Tensor): First input tensor.
         in2 (Tensor): Second input kernel tensor.
         mode (str): Convolution output size mode (`'full'`, `'valid'`, or `'same'`).
-        axes (TensorOrScalar): Optional axis or axes over which to compute the convolution.
+        axes (OpValue): Optional axis or axes over which to compute the convolution.
 
     Returns:
-        TensorOrScalar: Convolved output `Tensor`.
+        OpValue: Convolved output `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -62,11 +62,11 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: TensorOrScal
     )
 
 
-def _sig_dtype(obj: TensorOrScalar) -> DType | str:
+def _sig_dtype(obj: OpValue) -> DType | str:
     """Extract signal node dtype as `DType` or string.
 
     Args:
-        obj (TensorOrScalar): Input tensor or array.
+        obj (OpValue): Input tensor or array.
 
     Returns:
         DType | str: Resolved dtype.
@@ -78,30 +78,30 @@ def _sig_dtype(obj: TensorOrScalar) -> DType | str:
 class Fft(OpDef):
     """1D discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Fft`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
-def fft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def fft(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the one-dimensional discrete Fourier Transform.
 
     Args:
         input (Tensor): Input signal tensor.
-        *args (TensorOrScalar): Optional length and axis positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`n`, `axis`, `norm`).
+        *args (OpValue): Optional length and axis positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`n`, `axis`, `norm`).
 
     Returns:
-        TensorOrScalar: Complex-valued 1D FFT output `Tensor`.
+        OpValue: Complex-valued 1D FFT output `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -114,36 +114,36 @@ def fft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tenso
 class Rfft(OpDef):
     """1D real-input discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Rfft`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("Fft2")
 class Fft2(OpDef):
     """2D discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Fft2`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("Fftfreq")
@@ -152,21 +152,21 @@ class Fftfreq(OpDef):
 
     def infer_shape(
         self,
-        n: TensorOrScalar,
-        d: TensorOrScalar = 1.0,
-        *args: TensorOrScalar,
-        **kwargs: TensorOrScalar,
-    ) -> TensorOrScalar:
+        n: OpValue,
+        d: OpValue = 1.0,
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer 1D `(n,)` output shape for `Fftfreq`.
 
         Args:
-            n (EagerTensorProtocol): Window length integer.
-            d (TensorOrScalar): Sample spacing scalar.
-            *args (EagerTensorProtocol): Additional positional arguments.
-            **kwargs (TensorOrScalar): Additional keyword attributes.
+            n (OpValue): Window length integer.
+            d (OpValue): Sample spacing scalar.
+            *args (OpValue): Additional positional arguments.
+            **kwargs (OpValue): Additional keyword attributes.
 
         Returns:
-            TensorOrScalar: Inferred 1-tuple `(n,)` or empty tuple `()`.
+            OpValue: Inferred 1-tuple `(n,)` or empty tuple `()`.
         """
         _ = (d, args, kwargs)
         return (n,) if isinstance(n, int) else ()
@@ -176,66 +176,66 @@ class Fftfreq(OpDef):
 class Irfft(OpDef):
     """Inverse 1D real-output discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Irfft`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("Ihfft")
 class Ihfft(OpDef):
     """Inverse Hermitian discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Ihfft`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 @register_op("Ifft")
 class Ifft(OpDef):
     """1D inverse discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Ifft`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def ifft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ifft(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the one-dimensional inverse discrete Fourier Transform.
 
     Args:
         input (Tensor): Frequency-domain input tensor.
-        *args (TensorOrScalar): Optional length and axis positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`n`, `axis`, `norm`).
+        *args (OpValue): Optional length and axis positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`n`, `axis`, `norm`).
 
     Returns:
-        TensorOrScalar: Reconstructed time-domain `Tensor`.
+        OpValue: Reconstructed time-domain `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -255,30 +255,30 @@ def ifft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
 class Fftn(OpDef):
     """N-dimensional discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Fftn`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def fftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def fftn(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the N-dimensional discrete Fourier Transform.
 
     Args:
         input (Tensor): Input signal tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Complex N-dimensional FFT `Tensor`.
+        OpValue: Complex N-dimensional FFT `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -298,30 +298,30 @@ def fftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
 class Ifftn(OpDef):
     """N-dimensional inverse discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Ifftn`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def ifftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ifftn(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the N-dimensional inverse discrete Fourier Transform.
 
     Args:
         input (Tensor): Frequency-domain input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Reconstructed N-dimensional `Tensor`.
+        OpValue: Reconstructed N-dimensional `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -341,30 +341,30 @@ def ifftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
 class Rfftn(OpDef):
     """N-dimensional real-input discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Rfftn`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def rfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rfftn(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the N-dimensional discrete Fourier Transform for real input.
 
     Args:
         input (Tensor): Real-valued input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Complex frequency-domain `Tensor`.
+        OpValue: Complex frequency-domain `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -384,30 +384,30 @@ def rfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
 class Irfftn(OpDef):
     """Inverse N-dimensional real-output discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Irfftn`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def irfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def irfftn(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the inverse of `rfftn` to produce a real-valued N-dimensional tensor.
 
     Args:
         input (Tensor): Hermitian-symmetric frequency-domain input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Real-valued time-domain `Tensor`.
+        OpValue: Real-valued time-domain `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -427,30 +427,30 @@ def irfftn(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
 class Ifft2(OpDef):
     """2D inverse discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Ifft2`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def ifft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ifft2(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the 2-dimensional inverse discrete Fourier Transform.
 
     Args:
         input (Tensor): 2D frequency-domain input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Reconstructed 2D `Tensor`.
+        OpValue: Reconstructed 2D `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -470,30 +470,30 @@ def ifft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
 class Rfft2(OpDef):
     """2D real-input discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Rfft2`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def rfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rfft2(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the 2-dimensional discrete Fourier Transform of a real array.
 
     Args:
         input (Tensor): Real-valued 2D input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Complex 2D FFT `Tensor`.
+        OpValue: Complex 2D FFT `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -513,30 +513,30 @@ def rfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
 class Irfft2(OpDef):
     """2D inverse real-output discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Irfft2`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def irfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def irfft2(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the 2-dimensional inverse of `rfft2`.
 
     Args:
         input (Tensor): Complex frequency-domain input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`s`, `axes`, `norm`).
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`s`, `axes`, `norm`).
 
     Returns:
-        TensorOrScalar: Real-valued 2D output `Tensor`.
+        OpValue: Real-valued 2D output `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -556,30 +556,30 @@ def irfft2(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
 class Fftnd(OpDef):
     """Multi-dimensional discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Fftnd`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def fftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def fftnd(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the multi-dimensional discrete Fourier Transform.
 
     Args:
         input (Tensor): Input signal tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments.
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments.
 
     Returns:
-        TensorOrScalar: Complex multi-dimensional FFT `Tensor`.
+        OpValue: Complex multi-dimensional FFT `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -599,30 +599,30 @@ def fftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Ten
 class Ifftnd(OpDef):
     """Multi-dimensional inverse discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Ifftnd`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def ifftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ifftnd(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the multi-dimensional inverse discrete Fourier Transform.
 
     Args:
         input (Tensor): Frequency-domain input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments.
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments.
 
     Returns:
-        TensorOrScalar: Reconstructed multi-dimensional `Tensor`.
+        OpValue: Reconstructed multi-dimensional `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -642,30 +642,30 @@ def ifftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
 class Rfftnd(OpDef):
     """Multi-dimensional real-input discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Rfftnd`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def rfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rfftnd(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the multi-dimensional discrete Fourier Transform for real input.
 
     Args:
         input (Tensor): Real-valued input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments.
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments.
 
     Returns:
-        TensorOrScalar: Complex frequency-domain `Tensor`.
+        OpValue: Complex frequency-domain `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -685,30 +685,30 @@ def rfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Te
 class Irfftnd(OpDef):
     """Multi-dimensional inverse real-output discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Irfftnd`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def irfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def irfftnd(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the inverse of `rfftnd` to produce a real multi-dimensional tensor.
 
     Args:
         input (Tensor): Complex frequency-domain input tensor.
-        *args (TensorOrScalar): Optional shape and axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments.
+        *args (OpValue): Optional shape and axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments.
 
     Returns:
-        TensorOrScalar: Real-valued output `Tensor`.
+        OpValue: Real-valued output `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -728,30 +728,30 @@ def irfftnd(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> T
 class Fftshift(OpDef):
     """Shift zero-frequency component to the center of the spectrum."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Fftshift`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword axes attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword axes attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def fftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def fftshift(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Shift the zero-frequency component to the center of the spectrum.
 
     Args:
         input (Tensor): Input spectrum tensor.
-        *args (TensorOrScalar): Optional axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`axes`).
+        *args (OpValue): Optional axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`axes`).
 
     Returns:
-        TensorOrScalar: Frequency-shifted `Tensor`.
+        OpValue: Frequency-shifted `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -771,30 +771,30 @@ def fftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> 
 class Ifftshift(OpDef):
     """Inverse of `Fftshift` shifting zero-frequency component back to origin."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Ifftshift`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword axes attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword axes attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def ifftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ifftshift(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Inverse of `fftshift`, shifting the zero-frequency component back to the origin.
 
     Args:
         input (Tensor): Centered spectrum tensor.
-        *args (TensorOrScalar): Optional axes positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`axes`).
+        *args (OpValue): Optional axes positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`axes`).
 
     Returns:
-        TensorOrScalar: Unshifted spectrum `Tensor`.
+        OpValue: Unshifted spectrum `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -814,30 +814,30 @@ def ifftshift(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
 class Hfft(OpDef):
     """Hermitian discrete Fourier Transform operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Hfft`.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor positional arguments.
-            **kwargs (TensorOrScalar): Keyword FFT attributes.
+            *args (OpValue): Input tensor positional arguments.
+            **kwargs (OpValue): Keyword FFT attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def hfft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def hfft(input: Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the FFT of a signal that has Hermitian symmetry, yielding a real spectrum.
 
     Args:
         input (Tensor): Hermitian-symmetric input tensor.
-        *args (TensorOrScalar): Optional length and axis positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`n`, `axis`, `norm`).
+        *args (OpValue): Optional length and axis positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`n`, `axis`, `norm`).
 
     Returns:
-        TensorOrScalar: Real-valued spectrum `Tensor`.
+        OpValue: Real-valued spectrum `Tensor`.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -857,30 +857,30 @@ def hfft(input: Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tens
 class Rfftfreq(OpDef):
     """Real-input discrete Fourier Transform sample frequency bin operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Rfftfreq`.
 
         Args:
-            *args (EagerTensorProtocol): Input window length arguments.
-            **kwargs (TensorOrScalar): Keyword sample spacing attributes.
+            *args (OpValue): Input window length arguments.
+            **kwargs (OpValue): Keyword sample spacing attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         _ = kwargs
         return extract_shape(args[0]) if args else ()
 
 
-def rfftfreq(input: int | Tensor, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rfftfreq(input: int | Tensor, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Return the Discrete Fourier Transform sample frequencies for usage with `rfft`.
 
     Args:
         input (int | Tensor): Window length integer or scalar tensor.
-        *args (TensorOrScalar): Optional sample spacing positional arguments.
-        **kwargs (TensorOrScalar): Optional keyword arguments (`d`).
+        *args (OpValue): Optional sample spacing positional arguments.
+        **kwargs (OpValue): Optional keyword arguments (`d`).
 
     Returns:
-        TensorOrScalar: 1D `Tensor` of sample frequency bin centers.
+        OpValue: 1D `Tensor` of sample frequency bin centers.
     """
     if config.eager_mode:
         backend = get_active_backend()

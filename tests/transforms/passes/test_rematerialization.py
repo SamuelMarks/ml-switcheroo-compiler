@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+import pytest
 
 
 def test_rematerialization_pass() -> None:
     """Test function test_rematerialization_pass."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, rematerialization_pass
+    from ml_switcheroo_ir import IRGraph, IRNode
+
+    from ml_switcheroo_compiler.transforms.passes.rematerialization import (
+        _estimate_compute,
+        _estimate_memory,
+        rematerialization_pass,
+    )
+    from tests.testing_utils import MockNodeStub
 
     # test _estimate_memory
     n1 = IRNode(id="n1", op_type="Add")
     assert _estimate_memory(n1) == 4.0
 
-    n2 = IRNode(id="n2", op_type="Add")
-    ensure_mutable(n2).shape_metadata = ensure_eager_tensor(5)
+    n2 = MockNodeStub(id="n2", op_type="Add")
+    pytest.MonkeyPatch().setattr(n2, "shape_metadata", 5, raising=False)
     assert _estimate_memory(n2) == 4.0
 
     n3 = IRNode(id="n3", op_type="Add")
@@ -50,7 +56,10 @@ def test_rematerialization_pass() -> None:
 
     from unittest.mock import patch
 
-    mock_rules = {"target_ops": ["Relu"], "thresholds": {"min_memory_bytes": 1000, "max_compute_to_memory_ratio": 100.0}}
+    mock_rules = {
+        "target_ops": ["Relu"],
+        "thresholds": {"min_memory_bytes": 1000, "max_compute_to_memory_ratio": 100.0},
+    }
     with patch("ml_switcheroo_compiler.transforms.passes.rematerialization._load_rules", return_value=mock_rules):
         modified = rematerialization_pass(g)
 
@@ -64,7 +73,8 @@ def test_rematerialization_pass_no_modify() -> None:
     """Test function test_rematerialization_pass_no_modify."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
 
     g = IRGraph()
@@ -72,7 +82,9 @@ def test_rematerialization_pass_no_modify() -> None:
     n = IRNode(id="n1", op_type="Input")
     g.nodes["n1"] = n
 
-    with patch("ml_switcheroo_compiler.transforms.passes.rematerialization._load_rules", return_value={"target_ops": []}):
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.rematerialization._load_rules", return_value={"target_ops": []}
+    ):
         modified = rematerialization_pass(g)
         assert modified is False
 
@@ -81,7 +93,8 @@ def test_rematerialization_clone_exists() -> None:
     """Test function test_rematerialization_clone_exists."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
 
     g = IRGraph()
@@ -101,7 +114,10 @@ def test_rematerialization_clone_exists() -> None:
         last_id = new_id
     g.nodes["far_consumer"] = IRNode(id="far_consumer", op_type="Add", inputs=["targ"])
 
-    mock_rules = {"target_ops": ["Relu"], "thresholds": {"min_memory_bytes": 1000, "max_compute_to_memory_ratio": 100.0}}
+    mock_rules = {
+        "target_ops": ["Relu"],
+        "thresholds": {"min_memory_bytes": 1000, "max_compute_to_memory_ratio": 100.0},
+    }
     with patch("ml_switcheroo_compiler.transforms.passes.rematerialization._load_rules", return_value=mock_rules):
         modified = rematerialization_pass(g)
 
@@ -122,12 +138,14 @@ def test_rematerialization_branch_coverage() -> None:
     """Test function test_rematerialization_branch_coverage."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, rematerialization_pass
+    from tests.testing_utils import MockNodeStub
 
     # test _estimate_compute with int shape
-    n_int = IRNode(id="n_int", op_type="Add")
-    ensure_mutable(n_int).shape_metadata = ensure_eager_tensor(5)
+    n_int = MockNodeStub(id="n_int", op_type="Add")
+    pytest.MonkeyPatch().setattr(n_int, "shape_metadata", 5, raising=False)
     assert _estimate_compute(n_int, {}) == 1.0
 
     g = IRGraph()
@@ -148,7 +166,10 @@ def test_rematerialization_branch_coverage() -> None:
     nodes = {"inp": n_input, "targ": n_target, "close": n_close, "targ2": n_target2, "n_missing": n_missing}
     g.nodes.update(nodes)
 
-    mock_rules = {"target_ops": ["Relu"], "thresholds": {"min_memory_bytes": 1000, "max_compute_to_memory_ratio": 100.0}}
+    mock_rules = {
+        "target_ops": ["Relu"],
+        "thresholds": {"min_memory_bytes": 1000, "max_compute_to_memory_ratio": 100.0},
+    }
     with patch("ml_switcheroo_compiler.transforms.passes.rematerialization._load_rules", return_value=mock_rules):
         modified = rematerialization_pass(g)
 

@@ -2,845 +2,50 @@
 
 from __future__ import annotations
 
-import os
-import typing
-
 import libcst as cst
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.transpiler_config_models import (
-    ArgumentRewritesConfig,
-    CSTRewriteRulesConfig,
-    TranspilerConfig,
-    load_argument_rewrites,
-    load_cst_rewrite_rules,
-    load_transpiler_config,
+from ml_switcheroo_compiler.backends._cst_call_transformer import CSTTransformer as CSTTransformer
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _ARG_RULES as _ARG_RULES,
 )
-from ml_switcheroo_compiler.tree_util import PyTree
-
-
-def _is_eager_dict(val: PyTree) -> typing.TypeGuard[dict[str, EagerValue]]:
-    """Type guard narrowing unflattened PyTree to `dict[str, EagerValue]`.
-
-    Args:
-        val (PyTree): Unflattened PyTree.
-
-    Returns:
-        bool: True if `val` is a dict.
-    """
-    return isinstance(val, dict)
-
-
-_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
-_CONFIG = load_transpiler_config(_CONFIG_PATH)
-
-_CST_RULES_PATH = os.path.join(os.path.dirname(__file__), "cst_rewrite_rules.yaml")
-_CST_RULES = load_cst_rewrite_rules(_CST_RULES_PATH)
-
-_ARG_RULES_PATH = os.path.join(os.path.dirname(__file__), "argument_rewrites.yaml")
-_ARG_RULES = load_argument_rewrites(_ARG_RULES_PATH)
-
-KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "keras", "tensorflow", "pytorch", "numba", "sparse"}
-
-
-def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
-    """Build a LibCST Attribute chain expression from a sequence of identifier names.
-
-    Args:
-        names (list[str]): Ordered list of attribute path components.
-
-    Returns:
-        cst.BaseExpression: Constructed LibCST Name or nested Attribute expression.
-    """
-    return _build_import_name_chain(names)
-
-
-def _build_import_name_chain(names: list[str]) -> cst.Attribute | cst.Name:
-    """Build a LibCST Name or Attribute chain suitable for import aliases.
-
-    Args:
-        names (list[str]): Ordered list of attribute path components.
-
-    Returns:
-        cst.Attribute | cst.Name: Constructed LibCST Name or nested Attribute expression.
-    """
-    if not names:
-        return cst.Name("empty")
-    if len(names) == 1:
-        return cst.Name(names[0])
-    expr: cst.Attribute | cst.Name = cst.Name(names[0])
-    for name in names[1:]:
-        expr = cst.Attribute(value=expr, attr=cst.Name(name))
-    return expr
-
-
-class ASTPatternMatcher:
-    """Structural pattern-matching engine driven by declarative YAML rules."""
-
-    def __init__(
-        self,
-        cst_rules: CSTRewriteRulesConfig | None = None,
-        arg_rules: ArgumentRewritesConfig | None = None,
-        transpiler_config: TranspilerConfig | None = None,
-    ) -> None:
-        """Initialize the ASTPatternMatcher.
-
-        Args:
-            cst_rules (CSTRewriteRulesConfig | None): Declarative CST rewrite rules.
-            arg_rules (ArgumentRewritesConfig | None): Declarative argument rewrites.
-            transpiler_config (TranspilerConfig | None): Transpiler configuration.
-        """
-        self.cst_rules: CSTRewriteRulesConfig = cst_rules or _CST_RULES
-        self.arg_rules: ArgumentRewritesConfig = arg_rules or _ARG_RULES
-        self.transpiler_config: TranspilerConfig = transpiler_config or _CONFIG
-
-    def match_call(self, node: cst.Call, target_framework: str) -> cst.BaseExpression | None:
-        """Match and transform Call expressions via declarative call_rules.
-
-        Args:
-            node (cst.Call): Input Call AST node.
-            target_framework (str): Target framework name.
-
-        Returns:
-            cst.BaseExpression | None: Transformed AST node or None.
-        """
-        if not isinstance(node.func, cst.Attribute):
-            return None
-
-        func_name = node.func.attr.value
-        for rule in self.cst_rules.call_rules:
-            if rule.match.pattern == func_name and rule.replacement:
-                if rule.replacement.target_framework in (target_framework, "all", None):
-                    target_name = rule.replacement.target_name
-                    transformed_args = self.transform_args(func_name, list(node.args), target_framework)
-                    new_func = node.func.with_changes(attr=cst.Name(target_name))
-                    return node.with_changes(func=new_func, args=transformed_args)
-        return None
-
-    def _apply_keyword_transformations(self, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
-        """Apply declarative keyword argument renaming rules.
-
-        Args:
-            args (list[cst.Arg]): Argument list to transform.
-            target_framework (str): Target framework name.
-
-        Returns:
-            list[cst.Arg]: Argument list with transformed keyword names.
-        """
-        new_args = list(args)
-        for kw_rule in self.arg_rules.keyword_transformations:
-            if kw_rule.target_framework in (target_framework, "all", None):
-                for i, arg in enumerate(new_args):
-                    if arg.keyword and arg.keyword.value == kw_rule.source_kwarg:
-                        new_kw = arg.keyword.with_changes(value=kw_rule.target_kwarg)
-                        new_args[i] = arg.with_changes(keyword=new_kw)
-        return new_args
-
-    def _apply_argument_reorderings(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
-        """Apply declarative positional argument permutation rules.
-
-        Args:
-            op_name (str): Operator or method name.
-            args (list[cst.Arg]): Argument list to reorder.
-            target_framework (str): Target framework name.
-
-        Returns:
-            list[cst.Arg]: Reordered argument list.
-        """
-        new_args = list(args)
-        for reorder_rule in self.arg_rules.argument_reorderings:
-            if reorder_rule.op_name == op_name and reorder_rule.target_framework in (target_framework, "all", None):
-                perm = reorder_rule.permutation
-                pos_args = [a for a in new_args if a.keyword is None]
-                kw_args = [a for a in new_args if a.keyword is not None]
-                if perm and len(pos_args) >= len(perm):
-                    reordered = [pos_args[idx] for idx in perm if idx < len(pos_args)]
-                    new_args = reordered + kw_args
-        return new_args
-
-    def _literal_to_cst_expr(self, val: bool | int | float | str) -> cst.BaseExpression:
-        """Convert a primitive Python value into a LibCST literal expression.
-
-        Args:
-            val (bool | int | float | str): Primitive default value.
-
-        Returns:
-            cst.BaseExpression: Corresponding LibCST expression node.
-        """
-        if isinstance(val, bool):
-            return cst.Name("True" if val else "False")
-        if isinstance(val, int):
-            return cst.Integer(str(val))
-        if isinstance(val, float):
-            return cst.Float(str(val))
-        return cst.SimpleString(f'"{val}"')
-
-    def _apply_default_insertions(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
-        """Insert missing default keyword arguments according to declarative rules.
-
-        Args:
-            op_name (str): Operator or method name.
-            args (list[cst.Arg]): Argument list to augment.
-            target_framework (str): Target framework name.
-
-        Returns:
-            list[cst.Arg]: Argument list with default keyword arguments appended.
-        """
-        new_args = list(args)
-        for def_rule in self.arg_rules.default_insertions:
-            if def_rule.op_name == op_name and def_rule.target_framework in (target_framework, "all", None):
-                existing_kw = {a.keyword.value for a in new_args if a.keyword}
-                for k, v in def_rule.default_kwargs.items():
-                    if k not in existing_kw and isinstance(v, (bool, int, float, str)):
-                        new_args.append(cst.Arg(keyword=cst.Name(k), value=self._literal_to_cst_expr(v)))
-        return new_args
-
-    def _apply_keyword_to_positional(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
-        """Convert specified keyword arguments into positional arguments at target indices.
-
-        Args:
-            op_name (str): Operator or method name.
-            args (list[cst.Arg]): Argument list to convert.
-            target_framework (str): Target framework name.
-
-        Returns:
-            list[cst.Arg]: Updated argument list.
-        """
-        new_args = list(args)
-        for kp_rule in self.arg_rules.keyword_to_positional:
-            if kp_rule.op_name == op_name and kp_rule.target_framework in (target_framework, "all", None):
-                for kw_name, target_pos in zip(kp_rule.keyword_names, kp_rule.target_positions):
-                    for i, arg in enumerate(list(new_args)):
-                        if arg.keyword and arg.keyword.value == kw_name:
-                            new_args.pop(i)
-                            pos_arg = cst.Arg(value=arg.value)
-                            new_args.insert(min(target_pos, len(new_args)), pos_arg)
-        return new_args
-
-    def transform_args(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
-        """Apply argument reordering, default insertion, and keyword transformations.
-
-        Args:
-            op_name (str): Operator or method name.
-            args (list[cst.Arg]): Original argument list.
-            target_framework (str): Target framework name.
-
-        Returns:
-            list[cst.Arg]: Transformed arguments list.
-        """
-        new_args = self._apply_keyword_transformations(args, target_framework)
-        new_args = self._apply_argument_reorderings(op_name, new_args, target_framework)
-        new_args = self._apply_default_insertions(op_name, new_args, target_framework)
-        return self._apply_keyword_to_positional(op_name, new_args, target_framework)
-
-    def match_attribute(self, node: cst.Attribute, target_framework: str) -> cst.BaseExpression | None:
-        """Match and transform Attribute expressions via attribute_rules.
-
-        Args:
-            node (cst.Attribute): Attribute AST node.
-            target_framework (str): Target framework name.
-
-        Returns:
-            cst.BaseExpression | None: Transformed AST node or None.
-        """
-        attr_name = node.attr.value
-        for rule in self.cst_rules.attribute_rules:
-            if rule.match.pattern == attr_name and rule.replacement:
-                if rule.replacement.target_framework in (target_framework, "all", None):
-                    return node.with_changes(attr=cst.Name(rule.replacement.target_name))
-        return None
-
-    def match_import(self, module_name: str, target_framework: str) -> str | None:
-        """Remap module name for target framework.
-
-        Args:
-            module_name (str): Original imported module identifier.
-            target_framework (str): Target framework name.
-
-        Returns:
-            str | None: Remapped module name or None if unchanged.
-        """
-        remappings = self.transpiler_config.import_remappings.get(target_framework, {})
-        if module_name in remappings:
-            return remappings[module_name]
-
-        for rule in self.cst_rules.import_rules:
-            if rule.match.pattern == module_name and rule.replacement:
-                if rule.replacement.target_framework in (target_framework, "all", None):
-                    return rule.replacement.target_name
-        return None
-
-    def match_function_name(self, func_name: str, target_framework: str) -> str | None:
-        """Remap function definition names based on framework conventions.
-
-        Args:
-            func_name (str): Original method name.
-            target_framework (str): Target framework name.
-
-        Returns:
-            str | None: Remapped method name or None.
-        """
-        for rule in self.cst_rules.function_def_rules:
-            if rule.match.pattern == func_name and rule.replacement:
-                if rule.replacement.target_framework in (target_framework, "all", None):
-                    return rule.replacement.target_name
-        return None
-
-
-class CSTTransformer(cst.CSTTransformer):
-    """Pass registry for targeted pattern matching of native APIs."""
-
-    def __init__(self, target_framework: str = "jax") -> None:
-        """Initialize the CSTTransformer.
-
-        Args:
-            target_framework (str): Input `target_framework` argument (target framework).
-        """
-        super().__init__()
-        self.target_framework = target_framework
-        self.target_config = _CONFIG.frameworks.get(target_framework)
-        self.matcher = ASTPatternMatcher()
-
-    def leave_ImportFrom(
-        self,
-        original_node: cst.ImportFrom,
-        updated_node: cst.ImportFrom,
-    ) -> cst.ImportFrom:
-        """Robust Import Resolution Pass.
-
-        Returns:
-            cst.ImportFrom: The inferred shape or computed result
-
-        Args:
-            original_node (cst.ImportFrom): Input `original_node` argument (original node).
-            updated_node (cst.ImportFrom): Input `updated_node` argument (updated node).
-        """
-        if not updated_node.module or not self.target_config:
-            return updated_node
-
-        def _get_base_name(node: cst.BaseExpression) -> str:
-            """Extract the root module identifier from a nested CST attribute expression.
-
-            Args:
-                node (cst.BaseExpression): CST Name or Attribute node.
-
-            Returns:
-                str: Root module name string.
-            """
-            if isinstance(node, cst.Name):
-                return node.value
-            if isinstance(node, cst.Attribute):
-                return _get_base_name(node.value)
-            return ""
-
-        src_module: str = _get_base_name(updated_node.module)
-
-        remapped = self.matcher.match_import(src_module, self.target_framework)
-        if remapped:
-            target_parts = remapped.split(".")
-            return updated_node.with_changes(module=_build_attribute_chain(target_parts))
-
-        if src_module in KNOWN_SOURCE_FRAMEWORKS:
-            target_module: str = self.target_config.target_module
-            if target_module != src_module:
-                target_parts = target_module.split(".")
-                return updated_node.with_changes(module=_build_attribute_chain(target_parts))
-
-        return updated_node
-
-    def leave_Import(
-        self,
-        original_node: cst.Import,
-        updated_node: cst.Import,
-    ) -> cst.Import:
-        """Handle standard imports.
-
-        Args:
-            original_node (cst.Import): The original import node.
-            updated_node (cst.Import): The updated import node.
-
-        Returns:
-            cst.Import: The modified import node.
-        """
-        if not self.target_config:
-            return updated_node
-
-        new_names: list[cst.ImportAlias] = []
-        mutated: bool = False
-        target_module: str = self.target_config.target_module
-
-        def _get_import_name(node: cst.BaseExpression) -> str:
-            """Recursively extract dotted import name string.
-
-            Args:
-                node (cst.BaseExpression): AST expression node.
-
-            Returns:
-                str: Dot-delimited import name string.
-            """
-            if isinstance(node, cst.Attribute):
-                base = _get_import_name(node.value)
-                return f"{base}.{node.attr.value}" if base else node.attr.value
-            return node.value if isinstance(node, cst.Name) else ""
-
-        for alias in updated_node.names:
-            alias_full = _get_import_name(alias.name)
-            remapped = self.matcher.match_import(alias_full, self.target_framework)
-            if remapped:
-                target_parts = remapped.split(".")
-                new_alias = alias.with_changes(name=_build_import_name_chain(target_parts))
-                new_names.append(new_alias)
-                mutated = True
-                continue
-
-            base_mod = alias_full.split(".")[0]
-            if base_mod in KNOWN_SOURCE_FRAMEWORKS:
-                if alias_full != target_module:
-                    target_parts = target_module.split(".")
-                    new_alias = alias.with_changes(name=_build_import_name_chain(target_parts))
-                    new_names.append(new_alias)
-                    mutated = True
-                else:
-                    new_names.append(alias)
-            else:
-                new_names.append(alias)
-
-        if mutated:
-            return updated_node.with_changes(names=new_names)
-        return updated_node
-
-    def _remap_call_kwargs(self, node: cst.Call) -> cst.Call:
-        """Remap keyword arguments in a Call node using target framework kwarg_map.
-
-        Args:
-            node (cst.Call): Input Call node.
-
-        Returns:
-            cst.Call: Call node with remapped keyword arguments.
-        """
-        if not self.target_config or not self.target_config.kwarg_map:
-            return node
-        kw_map: dict[str, str] = self.target_config.kwarg_map
-        new_args: list[cst.Arg] = []
-        mutated: bool = False
-        for arg in node.args:
-            if arg.keyword and arg.keyword.value in kw_map:
-                new_kw: cst.Name = arg.keyword.with_changes(value=kw_map[arg.keyword.value])
-                new_args.append(arg.with_changes(keyword=new_kw))
-                mutated = True
-            else:
-                new_args.append(arg)
-        return node.with_changes(args=new_args) if mutated else node
-
-    def _rewrite_declarative_method_call(self, final_node: cst.Call, func_attr: cst.Attribute, func_attr_value: str) -> cst.BaseExpression | None:
-        """Apply declarative method-to-function, chain removal, substitution, and in-place rules.
-
-        Args:
-            final_node (cst.Call): Current Call node.
-            func_attr (cst.Attribute): Attribute expression being called.
-            func_attr_value (str): Name of the called method attribute.
-
-        Returns:
-            cst.BaseExpression | None: Rewritten expression or None if no rule matched.
-        """
-        for rewrite in _CONFIG.syntactic_patterns.method_to_function_rewrites:
-            if func_attr_value == rewrite.pattern:
-                if rewrite.replacement == "identity":
-                    return func_attr.value
-                if self.target_framework != "pytorch":
-                    return final_node.with_changes(func=func_attr.with_changes(attr=cst.Name(rewrite.replacement)))
-
-        for chain_rule in _CST_RULES.chain_removals:
-            if func_attr_value == chain_rule.match.pattern:
-                return func_attr.value
-
-        if self.target_framework != "pytorch":
-            for sub_rule in [*_CST_RULES.method_substitutions, *_CST_RULES.in_place_mutations]:
-                if func_attr_value == sub_rule.match.pattern and sub_rule.replacement:
-                    return final_node.with_changes(func=func_attr.with_changes(attr=cst.Name(sub_rule.replacement.target_name)))
-
-        return None
-
-    def _rewrite_broadcast_call(self, final_node: cst.Call, func_attr: cst.Attribute, func_attr_value: str) -> cst.BaseExpression | None:
-        """Rewrite framework-specific broadcast/expand method calls.
-
-        Args:
-            final_node (cst.Call): Current Call node.
-            func_attr (cst.Attribute): Attribute expression being called.
-            func_attr_value (str): Name of the called method attribute.
-
-        Returns:
-            cst.BaseExpression | None: Rewritten broadcast call or None if not applicable.
-        """
-        for fw, fw_config in _CONFIG.frameworks.items():
-            if fw_config.broadcast_method == func_attr_value and self.target_framework != fw and self.target_config:
-                target_base: cst.BaseExpression = _build_attribute_chain(self.target_config.module_path + [self.target_config.broadcast_method])
-                if fw_config.broadcast_method == "expand" and self.target_config.broadcast_method == "broadcast_to":
-                    return final_node.with_changes(func=target_base, args=[cst.Arg(value=func_attr.value), *list(final_node.args)])
-                if fw_config.broadcast_method == "broadcast_to" and self.target_config.broadcast_method == "expand":
-                    return final_node.with_changes(func=cst.Attribute(value=final_node.args[0].value, attr=cst.Name("expand")), args=list(final_node.args)[1:])
-                return final_node.with_changes(func=target_base)
-        return None
-
-    def _get_base_name(self, node: cst.BaseExpression) -> str:
-        """Recursively extract the root Name identifier from an expression chain.
-
-        Args:
-            node (cst.BaseExpression): Expression node to inspect.
-
-        Returns:
-            str: Root identifier name or empty string.
-        """
-        if isinstance(node, cst.Name):
-            return node.value
-        if isinstance(node, cst.Attribute):
-            return self._get_base_name(node.value)
-        return ""
-
-    def _rewrite_framework_module_call(self, final_node: cst.Call, func_attr: cst.Attribute, func_attr_value: str) -> cst.Call:
-        """Rewrite module prefix on calls originating from a known source framework.
-
-        Args:
-            final_node (cst.Call): Current Call node.
-            func_attr (cst.Attribute): Attribute expression being called.
-            func_attr_value (str): Name of the called method attribute.
-
-        Returns:
-            cst.Call: Updated Call node.
-        """
-        src_call_base: str = self._get_base_name(func_attr)
-        if not self.target_config or src_call_base not in KNOWN_SOURCE_FRAMEWORKS:
-            return final_node
-
-        if func_attr_value == "tensor" and self.target_framework != "pytorch":
-            target_chain = self.target_config.module_path + ["array"]
-            return final_node.with_changes(func=_build_attribute_chain(target_chain))
-
-        target_chain = self.target_config.module_path
-        if target_chain != [src_call_base]:
-            new_value: cst.BaseExpression = _build_attribute_chain(target_chain)
-            return final_node.with_changes(func=func_attr.with_changes(value=new_value))
-        return final_node
-
-    def leave_Call(
-        self,
-        original_node: cst.Call,
-        updated_node: cst.Call,
-    ) -> cst.BaseExpression:
-        """Handle Framework-Specific Quirks & Stateful-to-Functional rewrites.
-
-        Returns:
-            cst.BaseExpression: The inferred shape or computed result
-
-        Args:
-            original_node (cst.Call): Input `original_node` argument (original node).
-            updated_node (cst.Call): Input `updated_node` argument (updated node).
-        """
-        if not self.target_config:
-            return updated_node
-
-        final_node: cst.Call = self._remap_call_kwargs(updated_node)
-        if not isinstance(final_node.func, cst.Attribute):
-            return final_node
-
-        matched_call = self.matcher.match_call(final_node, self.target_framework)
-        if matched_call is not None:
-            return matched_call
-
-        func_attr = final_node.func
-        func_attr_value: str = func_attr.attr.value
-
-        rewritten = self._rewrite_declarative_method_call(final_node, func_attr, func_attr_value)
-        if rewritten is not None:
-            return rewritten
-
-        bcast = self._rewrite_broadcast_call(final_node, func_attr, func_attr_value)
-        if bcast is not None:
-            return bcast
-
-        return self._rewrite_framework_module_call(final_node, func_attr, func_attr_value)
-
-    def _get_attr_chain(self, node: cst.BaseExpression) -> str:
-        """Build a dot-separated string from a Name or Attribute CST node.
-
-        Args:
-            node (cst.BaseExpression): Expression node.
-
-        Returns:
-            str: Dotted attribute chain string.
-        """
-        if isinstance(node, cst.Name):
-            return node.value
-        if isinstance(node, cst.Attribute):
-            return self._get_attr_chain(node.value) + "." + node.attr.value
-        return ""
-
-    def _match_foreign_class_base(self, chain: str) -> list[str] | None:
-        """Check if a base class chain matches another framework's base class and return target base parts.
-
-        Args:
-            chain (str): Dotted base class name.
-
-        Returns:
-            list[str] | None: Target base class path components if matched, else None.
-        """
-        for src_fw, src_config in _CONFIG.frameworks.items():
-            if self.target_framework == src_fw:
-                continue
-            for src_k, src_v in src_config.class_bases.items():
-                src_full: str = ".".join(src_v) if src_v else ""
-                if chain in (src_full, src_k) and self.target_config:
-                    return next(iter(self.target_config.class_bases.values()), None)
-        return None
-
-    def leave_ClassDef(
-        self,
-        original_node: cst.ClassDef,
-        updated_node: cst.ClassDef,
-    ) -> cst.ClassDef:
-        """Handle Stateful-to-Functional and Functional-to-Stateful class rewrites.
-
-        Args:
-            original_node (cst.ClassDef): The original node.
-            updated_node (cst.ClassDef): The updated node.
-
-        Returns:
-            cst.ClassDef: The modified class definition.
-        """
-        if not self.target_config:
-            return updated_node
-
-        new_bases: list[cst.Arg] = []
-        mutated_bases: bool = False
-
-        for base in updated_node.bases:
-            chain: str = self._get_attr_chain(base.value)
-            target_base_parts = self._match_foreign_class_base(chain)
-            if target_base_parts:
-                new_bases.append(base.with_changes(value=_build_attribute_chain(target_base_parts)))
-                mutated_bases = True
-            else:
-                new_bases.append(base)
-
-        if mutated_bases:
-            return updated_node.with_changes(bases=new_bases)
-        return updated_node
-
-    def leave_FunctionDef(
-        self,
-        original_node: cst.FunctionDef,
-        updated_node: cst.FunctionDef,
-    ) -> cst.FunctionDef:
-        """Rewrite method names based on framework conventions.
-
-        Args:
-            original_node (cst.FunctionDef): The original node.
-            updated_node (cst.FunctionDef): The updated node.
-
-        Returns:
-            cst.FunctionDef: The modified function definition.
-        """
-        if not self.target_config:
-            return updated_node
-
-        method_map: dict[str, str] = self.target_config.method_map
-        remapped_name = self.matcher.match_function_name(updated_node.name.value, self.target_framework)
-        has_self = bool(updated_node.params.params and updated_node.params.params[0].name.value == "self")
-        call_dunder = "_" + "_call__"
-        if remapped_name:
-            if not (updated_node.name.value == call_dunder and self.target_framework == "pytorch" and not has_self):
-                updated_node = updated_node.with_changes(name=cst.Name(remapped_name))
-        elif updated_node.name.value in method_map:
-            if updated_node.name.value == call_dunder and self.target_framework == "pytorch":
-                if has_self:
-                    updated_node = updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
-            else:
-                updated_node = updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
-
-        # Lower early returns: if cond: return a; return b -> return where(cond, a, b)
-        body_stmts = list(updated_node.body.body)
-        if len(body_stmts) == 2:
-            stmt1, stmt2 = body_stmts[0], body_stmts[1]
-            if (
-                isinstance(stmt1, cst.If)
-                and not stmt1.orelse
-                and len(stmt1.body.body) == 1
-                and isinstance(stmt1.body.body[0], cst.SimpleStatementLine)
-                and len(stmt1.body.body[0].body) == 1
-                and isinstance(stmt1.body.body[0].body[0], cst.Return)
-                and isinstance(stmt2, cst.SimpleStatementLine)
-                and len(stmt2.body) == 1
-                and isinstance(stmt2.body[0], cst.Return)
-            ):
-                cond = stmt1.test
-                ret1 = stmt1.body.body[0].body[0].value
-                ret2 = stmt2.body[0].value
-                if ret1 is not None and ret2 is not None:
-                    target_module_parts = self.target_config.module_path or ["jnp"]
-                    where_func = _build_attribute_chain(target_module_parts + ["where"])
-                    where_call = cst.Call(
-                        func=where_func,
-                        args=[cst.Arg(value=cond), cst.Arg(value=ret1), cst.Arg(value=ret2)],
-                    )
-                    new_return = cst.SimpleStatementLine(body=[cst.Return(value=where_call)])
-                    updated_node = updated_node.with_changes(body=updated_node.body.with_changes(body=[new_return]))
-
-        return updated_node
-
-    def leave_ListComp(
-        self,
-        original_node: cst.ListComp,
-        updated_node: cst.ListComp,
-    ) -> cst.BaseExpression:
-        """Functionalize list comprehensions into map operations.
-
-        Args:
-            original_node (cst.ListComp): Original list comprehension node.
-            updated_node (cst.ListComp): Updated list comprehension node.
-
-        Returns:
-            cst.BaseExpression: Functionalized Map call.
-        """
-        for_clause = updated_node.for_in
-        elt = updated_node.elt
-        target = for_clause.target
-        iter_expr = for_clause.iter
-
-        if isinstance(target, cst.Name):
-            lambda_func = cst.Lambda(
-                params=cst.Parameters(params=[cst.Param(name=target)]),
-                body=elt,
-            )
-            map_call = cst.Call(
-                func=cst.Name("map"),
-                args=[cst.Arg(value=lambda_func), cst.Arg(value=iter_expr)],
-            )
-            return cst.Call(
-                func=cst.Name("list"),
-                args=[cst.Arg(value=map_call)],
-            )
-        return updated_node
-
-    def leave_GeneratorExp(
-        self,
-        original_node: cst.GeneratorExp,
-        updated_node: cst.GeneratorExp,
-    ) -> cst.BaseExpression:
-        """Functionalize generator expressions into Scan/Map operations.
-
-        Args:
-            original_node (cst.GeneratorExp): Original generator expression.
-            updated_node (cst.GeneratorExp): Updated generator expression.
-
-        Returns:
-            cst.BaseExpression: Functionalized generator expression.
-        """
-        for_clause = updated_node.for_in
-        elt = updated_node.elt
-        target = for_clause.target
-        iter_expr = for_clause.iter
-
-        if isinstance(target, cst.Name):
-            lambda_func = cst.Lambda(
-                params=cst.Parameters(params=[cst.Param(name=target)]),
-                body=elt,
-            )
-            return cst.Call(
-                func=cst.Name("map"),
-                args=[cst.Arg(value=lambda_func), cst.Arg(value=iter_expr)],
-            )
-        return updated_node
-
-    def leave_IfExp(
-        self,
-        original_node: cst.IfExp,
-        updated_node: cst.IfExp,
-    ) -> cst.BaseExpression:
-        """Lower ternary conditional expressions into functional Cond/where calls.
-
-        Args:
-            original_node (cst.IfExp): Original ternary if node.
-            updated_node (cst.IfExp): Updated ternary if node.
-
-        Returns:
-            cst.BaseExpression: Lowered functional where/Cond call.
-        """
-        test = updated_node.test
-        body = updated_node.body
-        orelse = updated_node.orelse
-
-        target_module_parts = self.target_config.module_path if self.target_config else ["jnp"]
-        where_func = _build_attribute_chain(target_module_parts + ["where"])
-
-        return cst.Call(
-            func=where_func,
-            args=[
-                cst.Arg(value=test),
-                cst.Arg(value=body),
-                cst.Arg(value=orelse),
-            ],
-        )
-
-    def leave_Attribute(
-        self,
-        original_node: cst.Attribute,
-        updated_node: cst.Attribute,
-    ) -> cst.BaseExpression:
-        """Stateful-to-Functional rewrites.
-
-        Args:
-            original_node (cst.Attribute): The original attribute node.
-            updated_node (cst.Attribute): The updated attribute node.
-
-        Returns:
-            cst.BaseExpression: The modified expression.
-        """
-        matched_attr = self.matcher.match_attribute(updated_node, self.target_framework)
-        if matched_attr is not None:
-            return matched_attr
-
-        if isinstance(updated_node.value, cst.Name) and updated_node.value.value == "self":
-            attr_name: str = updated_node.attr.value
-            return cst.Subscript(value=cst.Name("state"), slice=[cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(f'"{attr_name}"')))])
-        return updated_node
-
-    def leave_AugAssign(
-        self,
-        original_node: cst.AugAssign,
-        updated_node: cst.AugAssign,
-    ) -> cst.BaseSmallStatement:
-        """Functionalize in-place augmented assignments for functional target backends.
-
-        Args:
-            original_node (cst.AugAssign): The original augmented assignment node.
-            updated_node (cst.AugAssign): The updated augmented assignment node.
-
-        Returns:
-            cst.BaseSmallStatement: Functionalized assignment or unchanged node.
-        """
-        if self.target_framework == "jax":
-            op_map: dict[type[cst.BaseAugOp], cst.BaseBinaryOp] = {
-                cst.AddAssign: cst.Add(),
-                cst.SubtractAssign: cst.Subtract(),
-                cst.MultiplyAssign: cst.Multiply(),
-                cst.DivideAssign: cst.Divide(),
-            }
-            op_type = type(updated_node.operator)
-            if op_type in op_map:
-                bin_op = cst.BinaryOperation(
-                    left=updated_node.target,
-                    operator=op_map[op_type],
-                    right=updated_node.value,
-                )
-                return cst.Assign(
-                    targets=[cst.AssignTarget(target=updated_node.target)],
-                    value=bin_op,
-                )
-        return updated_node
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _ARG_RULES_PATH as _ARG_RULES_PATH,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _CONFIG as _CONFIG,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _CONFIG_PATH as _CONFIG_PATH,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _CST_RULES as _CST_RULES,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _CST_RULES_PATH as _CST_RULES_PATH,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    KNOWN_SOURCE_FRAMEWORKS as KNOWN_SOURCE_FRAMEWORKS,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    ASTPatternMatcher as ASTPatternMatcher,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _build_attribute_chain as _build_attribute_chain,
+)
+from ml_switcheroo_compiler.backends._cst_pattern_matcher import (
+    _build_import_name_chain as _build_import_name_chain,
+)
+from ml_switcheroo_compiler.backends._cst_statement_mixin import (
+    CSTStatementRewriterMixin as CSTStatementRewriterMixin,
+)
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class StateLiftingTransformer(cst.CSTTransformer):
-    """Universal framework-blind transformer lifting stateful OOP Python classes into pure functional functions with parameter PyTrees."""
+    """Universal framework-blind transformer lifting stateful OOP Python classes into pure functional functions.
+
+    with parameter PyTrees.
+    """
 
     def __init__(self, param_var_name: str = "params") -> None:
         """Initialize StateLiftingTransformer.
@@ -850,7 +55,7 @@ class StateLiftingTransformer(cst.CSTTransformer):
         """
         super().__init__()
         self.param_var_name: str = param_var_name
-        self.extracted_params: dict[str, EagerValue] = {}
+        self.extracted_params: dict[str, BackendArg] = {}
         self.forward_methods: list[str] = ["forward", "_" + "_call__", "compute", "call"]
 
     def leave_FunctionDef(
@@ -904,7 +109,7 @@ class StateLiftingTransformer(cst.CSTTransformer):
         cls,
         class_code: str,
         param_var_name: str = "params",
-    ) -> tuple[dict[str, EagerValue], str]:
+    ) -> tuple[dict[str, BackendArg], str]:
         """Lift an OOP Python class into an extracted parameter dictionary (PyTree) and pure functional function code.
 
         Args:
@@ -912,12 +117,12 @@ class StateLiftingTransformer(cst.CSTTransformer):
             param_var_name (str): Name of the parameters argument.
 
         Returns:
-            tuple[dict[str, EagerValue], str]: Extracted parameter dict and functional code string.
+            tuple[dict[str, BackendArg], str]: Extracted parameter dict and functional code string.
         """
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
         tree = cst.parse_module(class_code)
-        extracted_params: dict[str, EagerValue] = {}
+        extracted_params: dict[str, BackendArg] = {}
 
         class InitExtractor(cst.CSTVisitor):
             """Visitor to extract initial parameter assignments in __init__."""
@@ -932,7 +137,7 @@ class StateLiftingTransformer(cst.CSTTransformer):
                     if isinstance(target.target, cst.Attribute):
                         if isinstance(target.target.value, cst.Name) and target.target.value.value == "self":
                             param_name = target.target.attr.value
-                            val: EagerValue = None
+                            val: BackendArg = None
                             if isinstance(node.value, cst.Integer):
                                 val = int(node.value.value)
                             elif isinstance(node.value, cst.Float):
@@ -945,8 +150,9 @@ class StateLiftingTransformer(cst.CSTTransformer):
 
         leaves, tree_def = tree_flatten(extracted_params)
         unflattened = tree_unflatten(tree_def, leaves)
-        assert _is_eager_dict(unflattened)
-        reconstructed: dict[str, EagerValue] = unflattened
+        reconstructed: dict[str, BackendArg] = (
+            {str(k): v for k, v in unflattened.items()} if isinstance(unflattened, dict) else {}
+        )
 
         transformer = cls(param_var_name=param_var_name)
         transformed_tree = tree.visit(transformer)

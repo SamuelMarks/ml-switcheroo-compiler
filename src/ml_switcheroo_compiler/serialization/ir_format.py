@@ -8,9 +8,9 @@ from collections.abc import Mapping, Sequence
 
 import pydantic
 import yaml
-from ml_switcheroo_ir import AttributeValue, SymInt, SymNode
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir import SymInt, SymNode
 
 
 @typing.runtime_checkable
@@ -74,6 +74,13 @@ class GraphSerializationModel(pydantic.BaseModel):
 
 NodeSerializationDict = NodeSerializationModel
 GraphSerializationDict = GraphSerializationModel
+_IR_FMT_NS: dict[str, type[GraphSerializationModel] | type[str]] = {
+    "GraphSerializationModel": GraphSerializationModel,
+    "OpValue": str,
+    "IRAttrValue": str,
+}
+NodeSerializationModel.model_rebuild(_types_namespace=_IR_FMT_NS)
+GraphSerializationModel.model_rebuild(_types_namespace=_IR_FMT_NS)
 
 
 def _normalize_shape_dim(dim: AttributeValue | int | str | SymNode | SymInt | None) -> int | str:
@@ -139,8 +146,9 @@ def _serialize_initializers(graph: IRGraph) -> dict[str, AttributeValue]:
     initializers_dict: dict[str, AttributeValue] = {}
     if graph.initializers:
         for k, v in graph.initializers.items():
-            if isinstance(v, _ToListInitializerProtocol):
-                initializers_dict[str(k)] = v.tolist()
+            cand_v: AttributeValue | _ToListInitializerProtocol = v
+            if isinstance(cand_v, _ToListInitializerProtocol):
+                initializers_dict[str(k)] = cand_v.tolist()
             elif isinstance(v, (int, float, str, bool, list, dict)):
                 initializers_dict[str(k)] = v
             else:
@@ -157,7 +165,11 @@ def _build_serialization_dict(graph: IRGraph) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Structured serialization dictionary.
     """
-    inputs_list: list[str] = list(graph.inputs) if graph.inputs else [node_id for node_id, node in graph.nodes.items() if node.op_type == "Input"]
+    inputs_list: list[str] = (
+        list(graph.inputs)
+        if graph.inputs
+        else [node_id for node_id, node in graph.nodes.items() if node.op_type == "Input"]
+    )
     outputs_list: list[str] = list(graph.outputs)
     nodes_dict: dict[str, NodeSerializationModel] = {}
     initializers_dict = _serialize_initializers(graph)
@@ -165,7 +177,11 @@ def _build_serialization_dict(graph: IRGraph) -> dict[str, AttributeValue]:
     for node_id, node in graph.nodes.items():
         shape_list = _serialize_shape_metadata(node.shape_metadata)
         clean_attrs = _clean_node_attributes(node.attributes)
-        serialized_subgraphs: dict[str, GraphSerializationModel] = {str(sub_k): GraphSerializationModel.model_validate(_build_serialization_dict(sub_g)) for sub_k, sub_g in node.subgraphs.items() if isinstance(sub_g, IRGraph)}
+        serialized_subgraphs: dict[str, GraphSerializationModel] = {
+            str(sub_k): GraphSerializationModel.model_validate(_build_serialization_dict(sub_g))
+            for sub_k, sub_g in node.subgraphs.items()
+            if isinstance(sub_g, IRGraph)
+        }
 
         node_entry = NodeSerializationModel(
             id=node_id,
@@ -204,7 +220,9 @@ def _parse_single_serialized_node(node_id: str, raw_node: Mapping[str, Attribute
     inputs: list[str] = [str(inp) for inp in raw_inputs] if isinstance(raw_inputs, list) else []
 
     raw_shape = raw_node.get("shape_metadata", raw_node.get("shape", []))
-    shape_tuple: tuple[int | str, ...] = tuple(_normalize_shape_dim(dim) for dim in raw_shape) if isinstance(raw_shape, list) else ()
+    shape_tuple: tuple[int | str, ...] = (
+        tuple(_normalize_shape_dim(dim) for dim in raw_shape) if isinstance(raw_shape, list) else ()
+    )
     attributes = _clean_node_attributes(raw_node.get("attributes", {}))
 
     node = IRNode(

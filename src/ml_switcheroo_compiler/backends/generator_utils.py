@@ -1,30 +1,36 @@
-"""Implementation of generator utils operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.generator_utils`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.generator_utils`."""
 
 from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_float, ensure_int
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_ir import IRNode
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_float, coerce_int
 
 
 @typing.runtime_checkable
 class _NodeAttributesProtocol(typing.Protocol):
     """Protocol for nodes exposing `.attributes`."""
 
-    attributes: dict[str, EagerValue]
+    attributes: dict[str, BackendArg]
 
 
-def _node_attrs(node: IRNode | EagerValue) -> dict[str, EagerValue]:
+def _node_attrs(node: IRNode | BackendArg) -> dict[str, BackendArg]:
     """Extract `.attributes` dictionary from `node`.
 
     Args:
-        node (IRNode | EagerValue): Target IR node.
+        node (IRNode | BackendArg): Target IR node.
 
     Returns:
-        dict[str, EagerValue]: Node attributes mapping.
+        dict[str, BackendArg]: Node attributes mapping.
     """
-    return dict(node.attributes) if isinstance(node, _NodeAttributesProtocol) and node.attributes is not None else {}
+    cand_node: IRNode | BackendArg | _NodeAttributesProtocol = node
+    return (
+        dict(cand_node.attributes)
+        if isinstance(cand_node, _NodeAttributesProtocol) and cand_node.attributes is not None
+        else {}
+    )
 
 
 def _extract_audio_stft_attributes(node: IRNode) -> tuple[int, int, int | None, str, bool]:
@@ -34,7 +40,8 @@ def _extract_audio_stft_attributes(node: IRNode) -> tuple[int, int, int | None, 
         node (IRNode): The IR node containing STFT attributes.
 
     Returns:
-        tuple[int, int, int | None, str, bool]: Frame length, frame step, fft length, window function name, and pad end flag.
+        tuple[int, int, int | None, str, bool]: Frame length, frame step, fft length, window function name, and pad
+            end flag.
     """
     attrs = _node_attrs(node)
     raw_frame_length = attrs.get("frame_length", 2048)
@@ -43,9 +50,9 @@ def _extract_audio_stft_attributes(node: IRNode) -> tuple[int, int, int | None, 
     raw_window_fn = attrs.get("window_fn", "hann")
     raw_pad_end = attrs.get("pad_end", False)
 
-    frame_length: int = int(ensure_int(raw_frame_length)) if raw_frame_length is not None else 2048
-    frame_step: int = int(ensure_int(raw_frame_step)) if raw_frame_step is not None else 512
-    fft_length: int | None = int(ensure_int(raw_fft_length)) if raw_fft_length is not None else None
+    frame_length: int = int(coerce_int(raw_frame_length)) if raw_frame_length is not None else 2048
+    frame_step: int = int(coerce_int(raw_frame_step)) if raw_frame_step is not None else 512
+    fft_length: int | None = int(coerce_int(raw_fft_length)) if raw_fft_length is not None else None
     window_fn: str = str(raw_window_fn)
     pad_end: bool = bool(raw_pad_end)
     return frame_length, frame_step, fft_length, window_fn, pad_end
@@ -65,7 +72,19 @@ def _extract_resize_attributes(
     """
     attrs = _node_attrs(node)
     raw_size = attrs.get("size")
-    size: int | tuple[int, int] | list[int] | None = raw_size if isinstance(raw_size, int) else ([ensure_int(d) for d in raw_size] if isinstance(raw_size, list) else ((ensure_int(raw_size[0]), ensure_int(raw_size[1])) if isinstance(raw_size, tuple) and len(raw_size) >= 2 else None))
+    size: int | tuple[int, int] | list[int] | None = (
+        raw_size
+        if isinstance(raw_size, int)
+        else (
+            [coerce_int(d) for d in raw_size]
+            if isinstance(raw_size, list)
+            else (
+                (coerce_int(raw_size[0]), coerce_int(raw_size[1]))
+                if isinstance(raw_size, tuple) and len(raw_size) >= 2
+                else None
+            )
+        )
+    )
     interpolation: str = str(attrs.get("interpolation", "bilinear"))
     align_corners: bool = bool(attrs.get("align_corners", False))
     antialias: bool = bool(attrs.get("antialias", False))
@@ -85,7 +104,7 @@ def _extract_vision_transform_attributes(node: IRNode) -> tuple[str, float, str 
     """
     attrs = _node_attrs(node)
     interpolation: str = str(attrs.get("interpolation", "bilinear"))
-    fill_value: float = float(ensure_float(attrs.get("fill_value", 0.0)))
+    fill_value: float = float(coerce_float(attrs.get("fill_value", 0.0)))
     raw_data_format = attrs.get("data_format", None)
     data_format: str | None = str(raw_data_format) if raw_data_format is not None else None
     return interpolation, fill_value, data_format
@@ -105,9 +124,29 @@ def _extract_filter_attributes(
     """
     attrs = _node_attrs(node)
     raw_ks = attrs.get("kernel_size")
-    kernel_size: int | tuple[int, int] | list[int] | None = raw_ks if isinstance(raw_ks, int) else ([ensure_int(d) for d in raw_ks] if isinstance(raw_ks, list) else ((ensure_int(raw_ks[0]), ensure_int(raw_ks[1])) if isinstance(raw_ks, tuple) and len(raw_ks) >= 2 else None))
+    kernel_size: int | tuple[int, int] | list[int] | None = (
+        raw_ks
+        if isinstance(raw_ks, int)
+        else (
+            [coerce_int(d) for d in raw_ks]
+            if isinstance(raw_ks, list)
+            else (
+                (coerce_int(raw_ks[0]), coerce_int(raw_ks[1]))
+                if isinstance(raw_ks, tuple) and len(raw_ks) >= 2
+                else None
+            )
+        )
+    )
     raw_sigma = attrs.get("sigma", None)
-    sigma: float | tuple[float, float] | None = float(raw_sigma) if isinstance(raw_sigma, (int, float)) else ((ensure_float(raw_sigma[0]), ensure_float(raw_sigma[1])) if isinstance(raw_sigma, (tuple, list)) and len(raw_sigma) >= 2 else None)
+    sigma: float | tuple[float, float] | None = (
+        float(raw_sigma)
+        if isinstance(raw_sigma, (int, float))
+        else (
+            (coerce_float(raw_sigma[0]), coerce_float(raw_sigma[1]))
+            if isinstance(raw_sigma, (tuple, list)) and len(raw_sigma) >= 2
+            else None
+        )
+    )
     padding: str = str(attrs.get("padding", "same"))
     raw_data_format = attrs.get("data_format", None)
     data_format: str | None = str(raw_data_format) if raw_data_format is not None else None
@@ -128,9 +167,21 @@ def _extract_extract_boxes_attributes(
     """
     attrs = _node_attrs(node)
     raw_cs = attrs.get("crop_size")
-    crop_size: int | tuple[int, int] | list[int] | None = raw_cs if isinstance(raw_cs, int) else ([ensure_int(d) for d in raw_cs] if isinstance(raw_cs, list) else ((ensure_int(raw_cs[0]), ensure_int(raw_cs[1])) if isinstance(raw_cs, tuple) and len(raw_cs) >= 2 else None))
+    crop_size: int | tuple[int, int] | list[int] | None = (
+        raw_cs
+        if isinstance(raw_cs, int)
+        else (
+            [coerce_int(d) for d in raw_cs]
+            if isinstance(raw_cs, list)
+            else (
+                (coerce_int(raw_cs[0]), coerce_int(raw_cs[1]))
+                if isinstance(raw_cs, tuple) and len(raw_cs) >= 2
+                else None
+            )
+        )
+    )
     interpolation: str = str(attrs.get("interpolation", "bilinear"))
-    extrapolation_value: float = float(ensure_float(attrs.get("extrapolation_value", 0.0)))
+    extrapolation_value: float = float(coerce_float(attrs.get("extrapolation_value", 0.0)))
     raw_data_format = attrs.get("data_format", None)
     data_format: str | None = str(raw_data_format) if raw_data_format is not None else None
     return crop_size, interpolation, extrapolation_value, data_format
@@ -158,9 +209,9 @@ def _extract_stft_attributes(
     raw_normalized = attrs.get("normalized", False)
     raw_onesided = attrs.get("onesided", True)
 
-    n_fft: int = int(ensure_int(raw_n_fft)) if raw_n_fft is not None else 2048
-    hop_length: int | None = int(ensure_int(raw_hop_length)) if raw_hop_length is not None else None
-    win_length: int | None = int(ensure_int(raw_win_length)) if raw_win_length is not None else None
+    n_fft: int = int(coerce_int(raw_n_fft)) if raw_n_fft is not None else 2048
+    hop_length: int | None = int(coerce_int(raw_hop_length)) if raw_hop_length is not None else None
+    win_length: int | None = int(coerce_int(raw_win_length)) if raw_win_length is not None else None
     window: str | None = str(raw_window) if raw_window is not None else None
     center: bool = bool(raw_center)
     pad_mode: str = str(raw_pad_mode)

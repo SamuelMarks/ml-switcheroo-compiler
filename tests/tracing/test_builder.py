@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+import pytest
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from tests.testing_utils import MockTensorStub, MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 # ruff: noqa: E501
 
@@ -17,46 +20,52 @@ def test_builder_extract_proxy() -> None:
     import ml_switcheroo_compiler.tracing.builder as bmod
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
-    class FakeData:
+    class FakeData(MockTestStub):
         """Test class FakeData."""
 
         id = "my_id"
 
-    class FakeTensor:
+    class FakeTensor(MockTensorStub):
         """Test class FakeTensor."""
 
-        data = FakeData()
-        shape = (2, 2)
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.data = FakeData()
+            self.shape = (2, 2)
 
-    (id1, shape1) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(FakeTensor)())
+    (id1, shape1) = TracingNodeBuilder.extract_from_tensor(FakeTensor())
     assert id1 == "my_id"
     assert shape1 == (2, 2)
 
-    class FakeData2:
+    class FakeData2(MockTestStub):
         """Test class FakeData2."""
 
-        def tolist(self) -> EagerValue:
+        def tolist(self) -> list[int]:
             """Test function tolist.
 
             Returns:
-                EagerValue: Computed output value from `tolist`.
+                list[int]: Computed output value from `tolist`.
             """
-            return [[1, 2], [3, 4]]
+            return [1, 2, 3, 4]
 
-    class FakeTensor2:
+    class FakeTensor2(MockTensorStub):
         """Test class FakeTensor2."""
 
-        data = FakeData2()
-        shape = (2, 2)
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.data = FakeData2()
+            self.shape = (2, 2)
 
     class FakeTracingState:
         """Test class FakeTracingState."""
 
-        constant_cache = ensure_tensor_dict({})
+        constant_cache: dict[str, BackendArg] = {}
         is_tracing = True
         active_graph = True
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -64,28 +73,32 @@ def test_builder_extract_proxy() -> None:
             """
             pass
 
-    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
-    (id2, shape2) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(FakeTensor2)())
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    old_state = global_tracing_state
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", FakeTracingState(), raising=False)
+    ft2 = FakeTensor2()
+    (id2, shape2) = TracingNodeBuilder.extract_from_tensor(ft2)
     assert id2 in FakeTracingState.constant_cache.values()
-    (id3, shape3) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(ensure_callable(FakeTensor2)())
+    (id3, shape3) = TracingNodeBuilder.extract_from_tensor(ft2)
     assert id2 == id3
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", old_state, raising=False)
 
 
 def test_builder_extract_constant() -> None:
     """Test function test_builder_extract_constant."""
     import ml_switcheroo_compiler.tracing.builder as bmod
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     class FakeTracingState:
         """Test class FakeTracingState."""
 
-        constant_cache = ensure_tensor_dict({})
+        constant_cache: dict[str, BackendArg] = {}
         is_tracing = True
         active_graph = True
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -93,13 +106,13 @@ def test_builder_extract_constant() -> None:
             """
             pass
 
-    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
+    old_state = global_tracing_state
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", FakeTracingState(), raising=False)
 
     class ProxyT:
         """Test class ProxyT."""
 
-        def __init__(self, id: EagerValue, shape: EagerValue) -> None:
+        def __init__(self, id: str, shape: tuple[int, ...]) -> None:
             """Test function __init__.
 
             Args:
@@ -116,7 +129,7 @@ def test_builder_extract_constant() -> None:
     class RealTensor:
         """Test class RealTensor."""
 
-        def __init__(self, data: EagerValue) -> None:
+        def __init__(self, data: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -125,19 +138,19 @@ def test_builder_extract_constant() -> None:
             self.data = data
 
         @property
-        def shape(self) -> EagerValue:
+        def shape(self) -> tuple[int, ...]:
             """Test function shape.
 
             Returns:
-                EagerValue: Computed output value from `shape`.
+                tuple[int, ...]: Computed output value from `shape`.
             """
-            _typed_ret_1: EagerValue = ensure_eager_tensor(self.data).shape
-            return _typed_ret_1
+            return tuple(int(d) for d in extract_test_shape(self.data) if isinstance(d, int))
 
-    val = [ProxyT("id_1", (1,)), RealTensor(123)]
-    (id1, shape1) = ensure_callable(TracingNodeBuilder.extract_from_constant)(val)
+    val: list[ProxyT | RealTensor] = [ProxyT("id_1", (1,)), RealTensor(123)]
+    (id1, shape1) = TracingNodeBuilder.extract_from_constant(val)
+    assert isinstance(id1, list)
     assert id1[0] == "id_1"
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", old_state, raising=False)
 
 
 def test_builder_extract_proxy_inputs_proxy() -> None:
@@ -159,8 +172,9 @@ def test_builder_extract_proxy_inputs_proxy() -> None:
 def test_builder_tensor_cache_missing() -> None:
     """Test function test_builder_tensor_cache_missing."""
     import ml_switcheroo_compiler.tracing.builder as bmod
-    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     class FakeTracingState:
         """Test class FakeTracingState."""
@@ -168,7 +182,7 @@ def test_builder_tensor_cache_missing() -> None:
         is_tracing = True
         active_graph = True
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -176,25 +190,17 @@ def test_builder_tensor_cache_missing() -> None:
             """
             pass
 
-    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
+    old_state = global_tracing_state
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", FakeTracingState(), raising=False)
 
-    class FakeData:
+    class FakeData(MockTestStub):
         """Test class FakeData."""
 
         id = None
 
-    class FakeConfig:
-        """Test class FakeConfig."""
-
-        shape = (1,)
-        dtype = None
-        device = None
-        requires_grad = False
-
-    fake_t = ensure_callable(Tensor)(ensure_callable(FakeData)(), ensure_callable(FakeConfig)())
-    ensure_mutable(fake_t)._data = ensure_eager_tensor(FakeData())
-    (id1, shape1) = ensure_callable(TracingNodeBuilder.extract_from_tensor)(fake_t)
+    fake_t = Tensor(FakeData(), TensorConfig((1,), None, None, False))
+    pytest.MonkeyPatch().setattr(fake_t, "_data", FakeData(), raising=False)
+    (id1, shape1) = TracingNodeBuilder.extract_from_tensor(fake_t)
     assert shape1 == (1,)
 
     # Check that extracting twice from same tensor uses cached tensor hash if data ID is None?
@@ -203,7 +209,7 @@ def test_builder_tensor_cache_missing() -> None:
     assert len(ids) == 2
     # Verify the ids are actually consistent or the same depending on implementation
 
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", old_state, raising=False)
 
 
 def test_builder_extract_proxy_inputs_tensor_missing() -> None:
@@ -217,7 +223,7 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
         is_tracing = True
         active_graph = True
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -225,28 +231,33 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """
             pass
 
-    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-    class DummyNotTensor:
+    old_state = global_tracing_state
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", FakeTracingState(), raising=False)
+
+    class DummyNotTensor(MockTestStub):
         """Test class DummyNotTensor."""
 
         def __init__(self) -> None:
             """Test function __init__."""
             pass
 
-        def tolist(self) -> EagerValue:
+        def tolist(self) -> list[int]:
             """Test function tolist.
 
             Returns:
-                EagerValue: Computed output value from `tolist`.
+                list[int]: Computed output value from `tolist`.
             """
             return [42]
 
-    (ids, shapes, first) = ensure_callable(TracingNodeBuilder.extract_proxy_inputs)((ensure_callable(DummyNotTensor)(),))
+    from ml_switcheroo_compiler.core.shape import OpValue
+
+    not_tensor_inputs: tuple[OpValue, ...] = (DummyNotTensor(),)
+    (ids, shapes, first) = TracingNodeBuilder.extract_proxy_inputs(not_tensor_inputs)
     assert len(ids) == 1
     assert shapes[0] == ()
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", old_state, raising=False)
 
 
 def test_builder_infer_shape_none_branch() -> None:

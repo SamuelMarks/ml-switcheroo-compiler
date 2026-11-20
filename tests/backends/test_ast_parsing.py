@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 
 import pytest
+from ml_switcheroo_ir import IRGraph
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
@@ -14,7 +15,6 @@ from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 @pytest.mark.parametrize(

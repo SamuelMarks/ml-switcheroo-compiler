@@ -8,15 +8,14 @@ import os
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.ir.core import ensure_attrs
 
 _WGSL_TEMPLATES: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {}
-_WGSL_KERNELS: dict[str, EagerValue] = {}
+_WGSL_KERNELS: dict[str, BackendArg] = {}
 
 
-def _load_kernels() -> dict[str, EagerValue]:
+def _load_kernels() -> dict[str, BackendArg]:
     """Load declarative WGSL kernels configuration from wgsl_kernels.yaml.
 
     Returns:
@@ -56,13 +55,45 @@ def get_wgsl_op_mapping(op_name: str) -> dict[str, str | int | float | None]:
     return {}
 
 
-def get_wgsl_kernels_config() -> dict[str, EagerValue]:
+def get_wgsl_kernels_config() -> dict[str, BackendArg]:
     """Retrieve the full WGSL kernels specification dictionary.
 
     Returns:
-        dict[str, object]: Kernels config dictionary.
+        dict[str, BackendArg]: Kernels config dictionary.
     """
     return _load_kernels()
+
+
+def _merge_modular_dir(
+    modular_dir: str,
+    loaded_templates: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None],
+) -> None:
+    """Merge YAML template files from ``modular_dir`` into ``loaded_templates``.
+
+    Args:
+        modular_dir (str): Directory containing modular WGSL YAML files.
+        loaded_templates (dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None]):
+            Target templates dictionary to update in place.
+    """
+    from ml_switcheroo_compiler.backends.edge.config_models import WgslTemplatesConfig
+
+    if not os.path.exists(modular_dir):
+        return
+    for fname in sorted(os.listdir(modular_dir)):
+        if not (fname.endswith(".yaml") or fname.endswith(".yml")):
+            continue
+        fpath = os.path.join(modular_dir, fname)
+        try:
+            with open(fpath) as f:
+                mod_data = yaml.safe_load(f)
+            if isinstance(mod_data, dict):
+                mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
+                dst_t = loaded_templates.setdefault("templates", {})
+                src_t = mod_dump.get("templates")
+                if isinstance(dst_t, dict) and isinstance(src_t, dict):
+                    dst_t.update(src_t)
+        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
+            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
 def _merge_modular_templates(
@@ -71,23 +102,13 @@ def _merge_modular_templates(
     """Merge modular WGSL templates from templates.yaml into loaded templates.
 
     Args:
-        loaded_templates (dict): The target templates dictionary to update.
+        loaded_templates (dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None]):
+            The target templates dictionary to update.
     """
     from ml_switcheroo_compiler.backends.edge.config_models import WgslTemplatesConfig
 
     modular_dir: str = os.path.join(os.path.dirname(__file__), "wgsl_templates")
-    if os.path.exists(modular_dir):
-        for fname in sorted(os.listdir(modular_dir)):
-            if fname.endswith(".yaml") or fname.endswith(".yml"):
-                fpath = os.path.join(modular_dir, fname)
-                try:
-                    with open(fpath) as f:
-                        mod_data = yaml.safe_load(f)
-                    if isinstance(mod_data, dict):
-                        mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
-                        ensure_mod(loaded_templates.setdefault("templates", {})).update(mod_dump.get("templates") or {})
-                except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-                    logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    _merge_modular_dir(modular_dir, loaded_templates)
 
     modular_path: str = os.path.join(os.path.dirname(__file__), "templates.yaml")
     if not os.path.exists(modular_path):
@@ -98,8 +119,14 @@ def _merge_modular_templates(
         return
 
     mod_dump = WgslTemplatesConfig(**mod_data).model_dump()
-    ensure_mod(loaded_templates.setdefault("templates", {})).update(mod_dump.get("templates") or {})
-    ensure_mod(loaded_templates.setdefault("js_orchestration", {})).update(mod_dump.get("js_orchestration") or {})
+    dst_templates = loaded_templates.setdefault("templates", {})
+    src_templates = mod_dump.get("templates")
+    if isinstance(dst_templates, dict) and isinstance(src_templates, dict):
+        dst_templates.update(src_templates)
+    dst_js = loaded_templates.setdefault("js_orchestration", {})
+    src_js = mod_dump.get("js_orchestration")
+    if isinstance(dst_js, dict) and isinstance(src_js, dict):
+        dst_js.update(src_js)
     if mod_dump.get("global_bindings"):
         loaded_templates["global_bindings"] = mod_dump["global_bindings"]
 
@@ -127,8 +154,9 @@ def _load_templates() -> None:
         kernels = _load_kernels()
         if isinstance(kernels, dict):
             k_templates = kernels.get("templates")
-            if isinstance(k_templates, dict):
-                ensure_mod(loaded.setdefault("templates", {})).update(k_templates)
+            dst_loaded_t = loaded.setdefault("templates", {})
+            if isinstance(k_templates, dict) and isinstance(dst_loaded_t, dict):
+                dst_loaded_t.update(k_templates)
             k_bindings = kernels.get("bindings")
             if isinstance(k_bindings, dict) and k_bindings.get("global_bindings") and not loaded.get("global_bindings"):
                 loaded["global_bindings"] = k_bindings["global_bindings"]
@@ -204,11 +232,11 @@ def get_webgpu_ops() -> dict[str, str | dict[str, str] | dict[str, dict[str, str
     return _WEBGPU_OPS
 
 
-def get_bindgroup_schemas(path: str | None = None) -> dict[str, EagerValue]:
+def get_bindgroup_schemas(path: str | None = None) -> dict[str, BackendArg]:
     """Retrieve WebGPU bind group configuration schemas dictionary.
 
     Args:
-        path (str, optional): Custom path to bindgroup_schemas.yaml.
+        path (str | None): Custom path to bindgroup_schemas.yaml.
 
     Returns:
         dict[str, object]: Parsed bindgroup schemas dictionary.
@@ -218,11 +246,11 @@ def get_bindgroup_schemas(path: str | None = None) -> dict[str, EagerValue]:
     return load_bindgroup_schemas(path).model_dump()
 
 
-def get_dtype_emulation_config(path: str | None = None) -> dict[str, EagerValue]:
+def get_dtype_emulation_config(path: str | None = None) -> dict[str, BackendArg]:
     """Retrieve WGSL double-precision emulation configuration dictionary.
 
     Args:
-        path (str, optional): Custom path to dtype_emulation.yaml.
+        path (str | None): Custom path to dtype_emulation.yaml.
 
     Returns:
         dict[str, object]: Parsed dtype emulation dictionary.
@@ -266,29 +294,30 @@ def generate_dynamic_bindgroup_declarations(
 
     # Additional outputs (index 1 and higher) starting at binding 6
     for k in range(1, num_outputs):
-        lines.append(f"@group(0) @binding({5 + k}) var<storage, read_write> buf_out{k}_{output_dtype}: array<{output_dtype}>;")
+        lines.append(
+            f"@group(0) @binding({5 + k}) var<storage, read_write> buf_out{k}_{output_dtype}: array<{output_dtype}>;"
+        )
 
     return "\n".join(lines)
 
 
-_WGSL_GROUNDING_SCHEMA: dict[str, EagerValue] | None = None
+_WGSL_GROUNDING_SCHEMA: dict[str, BackendArg] | None = None
 
 
-def get_wgsl_grounding_schema() -> dict[str, EagerValue]:
-    """Load and return the canonical WGSL grounding schema from ml_switcheroo_ir.schema.wgsl_ops.json.
+def get_wgsl_grounding_schema() -> dict[str, BackendArg]:
+    """Load and return the canonical WGSL grounding schema from ``ml_switcheroo_ir``.
 
     Returns:
-        dict[str, object]: The parsed WGSL ops schema.
+        dict[str, BackendArg]: The parsed WGSL ops schema.
     """
     global _WGSL_GROUNDING_SCHEMA
     if _WGSL_GROUNDING_SCHEMA is not None:
         return _WGSL_GROUNDING_SCHEMA
     import json
 
-    import ml_switcheroo_ir.schema
+    from ml_switcheroo_ir import get_catalog_path
 
-    schema_dir = os.path.dirname(ml_switcheroo_ir.schema.__file__)
-    schema_path = os.path.join(schema_dir, "wgsl_ops.json")
+    schema_path = str(get_catalog_path("wgsl_ops.json"))
     if os.path.exists(schema_path):
         with open(schema_path, encoding="utf-8") as f:
             _WGSL_GROUNDING_SCHEMA = json.load(f)

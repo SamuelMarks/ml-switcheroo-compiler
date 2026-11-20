@@ -23,7 +23,6 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_identifier,
     validate_workgroup_size,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -183,13 +182,17 @@ def test_wgsl_ast_string_statements_validation() -> None:
     """Verify validation when AST nodes contain plain string statements."""
     emitter = WGSLEmitter()
     emitter.validate("plain_string_node")
+    mp = pytest.MonkeyPatch()
 
-    if_node = ensure_callable(WGSLIf)("cond", ["return;"])
+    if_node = WGSLIf("cond", [])
+    mp.setattr(if_node, "body", ["return;"], raising=False)
     if_node.validate()
 
-    for_node = ensure_callable(WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
+    for_node = WGSLFor("var i = 0u;", "i < 10u", "i = i + 1u", [])
+    mp.setattr(for_node, "body", ["break;"], raising=False)
     for_node.validate()
 
-    func = ensure_callable(WGSLFunction)("my_func", [], ["return;"])
+    func = WGSLFunction("my_func", [], [])
+    mp.setattr(func, "body", ["return;"], raising=False)
     func.validate()
-    assert ensure_eager_tensor(func).name == "my_func"
+    assert func.name == "my_func"

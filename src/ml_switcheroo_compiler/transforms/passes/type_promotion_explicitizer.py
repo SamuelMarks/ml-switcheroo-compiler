@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import uuid
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
-from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
 

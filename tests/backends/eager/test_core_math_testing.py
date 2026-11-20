@@ -15,23 +15,31 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import (
     _resulttype,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from tests.testing_utils import ensure_callable, ensure_mod, ensure_tensor_dict
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestMathTestingCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_math_testing_coverage` split helpers."""
+
+    EmptyBackend: type[MockTestStub]
+    ItemObj: type
+    eb: MockTestStub
+
+
+def _test_math_testing_coverage_part_1(_state: _TestMathTestingCoverageState) -> None:
     """Execute part 1 of test_math_testing_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
 
-    class AllcloseBackend:
+    class AllcloseBackend(MockTestStub):
         """Backend with allclose."""
 
-        def allclose(self, a: EagerValue, b: EagerValue, **kwargs: EagerValue) -> bool:
+        def allclose(self, a: BackendArg, b: BackendArg, **kwargs: BackendArg) -> bool:
             """Mock allclose.
 
             Args:
@@ -45,10 +53,10 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             return True
 
     acb = AllcloseBackend()
-    assert _allclose(ensure_mod(acb), [1.0], [1.0]) is True
+    assert _allclose(acb, [1.0], [1.0]) is True
 
     # Case B: backend lacks allclose -> fallback to np.allclose
-    class EmptyBackend:
+    class EmptyBackend(MockTestStub):
         """Empty backend."""
 
         pass
@@ -74,11 +82,11 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             """
             return self.val
 
-    _state.update(ensure_tensor_dict({"AllcloseBackend": AllcloseBackend, "EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "acb": acb}))
-    _state.update(ensure_tensor_dict({"eb": eb}))
+    _state.update({"EmptyBackend": EmptyBackend, "ItemObj": ItemObj})
+    _state.update({"eb": eb})
 
 
-def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_math_testing_coverage_part_2(_state: _TestMathTestingCoverageState) -> None:
     """Execute part 2 of test_math_testing_coverage.
 
     Args:
@@ -86,7 +94,7 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
     """
     EmptyBackend, ItemObj, eb = _state["EmptyBackend"], _state["ItemObj"], _state["eb"]
 
-    class ToListObj:
+    class ToListObj(MockTestStub):
         """Object with tolist() method."""
 
         def __init__(self, val: list[float]) -> None:
@@ -108,7 +116,7 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
     class DataObj:
         """Object with data attribute."""
 
-        def __init__(self, data: EagerValue) -> None:
+        def __init__(self, data: BackendArg) -> None:
             """Initialize with data.
 
             Args:
@@ -118,12 +126,12 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
 
     assert (
         bool(
-            ensure_callable(_allclose)(
+            _allclose(
                 eb,
                 [1.0],
                 [1.0],
                 rtol=ItemObj(1e-4),
-                atol=ensure_callable(DataObj)(ensure_callable(ToListObj)([1e-6])),
+                atol=DataObj(ToListObj([1e-6])),
                 equal_nan=DataObj(False),
             )
         )
@@ -131,10 +139,10 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
     )
 
     # 2. _array_equiv
-    class ArrayEquivBackend:
+    class ArrayEquivBackend(MockTestStub):
         """Backend with allclose."""
 
-        def allclose(self, a1: EagerValue, a2: EagerValue) -> str:
+        def allclose(self, a1: BackendArg, a2: BackendArg) -> str:
             """Mock allclose.
 
             Args:
@@ -146,17 +154,16 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             """
             return "allclose_equiv"
 
-    assert _array_equiv(ensure_mod(ArrayEquivBackend()), [1], [1]) == "allclose_equiv"
+    assert _array_equiv(ArrayEquivBackend(), [1], [1]) == "allclose_equiv"
     assert _array_equiv(EmptyBackend(), [1], [1]) is True
 
     # 3. _assert
     # Case A: condition is True -> returns None
     assert _assert(eb, True) is None
-    _state.update(ensure_tensor_dict({"ArrayEquivBackend": ArrayEquivBackend, "DataObj": DataObj, "ToListObj": ToListObj}))
-    _state.update(ensure_tensor_dict({"EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "eb": eb}))
+    _state.update({"EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "eb": eb})
 
 
-def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_math_testing_coverage_part_3(_state: _TestMathTestingCoverageState) -> None:
     """Execute part 3 of test_math_testing_coverage.
 
     Args:
@@ -188,10 +195,10 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
     assert "Data sample: []" in str(exc_info_empty_data.value)
 
     # 4. _promotetypes and _resulttype
-    class TypeBackend:
+    class TypeBackend(MockTestStub):
         """Backend with type inference methods."""
 
-        def promote_types(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def promote_types(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock promote_types.
 
             Args:
@@ -203,7 +210,7 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             """
             return "promoted"
 
-        def result_type(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def result_type(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock result_type.
 
             Args:
@@ -216,14 +223,12 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             return "result_type"
 
     tb = TypeBackend()
-    assert _promotetypes(ensure_mod(tb), "float32", "float64") == "promoted"
-    assert _resulttype(ensure_mod(tb), "int32", "float32") == "result_type"
-    _state.update(ensure_tensor_dict({"TypeBackend": TypeBackend, "exc_info": exc_info, "exc_info_data": exc_info_data, "exc_info_empty_data": exc_info_empty_data}))
-    _state.update(ensure_tensor_dict({"tb": tb}))
-    _state.update(ensure_tensor_dict({"eb": eb}))
+    assert _promotetypes(tb, "float32", "float64") == "promoted"
+    assert _resulttype(tb, "int32", "float32") == "result_type"
+    _state.update({"eb": eb})
 
 
-def _test_math_testing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_math_testing_coverage_part_4(_state: _TestMathTestingCoverageState) -> None:
     """Execute part 4 of test_math_testing_coverage.
 
     Args:
@@ -239,7 +244,7 @@ def test_math_testing_coverage() -> None:
     Returns:
         None
     """
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestMathTestingCoverageState = {}
     _test_math_testing_coverage_part_1(_state)
     _test_math_testing_coverage_part_2(_state)
     _test_math_testing_coverage_part_3(_state)

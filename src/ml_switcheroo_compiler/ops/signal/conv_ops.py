@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_callable, ensure_eager_tensor, get_active_backend
+import typing
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.backends.registry import (
+    get_active_backend,
+)
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import (
-    ShapeProtocol,
-    TensorOrScalar,
+    OpValue,
     extract_shape,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -15,22 +19,36 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from .common_ops import _calculate_padding, _emit_signal_node
 
 
+@typing.runtime_checkable
+class _OptionalShapeProto(typing.Protocol):
+    """Protocol for tensor objects exposing an optional `.shape` attribute."""
+
+    @property
+    def shape(self) -> Sequence[int | str | None] | None:
+        """Return optional tensor shape.
+
+        Returns:
+            Sequence[int | str | None] | None: Tensor shape or `None`.
+        """
+        ...
+
+
 @register_op("Convolve2d")
 class Convolve2d(OpDef):
     """2D discrete signal convolution operation definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Convolve2d` from the first input tensor.
 
         Args:
-            *args (EagerTensorProtocol): Input 2D signal and kernel tensors.
-            **kwargs (TensorOrScalar): Convolution mode and boundary attributes.
+            *args (OpValue): Input 2D signal and kernel tensors.
+            **kwargs (OpValue): Convolution mode and boundary attributes.
 
         Returns:
-            TensorOrScalar: Inferred 2D output shape tuple.
+            OpValue: Inferred 2D output shape tuple.
         """
         _ = kwargs
-        return args[0].shape
+        return extract_shape(args[0])
 
 
 def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
@@ -43,9 +61,14 @@ def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
     Raises:
         ValueError: If either input shape is `None`.
     """
-    raw_in1: TensorOrScalar = in1
-    raw_in2: TensorOrScalar = in2
-    if not isinstance(raw_in1, ShapeProtocol) or raw_in1.shape is None or not isinstance(raw_in2, ShapeProtocol) or raw_in2.shape is None:
+    raw_in1: OpValue | _OptionalShapeProto = in1
+    raw_in2: OpValue | _OptionalShapeProto = in2
+    if (
+        not isinstance(raw_in1, _OptionalShapeProto)
+        or raw_in1.shape is None
+        or not isinstance(raw_in2, _OptionalShapeProto)
+        or raw_in2.shape is None
+    ):
         raise ValueError("Inputs to convolve2d must have statically known shapes.")
 
 
@@ -55,7 +78,7 @@ def convolve2d(
     mode: str = "full",
     boundary: str = "fill",
     fillvalue: float = 0.0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Convolve two 2-dimensional arrays `in1` and `in2`.
 
     Args:
@@ -66,7 +89,7 @@ def convolve2d(
         fillvalue (float): Value to fill pad regions when `boundary == 'fill'`.
 
     Returns:
-        TensorOrScalar: 2D convolved output `Tensor`.
+        OpValue: 2D convolved output `Tensor`.
     """
     _validate_conv2d_args(in1, in2)
     kwargs = _calculate_padding(mode, boundary, fillvalue)
@@ -76,12 +99,10 @@ def convolve2d(
         data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
         return Tensor(data, TensorConfig(extract_shape(data), in1.dtype, in1.device))
 
-    return ensure_eager_tensor(
-        ensure_callable(_emit_signal_node)(
-            "Convolve2d",
-            [in1, in2],
-            kwargs,
-            in1.shape,
-            in1.dtype,
-        )
+    return _emit_signal_node(
+        "Convolve2d",
+        [in1, in2],
+        kwargs,
+        in1.shape,
+        in1.dtype,
     )

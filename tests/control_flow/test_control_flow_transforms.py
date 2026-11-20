@@ -6,13 +6,15 @@ import typing
 from unittest.mock import patch
 
 import numpy as np
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.vmap import _eager_vmap, vmap
 from ml_switcheroo_compiler.transforms.passes.control_flow_opt import (
     _hoist_common_invariants,
@@ -24,15 +26,11 @@ from ml_switcheroo_compiler.transforms.passes.parallel_scan import (
     detect_associative_reduction,
     parallel_scan_pass,
 )
-from ml_switcheroo_compiler.transforms.passes.vectorization import (
-    _load_vmap_rules,
-    vectorization_pass,
-    vectorize_graph,
-)
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_node
+from ml_switcheroo_compiler.transforms.passes.vectorization import _load_vmap_rules, vectorization_pass, vectorize_graph
+from tests.testing_utils import extract_test_data, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 device = Device(DeviceType.CPU, 0)
 
@@ -41,7 +39,7 @@ def test_vmap_no_tensor_args() -> None:
     """Test calling eager vmap when no arguments are Tensors."""
     with ConfigContext(eager_mode=True):
         f = vmap(lambda: 42)
-        assert ensure_callable(f)() == 42
+        assert require_callable(f)() == 42
 
 
 def test_vmap_backend_without_asarray() -> None:
@@ -51,7 +49,7 @@ def test_vmap_backend_without_asarray() -> None:
     class BackendNoAsarray:
         """Test class BackendNoAsarray."""
 
-        def execute_op(self, name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def execute_op(self, name: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -60,13 +58,13 @@ def test_vmap_backend_without_asarray() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return np.array([2, 4])
 
     with patch("ml_switcheroo_compiler.ops.vmap.get_active_backend", return_value=BackendNoAsarray()):
         res = _eager_vmap(lambda t: t, 0, 0, (x,))
-        assert ensure_callable(np.array_equal)(ensure_eager_tensor(ensure_eager_tensor(res).data), ensure_callable(np.array)([1, 2]))
+        assert np.array_equal(ensure_ndarray(extract_test_data(res)), np.array([1, 2]))
 
 
 def test_evaluate_static_predicate_numpy_item() -> None:
@@ -127,11 +125,11 @@ def test_control_flow_opt_edge_cases() -> None:
     fb.nodes["n2"] = IRNode(id="n2", op_type="Sqrt", inputs=["internal_only"])
     assert _hoist_common_invariants(g2, "c1", tb, fb) == []
 
-    # Non-IRNode in graph
+    # Non-conditional node in graph is preserved unchanged
     g3 = IRGraph()
-    g3.nodes["not_ir"] = ensure_node("just_a_string")
+    g3.nodes["plain_op"] = IRNode(id="plain_op", op_type="Relu", inputs=[])
     opt3 = control_flow_optimization_pass(g3)
-    assert ensure_eager_tensor(opt3.nodes["not_ir"]) == "just_a_string"
+    assert opt3.nodes["plain_op"].op_type == "Relu"
 
 
 def test_parallel_scan_edge_cases() -> None:
@@ -151,7 +149,9 @@ def test_parallel_scan_edge_cases() -> None:
     body = IRGraph()
     body.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "y"])
     g.nodes["xs"] = IRNode(id="xs", op_type="Input", inputs=[], shape_metadata=(5,))
-    g.nodes["scan_single"] = IRNode(id="scan_single", op_type="Scan", inputs=["xs"], attributes=ensure_attrs({"body": body}))
+    g.nodes["scan_single"] = IRNode(
+        id="scan_single", op_type="Scan", inputs=["xs"], attributes=ensure_attrs({"body": body})
+    )
     opt = parallel_scan_pass(g)
     assert opt.nodes["scan_single"].op_type == "Identity"
     assert any("parallel_cumsum" in nid for nid in opt.nodes)

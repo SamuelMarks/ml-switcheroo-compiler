@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_float
 from ml_switcheroo_compiler.backends.numba import kernels
 
 
@@ -12,62 +12,64 @@ from ml_switcheroo_compiler.backends.numba import kernels
 class _ValueHolderProtocol(typing.Protocol):
     """Protocol for dtype objects exposing `.value`."""
 
-    value: EagerValue
+    value: BackendArg
 
 
-def zeros(shape: tuple[int, ...]) -> EagerValue:
+def zeros(shape: tuple[int, ...]) -> BackendArg:
     """Create a tensor of zeros for Numba execution.
 
     Args:
         shape (tuple[int, ...]): The shape of the tensor.
 
     Returns:
-        EagerValue: The allocated zeros array.
+        BackendArg: The allocated zeros array.
     """
     return kernels.zeros(shape, dtype=kernels.float32)
 
 
 def array(
-    data: EagerValue,
-    dtype: str | EagerValue | None = None,
-) -> EagerValue:
+    data: BackendArg,
+    dtype: str | BackendArg | None = None,
+) -> BackendArg:
     """Create a tensor from data for Numba execution.
 
     Args:
-        data (EagerValue): Input data sequence or buffer.
-        dtype (str | None): The target dtype name.
+        data (BackendArg): Input data sequence or buffer.
+        dtype (str | BackendArg | None): The target dtype name.
 
     Returns:
-        EagerValue: The created array buffer.
+        BackendArg: The created array buffer.
     """
     if dtype is not None:
-        raw_dt: EagerValue = dtype
+        raw_dt: BackendArg | _ValueHolderProtocol = dtype
         dt_val = raw_dt.value if isinstance(raw_dt, _ValueHolderProtocol) else dtype
         return kernels.array(data, dtype=dt_val)
     return kernels.array(data)
 
 
 def asarray(
-    data: EagerValue,
-) -> EagerValue:
+    data: BackendArg,
+) -> BackendArg:
     """Convert input data to an array buffer for Numba execution.
 
     Args:
-        data (EagerValue): Input data sequence or buffer.
+        data (BackendArg): Input data sequence or buffer.
 
     Returns:
-        EagerValue: The array buffer representation.
+        BackendArg: The array buffer representation.
     """
     return kernels.asarray(data)
 
 
-def item(data: EagerValue) -> float:
+def item(data: BackendArg) -> float:
     """Extract scalar item value from tensor.
 
     Args:
-        data (EagerValue): Input tensor data.
+        data (BackendArg): Input tensor data.
 
     Returns:
         float: The extracted scalar float value.
     """
-    return float(ensure_float(ensure_eager_tensor(kernels.asarray(data)).item()))
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+    return float(coerce_float(adapt_backend_module(kernels.asarray(data)).require_op("item")()))

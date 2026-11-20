@@ -6,6 +6,8 @@ import asyncio
 import typing
 from collections.abc import Generator
 
+from ml_switcheroo_ir import IRNode
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import (
     extract_data,
@@ -13,7 +15,6 @@ from ml_switcheroo_compiler.core.shape import (
     is_traced_data,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -72,8 +73,11 @@ class AsyncIOFuture:
     def __await__(self) -> Generator[AsyncResultType, None, AsyncResultType]:
         """Make AsyncIOFuture awaitable in asyncio event loops.
 
+        Yields:
+            AsyncResultType: Intermediate awaited future values from the event loop.
+
         Returns:
-            Generator[AsyncResultType, None, AsyncResultType]: Awaitable generator.
+            Generator[AsyncResultType, None, AsyncResultType]: Awaitable generator resolving to the loaded result.
         """
         if self._asyncio_future is not None:
             res: AsyncResultType = yield from self._asyncio_future
@@ -160,7 +164,9 @@ def nonblocking_load(
             return AsyncIOFuture(tensor=t)
 
     node_shape = shape or ()
-    t_out = _emit_shape_node("NonblockingLoad", [file_path], {"file_path": file_path, "dtype": dtype, **kwargs}, node_shape, dtype)
+    t_out = _emit_shape_node(
+        "NonblockingLoad", [file_path], {"file_path": file_path, "dtype": dtype, **kwargs}, node_shape, dtype
+    )
     raw_d: OpArgValue = extract_data(t_out)
     node_id = str(raw_d.id) if is_traced_data(raw_d) else None
     ir_node: IRNode | None = None

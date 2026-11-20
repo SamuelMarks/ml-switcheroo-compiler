@@ -7,10 +7,11 @@ import resource
 import sys
 import time
 import typing
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import has_backend_member, resolve_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 from ml_switcheroo_compiler.core.shape import (
     DTypeHolderProtocol,
     ShapeProtocol,
@@ -22,44 +23,46 @@ try:
 except ImportError:
     tf = None
 
+from ml_switcheroo_ir import IRGraph
+
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
+@typing.runtime_checkable
 class _NumpyCallableProtocol(typing.Protocol):
     """Protocol for tensors exposing `.numpy()`."""
 
-    def numpy(self) -> EagerValue:
+    def numpy(self) -> BackendArg:
         """Convert tensor to host NumPy array.
 
         Returns:
-            EagerValue: Host NumPy array.
+            BackendArg: Host NumPy array.
         """
         ...
 
 
-def _is_numpy_callable(val: EagerValue) -> typing.TypeGuard[_NumpyCallableProtocol]:
+def _is_numpy_callable(val: BackendArg) -> typing.TypeGuard[_NumpyCallableProtocol]:
     """Check whether `val` exposes a callable `.numpy()` method.
 
     Args:
-        val (EagerValue): Candidate tensor value.
+        val (BackendArg): Candidate tensor value.
 
     Returns:
-        bool: True if `val` has a `.numpy` attribute.
+        bool: True if `val` conforms to `_NumpyCallableProtocol`.
     """
-    return has_backend_member(val, "numpy")
+    return isinstance(val, _NumpyCallableProtocol)
 
 
-def _is_tf_shape_dtype_tensor(val: EagerValue) -> typing.TypeGuard[ShapeProtocol]:
+def _is_tf_shape_dtype_tensor(val: BackendArg) -> typing.TypeGuard[ShapeProtocol]:
     """Check whether `val` exposes both `shape` and `dtype` attributes.
 
     Args:
-        val (EagerValue): Candidate tensor value.
+        val (BackendArg): Candidate tensor value.
 
     Returns:
         bool: True if `val` has `shape` and `dtype` attributes.
     """
-    return has_backend_member(val, "shape") and has_backend_member(val, "dtype") and DTypeHolderProtocol is not None
+    return isinstance(val, ShapeProtocol) and isinstance(val, DTypeHolderProtocol)
 
 
 def _get_process_memory_mb() -> float:
@@ -85,7 +88,7 @@ def _get_tf_peak_memory_mb() -> float:
         return _get_process_memory_mb()
     try:
         gpus = tf.config.list_physical_devices("GPU")
-        if gpus and resolve_backend_member(tf.config.experimental, "get_memory_info")[0]:
+        if gpus and adapt_backend_module(tf.config.experimental).resolve_symbol("get_memory_info")[0]:
             mem_info = tf.config.experimental.get_memory_info("GPU:0")
             if "peak" in mem_info and mem_info["peak"] > 0:
                 return float(mem_info["peak"]) / (1024.0 * 1024.0)
@@ -96,11 +99,12 @@ def _get_tf_peak_memory_mb() -> float:
     return _get_process_memory_mb()
 
 
-def _sync_tf_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ...] | dict[str, EagerValue]) -> None:
+def _sync_tf_result(result: BackendArg | list[BackendArg] | tuple[BackendArg, ...] | dict[str, BackendArg]) -> None:
     """Force synchronization of TensorFlow evaluation results to host memory.
 
     Args:
-        result (Union[object, list[object], tuple[object, ...], dict[str, object]]): Tensor or container of tensors.
+        result (BackendArg | list[BackendArg] | tuple[BackendArg, ...] | dict[str, BackendArg]):
+            Tensor or container of tensors.
     """
     if tf is None:
         return
@@ -111,7 +115,7 @@ def _sync_tf_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ..
         for item in result:
             _sync_tf_result(item)
     else:
-        raw_res: EagerValue = result
+        raw_res: BackendArg = result
         if _is_numpy_callable(raw_res) and callable(raw_res.numpy):
             try:
                 _ = raw_res.numpy()
@@ -123,7 +127,7 @@ def _compute_metrics(
     latencies: list[float],
     peak_mem: float,
     warmup_iters: int,
-) -> dict[str, list[float] | float]:
+) -> ProfileMetricsDict:
     """Compute statistical latency percentiles and format metrics payload.
 
     Args:
@@ -132,7 +136,7 @@ def _compute_metrics(
         warmup_iters (int): Warmup iteration count.
 
     Returns:
-        dict[str, Union[list[float], float]]: Aggregated metrics.
+        ProfileMetricsDict: Aggregated metrics.
     """
     sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
     mean_lat: float = float(sum(latencies) / len(latencies)) if latencies else 0.0
@@ -157,13 +161,13 @@ class TensorFlowProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> list[EagerValue]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> list[BackendArg]:
         """Convert input structures into topologically ordered TensorFlow tensors.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input structures.
+            inputs: Named input structures.
 
         Returns:
             list[object]: Topologically ordered list of TensorFlow tensors.
@@ -171,9 +175,9 @@ class TensorFlowProfiler:
         if tf is None:
             return []
 
-        tf_inputs_dict: dict[str, EagerValue] = {}
+        tf_inputs_dict: dict[str, BackendArg] = {}
         for k, val in inputs.items():
-            raw_val: EagerValue = val
+            raw_val: BackendArg = val
             if _is_tf_shape_dtype_tensor(raw_val) and not isinstance(val, (list, tuple)):
                 tf_inputs_dict[k] = val
             else:
@@ -185,7 +189,7 @@ class TensorFlowProfiler:
             return [tf_inputs_dict[k] for k in input_keys]
         return list(tf_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[BackendArg] | None:
         """Compile an IRGraph into an executable TensorFlow function.
 
         Args:
@@ -197,11 +201,11 @@ class TensorFlowProfiler:
         Raises:
             TypeError: If apply_model cannot be generated from the graph.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
         from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 
         code: str = TensorFlowCodeGenerator(graph).generate()
-        ns: dict[str, EagerValue] = {}
-        exec(code, ns)
+        ns = load_generated_code(code)
         apply_model = ns.get("apply_model")
         if not callable(apply_model):
             raise TypeError("Failed to generate valid apply_model function from TensorFlowCodeGenerator")
@@ -210,16 +214,16 @@ class TensorFlowProfiler:
     def _build_step_fn(
         self,
         has_ops: bool,
-        compiled_fn: TypedVariadicCallable[EagerValue] | None,
-        tf_inputs: list[EagerValue],
+        compiled_fn: TypedVariadicCallable[BackendArg] | None,
+        tf_inputs: list[BackendArg],
         device: str | None,
-    ) -> Callable[[], EagerValue]:
+    ) -> Callable[[], BackendArg]:
         """Build execution step function with device context and synchronization.
 
         Args:
             has_ops (bool): Whether graph contains operations.
-            compiled_fn (Optional[TypedVariadicCallable[object]]): Compiled callable.
-            tf_inputs (list[object]): Ordered TensorFlow inputs.
+            compiled_fn (TypedVariadicCallable[BackendArg] | None): Compiled callable.
+            tf_inputs (list[BackendArg]): Ordered TensorFlow inputs.
             device (Optional[str]): Target execution device.
 
         Returns:
@@ -227,11 +231,11 @@ class TensorFlowProfiler:
         """
         dev_ctx = tf.device(device) if device and tf is not None else None
 
-        def _execute_step() -> EagerValue:
+        def _execute_step() -> BackendArg:
             """Execute a single step on TensorFlow.
 
             Returns:
-                EagerValue: Output tensor or accumulation.
+                BackendArg: Output tensor or accumulation.
             """
             if has_ops and compiled_fn is not None:
                 if dev_ctx:
@@ -243,35 +247,41 @@ class TensorFlowProfiler:
                 return res
 
             if not tf_inputs:
-                return tf.zeros((1,), dtype=tf.float32) if tf is not None else 0.0
+                if tf is not None:
+                    from ml_switcheroo_compiler.backends.eager_registry import require_callable
 
-            accum = tf.zeros_like(tf_inputs[0])
+                    return require_callable(tf.zeros)((1,), dtype=tf.float32)
+                return 0.0
+
+            from ml_switcheroo_compiler.backends.eager_registry import require_callable
+
+            accum: BackendArg = require_callable(tf.zeros_like)(tf_inputs[0])
             for t in tf_inputs:
-                accum = tf.add(accum, t)
+                accum = require_callable(tf.add)(accum, t)
             _sync_tf_result(accum)
-            return ensure_eager_tensor(accum)
+            return accum
 
         return _execute_step
 
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on TensorFlow backend with device synchronization.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input tensors or buffers.
+            inputs: Named input tensors or buffers.
             device (Optional[str]): Target device ('cpu', 'gpu:0', etc.).
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         if tf is None:
             return _compute_metrics([0.0] * num_iters, _get_process_memory_mb(), warmup_iters)
@@ -279,11 +289,21 @@ class TensorFlowProfiler:
         tf_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
+        compiled_fn: TypedVariadicCallable[BackendArg] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 compiled_fn = None
 
         step_fn = self._build_step_fn(has_ops, compiled_fn, tf_inputs, device)

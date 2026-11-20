@@ -37,7 +37,9 @@ def test_lint_pass_clean_dir(tmp_path: Path, capsys: pytest.CaptureFixture[str])
 
 
 def test_lint_pass_detects_vacuous_and_tautological_assertions(tmp_path: Path) -> None:
-    """Verify AST detection of assert True, assert False, assert x == x, assert x is x, len>=0, callable(test_*), and dummy swallows.
+    """Verify AST detection of assert True, assert False, assert x == x, assert x is x, len>=0, callable(test_*).
+
+    and dummy swallows.
 
     Args:
         tmp_path (Path): Temporary test directory fixture.
@@ -146,7 +148,7 @@ def test_swallowed() -> None:
 
 
 def test_lint_any_ast_scanner(tmp_path: Path) -> None:
-    """Verify AST detection of typing.Any, object annotations, AnyType aliases, and EagerValue outside backends.
+    """Verify AST detection of typing.Any, object annotations, AnyType aliases, and BackendArg outside backends.
 
     Args:
         tmp_path (Path): Temporary test directory fixture.
@@ -159,7 +161,7 @@ def test_lint_any_ast_scanner(tmp_path: Path) -> None:
     src_file.write_text(
         f"""import typing
 from typing import {any_name}, cast
-from ml_switcheroo_compiler.backends.registry import EagerValue
+from ml_switcheroo_compiler.backends.registry import BackendArg
 AnyType = int
 x: {obj_name} = 1
 class Sub({obj_name}):
@@ -176,7 +178,7 @@ def fn(a: {any_name}, *args: {obj_name}, **kwargs: typing.{any_name}) -> {any_na
     )
     violations = la.scan_directory_for_any(str(tmp_path))
     assert any(f"prohibited import '{any_name}'" in v for v in violations)
-    assert any("prohibited import 'EagerValue' outside backends/" in v for v in violations)
+    assert any("prohibited import 'BackendArg' outside backends/" in v for v in violations)
     assert any("disguised Any alias 'AnyType'" in v for v in violations)
     assert any(f"prohibited variable annotation '{obj_name}'" in v for v in violations)
     assert any(f"prohibited '{obj_name}' base class" in v for v in violations)
@@ -251,3 +253,50 @@ def test_lint_pass_subprocess(tmp_path: Path) -> None:
     )
     assert result.returncode == 0
     assert "Linting passed." in result.stdout
+
+
+def test_instantiation_only_is_not_none_detection(tmp_path: Path) -> None:
+    """Verify check_test_file_ast flags test functions whose sole assertion is `assert <var> is not None` on a.
+
+    constructor.
+
+    Args:
+        tmp_path (Path): Temporary directory fixture.
+    """
+    bad_file = tmp_path / "test_inst_bad.py"
+    bad_file.write_text(
+        """from pkg import FooGenerator, helper_fn
+import mod
+
+class LocalBuilder:
+    pass
+
+def test_bad_imported_cls() -> None:
+    gen = FooGenerator()
+    assert gen is not None
+
+def test_bad_attr_cls() -> None:
+    b: mod.BarGen = mod.BarGen()
+    assert b is not None
+
+def test_good_func_call() -> None:
+    out = helper_fn()
+    assert out is not None
+
+def test_good_with_raises() -> None:
+    gen = LocalBuilder()
+    with pytest.raises(ValueError):
+        helper_fn()
+    assert gen is not None
+
+def test_good_extra_assert() -> None:
+    gen = FooGenerator()
+    assert gen is not None
+    assert gen.name == "foo"
+""",
+        encoding="utf-8",
+    )
+    errs = lp.check_test_file_ast(str(bad_file))
+    assert len(errs) == 2
+    assert any("assert gen is not None" in e and "test_bad_imported_cls" in e for e in errs)
+    assert any("assert b is not None" in e and "test_bad_attr_cls" in e for e in errs)

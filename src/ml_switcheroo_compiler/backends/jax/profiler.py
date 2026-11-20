@@ -2,50 +2,39 @@
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import logging
 import resource
 import sys
 import time
+import types
 import typing
+from collections.abc import Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, has_backend_member
+from ml_switcheroo_ir import IRGraph
+
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    coerce_operand_list,
+    require_callable,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
-
-
-class _JaxProfilerModProtocol(typing.Protocol):
-    """Protocol for binding `jax` and `jnp` onto `profiler` module."""
-
-    jax: BackendModuleProtocol
-    jnp: BackendModuleProtocol
-
-
-def _is_jax_prof_mod(mod: EagerValue) -> typing.TypeGuard[_JaxProfilerModProtocol]:
-    """Type guard narrowing `mod` to `_JaxProfilerModProtocol`.
-
-    Args:
-        mod (EagerValue): Module instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return mod is not None
-
 
 if typing.TYPE_CHECKING:
-    import jax
-    import jax.numpy as jnp
+    import jax as _jax_types
 
-_has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-_jp_mod: EagerValue = sys.modules[__name__]
-assert _is_jax_prof_mod(_jp_mod)
-_jp_mod.jax = ensure_mod(importlib.import_module("jax") if _has_jax else None)
-_jp_mod.jnp = ensure_mod(importlib.import_module("jax.numpy") if _has_jax else None)
+_has_jax = sys.modules.get("jax") is not None or (
+    "jax" not in sys.modules and importlib.util.find_spec("jax") is not None
+)
+jax: types.ModuleType | BackendModuleProtocol | None = importlib.import_module("jax") if _has_jax else None
+jnp: types.ModuleType | BackendModuleProtocol | None = importlib.import_module("jax.numpy") if _has_jax else None
 
 
+@typing.runtime_checkable
 class _MemoryStatsDeviceProtocol(typing.Protocol):
     """Protocol for JAX device objects exposing `memory_stats()`."""
 
@@ -53,45 +42,46 @@ class _MemoryStatsDeviceProtocol(typing.Protocol):
         """Return device memory statistics dictionary.
 
         Returns:
-            dict[str, int | float] | None: Memory stats mapping.
+            ProfileMetricsDict: Memory stats mapping.
         """
         ...
 
 
+@typing.runtime_checkable
 class _BlockUntilReadyProtocol(typing.Protocol):
     """Protocol for JAX array objects exposing `block_until_ready()`."""
 
-    def block_until_ready(self) -> EagerValue:
+    def block_until_ready(self) -> BackendArg:
         """Block until asynchronous device computation completes.
 
         Returns:
-            EagerValue: Synchronized array.
+            BackendArg: Synchronized array.
         """
         ...
 
 
-def _is_memory_stats_device(val: EagerValue) -> typing.TypeGuard[_MemoryStatsDeviceProtocol]:
+def _is_memory_stats_device(val: BackendArg) -> typing.TypeGuard[_MemoryStatsDeviceProtocol]:
     """Check whether `val` exposes a `.memory_stats` attribute.
 
     Args:
-        val (EagerValue): Candidate JAX device object.
+        val (BackendArg): Candidate JAX device object.
 
     Returns:
-        bool: True if `val` has a `.memory_stats` attribute.
+        bool: True if `val` conforms to `_MemoryStatsDeviceProtocol`.
     """
-    return has_backend_member(val, "memory_stats")
+    return isinstance(val, _MemoryStatsDeviceProtocol)
 
 
-def _is_block_until_ready(val: EagerValue) -> typing.TypeGuard[_BlockUntilReadyProtocol]:
+def _is_block_until_ready(val: BackendArg) -> typing.TypeGuard[_BlockUntilReadyProtocol]:
     """Check whether `val` exposes a `.block_until_ready` attribute.
 
     Args:
-        val (EagerValue): Candidate JAX array object.
+        val (BackendArg): Candidate JAX array object.
 
     Returns:
-        bool: True if `val` has a `.block_until_ready` attribute.
+        bool: True if `val` conforms to `_BlockUntilReadyProtocol`.
     """
-    return has_backend_member(val, "block_until_ready")
+    return isinstance(val, _BlockUntilReadyProtocol)
 
 
 def _get_process_memory_mb() -> float:
@@ -115,10 +105,10 @@ def _extract_jax_peak_memory_mb() -> float:
     """
     peak_mem: float = _get_process_memory_mb()
     try:
-        default_backend = jax.default_backend()
+        default_backend = adapt_backend_module(jax).require_op("default_backend")()
         if default_backend in ("gpu", "tpu", "cuda"):
-            devs = jax.devices()
-            if devs and _is_memory_stats_device(devs[0]):
+            devs: BackendArg = adapt_backend_module(jax).require_op("devices")()
+            if isinstance(devs, (list, tuple)) and devs and _is_memory_stats_device(devs[0]):
                 stats = devs[0].memory_stats()
                 if stats and "peak_bytes_in_use" in stats:
                     peak_mem = float(stats["peak_bytes_in_use"]) / (1024.0 * 1024.0)
@@ -130,34 +120,41 @@ def _extract_jax_peak_memory_mb() -> float:
 
 
 def _prepare_jax_inputs(
-    inputs: dict[str, list[float] | list[list[float]] | jax.Array],
-) -> tuple[dict[str, jax.Array], list[jax.Array]]:
+    inputs: Mapping[str, list[float] | list[list[float]] | _jax_types.Array],
+) -> tuple[dict[str, BackendArg], list[BackendArg]]:
     """Convert input values to JAX array representations.
 
     Args:
-        inputs (dict[str, Union[list[float], list[list[float]], jax.Array]]): Named input structures.
+        inputs: Named input structures.
 
     Returns:
-        tuple[dict[str, jax.Array], list[jax.Array]]: Mapping and flattened list of JAX arrays.
+        tuple[dict[str, BackendArg], list[BackendArg]]: Mapping and flattened list of JAX arrays.
     """
-    jax_inputs_dict: dict[str, jax.Array] = {}
+    arr_cls: BackendArg = adapt_backend_module(jax).get_symbol("Array", None)
+    jnp_adp = adapt_backend_module(jnp)
+    jax_inputs_dict: dict[str, BackendArg] = {}
     for k, val in inputs.items():
-        if isinstance(val, jax.Array):
-            jax_inputs_dict[k] = val
+        raw_val: BackendArg = val
+        if isinstance(arr_cls, type) and isinstance(val, arr_cls):
+            jax_inputs_dict[k] = raw_val
         else:
-            jax_inputs_dict[k] = jnp.asarray(val, dtype=jnp.float32)
+            jax_inputs_dict[k] = jnp_adp.require_op("asarray")(raw_val, dtype=jnp_adp.get_symbol("float32", None))
     return jax_inputs_dict, list(jax_inputs_dict.values())
 
 
-def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValue] | dict[str, EagerValue] | EagerValue) -> None:
+def _sync_jax_result(
+    result: _jax_types.Array | tuple[BackendArg, ...] | list[BackendArg] | dict[str, BackendArg] | BackendArg,
+) -> None:
     """Force hardware device synchronization on all JAX leaf tensors using block_until_ready.
 
     Args:
-        result (Union[jax.Array, tuple[EagerValue, ...], list[EagerValue], dict[str, EagerValue], EagerValue]): Single or multi-output array evaluation result.
+        result (Union[jax.Array, tuple[BackendArg, ...], list[BackendArg], dict[str, BackendArg], BackendArg]): Single
+            or multi-output array evaluation result.
     """
-    if has_backend_member(jax, "tree_util") and has_backend_member(jax.tree_util, "tree_leaves"):
+    tree_mod = adapt_backend_module(jax).get_symbol("tree_util", None)
+    if tree_mod is not None and adapt_backend_module(tree_mod).has_symbol("tree_leaves"):
         try:
-            leaves = jax.tree_util.tree_leaves(result)
+            leaves = coerce_operand_list(adapt_backend_module(tree_mod).require_op("tree_leaves")(result))
             for leaf in leaves:
                 if _is_block_until_ready(leaf) and callable(leaf.block_until_ready):
                     leaf.block_until_ready()
@@ -177,7 +174,7 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
 class JAXProfiler:
     """Provides genuine execution timing and peak memory profiling for JAX."""
 
-    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue]:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[BackendArg]:
         """Compile an IRGraph into an executable JAX callable.
 
         Args:
@@ -189,44 +186,73 @@ class JAXProfiler:
         Raises:
             TypeError: If apply_model cannot be generated from IRGraph.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
         from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
         code: str = JAXCodeGenerator(graph).generate()
-        ns: dict[str, EagerValue] = {}
-        exec(code, ns)
+        ns = load_generated_code(code)
         native_apply_model = ns.get("apply_model")
         if not callable(native_apply_model):
             raise TypeError("Failed to generate valid apply_model function from JAXCodeGenerator")
+        apply_fn = require_callable(native_apply_model)
 
-        def _raw_forward_step(*args: jax.Array) -> EagerValue:
+        def _raw_forward_step(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Evaluate forward step of graph on JAX backend natively.
 
             Args:
-                *args (jax.Array): Positional tensor inputs.
+                *args (BackendArg): Positional tensor inputs.
+                **kwargs (BackendArg): Keyword arguments.
 
             Returns:
-                EagerValue: Evaluated output array or collection.
+                BackendArg: Evaluated output array or collection.
             """
-            return native_apply_model({}, *args)
+            del kwargs
+            return apply_fn({}, *args)
 
         try:
-            return ensure_callable(jax.jit(_raw_forward_step))
-        except Exception:
-            return ensure_callable(_raw_forward_step)
+            jitted = adapt_backend_module(jax).require_op("jit")(_raw_forward_step)
+            bound_jit = require_callable(jitted)
+
+            def _jit_step(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
+                """Invoke JIT-compiled forward step.
+
+                Args:
+                    *args (BackendArg): Positional tensor inputs.
+                    **kwargs (BackendArg): Keyword arguments.
+
+                Returns:
+                    BackendArg: Evaluated output array or collection.
+                """
+                del kwargs
+                return bound_jit(*args)
+
+            return _jit_step
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
+            return _raw_forward_step
 
     def _order_inputs(
         self,
         graph: IRGraph,
-        jax_inputs_dict: dict[str, jax.Array],
-    ) -> list[jax.Array]:
+        jax_inputs_dict: dict[str, BackendArg],
+    ) -> list[BackendArg]:
         """Order inputs topologically to match generated model parameter layout.
 
         Args:
             graph (IRGraph): IR computation graph.
-            jax_inputs_dict (dict[str, jax.Array]): Dict of JAX input arrays.
+            jax_inputs_dict (dict[str, BackendArg]): Dict of JAX input arrays.
 
         Returns:
-            list[jax.Array]: Topologically ordered list of JAX arrays.
+            list[BackendArg]: Topologically ordered list of JAX arrays.
         """
         sorted_nodes = topological_sort(graph) if graph.nodes else []
         input_keys: list[str] = [n.id for n in sorted_nodes if n.op_type == "Input"]
@@ -237,44 +263,45 @@ class JAXProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | jax.Array],
+        inputs: Mapping[str, list[float] | list[list[float]] | _jax_types.Array],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on JAX with device synchronization.
 
         Args:
             graph (IRGraph): The IR computation graph to execute.
-            inputs (dict[str, Union[list[float], list[list[float]], jax.Array]]): Named input arrays.
+            inputs: Named input arrays.
             device (Optional[str]): Device target ('cpu', 'gpu', 'tpu').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and memory metrics.
+            ProfileMetricsDict: Latency and memory metrics.
         """
         del device
 
         has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
         jax_inputs_dict, _ = _prepare_jax_inputs(inputs)
-        jax_input_list: list[jax.Array] = self._order_inputs(graph, jax_inputs_dict)
-        compiled_fn: TypedVariadicCallable[EagerValue] | None = self._compile_graph(graph) if has_ops else None
+        jax_input_list: list[BackendArg] = self._order_inputs(graph, jax_inputs_dict)
+        compiled_fn: TypedVariadicCallable[BackendArg] | None = self._compile_graph(graph) if has_ops else None
 
-        def _execute_step() -> EagerValue:
+        def _execute_step() -> BackendArg:
             """Execute a single forward evaluation step on JAX backend.
 
             Returns:
-                EagerValue: Single or collection of evaluated JAX arrays.
+                BackendArg: Single or collection of evaluated JAX arrays.
             """
             if has_ops and compiled_fn is not None:
                 return compiled_fn(*jax_input_list)
+            jnp_step = adapt_backend_module(jnp)
             if not jax_input_list:
-                return ensure_eager_tensor(jnp.zeros((1,), dtype=jnp.float32))
-            accum = jnp.zeros_like(jax_input_list[0])
+                return jnp_step.require_op("zeros")((1,), dtype=jnp_step.get_symbol("float32", None))
+            accum: BackendArg = jnp_step.require_op("zeros_like")(jax_input_list[0])
             for t in jax_input_list:
-                accum = jnp.add(accum, t)
-            return ensure_eager_tensor(accum)
+                accum = jnp_step.require_op("add")(accum, t)
+            return accum
 
         for _ in range(max(1, warmup_iters)):
             _sync_jax_result(_execute_step())

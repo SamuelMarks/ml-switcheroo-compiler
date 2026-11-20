@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 import sys
-import typing
 from unittest.mock import MagicMock, patch
 
-from tests.testing_utils import ensure_callable
-
-if typing.TYPE_CHECKING:
-    pass
+from tests.testing_utils import build_test_node
 
 
 def test_mlx_eager_distributed_ops() -> None:
@@ -26,15 +22,20 @@ def test_mlx_eager_distributed_ops() -> None:
     mock_mx.distributed.recv.return_value = mock_array
 
     with patch.dict(sys.modules, {"mlx": MagicMock(), "mlx.core": mock_mx}):
-        from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_gather, _mlx_all_reduce, _mlx_all_to_all, _mlx_reduce_scatter
+        from ml_switcheroo_compiler.backends.mlx.eager import (
+            _mlx_all_gather,
+            _mlx_all_reduce,
+            _mlx_all_to_all,
+            _mlx_reduce_scatter,
+        )
 
         t = mock_mx.array([1.0, 2.0, 3.0])
 
         # Should safely fallback or execute
-        assert _mlx_all_reduce(mock_mx, t) is not None
-        assert _mlx_all_gather(mock_mx, t) is not None
-        assert _mlx_all_to_all(mock_mx, t) is not None
-        assert _mlx_reduce_scatter(mock_mx, t) is not None
+        assert type(_mlx_all_reduce(mock_mx, t)).__name__ == "MagicMock"
+        assert type(_mlx_all_gather(mock_mx, t)).__name__ == "MagicMock"
+        assert type(_mlx_all_to_all(mock_mx, t)).__name__ == "MagicMock"
+        assert type(_mlx_reduce_scatter(mock_mx, t)).__name__ == "MagicMock"
 
 
 def test_mlx_generator_distributed_ops() -> None:
@@ -43,14 +44,14 @@ def test_mlx_generator_distributed_ops() -> None:
 
     mixin = MLXOpRegistryMixin()
 
-    ar = ensure_callable(mixin.visit_AllReduce)(None, ["tensor"])
+    ar = mixin.visit_AllReduce(build_test_node("ar", "AllReduce", ["tensor"]), ["tensor"])
     assert "mx.distributed.all_sum(tensor)" in ar
 
-    ag = ensure_callable(mixin.visit_AllGather)(None, ["tensor"])
+    ag = mixin.visit_AllGather(build_test_node("ag", "AllGather", ["tensor"]), ["tensor"])
     assert "mx.distributed.all_gather(tensor)" in ag
 
-    a2a = ensure_callable(mixin.visit_AllToAll)(None, ["tensor"])
+    a2a = mixin.visit_AllToAll(build_test_node("a2a", "AllToAll", ["tensor"]), ["tensor"])
     assert "mx.distributed.all_to_all(tensor)" in a2a
 
-    rs = ensure_callable(mixin.visit_ReduceScatter)(None, ["tensor"])
+    rs = mixin.visit_ReduceScatter(build_test_node("rs", "ReduceScatter", ["tensor"]), ["tensor"])
     assert "mx.distributed.recv(tensor)" in rs

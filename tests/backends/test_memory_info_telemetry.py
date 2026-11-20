@@ -16,7 +16,11 @@ def test_pytorch_get_memory_info() -> None:
     import sys
 
     mock_torch = MagicMock()
-    ctx = patch.dict(sys.modules, {"torch": mock_torch, "torch.cuda": mock_torch.cuda}) if importlib.util.find_spec("torch") is None else MagicMock()
+    ctx = (
+        patch.dict(sys.modules, {"torch": mock_torch, "torch.cuda": mock_torch.cuda})
+        if importlib.util.find_spec("torch") is None
+        else MagicMock()
+    )
     with ctx:
         with patch("torch.cuda.is_available", return_value=True):
             with patch("torch.cuda.memory_allocated", return_value=1024):

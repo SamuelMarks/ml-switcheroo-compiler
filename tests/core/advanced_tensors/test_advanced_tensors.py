@@ -6,12 +6,12 @@ import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensorCOO
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,7 +21,7 @@ def test_sparse_tensor() -> None:
     """Test the sparse tensor behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     indices = Tensor(np.array([[0, 0], [1, 2]]), TensorConfig((2, 2), "int32", None))
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
@@ -33,19 +33,19 @@ def test_ragged_tensor() -> None:
     """Test the ragged tensor behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     values = Tensor(np.array([1.0, 2.0, 3.0]), TensorConfig((3,), "float32", None))
     row_splits = Tensor(np.array([0, 2, 3]), TensorConfig((3,), "int32", None))
     rt = RaggedTensor(values, row_splits)
-    assert rt.values is not None
+    assert tuple(rt.values.shape) == (3,)
 
 
 def test_tensor_array_eager() -> None:
     """Test the tensor array eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with ConfigContext(eager_mode=True):
         ta = TensorArray(size=2, element_shape=(2, 2), dtype="float32")
@@ -59,4 +59,4 @@ def test_tensor_array_eager() -> None:
         stacked = ta.stack()
         assert res.shape == (2, 2)
         assert stacked.shape == (2, 2, 2)
-        assert ensure_callable(np.array_equal)(res.data, ensure_callable(np.ones)((2, 2)))
+        assert np.array_equal(ensure_ndarray(res.data), np.ones((2, 2)))

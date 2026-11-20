@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_attr_val, ensure_eager_tensor, ensure_mutable
+import pytest
+
+from ml_switcheroo_compiler.ir.core import ensure_attr_val
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
     pass
@@ -12,8 +15,9 @@ if typing.TYPE_CHECKING:
 
 def test_wasm_missing_methods_extra() -> None:
     """Test missing NN and math methods in WASM."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     n_linear = IRNode(id="n_linear", op_type="Linear", inputs=["dummy"], shape_metadata=[2, 2])
@@ -51,8 +55,9 @@ def test_wasm_line_coverage_extra() -> None:
     """Test line coverage for shape edge cases in WASM."""
     from unittest.mock import MagicMock, patch
 
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     n_conv2d = IRNode(id="n_conv2d", op_type="Conv2D", inputs=["n_dummy", "n_dummy_none"], shape_metadata=[])
@@ -62,24 +67,36 @@ def test_wasm_line_coverage_extra() -> None:
 
     n_matmul_int = IRNode(id="n_matmul_int", op_type="MatMul", inputs=["n_dummy_int", "n_dummy_int"], shape_metadata=[])
     n_dummy_int = IRNode(id="n_dummy_int", op_type="Input", inputs=[])
-    ensure_mutable(n_dummy_int).shape_metadata = ensure_eager_tensor(1)
+    pytest.MonkeyPatch().setattr(n_dummy_int, "shape_metadata", 1, raising=False)
 
     n_cond_unmapped = IRNode(id="n_cond", op_type="Cond", inputs=["dummy"], shape_metadata=[])
     n_cond_unmapped.attributes["then_branch"] = ensure_attr_val(IRGraph())
-    ensure_mutable(ensure_eager_tensor(ensure_eager_tensor(n_cond_unmapped).attributes)["then_branch"]).inputs = ensure_eager_tensor(["not_in_parent"])
-    ensure_eager_tensor(ensure_eager_tensor(n_cond_unmapped.attributes)["then_branch"].nodes)["sub"] = IRNode("sub", "Add", inputs=["not_in_parent"])
+    pytest.MonkeyPatch().setattr(
+        n_cond_unmapped.attributes["then_branch"],
+        "inputs",
+        ["not_in_parent"],
+        raising=False,
+    )
+    adapt_backend_module(n_cond_unmapped.attributes["then_branch"]).require_symbol("nodes")["sub"] = IRNode(
+        "sub", "Add", inputs=["not_in_parent"]
+    )
 
     for n in [n_conv2d, n_dummy, n_dummy_none, n_avgpool, n_matmul_int, n_dummy_int, n_cond_unmapped]:
         g.nodes[n.id] = n
 
     gen = WasmCodeGenerator(g)
 
-    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": ""}):
-        gen.generate()
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": ""}
+    ):
+        code = gen.generate()
+        assert "std::free(buf_arena_0);" in code
 
     # Test emcc fallback
-    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": ""}):
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": ""}
+    ):
         with patch("shutil.which", side_effect=lambda x: "emcc" if x == "emcc" else None):
-            with patch("subprocess.run", return_value=MagicMock()):
+            with patch("subprocess.run", return_value=MagicMock()) as mock_run:
                 gen.compile_wasm("dummy_out")
-    assert gen is not None
+                assert mock_run.called

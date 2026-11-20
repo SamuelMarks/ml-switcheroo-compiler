@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import _inject_broadcast_node, _needs_broadcast, _process_broadcast_node, broadcast_explicitizer_pass
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import (
+    _inject_broadcast_node,
+    _needs_broadcast,
+    _process_broadcast_node,
+    broadcast_explicitizer_pass,
+)
 
 
 def test_inject_broadcast_node() -> None:
@@ -48,26 +54,58 @@ def test_process_broadcast_node() -> None:
 
     # Target shape None
     node3 = IRNode(id="node3", op_type="Add", inputs=["in1", "in2"])
-    graph = IRGraph(name="test", nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)), "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(1, 2)), "node3": node3}, outputs=[])
+    graph = IRGraph(
+        name="test",
+        nodes={
+            "in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)),
+            "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(1, 2)),
+            "node3": node3,
+        },
+        outputs=[],
+    )
     assert _process_broadcast_node(graph, node3) is False
 
     # Broadcast in1
     node4 = IRNode(id="node4", op_type="Add", inputs=["in1", "in2"])
-    graph = IRGraph(name="test", nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)), "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 2)), "node4": node4}, outputs=[])
+    graph = IRGraph(
+        name="test",
+        nodes={
+            "in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)),
+            "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 2)),
+            "node4": node4,
+        },
+        outputs=[],
+    )
     assert _process_broadcast_node(graph, node4) is True
     assert node4.inputs[0].startswith("broadcast_")
     assert node4.inputs[1] == "in2"
 
     # Broadcast in2
     node5 = IRNode(id="node5", op_type="Add", inputs=["in1", "in2"])
-    graph = IRGraph(name="test", nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(2, 2)), "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(1, 2)), "node5": node5}, outputs=[])
+    graph = IRGraph(
+        name="test",
+        nodes={
+            "in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(2, 2)),
+            "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(1, 2)),
+            "node5": node5,
+        },
+        outputs=[],
+    )
     assert _process_broadcast_node(graph, node5) is True
     assert node5.inputs[0] == "in1"
     assert node5.inputs[1].startswith("broadcast_")
 
     # Broadcast both
     node6 = IRNode(id="node6", op_type="Add", inputs=["in1", "in2"])
-    graph = IRGraph(name="test", nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)), "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 1)), "node6": node6}, outputs=[])
+    graph = IRGraph(
+        name="test",
+        nodes={
+            "in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)),
+            "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 1)),
+            "node6": node6,
+        },
+        outputs=[],
+    )
     assert _process_broadcast_node(graph, node6) is True
     assert node6.inputs[0].startswith("broadcast_")
     assert node6.inputs[1].startswith("broadcast_")
@@ -76,7 +114,15 @@ def test_process_broadcast_node() -> None:
 def test_broadcast_explicitizer_pass() -> None:
     """Test function test_broadcast_explicitizer_pass."""
     node1 = IRNode(id="node1", op_type="Add", inputs=["in1", "in2"])
-    graph = IRGraph(name="test", nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)), "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 2)), "node1": node1}, outputs=["node1"])
+    graph = IRGraph(
+        name="test",
+        nodes={
+            "in1": IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=(1, 2)),
+            "in2": IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=(2, 2)),
+            "node1": node1,
+        },
+        outputs=["node1"],
+    )
 
     modified = broadcast_explicitizer_pass(graph)
     assert modified is True

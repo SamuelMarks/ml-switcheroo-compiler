@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 from collections.abc import Mapping
-from ml_switcheroo_compiler.ir.core import LogicalGraph
+from ml_switcheroo_ir import LogicalGraph
 
 def simple_fn(x):
     return x * x
@@ -48,8 +48,11 @@ with ConfigContext(backend="numpy"):
 `;
 
     fs.writeFileSync('temp_wasm_test.py', script);
-    execSync('python3 temp_wasm_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
-    fs.unlinkSync('temp_wasm_test.py');
+    try {
+        execSync('python3 temp_wasm_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
+    } finally {
+        if (fs.existsSync('temp_wasm_test.py')) fs.unlinkSync('temp_wasm_test.py');
+    }
 
     const wasmCppCode = fs.readFileSync('temp_wasm_code.js', 'utf8');
     fs.unlinkSync('temp_wasm_code.js');
@@ -99,7 +102,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 from collections.abc import Mapping
-from ml_switcheroo_compiler.ir.core import LogicalGraph
+from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass, annotate_learned_shapes
 
 def simple_fn(x):
@@ -127,8 +130,11 @@ with ConfigContext(backend="numpy"):
         f.write(wat)
 `;
     fs.writeFileSync('temp_arbitrary_test.py', script);
-    execSync('python3 temp_arbitrary_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
-    fs.unlinkSync('temp_arbitrary_test.py');
+    try {
+        execSync('python3 temp_arbitrary_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
+    } finally {
+        if (fs.existsSync('temp_arbitrary_test.py')) fs.unlinkSync('temp_arbitrary_test.py');
+    }
 
     execSync('wat2wasm temp_arbitrary_shape.wat -o temp_arbitrary_shape.wasm');
     const wasmBytes = fs.readFileSync('temp_arbitrary_shape.wasm');

@@ -2,30 +2,26 @@
 
 from __future__ import annotations
 
-import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 import ml_switcheroo_compiler.ops.linalg.matrix_ops as mod
 from ml_switcheroo_compiler.core.config import config
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from tests.testing_utils import BackendArg, EagerTensorProtocol, MockTensorStub, coerce_int_list
 
 
-class DummyTensor:
+class DummyTensor(MockTensorStub):
     """Test class DummyTensor."""
 
-    def __init__(self, shape: EagerValue) -> None:
+    def __init__(self, shape: BackendArg) -> None:
         """Test function __init__.
 
         Args:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = ensure_callable(np.zeros)(shape)
+        self.data = np.zeros(coerce_int_list(shape))
         self.dtype = "float32"
         self.device = None
 
@@ -41,43 +37,43 @@ def test_matrix_ops_tracing(mock_emit: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
 
     global_tracing_state.active_graph = IRGraph()
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
-    ensure_callable(mod.band_part)(a, 1, 1)
-    ensure_callable(mod.diag)(a, 0)
-    ensure_callable(mod.cross)(a, b)
-    ensure_callable(mod.cross)(a, b, axes={"axis": 0})
+    mod.band_part(a, 1, 1)
+    mod.diag(a, 0)
+    mod.cross(a, b)
+    mod.cross(a, b, axes={"axis": 0})
     with patch("ml_switcheroo_compiler.ops.linalg.products.Trace.infer_shape", return_value=(2,)):
-        ensure_callable(mod.trace)(a)
+        mod.trace(a)
     with patch("ml_switcheroo_compiler.ops.linalg.products.MatrixRank.infer_shape", return_value=(1,)):
-        ensure_callable(mod.matrix_rank)(a)
+        mod.matrix_rank(a)
     with patch("ml_switcheroo_compiler.ops.linalg.products.MatrixTranspose.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.matrix_transpose)(a)
-    with patch("ml_switcheroo_compiler.ops.linalg.solvers.Sqrtm.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.sqrtm)(a)
-    ensure_callable(mod.tensor_diag)(a)
-    ensure_callable(mod.tensor_diag_part)(a)
-    ensure_callable(mod.diag_part)(a)
+        mod.matrix_transpose(a)
+    with patch("ml_switcheroo_compiler.ops.linalg.products.Sqrtm.infer_shape", return_value=(2, 2)):
+        mod.sqrtm(a)
+    mod.tensor_diag(a)
+    mod.tensor_diag_part(a)
+    mod.diag_part(a)
     with patch("ml_switcheroo_compiler.ops.linalg.products.Adjoint.infer_shape", return_value=(2, 2)):
-        ensure_callable(mod.adjoint)(a)
-    with patch("ml_switcheroo_compiler.ops.linalg.solvers.EighTridiagonal.infer_shape", return_value=(2,)):
-        ensure_callable(mod.eigh_tridiagonal)(a, b)
-    ensure_callable(mod.expm)(a)
-    ensure_callable(mod.global_norm)([a])
+        mod.adjoint(a)
+    with patch("ml_switcheroo_compiler.ops.linalg.products.EighTridiagonal.infer_shape", return_value=(2,)):
+        mod.eigh_tridiagonal(a, b)
+    mod.expm(a)
+    mod.global_norm([a])
     mod.global_norm([])
-    ensure_callable(mod.logdet)(a)
-    ensure_callable(mod.logm)(a)
-    ensure_callable(mod.normalize)(a)
-    ensure_callable(mod.set_diag)(a, b)
-    ensure_callable(mod.tridiagonal_matmul)(a, a, a, a)
-    ensure_callable(mod.matrix_norm)(a)
-    ensure_callable(mod.vector_norm)(a)
-    ensure_callable(mod.svdvals)(a)
-    ensure_callable(mod.diagonal)(a)
-    ensure_callable(mod.cond)(a)
+    mod.logdet(a)
+    mod.logm(a)
+    mod.normalize(a)
+    mod.set_diag(a, b)
+    mod.tridiagonal_matmul(a, a, a, a)
+    mod.matrix_norm(a)
+    mod.vector_norm(a)
+    mod.svdvals(a)
+    mod.diagonal(a)
+    mod.cond(a)
     assert isinstance(mock_emit, MagicMock) and mock_emit.call_count >= 15
     global_tracing_state.is_tracing = False
 
@@ -94,33 +90,33 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
     mock_backend.execute_op.return_value = np.zeros((2, 2))
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
-    ensure_mutable(mock_get_backend).return_value = ensure_eager_tensor(mock_backend)
+    mock_get_backend.return_value = mock_backend
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
-    ensure_callable(mod.band_part)(a, 1, 1)
-    ensure_callable(mod.diag)(a, 0)
-    ensure_callable(mod.cross)(a, b)
-    ensure_callable(mod.trace)(a)
-    ensure_callable(mod.matrix_rank)(a)
-    ensure_callable(mod.matrix_transpose)(a)
-    ensure_callable(mod.sqrtm)(a)
-    ensure_callable(mod.tensor_diag)(a)
-    ensure_callable(mod.tensor_diag_part)(a)
-    ensure_callable(mod.diag_part)(a)
-    ensure_callable(mod.adjoint)(a)
-    ensure_callable(mod.eigh_tridiagonal)(a, b)
-    ensure_callable(mod.tridiagonal_matmul)(a, a, a, a)
-    ensure_callable(mod.matrix_norm)(a)
-    ensure_callable(mod.vector_norm)(a)
-    ensure_callable(mod.svdvals)(a)
-    ensure_callable(mod.diagonal)(a)
-    ensure_callable(mod.cond)(a)
+    mod.band_part(a, 1, 1)
+    mod.diag(a, 0)
+    mod.cross(a, b)
+    mod.trace(a)
+    mod.matrix_rank(a)
+    mod.matrix_transpose(a)
+    mod.sqrtm(a)
+    mod.tensor_diag(a)
+    mod.tensor_diag_part(a)
+    mod.diag_part(a)
+    mod.adjoint(a)
+    mod.eigh_tridiagonal(a, b)
+    mod.tridiagonal_matmul(a, a, a, a)
+    mod.matrix_norm(a)
+    mod.vector_norm(a)
+    mod.svdvals(a)
+    mod.diagonal(a)
+    mod.cond(a)
     assert mock_backend.execute_op.call_count >= 15
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
 
     global_tracing_state.active_graph = IRGraph()
     global_tracing_state.is_tracing = False
@@ -129,9 +125,9 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
 def test_matrix_ops_opdefs() -> None:
     """Test function test_matrix_ops_opdefs."""
     op1 = mod.Svdvals()
-    assert ensure_callable(op1.infer_shape)(ensure_callable(DummyTensor)((2, 3))) == (2,)
-    assert ensure_callable(op1.infer_shape)(ensure_callable(DummyTensor)((3,))) == (3,)
+    assert op1.infer_shape(DummyTensor((2, 3))) == (2,)
+    assert op1.infer_shape(DummyTensor((3,))) == (3,)
     op2 = mod.TridiagonalMatmul()
-    assert ensure_callable(op2.infer_shape)(None, None, None, ensure_callable(DummyTensor)((2, 2))) == (2, 2)
+    assert op2.infer_shape(DummyTensor((1,)), DummyTensor((2,)), DummyTensor((1,)), DummyTensor((2, 2))) == (2, 2)
     op3 = mod.Cond()
     assert op3.infer_shape() == ()

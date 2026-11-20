@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_attrs
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 
 
 def test_wasm_cond_generation() -> None:
@@ -17,7 +16,9 @@ def test_wasm_cond_generation() -> None:
     # Create true branch graph
     true_graph = IRGraph()
     true_in = IRNode(id="true_in", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=[3])
-    true_add = IRNode(id="true_add", op_type="Add", inputs=["true_in", "true_in"], attributes={"dtype": "float32"}, shape_metadata=[3])
+    true_add = IRNode(
+        id="true_add", op_type="Add", inputs=["true_in", "true_in"], attributes={"dtype": "float32"}, shape_metadata=[3]
+    )
     true_graph.nodes["true_in"] = true_in
     true_graph.nodes["true_add"] = true_add
     true_graph.outputs = ["true_add"]
@@ -26,7 +27,13 @@ def test_wasm_cond_generation() -> None:
     # Create false branch graph
     false_graph = IRGraph()
     false_in = IRNode(id="false_in", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=[3])
-    false_sub = IRNode(id="false_sub", op_type="Subtract", inputs=["false_in", "false_in"], attributes={"dtype": "float32"}, shape_metadata=[3])
+    false_sub = IRNode(
+        id="false_sub",
+        op_type="Subtract",
+        inputs=["false_in", "false_in"],
+        attributes={"dtype": "float32"},
+        shape_metadata=[3],
+    )
     false_graph.nodes["false_in"] = false_in
     false_graph.nodes["false_sub"] = false_sub
     false_graph.outputs = ["false_sub"]

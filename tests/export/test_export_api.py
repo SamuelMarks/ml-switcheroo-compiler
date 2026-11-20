@@ -11,7 +11,6 @@ import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.export.export_api import ExportArchive
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -37,7 +36,7 @@ def test_track() -> None:
     """Test function test_track."""
     archive = ExportArchive()
     resource = {"some": "data"}
-    ensure_callable(archive.track)(resource)
+    archive.track(resource)
     assert id(resource) in archive.trackables
 
 
@@ -85,37 +84,33 @@ def test_build_signature_def_with_graph() -> None:
     """Test function test_build_signature_def_with_graph."""
     archive = ExportArchive()
     graph = LogicalGraph()
-    input_node = LogicalNode(id="n1", op_type="Input")
-    ensure_mutable(input_node).dtype = ensure_eager_tensor("float32")
-
-    output_node = LogicalNode(id="n2", op_type="Add")
-    ensure_mutable(output_node).dtype = ensure_eager_tensor("float32")
+    input_node = LogicalNode(id="n1", op_type="Input", dtype="float32")
+    output_node = LogicalNode(id="n2", op_type="Add", dtype="float32")
 
     graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
 
     sig = archive._build_signature_def("test_sig", graph)
-    assert sig is not None
+    assert len(sig.data) > 0 and b"n1" in sig.data
 
 
 def test_build_signature_def_with_graph_no_outputs() -> None:
     """Test function test_build_signature_def_with_graph_no_outputs."""
     archive = ExportArchive()
     graph = LogicalGraph()
-    input_node = LogicalNode(id="n1", op_type="Input")
-    ensure_mutable(input_node).dtype = ensure_eager_tensor("float32")
+    input_node = LogicalNode(id="n1", op_type="Input", dtype="float32")
     graph.nodes = NodeDict({"n1": input_node})
     graph.outputs = []
 
     sig = archive._build_signature_def("test_sig", graph)
-    assert sig is not None
+    assert len(sig.data) > 0 and b"n1" in sig.data
 
 
 def test_build_graph_def_no_graph() -> None:
     """Test function test_build_graph_def_no_graph."""
     archive = ExportArchive()
     graph_def = archive._build_graph_def()
-    assert graph_def is not None
+    assert isinstance(graph_def.data, bytearray)
 
 
 def test_build_graph_def_with_graph() -> None:
@@ -131,7 +126,7 @@ def test_build_graph_def_with_graph() -> None:
     graph.outputs = ["n2"]
 
     graph_def = archive._build_graph_def(graph)
-    assert graph_def is not None
+    assert len(graph_def.data) > 0 and b"Add" in graph_def.data
 
 
 def test_build_saved_model() -> None:

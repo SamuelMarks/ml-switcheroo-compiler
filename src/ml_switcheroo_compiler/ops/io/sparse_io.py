@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_dtype,
     extract_shape,
 )
@@ -17,15 +17,15 @@ class SparsePlus(OpDef):
 
     op_name = "SparsePlus"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for SparsePlus.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -35,7 +35,7 @@ class SparsePlus(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_1: TensorOrScalar = res
+        _typed_ret_1: OpValue = res
         return _typed_ret_1
 
 
@@ -45,15 +45,15 @@ class SparseSigmoid(OpDef):
 
     op_name = "SparseSigmoid"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for SparseSigmoid.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -63,19 +63,19 @@ class SparseSigmoid(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_2: TensorOrScalar = res
+        _typed_ret_2: OpValue = res
         return _typed_ret_2
 
 
-def sparse_plus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def sparse_plus(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the sparse plus activation function.
 
     Args:
-        *args (TensorOrScalar): Positional input tensors.
-        **kwargs (TensorOrScalar): Keyword operation arguments.
+        *args (OpValue): Positional input tensors.
+        **kwargs (OpValue): Keyword operation arguments.
 
     Returns:
-        TensorOrScalar: Resulting tensor after applying sparse plus.
+        OpValue: Resulting tensor after applying sparse plus.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -94,15 +94,15 @@ def sparse_plus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
     )
 
 
-def sparse_sigmoid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def sparse_sigmoid(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the sparse sigmoid activation function.
 
     Args:
-        *args (TensorOrScalar): Positional input tensors.
-        **kwargs (TensorOrScalar): Keyword operation arguments.
+        *args (OpValue): Positional input tensors.
+        **kwargs (OpValue): Keyword operation arguments.
 
     Returns:
-        TensorOrScalar: Resulting tensor after applying sparse sigmoid.
+        OpValue: Resulting tensor after applying sparse sigmoid.
     """
     from ml_switcheroo_compiler.core.config import config
 

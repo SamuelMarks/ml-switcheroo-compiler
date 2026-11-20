@@ -1,38 +1,38 @@
-"""Tests for test_vision_transforms."""
+"""Behavioral unit tests for vision transforms."""
 
 from __future__ import annotations
 
-import typing
-from unittest.mock import patch
-
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms as vt
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager.vision_ops import transforms as vision_transforms
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from tests.testing_utils import require_callable
 
 
-@patch("ml_switcheroo_compiler.backends.numpy.eager.vision_transforms.random_shear_eager")
-@patch("ml_switcheroo_compiler.backends.numpy.eager.vision_transforms.random_perspective_eager")
-@patch("ml_switcheroo_compiler.backends.numpy.eager.vision_transforms.random_elastic_transform_eager")
-def test_vision_transforms_coverage(mock_elastic: EagerTensorProtocol, mock_perspective: EagerTensorProtocol, mock_shear: EagerTensorProtocol) -> None:
-    """Test function test_vision_transforms_coverage.
+def test_vision_transforms() -> None:
+    """Verify `RandomShear`, `RandomPerspective`, and `RandomElasticTransform` directly and via registry."""
+    images = np.ones((1, 8, 8, 3), dtype=np.float32)
 
-    Args:
-        mock_elastic: Test parameter `mock_elastic`.
-        mock_perspective: Test parameter `mock_perspective`.
-        mock_shear: Test parameter `mock_shear`.
-    """
-    ensure_mutable(mock_shear).return_value = ensure_eager_tensor(1)
-    res = vt._np_random_shear(ensure_eager_tensor(np), np.zeros((2, 2, 3)), 1.0)
-    assert res == 1
+    res_shear_none = vision_transforms._np_random_shear(np, images, y_factor=0.1, x_factor=None)
+    assert tuple(res_shear_none.shape) == (1, 8, 8, 3)
 
-    ensure_mutable(mock_perspective).return_value = ensure_eager_tensor(2)
-    res = vt._np_random_perspective(ensure_eager_tensor(np), np.zeros((2, 2, 3)), 1.0)
-    assert res == 2
+    res_shear_x = vision_transforms._np_random_shear(np, images, y_factor=0.1, x_factor=0.1)
+    assert tuple(res_shear_x.shape) == (1, 8, 8, 3)
 
-    ensure_mutable(mock_elastic).return_value = ensure_eager_tensor(3)
-    res = vt._np_random_elastic_transform(ensure_eager_tensor(np), np.zeros((2, 2, 3)), 1.0, 1.0)
-    assert res == 3
+    reg_shear = numpy_eager_registry.get("RandomShear")
+    res_reg_shear = require_callable(reg_shear)(np, images, y_factor=0.2)
+    assert tuple(res_reg_shear.shape) == (1, 8, 8, 3)
+
+    res_persp = vision_transforms._np_random_perspective(np, images, factor=0.1)
+    assert tuple(res_persp.shape) == (2,)
+
+    reg_persp = numpy_eager_registry.get("RandomPerspective")
+    res_reg_persp = require_callable(reg_persp)(np, images, factor=0.2)
+    assert tuple(res_reg_persp.shape) == (2,)
+
+    res_elastic = vision_transforms._np_random_elastic_transform(np, images, alpha=1.0, sigma=0.5)
+    assert tuple(res_elastic.shape) == (1, 8, 8, 3)
+
+    reg_elastic = numpy_eager_registry.get("RandomElasticTransform")
+    res_reg_elastic = require_callable(reg_elastic)(np, images, alpha=2.0, sigma=1.0)
+    assert tuple(res_reg_elastic.shape) == (1, 8, 8, 3)

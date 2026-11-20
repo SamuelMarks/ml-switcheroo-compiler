@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Sequence
 
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, extract_shape
+from ml_switcheroo_compiler.core.shape import Scalar, TypedVariadicCallable, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -21,13 +22,10 @@ class HasShape(typing.Protocol):
 MiscArg = typing.Union[  # noqa: UP007
     Tensor,
     HasShape,
-    TypedVariadicCallable[typing.Union[Tensor, int, float, str, bool, None]],  # noqa: UP007
-    int,
-    float,
+    TypedVariadicCallable[typing.Union[Tensor, Scalar, str, None]],  # noqa: UP007
+    Scalar,
     str,
-    bool,
-    tuple[int, ...],
-    list[int],
+    Sequence[int],
     None,
 ]
 
@@ -115,7 +113,8 @@ def infeed(
         **kwargs (MiscArg): Keyword args.
 
     Returns:
-        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Computed `Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]` output.
+        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Computed `Tensor | DispatchArg | tuple[Tensor |
+            DispatchArg, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -133,7 +132,8 @@ def vectorize(
         **kwargs (MiscArg): Keyword args.
 
     Returns:
-        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Computed `Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]` output.
+        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Computed `Tensor | DispatchArg | tuple[Tensor |
+            DispatchArg, ...]` output.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

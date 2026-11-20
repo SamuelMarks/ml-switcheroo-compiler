@@ -1,8 +1,9 @@
-"""Type promotion rules for ml-switcheroo."""
+"""Declarative type promotion lattice and precision rules for ml-switcheroo-compiler."""
 
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 
 import yaml
 
@@ -10,234 +11,81 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 
-_PROMOTION_TABLE = {
-    (DType.Bool, DType.Bool): DType.Bool,
-    (DType.Bool, DType.UInt8): DType.UInt8,
-    (DType.Bool, DType.Int8): DType.Int8,
-    (DType.Bool, DType.Int16): DType.Int16,
-    (DType.Bool, DType.Int32): DType.Int32,
-    (DType.Bool, DType.Int64): DType.Int64,
-    (DType.Bool, DType.Float16): DType.Float16,
-    (DType.Bool, DType.Float32): DType.Float32,
-    (DType.Bool, DType.Float64): DType.Float64,
-    (DType.Bool, DType.Complex64): DType.Complex64,
-    (DType.Bool, DType.Complex128): DType.Complex128,
-    (DType.Bool, DType.BFloat16): DType.BFloat16,
-    (DType.UInt8, DType.UInt8): DType.UInt8,
-    (DType.UInt8, DType.Int8): DType.Int16,
-    (DType.UInt8, DType.Int16): DType.Int16,
-    (DType.UInt8, DType.Int32): DType.Int32,
-    (DType.UInt8, DType.Int64): DType.Int64,
-    (DType.UInt8, DType.Float16): DType.Float16,
-    (DType.UInt8, DType.Float32): DType.Float32,
-    (DType.UInt8, DType.Float64): DType.Float64,
-    (DType.UInt8, DType.Complex64): DType.Complex64,
-    (DType.UInt8, DType.Complex128): DType.Complex128,
-    (DType.UInt8, DType.BFloat16): DType.BFloat16,
-    (DType.Int4, DType.Int4): DType.Int4,
-    (DType.Int4, DType.Int8): DType.Int8,
-    (DType.Int4, DType.UInt8): DType.Int16,
-    (DType.Int4, DType.Int16): DType.Int16,
-    (DType.Int4, DType.Int32): DType.Int32,
-    (DType.Int4, DType.Int64): DType.Int64,
-    (DType.Int4, DType.Float16): DType.Float16,
-    (DType.Int4, DType.Float32): DType.Float32,
-    (DType.Int4, DType.Float64): DType.Float64,
-    (DType.Int4, DType.BFloat16): DType.BFloat16,
-    (DType.Int4, DType.Complex64): DType.Complex64,
-    (DType.Int4, DType.Complex128): DType.Complex128,
-    (DType.Bool, DType.Int4): DType.Int4,
-    (DType.Int8, DType.Int8): DType.Int8,
-    (DType.Int8, DType.Int16): DType.Int16,
-    (DType.Int8, DType.Int32): DType.Int32,
-    (DType.Int8, DType.Int64): DType.Int64,
-    (DType.Int8, DType.Float16): DType.Float16,
-    (DType.Int8, DType.Float32): DType.Float32,
-    (DType.Int8, DType.Float64): DType.Float64,
-    (DType.Int8, DType.Complex64): DType.Complex64,
-    (DType.Int8, DType.Complex128): DType.Complex128,
-    (DType.Int8, DType.BFloat16): DType.BFloat16,
-    (DType.Int16, DType.Int16): DType.Int16,
-    (DType.Int16, DType.Int32): DType.Int32,
-    (DType.Int16, DType.Int64): DType.Int64,
-    (DType.Int16, DType.Float16): DType.Float32,
-    (DType.Int16, DType.Float32): DType.Float32,
-    (DType.Int16, DType.Float64): DType.Float64,
-    (DType.Int16, DType.Complex64): DType.Complex64,
-    (DType.Int16, DType.Complex128): DType.Complex128,
-    (DType.Int16, DType.BFloat16): DType.Float32,
-    (DType.Int32, DType.Int32): DType.Int32,
-    (DType.Int32, DType.Int64): DType.Int64,
-    (DType.Int32, DType.Float16): DType.Float64,
-    (DType.Int32, DType.Float32): DType.Float64,
-    (DType.Int32, DType.Float64): DType.Float64,
-    (DType.Int32, DType.Complex64): DType.Complex128,
-    (DType.Int32, DType.Complex128): DType.Complex128,
-    (DType.Int32, DType.BFloat16): DType.Float64,
-    (DType.Int64, DType.Int64): DType.Int64,
-    (DType.Int64, DType.Float16): DType.Float64,
-    (DType.Int64, DType.Float32): DType.Float64,
-    (DType.Int64, DType.Float64): DType.Float64,
-    (DType.Int64, DType.Complex64): DType.Complex128,
-    (DType.Int64, DType.Complex128): DType.Complex128,
-    (DType.Int64, DType.BFloat16): DType.Float64,
-    (DType.Float16, DType.Float16): DType.Float16,
-    (DType.Float16, DType.Float32): DType.Float32,
-    (DType.Float16, DType.Float64): DType.Float64,
-    (DType.Float16, DType.Complex64): DType.Complex64,
-    (DType.Float16, DType.Complex128): DType.Complex128,
-    (DType.Float16, DType.BFloat16): DType.BFloat16,
-    (DType.Float32, DType.Float32): DType.Float32,
-    (DType.Float32, DType.Float64): DType.Float64,
-    (DType.Float32, DType.Complex64): DType.Complex64,
-    (DType.Float32, DType.Complex128): DType.Complex128,
-    (DType.Float32, DType.BFloat16): DType.Float32,
-    (DType.Float64, DType.Float64): DType.Float64,
-    (DType.Float64, DType.Complex64): DType.Complex128,
-    (DType.Float64, DType.Complex128): DType.Complex128,
-    (DType.Float64, DType.BFloat16): DType.Float64,
-    (DType.Complex64, DType.Complex64): DType.Complex64,
-    (DType.Complex64, DType.Complex128): DType.Complex128,
-    (DType.Complex64, DType.BFloat16): DType.Complex64,
-    (DType.Complex128, DType.Complex128): DType.Complex128,
-    (DType.Complex128, DType.BFloat16): DType.Complex128,
-    (DType.BFloat16, DType.BFloat16): DType.BFloat16,
-    (DType.Float8E4M3B11FNUZ, DType.Float8E4M3B11FNUZ): DType.Float8E4M3B11FNUZ,
-    (DType.Float8E4M3B11FNUZ, DType.Bool): DType.Float8E4M3B11FNUZ,
-    (DType.Float8E4M3B11FNUZ, DType.UInt8): DType.Float8E4M3B11FNUZ,
-    (DType.Float8E4M3B11FNUZ, DType.Int8): DType.Float8E4M3B11FNUZ,
-    (DType.Float8E4M3B11FNUZ, DType.Int16): DType.Float32,
-    (DType.Float8E4M3B11FNUZ, DType.Int32): DType.Float64,
-    (DType.Float8E4M3B11FNUZ, DType.Int64): DType.Float64,
-    (DType.Float8E4M3B11FNUZ, DType.Float16): DType.Float16,
-    (DType.Float8E4M3B11FNUZ, DType.BFloat16): DType.BFloat16,
-    (DType.Float8E4M3B11FNUZ, DType.Float32): DType.Float32,
-    (DType.Float8E4M3B11FNUZ, DType.Float64): DType.Float64,
-    (DType.Float8E4M3B11FNUZ, DType.Complex64): DType.Complex64,
-    (DType.Float8E4M3B11FNUZ, DType.Complex128): DType.Complex128,
-    (DType.Float8E4M3FN, DType.Float8E4M3FN): DType.Float8E4M3FN,
-    (DType.Float8E4M3FN, DType.Bool): DType.Float8E4M3FN,
-    (DType.Float8E4M3FN, DType.UInt8): DType.Float8E4M3FN,
-    (DType.Float8E4M3FN, DType.Int8): DType.Float8E4M3FN,
-    (DType.Float8E4M3FN, DType.Int16): DType.Float32,
-    (DType.Float8E4M3FN, DType.Int32): DType.Float64,
-    (DType.Float8E4M3FN, DType.Int64): DType.Float64,
-    (DType.Float8E4M3FN, DType.Float16): DType.Float16,
-    (DType.Float8E4M3FN, DType.BFloat16): DType.BFloat16,
-    (DType.Float8E4M3FN, DType.Float32): DType.Float32,
-    (DType.Float8E4M3FN, DType.Float64): DType.Float64,
-    (DType.Float8E4M3FN, DType.Complex64): DType.Complex64,
-    (DType.Float8E4M3FN, DType.Complex128): DType.Complex128,
-    (DType.Float8E4M3FNUZ, DType.Float8E4M3FNUZ): DType.Float8E4M3FNUZ,
-    (DType.Float8E4M3FNUZ, DType.Bool): DType.Float8E4M3FNUZ,
-    (DType.Float8E4M3FNUZ, DType.UInt8): DType.Float8E4M3FNUZ,
-    (DType.Float8E4M3FNUZ, DType.Int8): DType.Float8E4M3FNUZ,
-    (DType.Float8E4M3FNUZ, DType.Int16): DType.Float32,
-    (DType.Float8E4M3FNUZ, DType.Int32): DType.Float64,
-    (DType.Float8E4M3FNUZ, DType.Int64): DType.Float64,
-    (DType.Float8E4M3FNUZ, DType.Float16): DType.Float16,
-    (DType.Float8E4M3FNUZ, DType.BFloat16): DType.BFloat16,
-    (DType.Float8E4M3FNUZ, DType.Float32): DType.Float32,
-    (DType.Float8E4M3FNUZ, DType.Float64): DType.Float64,
-    (DType.Float8E4M3FNUZ, DType.Complex64): DType.Complex64,
-    (DType.Float8E4M3FNUZ, DType.Complex128): DType.Complex128,
-    (DType.Float8E5M2, DType.Float8E5M2): DType.Float8E5M2,
-    (DType.Float8E5M2, DType.Bool): DType.Float8E5M2,
-    (DType.Float8E5M2, DType.UInt8): DType.Float8E5M2,
-    (DType.Float8E5M2, DType.Int8): DType.Float8E5M2,
-    (DType.Float8E5M2, DType.Int16): DType.Float32,
-    (DType.Float8E5M2, DType.Int32): DType.Float64,
-    (DType.Float8E5M2, DType.Int64): DType.Float64,
-    (DType.Float8E5M2, DType.Float16): DType.Float16,
-    (DType.Float8E5M2, DType.BFloat16): DType.BFloat16,
-    (DType.Float8E5M2, DType.Float32): DType.Float32,
-    (DType.Float8E5M2, DType.Float64): DType.Float64,
-    (DType.Float8E5M2, DType.Complex64): DType.Complex64,
-    (DType.Float8E5M2, DType.Complex128): DType.Complex128,
-    (DType.Float8E5M2FNUZ, DType.Float8E5M2FNUZ): DType.Float8E5M2FNUZ,
-    (DType.Float8E5M2FNUZ, DType.Bool): DType.Float8E5M2FNUZ,
-    (DType.Float8E5M2FNUZ, DType.UInt8): DType.Float8E5M2FNUZ,
-    (DType.Float8E5M2FNUZ, DType.Int8): DType.Float8E5M2FNUZ,
-    (DType.Float8E5M2FNUZ, DType.Int16): DType.Float32,
-    (DType.Float8E5M2FNUZ, DType.Int32): DType.Float64,
-    (DType.Float8E5M2FNUZ, DType.Int64): DType.Float64,
-    (DType.Float8E5M2FNUZ, DType.Float16): DType.Float16,
-    (DType.Float8E5M2FNUZ, DType.BFloat16): DType.BFloat16,
-    (DType.Float8E5M2FNUZ, DType.Float32): DType.Float32,
-    (DType.Float8E5M2FNUZ, DType.Float64): DType.Float64,
-    (DType.Float8E5M2FNUZ, DType.Complex64): DType.Complex64,
-    (DType.Float8E5M2FNUZ, DType.Complex128): DType.Complex128,
-    (DType.String, DType.String): DType.String,
-}
-
-
+_PROMOTION_TABLE: dict[tuple[DType, DType], DType] = {}
 _PROMOTION_LATTICE = _PROMOTION_TABLE
 
 
 def _load_declarative_promotion_lattice() -> None:
-    """Load declarative type promotion rules from YAML and update promotion table."""
+    """Load declarative type promotion rules from ``type_promotion_rules.yaml`` as single source of truth."""
     yaml_path = os.path.join(os.path.dirname(__file__), "..", "ops", "type_promotion_rules.yaml")
-    if os.path.exists(yaml_path):
-        with open(yaml_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        lattice = data.get("lattice", {})
-        for t1_str, targets in lattice.items():
+    if not os.path.exists(yaml_path):
+        return
+    with open(yaml_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    lattice = data.get("lattice", {})
+    if not isinstance(lattice, Mapping):
+        return
+    for t1_str, targets in lattice.items():
+        if not isinstance(targets, Mapping):
+            continue
+        try:
+            dt1 = DType(str(t1_str))
+        except ValueError:
+            continue
+        for t2_str, res_str in targets.items():
             try:
-                dt1 = DType(t1_str)
+                dt2 = DType(str(t2_str))
+                dt_res = DType(str(res_str))
+                _PROMOTION_TABLE[(dt1, dt2)] = dt_res
+                _PROMOTION_TABLE[(dt2, dt1)] = dt_res
             except ValueError:
                 continue
-            for t2_str, res_str in targets.items():
-                try:
-                    dt2 = DType(t2_str)
-                    dt_res = DType(res_str)
-                    _PROMOTION_TABLE[(dt1, dt2)] = dt_res
-                    _PROMOTION_TABLE[(dt2, dt1)] = dt_res
-                except ValueError:
-                    continue
 
 
 _load_declarative_promotion_lattice()
 
 
 def _clamp_x64(dtype: DType) -> DType:
-    """Downcast 64-bit scalar data types to 32-bit equivalents when 64-bit precision is disabled.
+    """Downcast 64-bit scalar data types to 32-bit equivalents when ``config.enable_x64`` is False.
 
     Args:
         dtype (DType): Candidate promoted tensor data type.
 
     Returns:
-        DType: Unchanged 64-bit `dtype` when x64 mode is enabled, or its 32-bit counterpart otherwise.
+        DType: Unchanged 64-bit ``dtype`` when ``config.enable_x64`` is True, or its 32-bit counterpart otherwise.
     """
-    if config.jax_enable_x64:
+    if config.enable_x64:
         return dtype
-    _downcast = {
+    downcast: dict[DType, DType] = {
         DType.Float64: DType.Float32,
         DType.Int64: DType.Int32,
         DType.Complex128: DType.Complex64,
     }
-    return _downcast.get(dtype, dtype)
+    return downcast.get(dtype, dtype)
 
 
-def promote_types(dtype1: DType, dtype2: DType) -> DType:
-    """Determine the promoted `DType` according to the compiler promotion lattice.
+def promote_types(dtype1: DType | str, dtype2: DType | str) -> DType:
+    """Determine the promoted ``DType`` according to the canonical promotion lattice.
 
     Args:
-        dtype1 (DType): First operand data type.
-        dtype2 (DType): Second operand data type.
+        dtype1 (DType | str): First operand data type.
+        dtype2 (DType | str): Second operand data type.
 
     Returns:
-        DType: Promoted result data type after applying precision configuration rules.
+        DType: Promoted result data type after applying ``config.enable_x64`` precision rules.
 
     Raises:
-        DTypePromotionError: If `dtype1` and `dtype2` have no valid common promotion target.
+        DTypePromotionError: If ``dtype1`` and ``dtype2`` have no valid common promotion target.
     """
-    if dtype1 == dtype2 and type(dtype1) is not str and type(dtype2) is not str:
+    if dtype1 == dtype2 and isinstance(dtype1, DType) and isinstance(dtype2, DType):
         return _clamp_x64(dtype1)
 
-    res = None if (type(dtype1) is str or type(dtype2) is str) else (_PROMOTION_TABLE.get((dtype1, dtype2)) or _PROMOTION_TABLE.get((dtype2, dtype1)))
+    res = (
+        None
+        if (not isinstance(dtype1, DType) or not isinstance(dtype2, DType))
+        else (_PROMOTION_TABLE.get((dtype1, dtype2)) or _PROMOTION_TABLE.get((dtype2, dtype1)))
+    )
     if res is None:
-        msg = f"Cannot promote types: {dtype1} and {dtype2}"
-        raise DTypePromotionError(msg)
+        raise DTypePromotionError(f"Cannot promote types: {dtype1} and {dtype2}")
 
-    res = dtype1 if res == dtype1 else (dtype2 if res == dtype2 else res)
     return _clamp_x64(res)

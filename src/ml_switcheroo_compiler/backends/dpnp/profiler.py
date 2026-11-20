@@ -7,12 +7,15 @@ import logging
 import resource
 import sys
 import time
+from collections.abc import Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_ir import IRGraph
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 def _get_process_memory_mb() -> float:
@@ -36,8 +39,8 @@ def _get_dpnp_peak_memory_mb() -> float:
     """
     try:
         dpnp_mod = importlib.import_module("dpnp")
-        if has_backend_member(dpnp_mod, "get_device_memory_info"):
-            info: EagerValue = ensure_callable(get_backend_member(dpnp_mod, "get_device_memory_info"))()
+        if adapt_backend_module(dpnp_mod).has_symbol("get_device_memory_info"):
+            info: BackendArg = adapt_backend_module(dpnp_mod).require_op("get_device_memory_info")()
             if isinstance(info, (tuple, list)) and len(info) >= 2:
                 total, free = info[0], info[1]
                 if isinstance(total, (int, float)) and isinstance(free, (int, float)):
@@ -47,31 +50,33 @@ def _get_dpnp_peak_memory_mb() -> float:
     return _get_process_memory_mb()
 
 
-def _safe_wait(waitable: EagerValue) -> None:
+def _safe_wait(waitable: BackendArg) -> None:
     """Invoke .wait() on a SYCL queue or event object while ignoring runtime errors.
 
     Args:
-        waitable (EagerValue): Object potentially exposing a wait() method.
+        waitable (BackendArg): Object potentially exposing a wait() method.
     """
-    if waitable is not None and has_backend_member(waitable, "wait"):
+    if waitable is not None and adapt_backend_module(waitable).has_symbol("wait"):
         try:
-            ensure_callable(get_backend_member(waitable, "wait"))()
+            adapt_backend_module(waitable).require_op("wait")()
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
-def _sync_dpnp_result(result: EagerValue, sycl_queue: EagerValue | None = None) -> None:
+def _sync_dpnp_result(result: BackendArg, sycl_queue: BackendArg | None = None) -> None:
     """Synchronize SYCL execution queue or DPNP array evaluations.
 
     Args:
-        result (EagerValue): Evaluated array or collection of arrays.
-        sycl_queue (object | None): Optional SYCL execution queue.
+        result (BackendArg): Evaluated array or collection of arrays.
+        sycl_queue (BackendArg | None): Optional SYCL execution queue.
     """
     _safe_wait(sycl_queue)
 
-    if has_backend_member(result, "sycl_queue") and has_backend_member(get_backend_member(result, "sycl_queue"), "wait"):
-        _safe_wait(get_backend_member(result, "sycl_queue"))
-    elif has_backend_member(result, "wait"):
+    if adapt_backend_module(result).has_symbol("sycl_queue") and adapt_backend_module(
+        adapt_backend_module(result).require_symbol("sycl_queue")
+    ).has_symbol("wait"):
+        _safe_wait(adapt_backend_module(result).require_symbol("sycl_queue"))
+    elif adapt_backend_module(result).has_symbol("wait"):
         _safe_wait(result)
     elif isinstance(result, (list, tuple)):
         for item in result:
@@ -84,33 +89,33 @@ def _sync_dpnp_result(result: EagerValue, sycl_queue: EagerValue | None = None) 
 class DpnpProfiler:
     """Provides execution timing and peak memory profiling for DPNP on Intel SYCL devices."""
 
-    def __init__(self, sycl_queue: EagerValue | None = None) -> None:
+    def __init__(self, sycl_queue: BackendArg | None = None) -> None:
         """Initialize DPNP profiler with optional SYCL queue.
 
         Args:
-            sycl_queue (object | None): Optional target SYCL queue.
+            sycl_queue (BackendArg | None): Optional target SYCL queue.
         """
-        self.sycl_queue: EagerValue | None = sycl_queue
+        self.sycl_queue: BackendArg | None = sycl_queue
 
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> list[EagerValue]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> list[BackendArg]:
         """Convert input payloads into topologically ordered DPNP/NumPy arrays.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, list[float] | list[list[float]] | object]): Input mapping.
+            inputs: Input mapping.
 
         Returns:
             list[object]: Ordered list of input arrays.
         """
-        dpnp_inputs: dict[str, EagerValue] = {}
+        dpnp_inputs: dict[str, BackendArg] = {}
         for k, val in inputs.items():
-            if type(val).__name__ == "Tensor" and has_backend_member(val, "data"):
-                dpnp_inputs[k] = get_backend_member(val, "data")
-            elif type(val).__name__ == "ndarray" or has_backend_member(val, "ndim"):
+            if type(val).__name__ == "Tensor" and adapt_backend_module(val).has_symbol("data"):
+                dpnp_inputs[k] = adapt_backend_module(val).require_symbol("data")
+            elif type(val).__name__ == "ndarray" or adapt_backend_module(val).has_symbol("ndim"):
                 dpnp_inputs[k] = val
             elif isinstance(val, (list, tuple)):
                 from ml_switcheroo_compiler.backends.dpnp.types import asarray
@@ -125,7 +130,7 @@ class DpnpProfiler:
             return [dpnp_inputs[k] for k in input_keys]
         return list(dpnp_inputs.values())
 
-    def _compile_runner(self, graph: IRGraph, device: str = "auto") -> TypedVariadicCallable[EagerValue] | None:
+    def _compile_runner(self, graph: IRGraph, device: str = "auto") -> TypedVariadicCallable[BackendArg] | None:
         """Compile computational graph into a DPNP executable runner.
 
         Args:
@@ -144,22 +149,22 @@ class DpnpProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str = "auto",
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile graph execution on DPNP backend targeting Intel SYCL.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, list[float] | list[list[float]] | object]): Named inputs.
+            inputs: Named inputs.
             device (str): SYCL target device ('auto', 'cpu', 'gpu', 'fpga').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, list[float] | float]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         prepared_inputs = self._prepare_inputs(graph, inputs)
         runner = self._compile_runner(graph, device=device)

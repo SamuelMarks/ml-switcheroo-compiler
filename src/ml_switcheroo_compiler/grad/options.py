@@ -12,7 +12,7 @@ class GradOptions(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid")
 
-    argnums: int | tuple[int, ...] = 0
+    argnums: int | tuple[int, ...] | None = 0
     has_aux: bool = False
     holistic: bool = False
     reduce_axes: tuple[int, ...] = pydantic.Field(default_factory=tuple)

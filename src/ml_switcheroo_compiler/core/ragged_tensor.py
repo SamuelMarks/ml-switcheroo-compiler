@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import ShapeDim
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 
@@ -23,17 +24,17 @@ class RaggedTensor:
         self.row_splits = row_splits
 
     @property
-    def shape(self) -> Sequence[int | str]:
+    def shape(self) -> Sequence[ShapeDim]:
         """Return the ragged tensor shape with `-1` marking the ragged dimension.
 
         Returns:
-            Sequence[Union[int, str]]: Shape tuple `(num_rows, -1, *inner_dims)`.
+            Sequence[ShapeDim]: Shape tuple `(num_rows, -1, *inner_dims)`.
         """
         batch_size = max(0, len(self.row_splits) - 1)
-        val_shape = list(self.values.shape)
+        val_shape: list[ShapeDim] = list(self.values.shape)
         if val_shape:
             val_shape[0] = -1
-        return tuple([batch_size] + val_shape)
+        return (batch_size, *val_shape)
 
     @property
     def dtype(self) -> DType:

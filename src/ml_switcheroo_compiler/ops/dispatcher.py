@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-DispatchArg = TensorOrScalar
+DispatchArg = OpValue
 
 
 def dispatch_op(

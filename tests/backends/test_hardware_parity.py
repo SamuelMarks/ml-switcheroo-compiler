@@ -7,12 +7,14 @@ import typing
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
+from ml_switcheroo_compiler.backends.hardware_config_models import HardwareTemplateConfig
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_int, ensure_tensor_dict
+from tests.testing_utils import EagerTensorProtocol, adapt_backend_module
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -28,15 +30,18 @@ def test_hardware_operation_coverage_and_workgroup_rules() -> None:
     assert len(metal_gen.config.templates) >= 20
     core_ops = ["add", "sub", "mul", "div", "relu", "exp", "log", "tanh", "maximum", "silu", "gelu"]
     for op in core_ops:
-        assert ensure_eager_tensor(op) in cuda_gen.config.templates
-        assert ensure_eager_tensor(op) in rocm_gen.config.templates
-        assert ensure_eager_tensor(op) in metal_gen.config.templates
-        cuda_wg = ensure_eager_tensor(ensure_eager_tensor(cuda_gen.config.templates)[op].get)("workgroup_size")
-        metal_wg = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)[op].get)("workgroup_size")
-        rocm_wg = ensure_eager_tensor(ensure_eager_tensor(rocm_gen.config.templates)[op].get)("workgroup_size")
-        assert ensure_eager_tensor(isinstance(ensure_eager_tensor(cuda_wg), list) and ensure_callable(len)(cuda_wg) == 3 and (ensure_eager_tensor(cuda_wg)[0] > 0))
-        assert ensure_eager_tensor(isinstance(ensure_eager_tensor(metal_wg), list) and len(metal_wg) == 3 and (ensure_int(metal_wg[0]) > 0))
-        assert isinstance(ensure_eager_tensor(rocm_wg), list) and len(rocm_wg) == 3 and (ensure_int(rocm_wg[0]) > 0)
+        assert op in cuda_gen.config.templates
+        assert op in rocm_gen.config.templates
+        assert op in metal_gen.config.templates
+        cuda_tpl = cuda_gen.config.templates[op]
+        metal_tpl = metal_gen.config.templates[op]
+        rocm_tpl = rocm_gen.config.templates[op]
+        assert isinstance(cuda_tpl, HardwareTemplateConfig)
+        assert isinstance(metal_tpl, HardwareTemplateConfig)
+        assert isinstance(rocm_tpl, HardwareTemplateConfig)
+        assert len(cuda_tpl.workgroup_size) == 3 and cuda_tpl.workgroup_size[0] > 0
+        assert len(metal_tpl.workgroup_size) == 3 and metal_tpl.workgroup_size[0] > 0
+        assert len(rocm_tpl.workgroup_size) == 3 and rocm_tpl.workgroup_size[0] > 0
 
 
 def test_dynamic_buffer_allocation_and_launch() -> None:
@@ -76,18 +81,21 @@ def test_metal_native_execution_parity() -> None:
         pytest.skip("Apple Silicon Metal device/driver not available on host system")
     runner = MetalRunner()
     metal_gen = MetalCodeGenerator(IRGraph())
-    relu_tpl = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)["relu"].get)("body", "")
+    relu_entry = metal_gen.config.templates["relu"]
+    assert isinstance(relu_entry, HardwareTemplateConfig)
     x = np.array([-5.0, 0.0, 3.5, 12.0], dtype=np.float32)
-    relu_res = ensure_callable(runner.execute_kernel)(relu_tpl, "relu", x)
-    ensure_callable(np.testing.assert_allclose)(relu_res, ensure_callable(np.maximum)(0.0, x))
-    add_tpl = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)["add"].get)("body", "")
+    relu_res = runner.execute_kernel(relu_entry.body, "relu", x)
+    np.testing.assert_allclose(ensure_ndarray(relu_res), np.maximum(0.0, x))
+    add_entry = metal_gen.config.templates["add"]
+    assert isinstance(add_entry, HardwareTemplateConfig)
     y = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
-    add_res = ensure_callable(runner.execute_kernel)(add_tpl, "add", x, y)
-    ensure_callable(np.testing.assert_allclose)(add_res, x + y)
-    exp_tpl = ensure_eager_tensor(ensure_eager_tensor(metal_gen.config.templates)["exp"].get)("body", "")
+    add_res = runner.execute_kernel(add_entry.body, "add", x, y)
+    np.testing.assert_allclose(ensure_ndarray(add_res), x + y)
+    exp_entry = metal_gen.config.templates["exp"]
+    assert isinstance(exp_entry, HardwareTemplateConfig)
     x_small = np.array([0.0, 1.0, 2.0, -1.0], dtype=np.float32)
-    exp_res = ensure_callable(runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
-    ensure_callable(np.testing.assert_allclose)(exp_res, ensure_callable(np.exp)(x_small), rtol=1e-05, atol=1e-05)
+    exp_res = runner.execute_kernel(exp_entry.body, "exp_kernel", x_small)
+    np.testing.assert_allclose(ensure_ndarray(exp_res), np.exp(x_small), rtol=1e-05, atol=1e-05)
 
 
 def test_cuda_driver_presence_or_graceful_skip() -> None:
@@ -97,10 +105,10 @@ def test_cuda_driver_presence_or_graceful_skip() -> None:
     runner = CUDARunner()
     if runner.mode == "cupy":
         buf = runner.allocate_buffer(1024)
-        assert buf is not None
+        assert runner.mode == "cupy" and bool(buf)
     elif runner.cuda_lib is not None and runner._ctx is not None:
         buf = runner.allocate_buffer(1024)
-        assert buf is not None
+        assert buf is not None and int(buf.value or 0) > 0
     else:
         pytest.skip("CUDA device/driver not available on host system")
 
@@ -112,10 +120,10 @@ def test_rocm_driver_presence_or_graceful_skip() -> None:
     runner = ROCmRunner()
     if runner.mode == "cupy":
         buf = runner.allocate_buffer(1024)
-        assert buf is not None
+        assert runner.mode == "cupy" and bool(buf)
     elif runner.rocm_lib is not None:
         buf = runner.allocate_buffer(1024)
-        assert buf is not None
+        assert buf is not None and int(buf.value or 0) > 0
     else:
         pytest.skip("ROCm device/driver not available on host system")
 
@@ -130,7 +138,10 @@ def test_llvm_cpp_runner_compilation_and_execution() -> None:
     if not compiler:
         pytest.skip("No C++ compiler (clang++ or g++) found on system.")
     runner: LLVMCPPRunner = LLVMCPPRunner(compiler=compiler)
-    cpp_source: str = '\n    #include <cmath>\n    extern "C" void compute_graph() {\n        volatile float x = 2.0f;\n        volatile float y = std::sin(x);\n        (void)y;\n    }\n    '
+    cpp_source: str = (
+        '\n    #include <cmath>\n    extern "C" void compute_graph() {\n        volatile float x = '
+        "2.0f;\n        volatile float y = std::sin(x);\n        (void)y;\n    }\n    "
+    )
     executable = runner.compile_and_load(cpp_source)
     assert executable() == "Execution successful"
 
@@ -167,42 +178,79 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
 
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-    a_np: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    b_np: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
-    ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.matmul(a_np, b_np)
+    a_np: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    b_np: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
+    ref_matmul: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.matmul(a_np, b_np)
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
-    ensure_callable(np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(ensure_ndarray(np_res), ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("torch") is not None:
         import torch
 
         from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
         torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-        ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(torch_res).detach))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(
+            adapt_backend_module(torch_res).require_symbol("detach")().cpu().numpy(),
+            ref_matmul,
+            rtol=1e-05,
+            atol=1e-05,
+        )
     if importlib.util.find_spec("jax") is not None:
         import jax.numpy as jnp
 
         from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
         jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
-        ensure_callable(np.testing.assert_allclose)(ensure_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(np.array(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("mlx") is not None:
         import mlx.core as mx
 
         from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 
         mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
-        ensure_callable(np.testing.assert_allclose)(ensure_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
-    x_np: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
-    ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.sum(x_np, axis=-1, keepdims=True)
-    ref_mean = ensure_callable(np.mean)(x_np, axis=-1, keepdims=True)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
-    x_act: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
-    ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = 1.0 / (1.0 + np.exp(-x_act))
-    ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.tanh(x_act)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
+        np.testing.assert_allclose(np.array(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
+    x_np: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    ref_sum: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.sum(x_np, axis=-1, keepdims=True)
+    ref_mean = np.mean(x_np, axis=-1, keepdims=True)
+    np.testing.assert_allclose(
+        ensure_ndarray(NumpyGenerator.execute_op("ReduceSum", x_np, axis=-1, keepdims=True)), ref_sum
+    )
+    np.testing.assert_allclose(
+        ensure_ndarray(NumpyGenerator.execute_op("ReduceMean", x_np, axis=-1, keepdims=True)), ref_mean
+    )
+    x_act: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
+    ref_sig: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = 1.0 / (1.0 + np.exp(-x_act))
+    ref_tanh: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ] = np.tanh(x_act)
+    np.testing.assert_allclose(
+        ensure_ndarray(NumpyGenerator.execute_op("Sigmoid", x_act)), ref_sig, rtol=1e-05, atol=1e-05
+    )
+    np.testing.assert_allclose(
+        ensure_ndarray(NumpyGenerator.execute_op("Tanh", x_act)), ref_tanh, rtol=1e-05, atol=1e-05
+    )
 
 
 def test_unsupported_backend_eager_dispatch_raises_error() -> None:
@@ -234,7 +282,9 @@ def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
     g_conv = IRGraph()
     n_x = IRNode("x", "Input", shape_metadata=(2, 3, 28, 28), attributes={"dtype": "float32"})
     n_w = IRNode("w", "Input", shape_metadata=(16, 3, 3, 3), attributes={"dtype": "float32"})
-    n_conv = IRNode("conv", "Conv2D", inputs=["x", "w"], shape_metadata=(2, 16, 26, 26), attributes={"dtype": "float32"})
+    n_conv = IRNode(
+        "conv", "Conv2D", inputs=["x", "w"], shape_metadata=(2, 16, 26, 26), attributes={"dtype": "float32"}
+    )
     for n in [n_x, n_w, n_conv]:
         g_conv.nodes[n.id] = n
     g_conv.inputs = ["x", "w"]
@@ -243,13 +293,18 @@ def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
     assert "conv2d<<<grid_0, block_0>>>(inputs[0], inputs[1], d_out_0, 2, 3, 28, 28, 16, 3, 3, 26, 26)" in cuda_conv
     assert "dim3 grid_0((26 * 26 + block_0.x - 1) / block_0.x, 16, 2)" in cuda_conv
     rocm_conv = RocmCodeGenerator(g_conv).generate()
-    assert "hipLaunchKernelGGL(conv2d, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 2, 3, 28, 28, 16, 3, 3, 26, 26)" in rocm_conv
+    assert (
+        "hipLaunchKernelGGL(conv2d, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 2, 3, 28, "
+        "28, 16, 3, 3, 26, 26)"
+    ) in rocm_conv
     metal_conv = MetalCodeGenerator(g_conv).generate()
     assert "grid_size_0 = MTLSize(676, 16, 2)" in metal_conv
     g_bmm = IRGraph()
     n_ba = IRNode("ba", "Input", shape_metadata=(4, 16, 32), attributes={"dtype": "float32"})
     n_bb = IRNode("bb", "Input", shape_metadata=(4, 32, 64), attributes={"dtype": "float32"})
-    n_bmm = IRNode("bmm", "BatchMatMul", inputs=["ba", "bb"], shape_metadata=(4, 16, 64), attributes={"dtype": "float32"})
+    n_bmm = IRNode(
+        "bmm", "BatchMatMul", inputs=["ba", "bb"], shape_metadata=(4, 16, 64), attributes={"dtype": "float32"}
+    )
     for n in [n_ba, n_bb, n_bmm]:
         g_bmm.nodes[n.id] = n
     g_bmm.inputs = ["ba", "bb"]
@@ -258,7 +313,10 @@ def test_hardware_multidimensional_grid_and_parameter_bindings() -> None:
     assert "batchmatmul<<<grid_0, block_0>>>(inputs[0], inputs[1], d_out_0, 4, 16, 64, 32)" in cuda_bmm
     assert "dim3 grid_0((64 + block_0.x - 1) / block_0.x, (16 + block_0.y - 1) / block_0.y, 4)" in cuda_bmm
     rocm_bmm = RocmCodeGenerator(g_bmm).generate()
-    assert "hipLaunchKernelGGL(batchmatmul, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 4, 16, 64, 32)" in rocm_bmm
+    assert (
+        "hipLaunchKernelGGL(batchmatmul, grid_0, block_0, 0, 0, inputs[0], inputs[1], d_out_0, 4, 16, 64, 32)"
+        in rocm_bmm
+    )
     metal_bmm = MetalCodeGenerator(g_bmm).generate()
     assert "grid_size_0 = MTLSize(64, 16, 4)" in metal_bmm
 
@@ -289,20 +347,40 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
     cuda_gen = CudaCodeGenerator(IRGraph())
     rocm_gen = RocmCodeGenerator(IRGraph())
     metal_gen = MetalCodeGenerator(IRGraph())
-    new_ops = ["reduceprod", "reduceall", "reduceany", "argmax", "argmin", "cumsum", "elu", "selu", "hardswish", "mish", "leakyrelu", "cholesky", "qr", "solve", "triangularsolve", "einsum", "avgpool3d", "maxpool3d", "interpolate"]
+    new_ops = [
+        "reduceprod",
+        "reduceall",
+        "reduceany",
+        "argmax",
+        "argmin",
+        "cumsum",
+        "elu",
+        "selu",
+        "hardswish",
+        "mish",
+        "leakyrelu",
+        "cholesky",
+        "qr",
+        "solve",
+        "triangularsolve",
+        "einsum",
+        "avgpool3d",
+        "maxpool3d",
+        "interpolate",
+    ]
     for op in new_ops:
         assert op in cuda_gen.config.templates, f"Missing {op} in CUDA"
         assert op in rocm_gen.config.templates, f"Missing {op} in ROCm"
         assert op in metal_gen.config.templates, f"Missing {op} in Metal"
         c_tpl = cuda_gen.config.templates[op]
-        assert "float32" in ensure_eager_tensor(c_tpl).get("type_mappings", {})
-        assert ensure_eager_tensor(ensure_eager_tensor(c_tpl).get)("grid_calc") is not None
+        assert "float32" in str(adapt_backend_module(c_tpl).require_symbol("get")("type_mappings", {}))
+        assert adapt_backend_module(c_tpl).require_symbol("get")("grid_calc") is not None
         r_tpl = rocm_gen.config.templates[op]
-        assert "float32" in ensure_eager_tensor(r_tpl).get("type_mappings", {})
-        assert ensure_eager_tensor(ensure_eager_tensor(r_tpl).get)("grid_calc") is not None
+        assert "float32" in str(adapt_backend_module(r_tpl).require_symbol("get")("type_mappings", {}))
+        assert adapt_backend_module(r_tpl).require_symbol("get")("grid_calc") is not None
         m_tpl = metal_gen.config.templates[op]
-        assert "float32" in ensure_eager_tensor(m_tpl).get("type_mappings", {})
-        assert ensure_eager_tensor(ensure_eager_tensor(m_tpl).get)("grid_calc") is not None
+        assert "float32" in str(adapt_backend_module(m_tpl).require_symbol("get")("type_mappings", {}))
+        assert adapt_backend_module(m_tpl).require_symbol("get")("grid_calc") is not None
     g = IRGraph()
     n_in = IRNode("in0", "Input", shape_metadata=(10, 10), attributes={"dtype": "float32"})
     n_elu = IRNode("elu_op", "Elu", inputs=["in0"], shape_metadata=(10, 10), attributes={"dtype": "float32"})
@@ -322,7 +400,23 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
     assert "reduceprod" in metal_code
 
 
-def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestGoldenSeedCrossBackendFloatEquivalenceState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_golden_seed_cross_backend_float_equivalence` split helpers."""
+
+    x_np: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ]
+    y_np: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ]
+    z_ref: EagerTensorProtocol
+
+
+def _test_golden_seed_cross_backend_float_equivalence_part_1(
+    _state: _TestGoldenSeedCrossBackendFloatEquivalenceState,
+) -> None:
     """Execute part 1 of test_golden_seed_cross_backend_float_equivalence.
 
     Args:
@@ -337,7 +431,9 @@ def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, E
 
         x_t = torch.from_numpy(x_np)
         y_t = torch.from_numpy(y_np)
-        out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).cpu().detach().numpy()
+        out_torch = (
+            (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).cpu().detach().numpy()
+        )
         assert np.allclose(out_torch, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
@@ -350,10 +446,12 @@ def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, E
         assert np.allclose(out_jax, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
-    _state.update(ensure_tensor_dict({"x_np": x_np, "y_np": y_np, "z_ref": z_ref}))
+    _state.update({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
 
 
-def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_golden_seed_cross_backend_float_equivalence_part_2(
+    _state: _TestGoldenSeedCrossBackendFloatEquivalenceState,
+) -> None:
     """Execute part 2 of test_golden_seed_cross_backend_float_equivalence.
 
     Args:
@@ -367,37 +465,37 @@ def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, E
         y_tf = tf.constant(y_np)
         out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
         if out_tf.shape == z_ref.shape:
-            assert ensure_callable(np.allclose)(out_tf, z_ref, atol=1e-05, rtol=0.0001)
+            assert np.allclose(out_tf, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
     try:
         import keras.ops as kops
 
         out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
-        assert ensure_callable(np.allclose)(out_k, z_ref, atol=1e-05, rtol=0.0001)
+        assert np.allclose(out_k, z_ref, atol=1e-05, rtol=0.0001)
     except (ImportError, ValueError):
         assert z_ref.shape == (8, 8)
     try:
         import dask.array as da
 
-        x_d = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).from_array))(x_np)
-        y_d = ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).from_array))(y_np)
-        out_d = ensure_callable(
-            (
-                ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).matmul))(
-                    ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).maximum))(0.0, x_d + y_d),
-                    ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).sin))(x_d),
-                )
-                - ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).exp))(-ensure_callable(ensure_eager_tensor(ensure_eager_tensor(da).abs))(y_d))
-            ).compute
-        )()
-        assert ensure_callable(np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
+        x_d = da.from_array(x_np)
+        y_d = da.from_array(y_np)
+        out_d = (
+            da.matmul(
+                da.maximum(0.0, x_d + y_d),
+                da.sin(x_d),
+            )
+            - da.exp(-da.abs(y_d))
+        ).compute()
+        assert np.allclose(out_d, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
-    _state.update(ensure_tensor_dict({"x_np": x_np, "y_np": y_np, "z_ref": z_ref}))
+    _state.update({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
 
 
-def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_golden_seed_cross_backend_float_equivalence_part_3(
+    _state: _TestGoldenSeedCrossBackendFloatEquivalenceState,
+) -> None:
     """Execute part 3 of test_golden_seed_cross_backend_float_equivalence.
 
     Args:
@@ -407,10 +505,10 @@ def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, E
     try:
         import mlx.core as mx
 
-        x_m = ensure_callable(mx.array)(x_np)
-        y_m = ensure_callable(mx.array)(y_np)
-        out_m = ensure_callable(np.array)(ensure_callable(mx.matmul)(ensure_callable(mx.maximum)(0.0, x_m + y_m), ensure_callable(mx.sin)(x_m)) - ensure_callable(mx.exp)(-ensure_callable(mx.abs)(y_m)))
-        assert ensure_callable(np.allclose)(out_m, z_ref, atol=1e-05, rtol=0.0001)
+        x_m = mx.array(x_np)
+        y_m = mx.array(y_np)
+        out_m = np.array(mx.matmul(mx.maximum(0.0, x_m + y_m), mx.sin(x_m)) - mx.exp(-mx.abs(y_m)))
+        assert np.allclose(out_m, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
     try:
@@ -419,14 +517,14 @@ def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, E
         x_cp = cp.asarray(x_np)
         y_cp = cp.asarray(y_np)
         out_cp = cp.asnumpy(cp.matmul(cp.maximum(0.0, x_cp + y_cp), cp.sin(x_cp)) - cp.exp(-cp.abs(y_cp)))
-        assert ensure_callable(np.allclose)(out_cp, z_ref, atol=1e-05, rtol=0.0001)
+        assert np.allclose(out_cp, z_ref, atol=1e-05, rtol=0.0001)
     except Exception:
         assert z_ref.shape == (8, 8)
 
 
 def test_golden_seed_cross_backend_float_equivalence() -> None:
     """Verify deterministic golden-seed float equivalence across all available backend engines."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestGoldenSeedCrossBackendFloatEquivalenceState = {}
     _test_golden_seed_cross_backend_float_equivalence_part_1(_state)
     _test_golden_seed_cross_backend_float_equivalence_part_2(_state)
     _test_golden_seed_cross_backend_float_equivalence_part_3(_state)

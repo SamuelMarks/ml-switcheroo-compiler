@@ -8,7 +8,6 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -20,28 +19,44 @@ def test_vjp_registry_coverage() -> None:
     Returns:
         None
     """
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
     if "fake_op" in _VJP_REGISTRY:
         del _VJP_REGISTRY["fake_op"]
 
-    @ensure_callable(register_vjp)("fake_op")
-    def fake_vjp() -> None:
+    @register_vjp("fake_op")
+    def fake_vjp(g: LogicalGraph, n: LogicalNode, cot: str) -> tuple[str, ...]:
         """Evaluate and process the fake vjp operation.
 
+        Args:
+            g: Graph.
+            n: Node.
+            cot: Cotangent ID.
+
         Returns:
-            TensorOrScalar: The evaluated or processed output.
+            tuple[str, ...]: The evaluated or processed output.
         """
+        del g, n, cot
+        return ()
 
     with pytest.raises(ValueError, match="already registered"):
 
-        @ensure_callable(register_vjp)("fake_op")
-        def fake_vjp2() -> None:
+        @register_vjp("fake_op")
+        def fake_vjp2(g: LogicalGraph, n: LogicalNode, cot: str) -> tuple[str, ...]:
             """Evaluate and process the fake vjp2 operation.
 
-            Returns:
-                TensorOrScalar: The evaluated or processed output.
-            """
+            Args:
+                g: Graph.
+                n: Node.
+                cot: Cotangent ID.
 
-    assert get_vjp("fake_op") == fake_vjp
+            Returns:
+                tuple[str, ...]: The evaluated or processed output.
+            """
+            del g, n, cot
+            return ()
+
+    assert id(get_vjp("fake_op")) == id(fake_vjp)
 
     # Test error
     with pytest.raises(ValueError, match="No VJP rule"):
@@ -50,8 +65,12 @@ def test_vjp_registry_coverage() -> None:
     # Test data vjp
     from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="data_vjp"):
-        assert ensure_eager_tensor(get_vjp("fake_op_2")) == ensure_eager_tensor("data_vjp")
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="data_vjp"
+    ):
+        from tests.testing_utils import require_callable
+
+        assert require_callable(get_vjp)("fake_op_2") == "data_vjp"
 
     # Test get_vjp_from_data and has_vjp
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
@@ -59,7 +78,9 @@ def test_vjp_registry_coverage() -> None:
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=None):
         assert has_vjp("fake_op") is True
         assert has_vjp("NonExistentOp") is False
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="something"):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="something"
+    ):
         assert has_vjp("fake_op") is True
 
 
@@ -67,7 +88,23 @@ def test_vjp_registry_lazy_load() -> None:
     """Test lazy loading in get_vjp when entry is initially missing from the registry."""
     from unittest.mock import patch
 
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
+
+    def lazy_vjp_fn(g: LogicalGraph, n: LogicalNode, cot: str) -> str:
+        """Lazy VJP stub.
+
+        Args:
+            g: Graph.
+            n: Node.
+            cot: Cotangent ID.
+
+        Returns:
+            str: Sentinel cotangent ID.
+        """
+        del g, n, cot
+        return "lazy_loaded_vjp"
 
     def mock_get_data(name: str) -> None:
         """Mock loader that populates registry on demand.
@@ -75,12 +112,14 @@ def test_vjp_registry_lazy_load() -> None:
         Args:
             name: Test parameter `name`.
         """
-        ensure_eager_tensor(_VJP_REGISTRY)[name] = "lazy_loaded_vjp"
+        _VJP_REGISTRY[name] = lazy_vjp_fn
         return None
 
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data
+    ):
         res = get_vjp("test_lazy_op")
-        assert ensure_eager_tensor(res) == ensure_eager_tensor("lazy_loaded_vjp")
+        assert id(res) == id(lazy_vjp_fn)
 
 
 def test_has_vjp_not_in_registry_or_data() -> None:
@@ -99,7 +138,9 @@ def test_has_vjp_data() -> None:
 
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
 
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=lambda x: x):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=lambda x: x
+    ):
         assert has_vjp("AbsolutelyMissingOpTypeXYZ123_Data") is True
 
 
@@ -111,9 +152,7 @@ def test_vjp_registry_full_branches() -> None:
     import yaml
 
     import ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry as vr
-    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import (
-        load_primitive_vjp_rules,
-    )
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import load_primitive_vjp_rules
 
     vr._DECLARATIVE_VJP_CACHE = None
     # Cache hit branch (line 43)

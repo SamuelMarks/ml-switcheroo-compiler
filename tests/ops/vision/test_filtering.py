@@ -4,20 +4,31 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+from pytest_mock import MockerFixture
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.vision.filtering import gaussian_blur, iou, median_filter, non_max_suppression, random_gaussian_blur, random_sharpness, sharpen
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.ops.vision.filtering import (
+    gaussian_blur,
+    iou,
+    median_filter,
+    non_max_suppression,
+    random_gaussian_blur,
+    random_sharpness,
+    sharpen,
+)
+from tests.testing_utils import ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -29,7 +40,7 @@ class MockTensor:
         self.data = [1, 2]
 
 
-def test_vision_filtering_funcs(mocker: EagerTensorProtocol) -> None:
+def test_vision_filtering_funcs(mocker: MockerFixture) -> None:
     """Test function test_vision_filtering_funcs.
 
     Args:
@@ -40,7 +51,7 @@ def test_vision_filtering_funcs(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.vision.filtering._emit_shape_node", return_value="node")
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_op")
     mock_op = mocker.MagicMock()
-    ensure_mutable(mock_get_op).return_value = ensure_eager_tensor(mocker.MagicMock(return_value=mock_op))
+    mock_get_op.return_value = mocker.MagicMock(return_value=mock_op)
     assert gaussian_blur(t) == "node"
     assert gaussian_blur(t, kernel_size=3, sigma=1) == "node"
     assert median_filter(t, 3) == "node"
@@ -51,15 +62,15 @@ def test_vision_filtering_funcs(mocker: EagerTensorProtocol) -> None:
     assert random_sharpness(t, 1.0) == "node"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3)))
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(gaussian_blur(t)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(median_filter(t, 3)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(iou(t, t)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(non_max_suppression(t, t, 1)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)), raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(gaussian_blur(t)).config.shape == (2, 3)
+    assert ensure_tensor(median_filter(t, 3)).config.shape == (2, 3)
+    assert ensure_tensor(iou(t, t)).config.shape == (2, 3)
+    assert ensure_tensor(non_max_suppression(t, t, 1)).config.shape == (2, 3)
 
 
-def test_vision_filtering_kwargs(mocker: EagerTensorProtocol) -> None:
+def test_vision_filtering_kwargs(mocker: MockerFixture) -> None:
     """Test function test_vision_filtering_kwargs.
 
     Args:
@@ -70,11 +81,11 @@ def test_vision_filtering_kwargs(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.vision.filtering._emit_shape_node", return_value="node")
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_op")
     mock_op = mocker.MagicMock()
-    ensure_mutable(mock_get_op).return_value = ensure_eager_tensor(mocker.MagicMock(return_value=mock_op))
+    mock_get_op.return_value = mocker.MagicMock(return_value=mock_op)
     assert gaussian_blur(t, config_obj="cfg") == "node"
 
 
-def test_vision_filtering_eager_extra(mocker: EagerTensorProtocol) -> None:
+def test_vision_filtering_eager_extra(mocker: MockerFixture) -> None:
     """Test function test_vision_filtering_eager_extra.
 
     Args:
@@ -83,14 +94,14 @@ def test_vision_filtering_eager_extra(mocker: EagerTensorProtocol) -> None:
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3)))
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(sharpen(t)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(random_gaussian_blur(t, 3, 1)).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(random_sharpness(t, 1.0)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)), raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(sharpen(t)).config.shape == (2, 3)
+    assert ensure_tensor(random_gaussian_blur(t, 3, 1)).config.shape == (2, 3)
+    assert ensure_tensor(random_sharpness(t, 1.0)).config.shape == (2, 3)
 
 
-def test_median_filter_tuple(mocker: EagerTensorProtocol) -> None:
+def test_median_filter_tuple(mocker: MockerFixture) -> None:
     """Test function test_median_filter_tuple.
 
     Args:

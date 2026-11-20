@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.hardware_compilers import (
     ClangCompiler,
@@ -24,12 +27,10 @@ from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_hardware_compiler_protocol_conformance() -> None:
@@ -121,7 +122,14 @@ def test_hardware_device_profiles_limits() -> None:
 
 def test_advanced_hardware_kernel_patterns() -> None:
     """Verify code generation for advanced reduction, matrix multiplication, and convolution patterns."""
-    for pattern in ["warp_shuffle_reduce", "shared_memory_tree_reduce", "tiled_matmul_2d", "conv2d_shared_halo", "maxpool2d_dynamic", "avgpool2d_dynamic"]:
+    for pattern in [
+        "warp_shuffle_reduce",
+        "shared_memory_tree_reduce",
+        "tiled_matmul_2d",
+        "conv2d_shared_halo",
+        "maxpool2d_dynamic",
+        "avgpool2d_dynamic",
+    ]:
         g = IRGraph(name=f"test_{pattern}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(16, 16))
         node = IRNode(id="p_op", op_type=pattern, inputs=["in0"], shape_metadata=(16, 16))
@@ -129,7 +137,7 @@ def test_advanced_hardware_kernel_patterns() -> None:
         g.nodes["p_op"] = node
         g.inputs = ["in0"]
         g.outputs = ["p_op"]
-        ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, node])
+        g.sorted_nodes = [in0, node]
 
         cuda_code = CudaCodeGenerator(g).generate()
         assert pattern in cuda_code or "kernel" in cuda_code
@@ -148,7 +156,21 @@ def test_advanced_hardware_kernel_patterns() -> None:
         assert ClangCompiler().validate_syntax(cpp_code)
 
 
-def _test_all_registered_operations_hardware_codegen_parity_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestAllRegisteredOperationsHardwareCodegenParityState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_all_registered_operations_hardware_codegen_parity` split helpers."""
+
+    binary_ops: set[str]
+    clang_comp: ClangCompiler
+    cuda_comp: CUDACompiler
+    hip_comp: HIPCompiler
+    metal_comp: MetalCompiler
+    sample_ops: list[str]
+    supported_ops: list[str]
+
+
+def _test_all_registered_operations_hardware_codegen_parity_part_1(
+    _state: _TestAllRegisteredOperationsHardwareCodegenParityState,
+) -> None:
     """Execute part 1 of test_all_registered_operations_hardware_codegen_parity.
 
     Args:
@@ -208,18 +230,38 @@ def _test_all_registered_operations_hardware_codegen_parity_part_1(_state: dict[
     metal_comp = MetalCompiler()
     clang_comp = ClangCompiler()
 
-    binary_ops = {"Add", "Sub", "Mul", "Div", "Pow", "Minimum", "Maximum", "MatMul", "BatchMatMul", "Einsum", "Conv2D", "Conv3D"}
-    _state.update(ensure_tensor_dict({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp, "hip_comp": hip_comp}))
-    _state.update(ensure_tensor_dict({"metal_comp": metal_comp, "supported_ops": supported_ops}))
+    binary_ops = {
+        "Add",
+        "Sub",
+        "Mul",
+        "Div",
+        "Pow",
+        "Minimum",
+        "Maximum",
+        "MatMul",
+        "BatchMatMul",
+        "Einsum",
+        "Conv2D",
+        "Conv3D",
+    }
+    _state.update({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp, "hip_comp": hip_comp})
+    _state.update({"metal_comp": metal_comp, "supported_ops": supported_ops})
 
 
-def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_registered_operations_hardware_codegen_parity_part_2(
+    _state: _TestAllRegisteredOperationsHardwareCodegenParityState,
+) -> None:
     """Execute part 2 of test_all_registered_operations_hardware_codegen_parity.
 
     Args:
         _state: Shared test state dictionary.
     """
-    binary_ops, clang_comp, cuda_comp, hip_comp = _state["binary_ops"], _state["clang_comp"], _state["cuda_comp"], _state["hip_comp"]
+    binary_ops, clang_comp, cuda_comp, hip_comp = (
+        _state["binary_ops"],
+        _state["clang_comp"],
+        _state["cuda_comp"],
+        _state["hip_comp"],
+    )
     metal_comp, supported_ops = _state["metal_comp"], _state["supported_ops"]
     for op_name in supported_ops:
         g = IRGraph(name=f"test_supp_{op_name}")
@@ -228,15 +270,15 @@ def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[
         if op_name in binary_ops:
             in1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4))
             g.nodes["in1"] = in1
-            node = ensure_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
+            node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
             g.inputs = ["in0", "in1"]
-            ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, in1, node])
+            pytest.MonkeyPatch().setattr(g, "sorted_nodes", [in0, in1, node], raising=False)
         else:
-            node = ensure_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+            node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
             g.inputs = ["in0"]
-            ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, node])
-        ensure_eager_tensor(g.nodes)[node.id] = node
-        ensure_mutable(g).outputs = ensure_eager_tensor([node.id])
+            pytest.MonkeyPatch().setattr(g, "sorted_nodes", [in0, node], raising=False)
+        g.nodes[node.id] = node
+        pytest.MonkeyPatch().setattr(g, "outputs", [node.id], raising=False)
 
         cuda_src = CudaCodeGenerator(g).generate()
         assert cuda_comp.validate_syntax(cuda_src)
@@ -249,11 +291,13 @@ def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[
 
         cpp_src = CppGenerator(g).generate()
         assert clang_comp.validate_syntax(cpp_src)
-    _state.update(ensure_tensor_dict({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp}))
-    _state.update(ensure_tensor_dict({"hip_comp": hip_comp, "metal_comp": metal_comp, "supported_ops": supported_ops}))
+    _state.update({"binary_ops": binary_ops, "clang_comp": clang_comp, "cuda_comp": cuda_comp})
+    _state.update({"hip_comp": hip_comp, "metal_comp": metal_comp, "supported_ops": supported_ops})
 
 
-def _test_all_registered_operations_hardware_codegen_parity_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_registered_operations_hardware_codegen_parity_part_3(
+    _state: _TestAllRegisteredOperationsHardwareCodegenParityState,
+) -> None:
     """Execute part 3 of test_all_registered_operations_hardware_codegen_parity.
 
     Args:
@@ -262,26 +306,33 @@ def _test_all_registered_operations_hardware_codegen_parity_part_3(_state: dict[
     all_ops = list(_YAML_REGISTRY.keys())
     assert len(all_ops) >= 4000
     sample_ops = all_ops[::80]  # ~50 representative operations covering the spectrum
-    _state.update(ensure_tensor_dict({"all_ops": all_ops, "sample_ops": sample_ops}))
+    _state.update({"sample_ops": sample_ops})
 
 
-def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_registered_operations_hardware_codegen_parity_part_4(
+    _state: _TestAllRegisteredOperationsHardwareCodegenParityState,
+) -> None:
     """Execute part 4 of test_all_registered_operations_hardware_codegen_parity.
 
     Args:
         _state: Shared test state dictionary.
     """
-    clang_comp, cuda_comp, hip_comp, metal_comp = _state["clang_comp"], _state["cuda_comp"], _state["hip_comp"], _state["metal_comp"]
+    clang_comp, cuda_comp, hip_comp, metal_comp = (
+        _state["clang_comp"],
+        _state["cuda_comp"],
+        _state["hip_comp"],
+        _state["metal_comp"],
+    )
     sample_ops = _state["sample_ops"]
     for op_name in sample_ops:
         g = IRGraph(name=f"test_{op_name}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
-        node = ensure_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+        node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
         g.nodes["in0"] = in0
-        ensure_eager_tensor(g.nodes)[node.id] = node
+        g.nodes[node.id] = node
         g.inputs = ["in0"]
-        ensure_mutable(g).outputs = ensure_eager_tensor([node.id])
-        ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in0, node])
+        pytest.MonkeyPatch().setattr(g, "outputs", [node.id], raising=False)
+        pytest.MonkeyPatch().setattr(g, "sorted_nodes", [in0, node], raising=False)
 
         # CUDA code generation and syntax validation
         try:
@@ -311,7 +362,7 @@ def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[
 
 def test_all_registered_operations_hardware_codegen_parity() -> None:
     """Test code generation for registered operations across CUDA, ROCm, Metal, and LLVM/C++."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestAllRegisteredOperationsHardwareCodegenParityState = {}
     _test_all_registered_operations_hardware_codegen_parity_part_1(_state)
     _test_all_registered_operations_hardware_codegen_parity_part_2(_state)
     _test_all_registered_operations_hardware_codegen_parity_part_3(_state)
@@ -321,10 +372,7 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
 
 def test_sass_and_rdna_assembly_compliance() -> None:
     """Verify SASS and RDNA assembly kernels against hardware compliance checkers."""
-    from ml_ecosystem_snapshots.compliance import (
-        check_rdna_assembly_compliance,
-        check_sass_assembly_compliance,
-    )
+    from ml_ecosystem_snapshots.compliance import check_rdna_assembly_compliance, check_sass_assembly_compliance
 
     # Valid SASS kernel instruction sequence on SM80
     sass_snippet = """
@@ -332,12 +380,12 @@ def test_sass_and_rdna_assembly_compliance() -> None:
     FADD R4, R0, R5;
     """
     res_sass = check_sass_assembly_compliance(sass_snippet, sm_arch="sm_80")
-    assert res_sass["is_compliant"] is True
-    assert res_sass["verified_instructions"] >= 1
+    assert res_sass.is_compliant is True
+    assert res_sass.verified_instructions >= 1
 
     # Invalid SASS instruction
     res_sass_invalid = check_sass_assembly_compliance("INVALID_UNKNOWN_MNEMONIC R0, R1;", sm_arch="sm_80")
-    assert res_sass_invalid["is_compliant"] is False
+    assert res_sass_invalid.is_compliant is False
 
     # Valid RDNA assembly on GFX10/RDNA1
     rdna_snippet = """
@@ -345,9 +393,9 @@ def test_sass_and_rdna_assembly_compliance() -> None:
     v_mul_f32_e32 v3, v0, v4
     """
     res_rdna = check_rdna_assembly_compliance(rdna_snippet, gfx_arch="GFX10/RDNA1")
-    assert res_rdna["is_compliant"] is True
-    assert res_rdna["verified_instructions"] >= 1
+    assert res_rdna.is_compliant is True
+    assert res_rdna.verified_instructions >= 1
 
     # Invalid RDNA instruction
     res_rdna_invalid = check_rdna_assembly_compliance("v_invalid_instruction_xyz v0, v1", gfx_arch="GFX10/RDNA1")
-    assert res_rdna_invalid["is_compliant"] is False
+    assert res_rdna_invalid.is_compliant is False

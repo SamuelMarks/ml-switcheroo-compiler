@@ -3,26 +3,9 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, LogicalGraph
-
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-
-def _is_poly_attr_dict(
-    val: dict[str, AttributeValue],
-) -> typing.TypeGuard[dict[str, LogicalGraph | AttributeValue]]:
-    """Type guard narrowing an attributes dict to accept `LogicalGraph` entries.
-
-    Args:
-        val (dict[str, AttributeValue]): Attributes dict.
-
-    Returns:
-        bool: True if val is a dict.
-    """
-    return isinstance(val, dict)
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, LogicalGraph
 
 
 def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
@@ -31,7 +14,7 @@ def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) 
     Args:
         node (IRNode): node.
         graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
+        new_nodes (dict[str, IRNode]): new nodes.
 
     Returns:
         IRNode: node.
@@ -73,7 +56,7 @@ def _lower_ctc_greedy_decoder(node: IRNode, graph: IRGraph, new_nodes: dict[str,
     Args:
         node (IRNode): node.
         graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
+        new_nodes (dict[str, IRNode]): new nodes.
 
     Returns:
         IRNode: node.
@@ -137,13 +120,11 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     Args:
         node (IRNode): node.
         graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
+        new_nodes (dict[str, IRNode]): new nodes.
 
     Returns:
         IRNode: node.
     """
-    from ml_switcheroo_ir import LogicalGraph
-
     node.op_type = "WhileLoop"
     cond_graph = LogicalGraph(name="pava_cond")
     body_graph = LogicalGraph(name="pava_body")
@@ -155,16 +136,15 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     cond_graph.outputs = ["cond_out"]
 
     body_graph.nodes["next_idx"] = IRNode(id="next_idx", op_type="Add", inputs=["idx"], attributes={"value": 1})
-    body_graph.nodes["false_violations"] = IRNode(id="false_violations", op_type="Constant", inputs=[], attributes={"value": False})
+    body_graph.nodes["false_violations"] = IRNode(
+        id="false_violations", op_type="Constant", inputs=[], attributes={"value": False}
+    )
     body_graph.outputs = ["array", "next_idx", "false_violations"]
 
     node.subgraphs["cond"] = cond_graph
     node.subgraphs["body"] = body_graph
-    attrs: dict[str, AttributeValue] = {}
+    attrs: dict[str, AttributeValue] = {"cond": cond_graph, "body": body_graph}
     node.attributes = attrs
-    assert _is_poly_attr_dict(attrs)
-    attrs["cond"] = cond_graph
-    attrs["body"] = body_graph
 
     return node
 
@@ -182,7 +162,11 @@ def _load_poly_rules() -> dict[str, dict[str, AttributeValue]]:
         loaded = yaml.safe_load(f)
         raw_rules = loaded.get("rules", {}) if isinstance(loaded, dict) else {}
         assert isinstance(raw_rules, dict)
-        return {str(op_k): {str(rk): rv for rk, rv in op_v.items()} for op_k, op_v in raw_rules.items() if isinstance(op_v, dict)}
+        return {
+            str(op_k): {str(rk): rv for rk, rv in op_v.items()}
+            for op_k, op_v in raw_rules.items()
+            if isinstance(op_v, dict)
+        }
 
 
 def polyfill_lowering_pass(graph: IRGraph) -> bool:

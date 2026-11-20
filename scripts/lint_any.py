@@ -1,4 +1,7 @@
-"""AST-based linter to detect Any, object usages, disguised Any aliases, stringified Any/object casts, and type-ignore comments across src/, scripts/, and tests/."""
+"""AST-based linter to detect Any, object usages, disguised Any aliases, stringified Any/object casts, and.
+
+type-ignore comments across src/, scripts/, and tests/.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +18,113 @@ DEFAULT_TARGET_DIRS: tuple[str, ...] = (
     "scripts",
     "tests",
 )
+
+MAX_UNION_ALIAS_MEMBERS: int = 8
+
+_FORBIDDEN_MEGA_UNION_NAMES: frozenset[str] = frozenset(
+    {
+        "AnyType",
+        "TensorOrScalar",
+        "EagerValue",
+        "GradValue",
+        "EvalValue",
+        "AttrValue",
+    }
+)
+
+_PRIMITIVE_TYPE_NAMES: frozenset[str] = frozenset({"int", "float", "str", "bool", "bytes", "complex"})
+
+_META_RUNTIME_TYPE_NAMES: frozenset[str] = frozenset(
+    {
+        "ModuleType",
+        "FunctionType",
+        "BuiltinFunctionType",
+        "MethodType",
+        "type",
+        "BaseModel",
+    }
+)
+
+
+def _flatten_union_members(expr: ast.expr) -> list[ast.expr]:
+    """Recursively flatten top-level `Union[...]`, `A | B`, and `Annotated[Union[...], ...]` members.
+
+    Args:
+        expr (ast.expr): Type alias value AST expression.
+
+    Returns:
+        list[ast.expr]: Flattened union member expressions.
+    """
+    if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.BitOr):
+        return _flatten_union_members(expr.left) + _flatten_union_members(expr.right)
+    if isinstance(expr, ast.Subscript):
+        base = expr.value
+        base_name = base.id if isinstance(base, ast.Name) else (base.attr if isinstance(base, ast.Attribute) else "")
+        if base_name == "Annotated" and isinstance(expr.slice, ast.Tuple) and expr.slice.elts:
+            return _flatten_union_members(expr.slice.elts[0])
+        if base_name == "Union":
+            if isinstance(expr.slice, ast.Tuple):
+                out: list[ast.expr] = []
+                for elt in expr.slice.elts:
+                    out.extend(_flatten_union_members(elt))
+                return out
+            return _flatten_union_members(expr.slice)
+    return [expr]
+
+
+def _collect_union_identifiers(expr: ast.expr) -> set[str]:
+    """Collect all type identifier stems referenced across a union AST expression (including string forward refs).
+
+    Args:
+        expr (ast.expr): Union AST expression.
+
+    Returns:
+        set[str]: Referenced type identifier names.
+    """
+    names: set[str] = set()
+    for sub in ast.walk(expr):
+        if isinstance(sub, ast.Name):
+            names.add(sub.id)
+        elif isinstance(sub, ast.Attribute):
+            names.add(sub.attr)
+        elif isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+            try:
+                parsed = ast.parse(sub.value, mode="eval")
+            except SyntaxError:
+                continue
+            names.update(_collect_union_identifiers(parsed.body))
+    return names
+
+
+def _check_type_alias_value(file_path: str, lineno: int, alias_name: str, value: ast.expr) -> list[str]:
+    """Inspect a type alias assignment for banned mega-union names or kitchen-sink union definitions.
+
+    Args:
+        file_path (str): Source file path for error reporting.
+        lineno (int): Line number of the alias definition.
+        alias_name (str): Assigned alias identifier.
+        value (ast.expr): RHS expression of the assignment.
+
+    Returns:
+        list[str]: Violation messages if `alias_name` / `value` is a prohibited mega-union.
+    """
+    if alias_name in _FORBIDDEN_MEGA_UNION_NAMES:
+        return [f"{file_path}:{lineno}: disguised Any alias '{alias_name}'"]
+    members = _flatten_union_members(value)
+    if len(members) <= 1:
+        return []
+    if len(members) > MAX_UNION_ALIAS_MEMBERS:
+        return [
+            f"{file_path}:{lineno}: prohibited kitchen-sink union alias '{alias_name}' "
+            f"({len(members)} members > {MAX_UNION_ALIAS_MEMBERS})"
+        ]
+    type_ids = _collect_union_identifiers(value)
+    if (type_ids & _PRIMITIVE_TYPE_NAMES) and len(type_ids & _META_RUNTIME_TYPE_NAMES) >= 2:
+        return [
+            f"{file_path}:{lineno}: prohibited kitchen-sink union alias '{alias_name}' "
+            "combining primitives and runtime meta-types"
+        ]
+    return []
 
 
 def _annotation_contains_any_or_object(node: ast.AST | None) -> list[str]:
@@ -72,9 +182,16 @@ def _check_cast_call(file_path: str, node: ast.Call) -> list[str]:
     Returns:
         list[str]: Violations found in cast target type or `object()` call.
     """
-    if (isinstance(node.func, ast.Name) and node.func.id == "object") or (isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == "builtins" and node.func.attr == "object"):
+    if (isinstance(node.func, ast.Name) and node.func.id == "object") or (
+        isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "builtins"
+        and node.func.attr == "object"
+    ):
         return [f"{file_path}:{node.lineno}: prohibited 'object()' instantiation"]
-    is_cast = (isinstance(node.func, ast.Name) and node.func.id == "cast") or (isinstance(node.func, ast.Attribute) and node.func.attr == "cast")
+    is_cast = (isinstance(node.func, ast.Name) and node.func.id == "cast") or (
+        isinstance(node.func, ast.Attribute) and node.func.attr == "cast"
+    )
     if not is_cast or not node.args:
         return []
     first_arg = node.args[0]
@@ -83,8 +200,13 @@ def _check_cast_call(file_path: str, node: ast.Call) -> list[str]:
             parsed = ast.parse(first_arg.value, mode="eval")
         except SyntaxError:
             return []
-        return [f"{file_path}:{node.lineno}: prohibited string-literal cast '{hit}'" for hit in _annotation_contains_any_or_object(parsed)]
-    return [f"{file_path}:{node.lineno}: prohibited cast '{hit}'" for hit in _annotation_contains_any_or_object(first_arg)]
+        return [
+            f"{file_path}:{node.lineno}: prohibited string-literal cast '{hit}'"
+            for hit in _annotation_contains_any_or_object(parsed)
+        ]
+    return [
+        f"{file_path}:{node.lineno}: prohibited cast '{hit}'" for hit in _annotation_contains_any_or_object(first_arg)
+    ]
 
 
 def _scan_type_ignore_comments(file_path: str, source: str) -> list[str]:
@@ -107,8 +229,22 @@ def _scan_type_ignore_comments(file_path: str, source: str) -> list[str]:
     return violations
 
 
+def _is_type_alias_annotation(ann: ast.expr) -> bool:
+    """Return True if `ann` is `TypeAlias` or `typing.TypeAlias`.
+
+    Args:
+        ann (ast.expr): Variable annotation AST node.
+
+    Returns:
+        bool: True if annotation declares an explicit `TypeAlias`.
+    """
+    return (isinstance(ann, ast.Name) and ann.id == "TypeAlias") or (
+        isinstance(ann, ast.Attribute) and ann.attr == "TypeAlias"
+    )
+
+
 def _check_import_or_assign_node(file_path: str, node: ast.AST, is_outside_backends: bool) -> list[str]:
-    """Check an import or assignment AST node for prohibited `Any`, `EagerValue`, or `AnyType`.
+    """Check an import or assignment AST node for prohibited `Any`, `EagerValue`/`BackendArg`, or kitchen-sink unions.
 
     Args:
         file_path (str): File path for error reporting.
@@ -121,10 +257,18 @@ def _check_import_or_assign_node(file_path: str, node: ast.AST, is_outside_backe
     if isinstance(node, ast.ImportFrom):
         res = [f"{file_path}:{node.lineno}: prohibited import 'Any'" for alias in node.names if alias.name == "Any"]
         if is_outside_backends:
-            res.extend(f"{file_path}:{node.lineno}: prohibited import 'EagerValue' outside backends/" for alias in node.names if alias.name == "EagerValue")
+            res.extend(
+                f"{file_path}:{node.lineno}: prohibited import '{alias.name}' outside backends/"
+                for alias in node.names
+                if alias.name in ("EagerValue", "BackendArg")
+            )
         return res
     if isinstance(node, ast.Assign):
-        return [f"{file_path}:{node.lineno}: disguised Any alias 'AnyType'" for target in node.targets if isinstance(target, ast.Name) and target.id == "AnyType"]
+        out: list[str] = []
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                out.extend(_check_type_alias_value(file_path, node.lineno, target.id, node.value))
+        return out
     return []
 
 
@@ -133,7 +277,7 @@ def _check_node_for_any_or_object(
     node: ast.AST,
     is_outside_backends: bool,
 ) -> list[str]:
-    """Check a single AST node for Any, object, AnyType, or EagerValue violations.
+    """Check a single AST node for Any, object, AnyType, mega-unions, or EagerValue/BackendArg violations.
 
     Args:
         file_path (str): File path for error reporting.
@@ -149,12 +293,27 @@ def _check_node_for_any_or_object(
     elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         violations.extend(_check_function_annotations(file_path, node))
     elif isinstance(node, ast.AnnAssign):
-        violations.extend(f"{file_path}:{node.lineno}: prohibited variable annotation '{hit}'" for hit in _annotation_contains_any_or_object(node.annotation))
+        violations.extend(
+            f"{file_path}:{node.lineno}: prohibited variable annotation '{hit}'"
+            for hit in _annotation_contains_any_or_object(node.annotation)
+        )
+        if node.value is not None and isinstance(node.target, ast.Name) and _is_type_alias_annotation(node.annotation):
+            violations.extend(_check_type_alias_value(file_path, node.lineno, node.target.id, node.value))
     elif isinstance(node, ast.Call):
         violations.extend(_check_cast_call(file_path, node))
     elif isinstance(node, ast.ClassDef):
-        violations.extend(f"{file_path}:{node.lineno}: prohibited 'object' base class" for base in node.bases if (isinstance(base, ast.Name) and base.id == "object") or (isinstance(base, ast.Attribute) and base.attr == "object"))
-    elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "typing" and node.attr == "Any":
+        violations.extend(
+            f"{file_path}:{node.lineno}: prohibited 'object' base class"
+            for base in node.bases
+            if (isinstance(base, ast.Name) and base.id == "object")
+            or (isinstance(base, ast.Attribute) and base.attr == "object")
+        )
+    elif (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "typing"
+        and node.attr == "Any"
+    ):
         violations.append(f"{file_path}:{node.lineno}: prohibited usage 'typing.Any'")
     elif isinstance(node, ast.Name) and node.id == "object":
         violations.append(f"{file_path}:{node.lineno}: prohibited usage 'object'")
@@ -180,7 +339,9 @@ def scan_file_for_any(file_path: str) -> list[str]:
 
     violations: list[str] = _scan_type_ignore_comments(file_path, source)
     norm_parts = os.path.normpath(file_path).split(os.sep)
-    is_outside_backends = "ml_switcheroo_compiler" in norm_parts and "backends" not in norm_parts and "tests" not in norm_parts
+    is_outside_backends = (
+        "ml_switcheroo_compiler" in norm_parts and "backends" not in norm_parts and "tests" not in norm_parts
+    )
 
     for node in ast.walk(tree):
         violations.extend(_check_node_for_any_or_object(file_path, node, is_outside_backends))
@@ -237,5 +398,5 @@ def main(argv: typing.Sequence[str] | None = None) -> int:
     sys.exit(0)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

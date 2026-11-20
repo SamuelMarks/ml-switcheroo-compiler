@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.state_manager import _build_functional_outputs, _process_assign_node, _rewrite_node, lift_state
+from ml_switcheroo_compiler.core.state_manager import (
+    _build_functional_outputs,
+    _process_assign_node,
+    _rewrite_node,
+    lift_state,
+)
 
 
 def test_state_manager() -> None:

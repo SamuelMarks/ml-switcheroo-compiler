@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import inspect
 import sys
+import types
 import typing
 import warnings
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -13,134 +15,144 @@ import pytest
 import ml_switcheroo_compiler.backends.eager.core_math_ops as cmo
 import ml_switcheroo_compiler.backends.eager.core_math_ops as core_math_ops
 import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mod, ensure_mutable, ensure_tensor_dict
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    BackendOperand,
+    EagerRegisteredCallable,
+)
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.core.shape import OpValue
+from tests.testing_utils import EagerTensorProtocol, MockTestStub, extract_test_shape
 
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-
-class _BareMod:
+class _BareMod(MockTestStub):
     """Empty dummy module without math functions."""
 
 
-def _test_core_math_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestCoreMathOpsCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_core_math_ops_coverage` split helpers."""
+
+    dummy: types.ModuleType
+    res: EagerTensorProtocol | OpValue
+
+
+def _test_core_math_ops_coverage_part_1(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 1 of test_core_math_ops_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    res = core_math_ops._true_divide(ensure_eager_tensor(np), 10.0, 2.0)
+    res = core_math_ops._true_divide(np, 10.0, 2.0)
     assert res == 5.0
-    res = core_math_ops._true_divide(ensure_mod(_BareMod), 10.0, 2.0)
+    res = core_math_ops._true_divide(_BareMod(), 10.0, 2.0)
     assert res is None
-    res = core_math_ops._fft(ensure_eager_tensor(np), np.array([1.0, 2.0]))
+    res = core_math_ops._fft(np, np.array([1.0, 2.0]))
     assert res is not None
-    res = core_math_ops._rfft(ensure_eager_tensor(np), np.array([1.0, 2.0]))
+    res = core_math_ops._rfft(np, np.array([1.0, 2.0]))
     assert res is not None
-    res = core_math_ops._fftn(ensure_eager_tensor(np), np.array([1.0, 2.0]))
+    res = core_math_ops._fftn(np, np.array([1.0, 2.0]))
     assert res is not None
-    res = core_math_ops._fft(ensure_mod(_BareMod), np.array([1.0, 2.0]))
+    res = core_math_ops._fft(_BareMod(), np.array([1.0, 2.0]))
     assert res is None
-    _state.update(ensure_tensor_dict({"res": res}))
+    _state.update({"res": res})
 
 
-def _test_core_math_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_core_math_ops_coverage_part_2(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 2 of test_core_math_ops_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    res = core_math_ops._rfft(ensure_mod(_BareMod), np.array([1.0, 2.0]))
+    res = core_math_ops._rfft(_BareMod(), np.array([1.0, 2.0]))
     assert res is None
-    res = core_math_ops._fftn(ensure_mod(_BareMod), np.array([1.0, 2.0]))
+    res = core_math_ops._fftn(_BareMod(), np.array([1.0, 2.0]))
     assert res is None
-    res = core_math_ops._erf(ensure_eager_tensor(np), 0.5)
+    res = core_math_ops._erf(np, 0.5)
     assert res is not None
-    res = core_math_ops._erfc(ensure_eager_tensor(np), 0.5)
+    res = core_math_ops._erfc(np, 0.5)
     assert res is not None
-    res = core_math_ops._expm1(ensure_eager_tensor(np), 0.5)
+    res = core_math_ops._expm1(np, 0.5)
     assert res is not None
-    _state.update(ensure_tensor_dict({"res": res}))
+    _state.update({"res": res})
 
 
-def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_core_math_ops_coverage_part_3(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 3 of test_core_math_ops_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
 
-    class DummyMock:
+    class DummyMock(MockTestStub):
         """Test class DummyMock."""
 
         @staticmethod
-        def sign(x: EagerValue) -> EagerValue:
+        def sign(x: BackendArg) -> BackendArg:
             """Test function sign.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `sign`.
+                BackendArg: Computed output value from `sign`.
             """
-            return ensure_eager_tensor(ensure_callable(np.sign)(x))
+            return np.sign(ensure_ndarray(x))
 
         @staticmethod
-        def abs(x: EagerValue) -> EagerValue:
+        def abs(x: BackendArg) -> BackendArg:
             """Test function abs.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `abs`.
+                BackendArg: Computed output value from `abs`.
             """
-            return ensure_eager_tensor(ensure_callable(np.abs)(x))
+            return np.abs(ensure_ndarray(x))
 
         @staticmethod
-        def exp(x: EagerValue) -> EagerValue:
+        def exp(x: BackendArg) -> BackendArg:
             """Test function exp.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `exp`.
+                BackendArg: Computed output value from `exp`.
             """
-            return ensure_eager_tensor(ensure_callable(np.exp)(x))
+            return np.exp(ensure_ndarray(x))
 
         @staticmethod
-        def log(x: EagerValue) -> EagerValue:
+        def log(x: BackendArg) -> BackendArg:
             """Test function log.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `log`.
+                BackendArg: Computed output value from `log`.
             """
-            return ensure_eager_tensor(ensure_callable(np.log)(x))
+            return np.log(ensure_ndarray(x))
 
         @staticmethod
-        def sqrt(x: EagerValue) -> EagerValue:
+        def sqrt(x: BackendArg) -> BackendArg:
             """Test function sqrt.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `sqrt`.
+                BackendArg: Computed output value from `sqrt`.
             """
-            return ensure_eager_tensor(ensure_callable(np.sqrt)(x))
+            return np.sqrt(ensure_ndarray(x))
 
     dummy = DummyMock()
-    res = core_math_ops._erf(ensure_mod(dummy), 0.5)
+    res = core_math_ops._erf(dummy, 0.5)
     assert res is not None
-    _state.update(ensure_tensor_dict({"DummyMock": DummyMock, "dummy": dummy, "res": res}))
+    _state.update({"dummy": dummy, "res": res})
 
 
-def _test_core_math_ops_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_core_math_ops_coverage_part_4(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 4 of test_core_math_ops_coverage.
 
     Args:
@@ -153,16 +165,16 @@ def _test_core_math_ops_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     assert res is not None
     res = core_math_ops._erfinv(dummy, 0.5)
     assert res is not None
-    res = core_math_ops._nan_to_num(ensure_eager_tensor(np), np.array([np.nan, 1.0]))
+    res = core_math_ops._nan_to_num(np, np.array([np.nan, 1.0]))
     assert res is not None
     res = core_math_ops._nan_to_num(dummy, np.array([np.nan, 1.0]))
     assert res is not None
-    res = core_math_ops._einsum(ensure_eager_tensor(np), "i,i->", np.array([1.0]), np.array([2.0]))
-    _state.update(ensure_tensor_dict({"res": res}))
-    _state.update(ensure_tensor_dict({"dummy": dummy}))
+    res = core_math_ops._einsum(np, "i,i->", np.array([1.0]), np.array([2.0]))
+    _state.update({"res": res})
+    _state.update({"dummy": dummy})
 
 
-def _test_core_math_ops_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_core_math_ops_coverage_part_5(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 5 of test_core_math_ops_coverage.
 
     Args:
@@ -170,20 +182,20 @@ def _test_core_math_ops_coverage_part_5(_state: dict[str, EagerTensorProtocol]) 
     """
     (dummy, res) = (_state["dummy"], _state["res"])
     assert res is not None
-    res = ensure_eager_tensor(core_math_ops._einsum(dummy, "i,i->", np.array([1.0]), np.array([2.0])))
+    res = core_math_ops._einsum(dummy, "i,i->", np.array([1.0]), np.array([2.0]))
     assert res is not None
-    res = ensure_eager_tensor(core_math_ops._allclose(ensure_eager_tensor(np), np.array([1.0]), np.array([1.0])))
+    res = core_math_ops._allclose(np, np.array([1.0]), np.array([1.0]))
     assert res is not None
-    res = ensure_eager_tensor(core_math_ops._allclose(dummy, np.array([1.0]), np.array([1.0])))
+    res = core_math_ops._allclose(dummy, np.array([1.0]), np.array([1.0]))
     assert res is not None
-    res = ensure_eager_tensor(core_math_ops._psum(ensure_eager_tensor(np), np.array([1.0])))
+    res = core_math_ops._psum(np, np.array([1.0]))
     assert res is not None
-    res = ensure_eager_tensor(core_math_ops._pmean(ensure_eager_tensor(np), np.array([1.0])))
-    _state.update(ensure_tensor_dict({"res": res}))
-    _state.update(ensure_tensor_dict({"dummy": dummy}))
+    res = core_math_ops._pmean(np, np.array([1.0]))
+    _state.update({"res": res})
+    _state.update({"dummy": dummy})
 
 
-def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_core_math_ops_coverage_part_6(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 6 of test_core_math_ops_coverage.
 
     Args:
@@ -192,41 +204,41 @@ def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) 
     res = _state["res"]
     assert res is not None
 
-    class DummyMockPolygamma:
+    class DummyMockPolygamma(MockTestStub):
         """Test class DummyMockPolygamma."""
 
         pass
 
-    res = ensure_eager_tensor(core_math_ops._polygamma(ensure_mod(DummyMockPolygamma), 1, 1))
+    res = core_math_ops._polygamma(DummyMockPolygamma(), 1, 1)
     assert res is not None
 
-    class DummyMockDigamma:
+    class DummyMockDigamma(MockTestStub):
         """Test class DummyMockDigamma."""
 
         pass
 
-    res = ensure_eager_tensor(core_math_ops._digamma(ensure_mod(DummyMockDigamma), 1))
+    res = core_math_ops._digamma(DummyMockDigamma(), 1)
     assert res is not None
-    res = ensure_eager_tensor(core_math_ops._np_zerofraction(ensure_eager_tensor(np), np.array([0.0, 1.0])))
+    res = core_math_ops._np_zerofraction(np, np.array([0.0, 1.0]))
     assert res is not None
-    _state.update(ensure_tensor_dict({"DummyMockDigamma": DummyMockDigamma, "DummyMockPolygamma": DummyMockPolygamma, "res": res}))
+    _state.update({"res": res})
 
 
-def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_core_math_ops_coverage_part_7(_state: _TestCoreMathOpsCoverageState) -> None:
     """Execute part 7 of test_core_math_ops_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
 
-    class MockRandomZeroFraction:
+    class MockRandomZeroFraction(MockTestStub):
         """Test class MockRandomZeroFraction."""
 
         class random:
             """Test class random."""
 
             @staticmethod
-            def zerofraction(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def zerofraction(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function zerofraction.
 
                 Args:
@@ -234,22 +246,22 @@ def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) 
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `zerofraction`.
+                    BackendArg: Computed output value from `zerofraction`.
                 """
                 return 1.0
 
-    res = core_math_ops._np_zerofraction(ensure_mod(MockRandomZeroFraction), np.array([0.0, 1.0]))
+    res = core_math_ops._np_zerofraction(MockRandomZeroFraction(), np.array([0.0, 1.0]))
     assert res == 0.5
-    res = core_math_ops._np_zeta(ensure_eager_tensor(np), 2.0, 1.0)
+    res = core_math_ops._np_zeta(np, 2.0, 1.0)
     assert res is not None
-    res = core_math_ops._np_zeta(ensure_mod(_BareMod), 2.0, 1.0)
+    res = core_math_ops._np_zeta(_BareMod(), 2.0, 1.0)
     assert res is not None
-    _state.update(ensure_tensor_dict({"MockRandomZeroFraction": MockRandomZeroFraction, "res": res}))
+    _state.update({"res": res})
 
 
 def test_core_math_ops_coverage() -> None:
     """Test function test_core_math_ops_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestCoreMathOpsCoverageState = {}
     _test_core_math_ops_coverage_part_1(_state)
     _test_core_math_ops_coverage_part_2(_state)
     _test_core_math_ops_coverage_part_3(_state)
@@ -266,95 +278,95 @@ def test_missing_i0() -> None:
 
     import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 
-    class BkWithI0:
+    class BkWithI0(MockTestStub):
         """Test class BkWithI0."""
 
-        def i0(self, x: EagerValue) -> EagerValue:
+        def i0(self, x: BackendArg) -> BackendArg:
             """Test function i0.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `i0`.
+                BackendArg: Computed output value from `i0`.
             """
             return np.array([1.0])
 
-        def iscomplex(self, x: EagerValue) -> EagerValue:
+        def iscomplex(self, x: BackendArg) -> BackendArg:
             """Test function iscomplex.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `iscomplex`.
+                BackendArg: Computed output value from `iscomplex`.
             """
             return np.array([1.0])
 
-        def isreal(self, x: EagerValue) -> EagerValue:
+        def isreal(self, x: BackendArg) -> BackendArg:
             """Test function isreal.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `isreal`.
+                BackendArg: Computed output value from `isreal`.
             """
             return np.array([1.0])
 
-        def signbit(self, x: EagerValue) -> EagerValue:
+        def signbit(self, x: BackendArg) -> BackendArg:
             """Test function signbit.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `signbit`.
+                BackendArg: Computed output value from `signbit`.
             """
             return np.array([1.0])
 
-    class BkWithoutI0:
+    class BkWithoutI0(MockTestStub):
         """Test class BkWithoutI0."""
 
         pass
 
     x = np.array([1.0])
-    assert mod._i0(ensure_mod(BkWithI0()), x) is not None
-    assert mod._i0(ensure_mod(BkWithoutI0()), x) is None
-    assert mod._iscomplex(ensure_mod(BkWithI0()), x) is not None
-    assert mod._iscomplex(ensure_mod(BkWithoutI0()), x) is not None
-    assert mod._isreal(ensure_mod(BkWithI0()), x) is not None
-    assert mod._isreal(ensure_mod(BkWithoutI0()), x) is not None
-    assert mod._signbit(ensure_mod(BkWithI0()), x) is not None
-    assert mod._signbit(ensure_mod(BkWithoutI0()), x) is not None
+    assert mod._i0(BkWithI0(), x) is not None
+    assert mod._i0(BkWithoutI0(), x) is None
+    assert mod._iscomplex(BkWithI0(), x) is not None
+    assert mod._iscomplex(BkWithoutI0(), x) is not None
+    assert mod._isreal(BkWithI0(), x) is not None
+    assert mod._isreal(BkWithoutI0(), x) is not None
+    assert mod._signbit(BkWithI0(), x) is not None
+    assert mod._signbit(BkWithoutI0(), x) is not None
 
 
-class DummyBackend:
+class DummyBackend(MockTestStub):
     """Test class DummyBackend."""
 
-    def shape(self, x: EagerValue) -> EagerValue:
+    def shape(self, x: BackendArg) -> BackendArg:
         """Test function shape.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `shape`.
+            BackendArg: Computed output value from `shape`.
         """
         return (2, 2)
 
-    def indices(self, x: EagerValue) -> EagerValue:
+    def indices(self, x: BackendArg) -> BackendArg:
         """Test function indices.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `indices`.
+            BackendArg: Computed output value from `indices`.
         """
         return (0, 0)
 
-    def ones(self, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def ones(self, x: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function ones.
 
         Args:
@@ -362,11 +374,11 @@ class DummyBackend:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `ones`.
+            BackendArg: Computed output value from `ones`.
         """
         return x
 
-    def where(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def where(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function where.
 
         Args:
@@ -374,7 +386,7 @@ class DummyBackend:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `where`.
+            BackendArg: Computed output value from `where`.
         """
         return args[0]
 
@@ -388,7 +400,7 @@ class DummyBackendWithRandom:
         """Test class random."""
 
         @staticmethod
-        def triangular(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def triangular(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function triangular.
 
             Args:
@@ -396,12 +408,12 @@ class DummyBackendWithRandom:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `triangular`.
+                BackendArg: Computed output value from `triangular`.
             """
             return "random.triangular"
 
         @staticmethod
-        def triangularsolve(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def triangularsolve(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function triangularsolve.
 
             Args:
@@ -409,12 +421,12 @@ class DummyBackendWithRandom:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `triangularsolve`.
+                BackendArg: Computed output value from `triangularsolve`.
             """
             return "random.triangularsolve"
 
         @staticmethod
-        def xlog1py(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def xlog1py(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function xlog1py.
 
             Args:
@@ -422,12 +434,12 @@ class DummyBackendWithRandom:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `xlog1py`.
+                BackendArg: Computed output value from `xlog1py`.
             """
             return "random.xlog1py"
 
         @staticmethod
-        def xlogy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def xlogy(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function xlogy.
 
             Args:
@@ -435,7 +447,7 @@ class DummyBackendWithRandom:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `xlogy`.
+                BackendArg: Computed output value from `xlogy`.
             """
             return "random.xlogy"
 
@@ -443,82 +455,103 @@ class DummyBackendWithRandom:
 warnings.filterwarnings("ignore")
 
 
-def _all_backend_getattr(self: EagerValue, name: EagerValue) -> EagerValue:
+def _all_backend_getattr(self: BackendArg, name: BackendArg) -> BackendArg:
     """Resolve attribute on AllBackend.
 
     Args:
-        self (EagerValue): Dynamic `AllBackend` instance.
-        name (EagerValue): Input `name` value (name) for `_all_backend_getattr`.
+        self (BackendArg): Dynamic `AllBackend` instance.
+        name (BackendArg): Input `name` value (name) for `_all_backend_getattr`.
 
     Returns:
-        EagerValue: Computed output value from `_all_backend_getattr`.
+        BackendArg: Computed output value from `_all_backend_getattr`.
+
+    Raises:
+        AttributeError: If execution or validation fails in `_all_backend_getattr`.
     """
     if str(name).startswith("_"):
         raise AttributeError()
     if name == "nn":
-        return ensure_eager_tensor(self)
+        return self
 
-    def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def _dummy(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Return dummy array.
 
         Args:
-            *args (EagerValue): Positional arguments forwarded to `_dummy`.
-            **kwargs (EagerValue): Keyword arguments forwarded to `_dummy`.
+            *args (BackendArg): Positional arguments forwarded to `_dummy`.
+            **kwargs (BackendArg): Keyword arguments forwarded to `_dummy`.
 
         Returns:
-            EagerValue: Computed output value from `_dummy`.
+            BackendArg: Computed output value from `_dummy`.
         """
         return np.array([1.0])
 
-    ensure_mutable(_dummy).item = ensure_eager_tensor(lambda: 1.0)
-    ensure_mutable(_dummy).tolist = ensure_eager_tensor(lambda: 1.0)
+    pytest.MonkeyPatch().setattr(_dummy, "item", lambda: 1.0, raising=False)
+    pytest.MonkeyPatch().setattr(_dummy, "tolist", lambda: 1.0, raising=False)
     return _dummy
 
 
-AllBackend = ensure_callable(type)("AllBackend", (), {"_" + "_getattr_" + "_": _all_backend_getattr})
+AllBackend = type("AllBackend", (), {"_" + "_getattr_" + "_": _all_backend_getattr})
 
 
-def _fallback_backend_init(self: EagerValue, hide_names: EagerValue) -> None:
-    """Initialize FallbackBackend.
-
-    Args:
-        self (EagerValue): Dynamic `FallbackBackend` instance.
-        hide_names (EagerValue): Input `hide_names` value (hide names) for `_fallback_backend_init`.
-    """
-    from tests.testing_utils import get_test_members
-
-    ensure_mutable(self).hide_names = ensure_eager_tensor(hide_names)
-    ensure_mutable(self).np_members = ensure_eager_tensor(get_test_members(np))
-
-
-def _fallback_backend_getattr(self: EagerValue, name: EagerValue) -> EagerValue:
-    """Resolve attribute on FallbackBackend.
+def FallbackBackend(hide_names: list[str]) -> MagicMock:
+    """Construct a NumPy-wrapping mock backend hiding `hide_names` attributes.
 
     Args:
-        self (EagerValue): Dynamic `FallbackBackend` instance.
-        name (EagerValue): Input `name` value (name) for `_fallback_backend_getattr`.
+        hide_names (list[str]): Attribute names to omit from the mock specification.
 
     Returns:
-        EagerValue: Computed output value from `_fallback_backend_getattr`.
+        MagicMock: Configured fallback backend mock.
     """
-    if ensure_eager_tensor(name) in ensure_eager_tensor(ensure_eager_tensor(self).hide_names):
-        raise AttributeError(f"Hidden: {name}")
-    if name == "nn":
-        return ensure_eager_tensor(self)
-    np_members = ensure_eager_tensor(ensure_eager_tensor(self).np_members)
-    if str(name) in np_members:
-        return np_members[str(name)]
-    raise AttributeError(str(name))
+    hidden = set(hide_names)
+    allowed = [k for k in np.__all__ if k not in hidden] + ["nn"]
+    fb = MagicMock(spec=allowed, wraps=np)
+    fb.nn = fb
+    return fb
 
 
-FallbackBackend = ensure_callable(type)(
-    "FallbackBackend",
-    (),
-    {"_" + "_init_" + "_": _fallback_backend_init, "_" + "_getattr_" + "_": _fallback_backend_getattr},
-)
+class _BuildCallFn(typing.Protocol):
+    """Protocol for `build_call` helper in `_test_all_core_math_ops_coverage`."""
+
+    def __call__(
+        self,
+        bk: BackendOperand,
+        use_int: bool = ...,
+        use_one_arg: bool = ...,
+        sig: inspect.Signature = ...,
+    ) -> tuple[list[BackendOperand], dict[str, BackendOperand]]:
+        """Build positional and keyword arguments for a registered math op.
+
+        Args:
+            bk: Backend module or operand stub.
+            use_int: Whether to use integer operand array.
+            use_one_arg: Whether to omit variadic positional arguments.
+            sig: Inspected signature of the target operation.
+
+        Returns:
+            tuple[list[BackendOperand], dict[str, BackendOperand]]: Positional and keyword arguments.
+        """
+        ...
 
 
-def _test_all_core_math_ops_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestAllCoreMathOpsCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_all_core_math_ops_coverage` split helpers."""
+
+    all_bk: EagerTensorProtocol
+    arg: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    arg_int: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    args: list[BackendOperand]
+    bk: BackendOperand
+    build_call: _BuildCallFn
+    fb: MagicMock
+    kwargs: dict[str, BackendOperand]
+    op: EagerRegisteredCallable
+    orig_scipy: types.ModuleType | None
+    orig_scipy2: types.ModuleType | None
+    orig_scipy_root: types.ModuleType | None
+    sig: inspect.Signature
+
+
+def _test_all_core_math_ops_coverage_sub_1(_state: _TestAllCoreMathOpsCoverageState) -> None:
     """Execute sub-part 1 of test_all_core_math_ops_coverage.
 
     Args:
@@ -526,11 +559,11 @@ def _test_all_core_math_ops_coverage_sub_1(_state: dict[str, EagerTensorProtocol
     """
     op = _state["op"]
     sig = inspect.signature(op)
-    _state.update(ensure_tensor_dict({"sig": sig}))
-    _state.update(ensure_tensor_dict({"op": op}))
+    _state.update({"sig": sig})
+    _state.update({"op": op})
 
 
-def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_core_math_ops_coverage_sub_2(_state: _TestAllCoreMathOpsCoverageState) -> None:
     """Execute sub-part 2 of test_all_core_math_ops_coverage.
 
     Args:
@@ -538,7 +571,12 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
     """
     (arg, arg_int, sig) = (_state["arg"], _state["arg_int"], _state["sig"])
 
-    def build_call(bk: EagerValue, use_int: EagerValue = False, use_one_arg: EagerValue = False, sig: EagerValue = sig) -> EagerValue:
+    def build_call(
+        bk: BackendOperand,
+        use_int: bool = False,
+        use_one_arg: bool = False,
+        sig: inspect.Signature = sig,
+    ) -> tuple[list[BackendOperand], dict[str, BackendOperand]]:
         """Test function build_call.
 
         Args:
@@ -548,12 +586,12 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
             sig: Test parameter `sig`.
 
         Returns:
-            EagerValue: Computed output value from `build_call`.
+            tuple[list[BackendOperand], dict[str, BackendOperand]]: Computed output value from `build_call`.
         """
-        args = []
-        kwargs = {}
+        args: list[BackendOperand] = []
+        kwargs: dict[str, BackendOperand] = {}
         val = arg_int if use_int else arg
-        for p in ensure_eager_tensor(ensure_eager_tensor(sig).parameters).values():
+        for p in sig.parameters.values():
             if p.name == "backend_module":
                 args.append(bk)
             elif p.kind == inspect.Parameter.VAR_POSITIONAL:
@@ -564,18 +602,18 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
             elif p.name == "axis":
                 kwargs["axis"] = 0
             elif p.name == "axes":
-                ensure_eager_tensor(kwargs)["axes"] = (0,)
+                kwargs["axes"] = (0,)
             elif p.default != inspect.Parameter.empty:
                 pass
             else:
                 args.append(val)
         return (args, kwargs)
 
-    _state.update(ensure_tensor_dict({"build_call": build_call}))
-    _state.update(ensure_tensor_dict({"arg": arg, "arg_int": arg_int, "sig": sig}))
+    _state.update({"build_call": build_call})
+    _state.update({"arg": arg, "arg_int": arg_int, "sig": sig})
 
 
-def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_core_math_ops_coverage_sub_3(_state: _TestAllCoreMathOpsCoverageState) -> None:
     """Execute sub-part 3 of test_all_core_math_ops_coverage.
 
     Args:
@@ -584,24 +622,55 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
     handled_errors = 0
     (all_bk, arg, build_call, fb) = (_state["all_bk"], _state["arg"], _state["build_call"], _state["fb"])
     op = _state["op"]
-    bk: EagerValue = all_bk
-    for bk in [all_bk, fb]:
+    bk: BackendOperand = all_bk
+    candidates: list[BackendOperand] = [all_bk, fb]
+    for bk in candidates:
         for use_int in [False, True]:
             for use_one_arg in [False, True]:
                 (args, kwargs) = build_call(bk, use_int, use_one_arg)
                 try:
-                    ensure_callable(op)(*args, **ensure_attrs(kwargs))
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+                    op(*args, **kwargs)
+                except (
+                    ValueError,
+                    TypeError,
+                    AttributeError,
+                    IndexError,
+                    KeyError,
+                    RuntimeError,
+                    ZeroDivisionError,
+                    NotImplementedError,
+                    OSError,
+                    ImportError,
+                    OverflowError,
+                    RecursionError,
+                    LookupError,
+                    ArithmeticError,
+                ):
                     handled_errors += 1
                 try:
                     op(bk, arg)
-                except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+                except (
+                    ValueError,
+                    TypeError,
+                    AttributeError,
+                    IndexError,
+                    KeyError,
+                    RuntimeError,
+                    ZeroDivisionError,
+                    NotImplementedError,
+                    OSError,
+                    ImportError,
+                    OverflowError,
+                    RecursionError,
+                    LookupError,
+                    ArithmeticError,
+                ):
                     handled_errors += 1
-    _state.update(ensure_tensor_dict({"all_bk": all_bk, "arg": arg, "bk": bk}))
-    _state.update(ensure_tensor_dict({"build_call": build_call, "fb": fb, "op": op}))
+    _state.update({"all_bk": all_bk, "arg": arg, "bk": bk})
+    _state.update({"build_call": build_call, "fb": fb, "op": op})
 
 
-def _test_all_core_math_ops_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_core_math_ops_coverage_sub_4(_state: _TestAllCoreMathOpsCoverageState) -> None:
     """Execute sub-part 4 of test_all_core_math_ops_coverage.
 
     Args:
@@ -612,14 +681,23 @@ def _test_all_core_math_ops_coverage_sub_4(_state: dict[str, EagerTensorProtocol
     orig_scipy = sys.modules.get("scipy.special")
     orig_scipy2 = sys.modules.get("scipy.linalg")
     orig_scipy_root = sys.modules.get("scipy")
-    ensure_eager_tensor(sys.modules)["scipy.special"] = None
-    ensure_eager_tensor(sys.modules)["scipy.linalg"] = None
-    ensure_eager_tensor(sys.modules)["scipy"] = None
-    _state.update(ensure_tensor_dict({"args": args, "kwargs": kwargs, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2, "orig_scipy_root": orig_scipy_root}))
-    _state.update(ensure_tensor_dict({"build_call": build_call, "fb": fb}))
+    mp = pytest.MonkeyPatch()
+    mp.setitem(sys.modules, "scipy.special", None)
+    mp.setitem(sys.modules, "scipy.linalg", None)
+    mp.setitem(sys.modules, "scipy", None)
+    _state.update(
+        {
+            "args": args,
+            "kwargs": kwargs,
+            "orig_scipy": orig_scipy,
+            "orig_scipy2": orig_scipy2,
+            "orig_scipy_root": orig_scipy_root,
+        }
+    )
+    _state.update({"build_call": build_call, "fb": fb})
 
 
-def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_all_core_math_ops_coverage_sub_5(_state: _TestAllCoreMathOpsCoverageState) -> None:
     """Execute sub-part 5 of test_all_core_math_ops_coverage.
 
     Args:
@@ -630,48 +708,85 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
     orig_scipy2 = _state["orig_scipy2"]
     orig_scipy_root = _state["orig_scipy_root"]
     try:
-        ensure_callable(op)(*args, **ensure_attrs(kwargs))
-    except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+        op(*args, **kwargs)
+    except (
+        ValueError,
+        TypeError,
+        AttributeError,
+        IndexError,
+        KeyError,
+        RuntimeError,
+        ZeroDivisionError,
+        NotImplementedError,
+        OSError,
+        ImportError,
+        OverflowError,
+        RecursionError,
+        LookupError,
+        ArithmeticError,
+    ):
         handled_errors += 1
     finally:
-        if ensure_eager_tensor(orig_scipy) is not None:
-            ensure_eager_tensor(sys.modules)["scipy.special"] = orig_scipy
+        if orig_scipy is not None:
+            sys.modules["scipy.special"] = orig_scipy
         elif "scipy.special" in sys.modules:
             del sys.modules["scipy.special"]
-        if ensure_eager_tensor(orig_scipy2) is not None:
-            ensure_eager_tensor(sys.modules)["scipy.linalg"] = orig_scipy2
+        if orig_scipy2 is not None:
+            sys.modules["scipy.linalg"] = orig_scipy2
         elif "scipy.linalg" in sys.modules:
             del sys.modules["scipy.linalg"]
-        if ensure_eager_tensor(orig_scipy_root) is not None:
-            ensure_eager_tensor(sys.modules)["scipy"] = orig_scipy_root
+        if orig_scipy_root is not None:
+            sys.modules["scipy"] = orig_scipy_root
         elif "scipy" in sys.modules:
             del sys.modules["scipy"]
-    _state.update(ensure_tensor_dict({"op": op, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2}))
-    _state.update(ensure_tensor_dict({"orig_scipy_root": orig_scipy_root}))
+    _state.update({"op": op, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2})
+    _state.update({"orig_scipy_root": orig_scipy_root})
 
 
 def test_all_core_math_ops_coverage() -> None:
     """Test function test_all_core_math_ops_coverage."""
-    from tests.testing_utils import get_test_members
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     warnings.filterwarnings("ignore")
-    cmo_members = get_test_members(cmo)
-    ops = [ensure_callable(fn) for name, fn in cmo_members.items() if name.startswith("_") and callable(fn)]
+    ops = sorted(
+        (
+            fn
+            for fn in global_eager_registry._registry.values()
+            if fn.__module__.startswith(cmo.__name__) and fn.__name__.startswith("_") and fn.__name__ in cmo.__all__
+        ),
+        key=lambda f: str(f.__name__),
+    )
     all_bk = AllBackend()
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
     arg_int = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-    hide = [name[1:] for name, fn in cmo_members.items() if name.startswith("_") and callable(fn)]
+    hide = [fn.__name__[1:] for fn in ops]
     fb = FallbackBackend(hide)
     for op in ops:
-        _state: dict[str, EagerTensorProtocol] = {}
-        _state.update(ensure_tensor_dict({"all_bk": all_bk, "arg": arg, "arg_int": arg_int, "fb": fb}))
-        _state.update(ensure_tensor_dict({"hide": hide, "op": op, "ops": ops}))
-        for _sub_fn in (_test_all_core_math_ops_coverage_sub_1, _test_all_core_math_ops_coverage_sub_2, _test_all_core_math_ops_coverage_sub_3, _test_all_core_math_ops_coverage_sub_4, _test_all_core_math_ops_coverage_sub_5):
+        _state: _TestAllCoreMathOpsCoverageState = {}
+        _state.update({"all_bk": all_bk, "arg": arg, "arg_int": arg_int, "fb": fb})
+        _state.update({"op": op})
+        for _sub_fn in (
+            _test_all_core_math_ops_coverage_sub_1,
+            _test_all_core_math_ops_coverage_sub_2,
+            _test_all_core_math_ops_coverage_sub_3,
+            _test_all_core_math_ops_coverage_sub_4,
+            _test_all_core_math_ops_coverage_sub_5,
+        ):
             _sub_fn(_state)
         assert len(_state) > 0
 
 
-def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestMissingCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_missing_coverage` split helpers."""
+
+    EmptyBk: type
+    MatmulBk: type
+    arg: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    mod: types.ModuleType
+    np: types.ModuleType
+
+
+def _test_missing_coverage_part_1(_state: _TestMissingCoverageState) -> None:
     """Execute part 1 of test_missing_coverage.
 
     Args:
@@ -681,19 +796,19 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
 
     import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 
-    class EmptyBk:
+    class EmptyBk(MockTestStub):
         """Test class EmptyBk."""
 
         pass
 
-    class NNSoftmaxBk:
+    class NNSoftmaxBk(MockTestStub):
         """Test class NNSoftmaxBk."""
 
         class nn:
             """Test class nn."""
 
             @staticmethod
-            def softmax(x: EagerValue, axis: EagerValue) -> EagerValue:
+            def softmax(x: BackendArg, axis: BackendArg) -> BackendArg:
                 """Test function softmax.
 
                 Args:
@@ -701,19 +816,19 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
                     axis: Test parameter `axis`.
 
                 Returns:
-                    EagerValue: Computed output value from `softmax`.
+                    BackendArg: Computed output value from `softmax`.
                 """
                 return x
 
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    ensure_callable(mod._apply_causal_mask)(ensure_callable(EmptyBk)(), arg)
-    ensure_callable(mod._apply_softmax)(ensure_callable(NNSoftmaxBk)(), arg)
-    ensure_callable(mod._apply_softmax)(ensure_callable(EmptyBk)(), arg)
-    _state.update(ensure_tensor_dict({"EmptyBk": EmptyBk, "NNSoftmaxBk": NNSoftmaxBk, "arg": arg, "mod": mod}))
-    _state.update(ensure_tensor_dict({"np": np}))
+    mod._apply_causal_mask(EmptyBk(), arg)
+    mod._apply_softmax(NNSoftmaxBk(), arg)
+    mod._apply_softmax(EmptyBk(), arg)
+    _state.update({"EmptyBk": EmptyBk, "arg": arg, "mod": mod})
+    _state.update({"np": np})
 
 
-def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_missing_coverage_part_2(_state: _TestMissingCoverageState) -> None:
     """Execute part 2 of test_missing_coverage.
 
     Args:
@@ -724,33 +839,33 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
     class DummyItem:
         """Test class DummyItem."""
 
-        def item(self) -> EagerValue:
+        def item(self) -> BackendArg:
             """Test function item.
 
             Returns:
-                EagerValue: Computed output value from `item`.
+                BackendArg: Computed output value from `item`.
             """
             return 1.0
 
     class DummyList:
         """Test class DummyList."""
 
-        def tolist(self) -> EagerValue:
+        def tolist(self) -> BackendArg:
             """Test function tolist.
 
             Returns:
-                EagerValue: Computed output value from `tolist`.
+                BackendArg: Computed output value from `tolist`.
             """
             return 1.0
 
-    ensure_callable(mod._allclose)(np, arg, arg, rtol=ensure_callable(DummyItem)())
-    ensure_callable(mod._allclose)(np, arg, arg, rtol=ensure_callable(DummyList)())
+    mod._allclose(np, arg, arg, rtol=DummyItem())
+    mod._allclose(np, arg, arg, rtol=DummyList())
 
     class MatmulBk:
         """Test class MatmulBk."""
 
         @staticmethod
-        def matmul(a: EagerValue, b: EagerValue) -> EagerValue:
+        def matmul(a: BackendArg, b: BackendArg) -> BackendArg:
             """Test function matmul.
 
             Args:
@@ -758,15 +873,15 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
                 b: Test parameter `b`.
 
             Returns:
-                EagerValue: Computed output value from `matmul`.
+                BackendArg: Computed output value from `matmul`.
             """
             return a
 
-    _state.update(ensure_tensor_dict({"DummyItem": DummyItem, "DummyList": DummyList, "MatmulBk": MatmulBk}))
-    _state.update(ensure_tensor_dict({"arg": arg, "mod": mod, "np": np}))
+    _state.update({"MatmulBk": MatmulBk})
+    _state.update({"arg": arg, "mod": mod, "np": np})
 
 
-def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_missing_coverage_part_3(_state: _TestMissingCoverageState) -> None:
     """Execute part 3 of test_missing_coverage.
 
     Args:
@@ -783,7 +898,7 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
         """Test class BkWithWhere."""
 
         @staticmethod
-        def where(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def where(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function where.
 
             Args:
@@ -791,12 +906,12 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `where`.
+                BackendArg: Computed output value from `where`.
             """
             return 1
 
         @staticmethod
-        def floor(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def floor(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function floor.
 
             Args:
@@ -804,12 +919,12 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `floor`.
+                BackendArg: Computed output value from `floor`.
             """
             return 1
 
         @staticmethod
-        def ceil(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def ceil(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function ceil.
 
             Args:
@@ -817,18 +932,17 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `ceil`.
+                BackendArg: Computed output value from `ceil`.
             """
             return 1
 
-    ensure_callable(mod._fix)(ensure_callable(BkWithWhere)(), arg)
+    mod._fix(BkWithWhere(), arg)
     mod._adaptive_max_pool3d_indices(np, arg, 1)
-    _state.update(ensure_tensor_dict({"BkWithWhere": BkWithWhere}))
-    _state.update(ensure_tensor_dict({"EmptyBk": EmptyBk, "MatmulBk": MatmulBk, "arg": arg}))
-    _state.update(ensure_tensor_dict({"mod": mod, "np": np}))
+    _state.update({"EmptyBk": EmptyBk, "MatmulBk": MatmulBk, "arg": arg})
+    _state.update({"mod": mod, "np": np})
 
 
-def _test_missing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_missing_coverage_part_4(_state: _TestMissingCoverageState) -> None:
     """Execute part 4 of test_missing_coverage.
 
     Args:
@@ -840,7 +954,7 @@ def _test_missing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> Non
 
 def test_missing_coverage() -> None:
     """Test function test_missing_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestMissingCoverageState = {}
     _test_missing_coverage_part_1(_state)
     _test_missing_coverage_part_2(_state)
     _test_missing_coverage_part_3(_state)
@@ -860,26 +974,70 @@ def test_empty_backend() -> None:
 
         pass
 
-    from tests.testing_utils import get_test_members
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     empty_bk = EmptyBackend()
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    ops = [ensure_callable(fn) for name, fn in get_test_members(mod).items() if name.startswith("_") and callable(fn)]
+    ops = [
+        fn
+        for fn in global_eager_registry._registry.values()
+        if fn.__module__.startswith(mod.__name__) and fn.__name__.startswith("_")
+    ]
     for op in ops:
         sig = inspect.signature(op)
         args_to_pass = [empty_bk] + [arg] * (len(sig.parameters) - 1)
         try:
             op(*args_to_pass[: len(sig.parameters)])
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+        except (
+            ValueError,
+            TypeError,
+            AttributeError,
+            IndexError,
+            KeyError,
+            RuntimeError,
+            ZeroDivisionError,
+            NotImplementedError,
+            OSError,
+            ImportError,
+            OverflowError,
+            RecursionError,
+            LookupError,
+            ArithmeticError,
+        ):
             handled_errors += 1
         try:
             op(*args_to_pass)
-        except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
+        except (
+            ValueError,
+            TypeError,
+            AttributeError,
+            IndexError,
+            KeyError,
+            RuntimeError,
+            ZeroDivisionError,
+            NotImplementedError,
+            OSError,
+            ImportError,
+            OverflowError,
+            RecursionError,
+            LookupError,
+            ArithmeticError,
+        ):
             handled_errors += 1
     assert handled_errors >= 1
 
 
-def _test_remaining_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestRemainingCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_remaining_coverage` split helpers."""
+
+    BkWithLinalg: type
+    arg: EagerTensorProtocol
+    bk: EagerTensorProtocol
+    mod: types.ModuleType
+    np: types.ModuleType
+
+
+def _test_remaining_coverage_sub_1(_state: _TestRemainingCoverageState) -> None:
     """Execute sub-part 1 of test_remaining_coverage.
 
     Args:
@@ -889,7 +1047,7 @@ def _test_remaining_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
 
     import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 
-    _state.update(ensure_tensor_dict({"mod": mod, "np": np}))
+    _state.update({"mod": mod, "np": np})
 
 
 class _BkWithLinalg:
@@ -899,7 +1057,7 @@ class _BkWithLinalg:
         """Test class linalg."""
 
         @staticmethod
-        def cho_solve(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def cho_solve(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function cho_solve.
 
             Args:
@@ -907,12 +1065,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `cho_solve`.
+                BackendArg: Computed output value from `cho_solve`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def solve_banded(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def solve_banded(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function solve_banded.
 
             Args:
@@ -920,12 +1078,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `solve_banded`.
+                BackendArg: Computed output value from `solve_banded`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def svd(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def svd(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function svd.
 
             Args:
@@ -933,12 +1091,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `svd`.
+                BackendArg: Computed output value from `svd`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def tensorinv(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def tensorinv(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function tensorinv.
 
             Args:
@@ -946,12 +1104,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `tensorinv`.
+                BackendArg: Computed output value from `tensorinv`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def tensorsolve(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def tensorsolve(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function tensorsolve.
 
             Args:
@@ -959,12 +1117,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `tensorsolve`.
+                BackendArg: Computed output value from `tensorsolve`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def cross(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def cross(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function cross.
 
             Args:
@@ -972,12 +1130,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `cross`.
+                BackendArg: Computed output value from `cross`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def outer(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def outer(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function outer.
 
             Args:
@@ -985,12 +1143,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `outer`.
+                BackendArg: Computed output value from `outer`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def det(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def det(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function det.
 
             Args:
@@ -998,12 +1156,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `det`.
+                BackendArg: Computed output value from `det`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def eig(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def eig(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function eig.
 
             Args:
@@ -1011,12 +1169,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `eig`.
+                BackendArg: Computed output value from `eig`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def eigh(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def eigh(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function eigh.
 
             Args:
@@ -1024,12 +1182,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `eigh`.
+                BackendArg: Computed output value from `eigh`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def eigvals(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def eigvals(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function eigvals.
 
             Args:
@@ -1037,12 +1195,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `eigvals`.
+                BackendArg: Computed output value from `eigvals`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def eigvalsh(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def eigvalsh(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function eigvalsh.
 
             Args:
@@ -1050,12 +1208,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `eigvalsh`.
+                BackendArg: Computed output value from `eigvalsh`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def cholesky(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def cholesky(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function cholesky.
 
             Args:
@@ -1063,12 +1221,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `cholesky`.
+                BackendArg: Computed output value from `cholesky`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def matrix_power(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def matrix_power(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function matrix_power.
 
             Args:
@@ -1076,12 +1234,12 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `matrix_power`.
+                BackendArg: Computed output value from `matrix_power`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def norm(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def norm(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function norm.
 
             Args:
@@ -1089,21 +1247,21 @@ class _BkWithLinalg:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `norm`.
+                BackendArg: Computed output value from `norm`.
             """
             return np.array([1.0])
 
 
-def _test_remaining_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_remaining_coverage_sub_2(_state: _TestRemainingCoverageState) -> None:
     """Execute sub-part 2 of test_remaining_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    _state.update(ensure_tensor_dict({"BkWithLinalg": _BkWithLinalg}))
+    _state.update({"BkWithLinalg": _BkWithLinalg})
 
 
-def _test_remaining_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_remaining_coverage_sub_3(_state: _TestRemainingCoverageState) -> None:
     """Execute sub-part 3 of test_remaining_coverage.
 
     Args:
@@ -1116,11 +1274,11 @@ def _test_remaining_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
     mod._banded_triangular_solve(bk, arg)
     mod._svd(bk, arg)
     mod._tensorinv(bk, arg)
-    _state.update(ensure_tensor_dict({"arg": arg, "bk": bk}))
-    _state.update(ensure_tensor_dict({"BkWithLinalg": BkWithLinalg, "mod": mod, "np": np}))
+    _state.update({"arg": arg, "bk": bk})
+    _state.update({"BkWithLinalg": BkWithLinalg, "mod": mod, "np": np})
 
 
-def _test_remaining_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_remaining_coverage_sub_4(_state: _TestRemainingCoverageState) -> None:
     """Execute sub-part 4 of test_remaining_coverage.
 
     Args:
@@ -1133,10 +1291,10 @@ def _test_remaining_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> No
     with pytest.raises(AttributeError):
         mod._outer(bk, arg)
     mod._det(bk, arg)
-    _state.update(ensure_tensor_dict({"arg": arg, "bk": bk, "mod": mod}))
+    _state.update({"arg": arg, "bk": bk, "mod": mod})
 
 
-def _test_remaining_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_remaining_coverage_sub_5(_state: _TestRemainingCoverageState) -> None:
     """Execute sub-part 5 of test_remaining_coverage.
 
     Args:
@@ -1147,10 +1305,10 @@ def _test_remaining_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> No
     mod._eigh(bk, arg)
     mod._eigvals(bk, arg)
     mod._eigvalsh(bk, arg)
-    _state.update(ensure_tensor_dict({"arg": arg, "bk": bk, "mod": mod}))
+    _state.update({"arg": arg, "bk": bk, "mod": mod})
 
 
-def _test_remaining_coverage_sub_6(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_remaining_coverage_sub_6(_state: _TestRemainingCoverageState) -> None:
     """Execute sub-part 6 of test_remaining_coverage.
 
     Args:
@@ -1162,14 +1320,21 @@ def _test_remaining_coverage_sub_6(_state: dict[str, EagerTensorProtocol]) -> No
     mod._norm(bk, arg)
     mod._add_n(np, [arg, arg])
     mod._associative_scan(np, lambda a, b: a + b, np.array([1.0, 2.0]))
-    _state.update(ensure_tensor_dict({"arg": arg, "bk": bk, "mod": mod}))
-    _state.update(ensure_tensor_dict({"np": np}))
+    _state.update({"arg": arg, "bk": bk, "mod": mod})
+    _state.update({"np": np})
 
 
 def test_remaining_coverage() -> None:
     """Test function test_remaining_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
-    for _sub_fn in (_test_remaining_coverage_sub_1, _test_remaining_coverage_sub_2, _test_remaining_coverage_sub_3, _test_remaining_coverage_sub_4, _test_remaining_coverage_sub_5, _test_remaining_coverage_sub_6):
+    _state: _TestRemainingCoverageState = {}
+    for _sub_fn in (
+        _test_remaining_coverage_sub_1,
+        _test_remaining_coverage_sub_2,
+        _test_remaining_coverage_sub_3,
+        _test_remaining_coverage_sub_4,
+        _test_remaining_coverage_sub_5,
+        _test_remaining_coverage_sub_6,
+    ):
         _sub_fn(_state)
     assert len(_state) > 0
 
@@ -1180,24 +1345,24 @@ def test_unfold_coverage_manual() -> None:
 
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _np_unfold
 
-    class DummyBackend:
+    class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
 
-        def asarray(self, x: EagerValue) -> EagerValue:
+        def asarray(self, x: BackendArg) -> BackendArg:
             """Test function asarray.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `asarray`.
+                BackendArg: Computed output value from `asarray`.
             """
             return x
 
-    res = _np_unfold(ensure_mod(DummyBackend()), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
-    assert ensure_eager_tensor(res).shape == (1, 1, 4, 4)
-    res = _np_unfold(ensure_mod(DummyBackend()), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
-    assert ensure_eager_tensor(res).shape == (1, 1, 2, 2)
+    res = _np_unfold(DummyBackend(), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
+    assert extract_test_shape(res) == (1, 1, 4, 4)
+    res = _np_unfold(DummyBackend(), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
+    assert extract_test_shape(res) == (1, 1, 2, 2)
 
 
 warnings.filterwarnings("ignore")
@@ -1209,7 +1374,7 @@ def test_final_fftn() -> None:
     class DummyFFT:
         """Test class DummyFFT."""
 
-        def fftn(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fftn(self, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fftn.
 
             Args:
@@ -1217,17 +1382,17 @@ def test_final_fftn() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fftn`.
+                BackendArg: Computed output value from `fftn`.
             """
             return np.array([1.0])
 
-    class BkSpecial:
+    class BkSpecial(MockTestStub):
         """Test class BkSpecial."""
 
         fft = DummyFFT()
 
-    mod._fftn(ensure_mod(BkSpecial()), np.array([1.0]))
-    mod._fftnd(ensure_mod(BkSpecial()), np.array([1.0]))
+    mod._fftn(BkSpecial(), np.array([1.0]))
+    mod._fftnd(BkSpecial(), np.array([1.0]))
     assert callable(mod._fftnd)
 
 
@@ -1241,7 +1406,7 @@ class _BkSpecial:
         """Test class linalg."""
 
         @staticmethod
-        def householder_product(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def householder_product(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function householder_product.
 
             Args:
@@ -1249,7 +1414,7 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `householder_product`.
+                BackendArg: Computed output value from `householder_product`.
             """
             return np.array([1.0])
 
@@ -1257,7 +1422,7 @@ class _BkSpecial:
         """Test class fft."""
 
         @staticmethod
-        def fft2(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fft2(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fft2.
 
             Args:
@@ -1265,12 +1430,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fft2`.
+                BackendArg: Computed output value from `fft2`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def fftfreq(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fftfreq(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fftfreq.
 
             Args:
@@ -1278,12 +1443,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fftfreq`.
+                BackendArg: Computed output value from `fftfreq`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def fftn(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fftn(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fftn.
 
             Args:
@@ -1291,12 +1456,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fftn`.
+                BackendArg: Computed output value from `fftn`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def fftshift(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def fftshift(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function fftshift.
 
             Args:
@@ -1304,12 +1469,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `fftshift`.
+                BackendArg: Computed output value from `fftshift`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def ifft(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def ifft(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function ifft.
 
             Args:
@@ -1317,12 +1482,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `ifft`.
+                BackendArg: Computed output value from `ifft`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def ifft2(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def ifft2(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function ifft2.
 
             Args:
@@ -1330,12 +1495,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `ifft2`.
+                BackendArg: Computed output value from `ifft2`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def ifftn(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def ifftn(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function ifftn.
 
             Args:
@@ -1343,12 +1508,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `ifftn`.
+                BackendArg: Computed output value from `ifftn`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def ifftshift(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def ifftshift(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function ifftshift.
 
             Args:
@@ -1356,7 +1521,7 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `ifftshift`.
+                BackendArg: Computed output value from `ifftshift`.
             """
             return np.array([1.0])
 
@@ -1364,7 +1529,7 @@ class _BkSpecial:
         """Test class lax."""
 
         @staticmethod
-        def infeed(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def infeed(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function infeed.
 
             Args:
@@ -1372,12 +1537,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `infeed`.
+                BackendArg: Computed output value from `infeed`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def outfeed(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def outfeed(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function outfeed.
 
             Args:
@@ -1385,12 +1550,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `outfeed`.
+                BackendArg: Computed output value from `outfeed`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def pshuffle(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def pshuffle(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function pshuffle.
 
             Args:
@@ -1398,12 +1563,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `pshuffle`.
+                BackendArg: Computed output value from `pshuffle`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def pswapaxes(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def pswapaxes(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function pswapaxes.
 
             Args:
@@ -1411,12 +1576,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `pswapaxes`.
+                BackendArg: Computed output value from `pswapaxes`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def ppermute(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def ppermute(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function ppermute.
 
             Args:
@@ -1424,12 +1589,12 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `ppermute`.
+                BackendArg: Computed output value from `ppermute`.
             """
             return np.array([1.0])
 
         @staticmethod
-        def psum_scatter(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def psum_scatter(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function psum_scatter.
 
             Args:
@@ -1437,7 +1602,7 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `psum_scatter`.
+                BackendArg: Computed output value from `psum_scatter`.
             """
             return np.array([1.0])
 
@@ -1445,7 +1610,7 @@ class _BkSpecial:
         """Test class random."""
 
         @staticmethod
-        def tridiagonal(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def tridiagonal(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function tridiagonal.
 
             Args:
@@ -1453,21 +1618,29 @@ class _BkSpecial:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `tridiagonal`.
+                BackendArg: Computed output value from `tridiagonal`.
             """
             return np.array([1.0])
 
 
-def _test_even_more_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestEvenMoreCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_even_more_coverage` split helpers."""
+
+    BkSpecial: type
+    arg: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    bk: EagerTensorProtocol
+
+
+def _test_even_more_coverage_sub_1(_state: _TestEvenMoreCoverageState) -> None:
     """Execute sub-part 1 of test_even_more_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    _state.update(ensure_tensor_dict({"BkSpecial": _BkSpecial}))
+    _state.update({"BkSpecial": _BkSpecial})
 
 
-def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_even_more_coverage_sub_2(_state: _TestEvenMoreCoverageState) -> None:
     """Execute sub-part 2 of test_even_more_coverage.
 
     Args:
@@ -1476,7 +1649,7 @@ def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     BkSpecial = _state["BkSpecial"]
     bk = BkSpecial()
     arg = np.array([1.0])
-    mod._accumulate_n(ensure_eager_tensor(np), [arg, arg])
+    mod._accumulate_n(np, [arg, arg])
     mod._householder_product(bk, arg)
     mod._fft2(bk, arg)
     mod._fftfreq(bk, arg)
@@ -1492,11 +1665,11 @@ def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     mod._pswapaxes(bk, arg)
     mod._ppermute(bk, arg)
     mod._np_tridiagonal(bk, arg)
-    _state.update(ensure_tensor_dict({"arg": arg, "bk": bk}))
-    _state.update(ensure_tensor_dict({"BkSpecial": BkSpecial}))
+    _state.update({"arg": arg, "bk": bk})
+    _state.update({"BkSpecial": BkSpecial})
 
 
-def _test_even_more_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_even_more_coverage_sub_3(_state: _TestEvenMoreCoverageState) -> None:
     """Execute sub-part 3 of test_even_more_coverage.
 
     Args:
@@ -1505,12 +1678,12 @@ def _test_even_more_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
     (arg, bk) = (_state["arg"], _state["bk"])
     assert mod._fftn(bk, arg) is not None
     assert mod._psumscatter(bk, arg) is not None
-    _state.update(ensure_tensor_dict({"arg": arg, "bk": bk}))
+    _state.update({"arg": arg, "bk": bk})
 
 
 def test_even_more_coverage() -> None:
     """Test function test_even_more_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestEvenMoreCoverageState = {}
     for _sub_fn in (_test_even_more_coverage_sub_1, _test_even_more_coverage_sub_2, _test_even_more_coverage_sub_3):
         _sub_fn(_state)
     assert len(_state) > 0

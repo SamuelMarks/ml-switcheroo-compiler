@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_callable
+from pytest_mock import MockerFixture
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_mlx_asarray_fallback(mocker: EagerTensorProtocol) -> None:
+def test_mlx_asarray_fallback(mocker: MockerFixture) -> None:
     """Test mlx asarray fallback.
 
     Args:
@@ -22,14 +22,14 @@ def test_mlx_asarray_fallback(mocker: EagerTensorProtocol) -> None:
     class DummyMX:
         """Test class DummyMX."""
 
-        def array(self, data: EagerValue) -> EagerValue:
+        def array(self, data: BackendArg) -> BackendArg:
             """Test function array.
 
             Args:
                 data: Test parameter `data`.
 
             Returns:
-                EagerValue: Computed output value from `array`.
+                BackendArg: Computed output value from `array`.
             """
             return "array_" + str(data)
 
@@ -37,4 +37,4 @@ def test_mlx_asarray_fallback(mocker: EagerTensorProtocol) -> None:
 
     _ = mocker
     with patch.object(types_mod, "mx", DummyMX()):
-        assert ensure_callable(asarray)(None, "foo") == "array_foo"
+        assert asarray(None, "foo") == "array_foo"

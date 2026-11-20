@@ -20,8 +20,12 @@ def test_type_promotion_explicitizer() -> None:
 
 def test_type_promotion_explicitizer_extra() -> None:
     """Test function test_type_promotion_explicitizer_extra."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import _needs_cast, type_promotion_explicitizer_pass
+    from ml_switcheroo_ir import IRGraph, IRNode
+
+    from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
+        _needs_cast,
+        type_promotion_explicitizer_pass,
+    )
 
     assert _needs_cast(None, "float32") is None
     assert _needs_cast("float32", "float32") is None
@@ -41,7 +45,10 @@ def test_type_promotion_explicitizer_extra() -> None:
     g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3, "add": n_add, "add2": n_add2, "not2": n_not_2, "add3": n_add3})
     from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n1, n2, n3, n_add, n_add2, n_not_2, n_add3]):
+    with patch(
+        "ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort",
+        return_value=[n1, n2, n3, n_add, n_add2, n_not_2, n_add3],
+    ):
         with patch("ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer.dtype_inference_pass"):
             modified = type_promotion_explicitizer_pass(g)
     assert modified is True
@@ -64,10 +71,18 @@ def test_type_promotion_lattice_exceptions_and_missing_file() -> None:
     from ml_switcheroo_compiler.core.type_promotion import _load_declarative_promotion_lattice
 
     mock_yaml1 = {"lattice": {"InvalidDTypeKey": {"OtherInvalid": "InvalidResult"}}}
-    with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_yaml1):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", MagicMock()),
+        patch("yaml.safe_load", return_value=mock_yaml1),
+    ):
         _load_declarative_promotion_lattice()
     mock_yaml2 = {"lattice": {"float32": {"InvalidInnerDType": "float32"}}}
-    with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_yaml2):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", MagicMock()),
+        patch("yaml.safe_load", return_value=mock_yaml2),
+    ):
         _load_declarative_promotion_lattice()
     with patch("os.path.exists", return_value=False):
         _load_declarative_promotion_lattice()

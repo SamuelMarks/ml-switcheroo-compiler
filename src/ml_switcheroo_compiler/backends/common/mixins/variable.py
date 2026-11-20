@@ -1,8 +1,8 @@
-"""Implementation of variable operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.variable`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.common.mixins.variable`."""
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_ir import IRNode
 
 from .common import CommonASTVisitor
 

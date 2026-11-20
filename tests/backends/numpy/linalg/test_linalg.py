@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import _build_einsum_equation
+from ml_switcheroo_compiler.backends.eager.reference_math.linalg_ops import _build_einsum_equation
 
 
 def test_build_einsum_equation_loop() -> None:

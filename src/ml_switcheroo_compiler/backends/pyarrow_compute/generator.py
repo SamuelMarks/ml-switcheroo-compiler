@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, StaticEagerBackendAdapter
 from ml_switcheroo_compiler.backends.pyarrow_compute.eager import execute_op as _execute_op
 from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
     array as _array,
@@ -69,17 +72,16 @@ from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
     zeros as _zeros,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _unwrap_input_val(val: EagerValue) -> EagerValue:
+def _unwrap_input_val(val: BackendArg) -> BackendArg:
     """Unwrap Arrow object or Tensor to underlying raw array or scalar.
 
     Args:
-        val (EagerValue): Input value.
+        val (BackendArg): Input value.
 
     Returns:
-        EagerValue: Unwrapped raw data.
+        BackendArg: Unwrapped raw data.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -127,11 +129,11 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, BackendArg] | None = None) -> dict[str, str]:
         """Retrieve operation formatting templates for PyArrow Compute operations.
 
         Args:
-            kwargs (dict[str, EagerValue] | None): Keyword arguments passed to the visitor.
+            kwargs (dict[str, BackendArg] | None): Keyword arguments passed to the visitor.
 
         Returns:
             dict[str, str]: Map from op_type to formatting template.
@@ -259,46 +261,48 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return "\n".join(self.code)
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Fallback for generic nodes emitting PyArrow Compute operations.
 
         Args:
             node (IRNode): The node to process.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into an executable callable for Arrow columnar execution.
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (EagerValue): Optional compilation options.
+            **kwargs (BackendArg): Optional compilation options.
 
         Returns:
-            EagerValue: Execution callable.
+            BackendArg: Execution callable.
         """
         from ml_switcheroo_compiler.backends.pyarrow_compute.types import is_arrow_object, to_arrow
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
         zero_copy = self.zero_copy
 
-        def aot_arrow_runner(*w_args: EagerValue, **w_kw: EagerValue) -> EagerValue:
+        def aot_arrow_runner(*w_args: BackendArg, **w_kw: BackendArg) -> BackendArg:
             """Execute graph with Arrow columnar structures.
 
             Args:
-                *w_args (EagerValue): Input tensor values.
-                **w_kw (EagerValue): Keyword inputs.
+                *w_args (BackendArg): Input tensor values.
+                **w_kw (BackendArg): Keyword inputs.
 
             Returns:
-                EagerValue: Output results.
+                BackendArg: Output results.
             """
             input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
-            inputs: dict[str, EagerValue] = {inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)}
+            inputs: dict[str, BackendArg] = {
+                inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)
+            }
             for k, val in w_kw.items():
                 inputs[k] = _unwrap_input_val(val)
 
@@ -310,181 +314,181 @@ class PyArrowComputeGenerator(PythonStringGenerator):
                         return to_arrow(res, target_type="tensor")
                     return res
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return ensure_eager_tensor(evaluated)
+            return evaluated
 
         return aot_arrow_runner
 
     @staticmethod
-    def zeros(shape: tuple[int, ...]) -> EagerValue:
+    def zeros(shape: tuple[int, ...]) -> BackendArg:
         """Create a zero-filled Arrow array.
 
         Args:
             shape (tuple[int, ...]): Target shape.
 
         Returns:
-            EagerValue: Zero-filled array.
+            BackendArg: Zero-filled array.
         """
         return _zeros(shape)
 
     @staticmethod
-    def ones(shape: tuple[int, ...]) -> EagerValue:
+    def ones(shape: tuple[int, ...]) -> BackendArg:
         """Create a one-filled Arrow array.
 
         Args:
             shape (tuple[int, ...]): Target shape.
 
         Returns:
-            EagerValue: One-filled array.
+            BackendArg: One-filled array.
         """
         return _ones(shape)
 
     @staticmethod
-    def empty(shape: tuple[int, ...]) -> EagerValue:
+    def empty(shape: tuple[int, ...]) -> BackendArg:
         """Create a null-filled Arrow array.
 
         Args:
             shape (tuple[int, ...]): Target shape.
 
         Returns:
-            EagerValue: Null-filled array.
+            BackendArg: Null-filled array.
         """
         return _empty(shape)
 
     @staticmethod
-    def array(data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+    def array(data: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
         """Create a columnar Arrow array from data.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (EagerValue | None): Optional dtype string.
+            data (BackendArg): Input data.
+            dtype (BackendArg | None): Optional dtype string.
 
         Returns:
-            EagerValue: Arrow array.
+            BackendArg: Arrow array.
         """
         dt_str = str(dtype) if dtype is not None else None
         return _array(data, dtype=dt_str)
 
     @staticmethod
-    def asarray(data: EagerValue) -> EagerValue:
+    def asarray(data: BackendArg) -> BackendArg:
         """Convert input to an Arrow columnar array.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
-            EagerValue: Arrow array.
+            BackendArg: Arrow array.
         """
         return _asarray(data)
 
     @staticmethod
-    def chunked_array(chunks: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+    def chunked_array(chunks: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
         """Construct a columnar ChunkedArray.
 
         Args:
-            chunks (EagerValue): Sequence of array chunks.
-            dtype (EagerValue | None): Optional Arrow type.
+            chunks (BackendArg): Sequence of array chunks.
+            dtype (BackendArg | None): Optional Arrow type.
 
         Returns:
-            EagerValue: ChunkedArray.
+            BackendArg: ChunkedArray.
         """
         return _chunked_array(chunks, dtype=dtype)
 
     @staticmethod
     def record_batch(
-        data: EagerValue,
+        data: BackendArg,
         names: Sequence[str] | None = None,
-        schema: EagerValue | None = None,
-    ) -> EagerValue:
+        schema: BackendArg | None = None,
+    ) -> BackendArg:
         """Create a columnar RecordBatch.
 
         Args:
-            data (EagerValue): Column arrays.
+            data (BackendArg): Column arrays.
             names (Sequence[str] | None): Field names.
-            schema (EagerValue | None): Optional schema.
+            schema (BackendArg | None): Optional schema.
 
         Returns:
-            EagerValue: RecordBatch.
+            BackendArg: RecordBatch.
         """
         return _record_batch(data, names=names, schema=schema)
 
     @staticmethod
     def slice_record_batch(
-        batch: EagerValue,
+        batch: BackendArg,
         offset: int = 0,
         length: int | None = None,
-    ) -> EagerValue:
+    ) -> BackendArg:
         """Perform zero-copy slicing of a RecordBatch.
 
         Args:
-            batch (EagerValue): Target RecordBatch.
+            batch (BackendArg): Target RecordBatch.
             offset (int): Starting index.
             length (int | None): Slice length.
 
         Returns:
-            EagerValue: Sliced RecordBatch.
+            BackendArg: Sliced RecordBatch.
         """
         return _slice_record_batch(batch, offset=offset, length=length)
 
     @staticmethod
     def to_table(
-        data: EagerValue,
+        data: BackendArg,
         names: Sequence[str] | None = None,
-        schema: EagerValue | None = None,
-    ) -> EagerValue:
+        schema: BackendArg | None = None,
+    ) -> BackendArg:
         """Convert data to an Arrow Table.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
             names (Sequence[str] | None): Optional column names.
-            schema (EagerValue | None): Optional schema.
+            schema (BackendArg | None): Optional schema.
 
         Returns:
-            EagerValue: Arrow Table.
+            BackendArg: Arrow Table.
         """
         return _to_table(data, names=names, schema=schema)
 
     @staticmethod
     def table(
-        data: EagerValue,
+        data: BackendArg,
         names: Sequence[str] | None = None,
-        schema: EagerValue | None = None,
-    ) -> EagerValue:
+        schema: BackendArg | None = None,
+    ) -> BackendArg:
         """Construct an Arrow Table.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
             names (Sequence[str] | None): Optional column names.
-            schema (EagerValue | None): Optional schema.
+            schema (BackendArg | None): Optional schema.
 
         Returns:
-            EagerValue: Arrow Table.
+            BackendArg: Arrow Table.
         """
         return _table(data, names=names, schema=schema)
 
     @staticmethod
-    def tensor(data: EagerValue) -> EagerValue:
+    def tensor(data: BackendArg) -> BackendArg:
         """Construct a pyarrow.Tensor.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
-            EagerValue: pyarrow.Tensor.
+            BackendArg: pyarrow.Tensor.
         """
         return _tensor(data)
 
     @staticmethod
     def check_parity(
-        lhs: EagerValue,
-        rhs: EagerValue,
+        lhs: BackendArg,
+        rhs: BackendArg,
         rtol: float = 1e-5,
         atol: float = 1e-8,
     ) -> bool:
         """Check numerical parity between two Arrow structures.
 
         Args:
-            lhs (EagerValue): First operand.
-            rhs (EagerValue): Second operand.
+            lhs (BackendArg): First operand.
+            rhs (BackendArg): Second operand.
             rtol (float): Relative tolerance.
             atol (float): Absolute tolerance.
 
@@ -494,11 +498,11 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         return _check_parity(lhs, rhs, rtol=rtol, atol=atol)
 
     @staticmethod
-    def item(data: EagerValue) -> float:
+    def item(data: BackendArg) -> float:
         """Extract scalar item from Arrow data.
 
         Args:
-            data (EagerValue): Target data.
+            data (BackendArg): Target data.
 
         Returns:
             float: Extracted scalar.
@@ -506,83 +510,83 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         return _item(data)
 
     @staticmethod
-    def execute_op(op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def execute_op(op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute operation eagerly on PyArrow Compute backend.
 
         Args:
             op_type (str): Operation type.
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Computed result.
+            BackendArg: Computed result.
         """
         return _execute_op(op_type, *args, **kwargs)
 
     @staticmethod
-    def tensor_to_arrow_tensor(tensor_val: EagerValue) -> EagerValue:
+    def tensor_to_arrow_tensor(tensor_val: BackendArg) -> BackendArg:
         """Convert Tensor to pyarrow.Tensor.
 
         Args:
-            tensor_val (EagerValue): Input Tensor.
+            tensor_val (BackendArg): Input Tensor.
 
         Returns:
-            EagerValue: pyarrow.Tensor.
+            BackendArg: pyarrow.Tensor.
         """
         return _tensor_to_arrow_tensor(tensor_val)
 
     @staticmethod
-    def arrow_tensor_to_tensor(arrow_tensor: EagerValue) -> EagerValue:
+    def arrow_tensor_to_tensor(arrow_tensor: BackendArg) -> BackendArg:
         """Convert pyarrow.Tensor to Unified IR Tensor.
 
         Args:
-            arrow_tensor (EagerValue): Input pyarrow.Tensor.
+            arrow_tensor (BackendArg): Input pyarrow.Tensor.
 
         Returns:
-            EagerValue: Unified IR Tensor.
+            BackendArg: Unified IR Tensor.
         """
         return _arrow_tensor_to_tensor(arrow_tensor)
 
     @staticmethod
     def tensor_to_record_batch(
-        tensor_val: EagerValue,
+        tensor_val: BackendArg,
         names: Sequence[str] | None = None,
-    ) -> EagerValue:
+    ) -> BackendArg:
         """Convert Tensor to Arrow RecordBatch.
 
         Args:
-            tensor_val (EagerValue): Input Tensor.
+            tensor_val (BackendArg): Input Tensor.
             names (Sequence[str] | None): Optional column names.
 
         Returns:
-            EagerValue: Arrow RecordBatch.
+            BackendArg: Arrow RecordBatch.
         """
         return _tensor_to_record_batch(tensor_val, names=names)
 
     @staticmethod
     def record_batch_to_tensor(
-        batch: EagerValue,
+        batch: BackendArg,
         columns: Sequence[str] | None = None,
         dtype: str | None = None,
-    ) -> EagerValue:
+    ) -> BackendArg:
         """Convert Arrow RecordBatch to Unified IR Tensor.
 
         Args:
-            batch (EagerValue): Input RecordBatch.
+            batch (BackendArg): Input RecordBatch.
             columns (Sequence[str] | None): Optional column subset.
             dtype (str | None): Optional target dtype.
 
         Returns:
-            EagerValue: Unified IR Tensor.
+            BackendArg: Unified IR Tensor.
         """
         return _record_batch_to_tensor(batch, columns=columns, dtype=dtype)
 
     @staticmethod
-    def is_arrow_object(obj: EagerValue) -> bool:
+    def is_arrow_object(obj: BackendArg) -> bool:
         """Check if object is a PyArrow construct.
 
         Args:
-            obj (EagerValue): Candidate object.
+            obj (BackendArg): Candidate object.
 
         Returns:
             bool: True if PyArrow construct.
@@ -590,26 +594,57 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         return _is_arrow_object(obj)
 
     @staticmethod
-    def to_arrow(data: EagerValue, target_type: str = "tensor") -> EagerValue:
+    def to_arrow(data: BackendArg, target_type: str = "tensor") -> BackendArg:
         """Convert Tensor to specified Arrow type.
 
         Args:
-            data (EagerValue): Input Tensor.
+            data (BackendArg): Input Tensor.
             target_type (str): Target Arrow type.
 
         Returns:
-            EagerValue: Converted Arrow object.
+            BackendArg: Converted Arrow object.
         """
         return _to_arrow(data, target_type=target_type)
 
     @staticmethod
-    def from_arrow(data: EagerValue) -> EagerValue:
+    def from_arrow(data: BackendArg) -> BackendArg:
         """Convert Arrow structure to Unified IR Tensor.
 
         Args:
-            data (EagerValue): Input Arrow object.
+            data (BackendArg): Input Arrow object.
 
         Returns:
-            EagerValue: Unified IR Tensor.
+            BackendArg: Unified IR Tensor.
         """
         return _from_arrow(data)
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for PyArrow Compute.
+
+        Returns:
+            EagerBackendAdapter: Concrete PyArrow Compute eager backend adapter.
+        """
+        import pyarrow.compute as pc
+
+        return StaticEagerBackendAdapter(
+            backend_name="pyarrow_compute",
+            ops={
+                "abs": pc.abs,
+                "add": pc.add,
+                "subtract": pc.subtract,
+                "multiply": pc.multiply,
+                "divide": pc.divide,
+                "sin": pc.sin,
+                "cos": pc.cos,
+                "exp": pc.exp,
+                "log": pc.ln,
+                "sqrt": pc.sqrt,
+                "array": _array,
+                "asarray": _asarray,
+                "zeros": _zeros,
+                "ones": _ones,
+                "empty": _empty,
+            },
+            module=pc,
+        )

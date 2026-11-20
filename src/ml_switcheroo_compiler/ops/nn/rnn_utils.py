@@ -6,9 +6,9 @@ from collections.abc import Callable, Sequence  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_list, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list, require_callable
 from ml_switcheroo_compiler.core.config import config as global_config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import OpValue, is_variadic_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
@@ -22,14 +22,14 @@ from ml_switcheroo_compiler.ops.shape import (
 from ml_switcheroo_compiler.ops.shape import flip as cf_reverse
 
 
-def _unpack_pair(val: TensorOrScalar) -> tuple[TensorOrScalar, TensorOrScalar]:
+def _unpack_pair(val: OpValue) -> tuple[OpValue, OpValue]:
     """Unpack a 2-element sequence result into a pair.
 
     Args:
-        val (TensorOrScalar): 2-element sequence result.
+        val (OpValue): 2-element sequence result.
 
     Returns:
-        tuple[TensorOrScalar, TensorOrScalar]: Unpacked `(first, second)` pair.
+        tuple[OpValue, OpValue]: Unpacked `(first, second)` pair.
     """
     assert isinstance(val, (tuple, list))
     return val[0], val[1]
@@ -40,16 +40,16 @@ class _PositionalRNNModel(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
+    def __init__(self, *args: OpValue, **kwargs: OpValue) -> None:
         """Initialize model from positional or keyword arguments.
 
         Args:
-            *args (TensorOrScalar): Positional field values.
-            **kwargs (TensorOrScalar): Keyword field values.
+            *args (OpValue): Positional field values.
+            **kwargs (OpValue): Keyword field values.
         """
         field_names = tuple(type(self).model_fields.keys())
         pos_map = {field_names[i]: args[i] for i in range(min(len(field_names), len(args)))}
-        ensure_callable(super().__init__)(**{**pos_map, **kwargs})
+        super().__init__(**{**pos_map, **kwargs})
 
 
 class RNNConfig(_PositionalRNNModel):
@@ -103,18 +103,18 @@ class ScanConfig(_PositionalRNNModel):
 
 
 def scan(
-    f: TensorOrScalar,
-    init: tuple[Tensor, ...],
+    f: OpValue,
+    init: Tensor | tuple[Tensor, ...],
     xs: Tensor,
     config: ScanConfig | None = None,
-) -> tuple[tuple[Tensor, ...] | TensorOrScalar, Tensor]:
+) -> tuple[tuple[Tensor, ...] | OpValue, Tensor]:
     """Scan loop construct.
 
     Args:
-        f (TensorOrScalar): Input `f` argument (f).
-        init (tuple): Input `init` argument (init).
+        f (OpValue): Input `f` argument (f).
+        init (Tensor | tuple[Tensor, ...]): Input `init` argument (init).
         xs (Tensor): Input `xs` argument (xs).
-        config (Optional): Input `config` argument (config).
+        config (ScanConfig | None): Input `config` argument (config).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -123,19 +123,21 @@ def scan(
     fn_callable = f
 
     if global_config.eager_mode or conf.unroll:
-        xs_unstacked = unstack(xs, axis=0)
+        xs_list = coerce_operand_list(unstack(xs, axis=0))
 
         if conf.reverse:
-            xs_unstacked = list(ensure_callable(reversed)(xs_unstacked))
+            xs_list = list(reversed(xs_list))
 
-        carry: TensorOrScalar = init
+        carry: OpValue = init
         ys: list[Tensor] = []
 
-        for x in ensure_eager_list(xs_unstacked):
-            carry, y = _unpack_pair(invoke_callable(fn_callable, carry, x))
+        for x in xs_list:
+            _callable_fn_1: OpValue = fn_callable
+            assert is_variadic_callable(_callable_fn_1)
+            carry, y = _unpack_pair(_callable_fn_1(carry, x))
             ys.append(ensure_tensor(y))
 
-        carry_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in ensure_eager_list(carry))
+        carry_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in coerce_operand_list(carry))
         return (carry_tup, ensure_tensor(stack(ys, axis=0)))
     else:
         if conf.reverse:
@@ -151,9 +153,15 @@ def scan(
             Returns:
                 tuple[tuple[Tensor, ...], Tensor]: Updated carry and step output.
             """
-            res_step = invoke_callable(fn_callable, c, x_elem)
+            _callable_fn_2: OpValue = fn_callable
+            assert is_variadic_callable(_callable_fn_2)
+            res_step = _callable_fn_2(c, x_elem)
             c_next, y_next = _unpack_pair(res_step)
-            c_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in c_next) if isinstance(c_next, (list, tuple)) else (ensure_tensor(c_next),)
+            c_tup: tuple[Tensor, ...] = (
+                tuple(ensure_tensor(t) for t in c_next)
+                if isinstance(c_next, (list, tuple))
+                else (ensure_tensor(c_next),)
+            )
             return c_tup, ensure_tensor(y_next)
 
         scan_res = cf_scan(_step_fn, init, xs, conf.length)
@@ -163,14 +171,14 @@ def scan(
 
 def bidirectional(
     inputs: BidirectionalInputs,
-    cell_fn: TensorOrScalar,
+    cell_fn: OpValue,
     config: BidirectionalConfig | None = None,
 ) -> tuple[Tensor | tuple[Tensor, Tensor], tuple[Tensor, ...], tuple[Tensor, ...]]:
     """Bidirectional RNN wrapper.
 
     Args:
         inputs (BidirectionalInputs): The bidirectional inputs.
-        cell_fn (TensorOrScalar): The RNN cell function.
+        cell_fn (OpValue): The RNN cell function.
         config (Optional[BidirectionalConfig]): Configuration.
         config (Optional[ScanConfig]): Configuration for scan.
 
@@ -210,7 +218,7 @@ def bidirectional(
     return (merged_out, forward_state, backward_state)
 
 
-def _permute_time_major(inputs: Tensor) -> TensorOrScalar:
+def _permute_time_major(inputs: Tensor) -> OpValue:
     """Swap batch and time dimensions.
 
     Args:
@@ -227,26 +235,26 @@ def _permute_time_major(inputs: Tensor) -> TensorOrScalar:
 def rnn(
     inputs: Tensor,
     initial_state: tuple[Tensor, ...],
-    cell_fn: TensorOrScalar,
+    cell_fn: OpValue,
     config: RNNConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Define base recurrent loop evaluation.
 
     Args:
         inputs (Tensor): Input `inputs` argument (inputs).
-        initial_state (tuple): Input `initial_state` argument (initial state).
-        cell_fn (TensorOrScalar): Input `cell_fn` argument (cell fn).
-        config (Optional): Input `config` argument (config).
+        initial_state (tuple[Tensor, ...]): Input `initial_state` argument (initial state).
+        cell_fn (OpValue): Input `cell_fn` argument (cell fn).
+        config (RNNConfig | None): Input `config` argument (config).
 
     Returns:
         tuple: Computed `tuple` output.
     """
     conf = config if config is not None else RNNConfig()
-    cell_callable = ensure_callable(cell_fn)
+    cell_callable = cell_fn
     if not conf.time_major:
         inputs = ensure_tensor(_permute_time_major(inputs))
 
-    def scan_fn(carry: Tensor, x: Tensor) -> TensorOrScalar:
+    def scan_fn(carry: Tensor, x: Tensor) -> OpValue:
         """Compute the scan fn tensor operation.
 
         Args:
@@ -256,7 +264,7 @@ def rnn(
         Returns:
             tuple: Computed `tuple` output.
         """
-        out, new_carry = _unpack_pair(cell_callable(x, carry))
+        out, new_carry = require_callable(_unpack_pair)(require_callable(cell_callable)(x, carry))
         return new_carry, out
 
     final_state, outputs = scan(
@@ -271,36 +279,40 @@ def rnn(
     if not conf.time_major:
         outputs = ensure_tensor(_permute_time_major(outputs))
 
-    final_state_tup: tuple[Tensor, ...] = tuple(ensure_tensor(t) for t in final_state) if isinstance(final_state, (tuple, list)) else (ensure_tensor(final_state),)
+    final_state_tup: tuple[Tensor, ...] = (
+        tuple(ensure_tensor(t) for t in final_state)
+        if isinstance(final_state, (tuple, list))
+        else (ensure_tensor(final_state),)
+    )
     return outputs, final_state_tup
 
 
 class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
-    def __init__(self, cell: TensorOrScalar, device: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
+    def __init__(self, cell: OpValue, device: OpValue, **kwargs: OpValue) -> None:
         """Init.
 
         Args:
-            cell (TensorOrScalar): Input `cell` argument (cell).
-            device (TensorOrScalar): Input `device` argument (device).
-            **kwargs (TensorOrScalar): Keyword args.
+            cell (OpValue): Input `cell` argument (cell).
+            device (OpValue): Input `device` argument (device).
+            **kwargs (OpValue): Keyword args.
         """
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs: TensorOrScalar, state: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def __call__(self, inputs: OpValue, state: OpValue, **kwargs: OpValue) -> OpValue:
         """Call.
 
         Args:
-        inputs (TensorOrScalar): Input `inputs` argument (inputs).
-        state (TensorOrScalar): Input `state` argument (state).
-        **kwargs (TensorOrScalar): Keyword args.
+        inputs (OpValue): Input `inputs` argument (inputs).
+        state (OpValue): Input `state` argument (state).
+        **kwargs (OpValue): Keyword args.
 
         Returns:
         tuple: Computed `tuple` output.
         """
-        return ensure_eager_tensor(ensure_callable(self._cell)(inputs, state, **kwargs))
+        return require_callable(self._cell)(inputs, state, **kwargs)
 
 
 class DropoutWrapperConfig(pydantic.BaseModel):
@@ -313,9 +325,9 @@ class DropoutWrapperConfig(pydantic.BaseModel):
     state_keep_prob: float = 1.0
     variational_recurrent: bool = False
     input_size: int | None = None
-    dtype: TensorOrScalar = None
+    dtype: OpValue = None
     seed: int | None = None
-    dropout_state_filter_visitor: TensorOrScalar = None
+    dropout_state_filter_visitor: OpValue = None
 
 
 class RNNCellDropoutWrapper:
@@ -323,34 +335,40 @@ class RNNCellDropoutWrapper:
 
     def __init__(
         self,
-        cell: TensorOrScalar,
+        cell: OpValue,
         config: DropoutWrapperConfig | None = None,
-        **kwargs: TensorOrScalar,
+        **kwargs: OpValue,
     ) -> None:
         """Initialize the RNNCellDropoutWrapper.
 
         Args:
-            cell (TensorOrScalar): The RNN cell to wrap.
+            cell (OpValue): The RNN cell to wrap.
             config (Optional[DropoutWrapperConfig]): Configuration for dropout.
-            kwargs (TensorOrScalar): Additional keyword arguments.
+            kwargs (OpValue): Additional keyword arguments.
         """
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def __call__(
+        self,
+        inputs: Tensor | OpValue,
+        state: Tensor | tuple[Tensor, ...] | OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Run the cell with dropout.
 
         Args:
-            inputs (Tensor): Input tensor.
-            state (tuple[Tensor, ...]): Current state.
-            kwargs (TensorOrScalar): Additional keyword arguments.
+            inputs (Tensor | OpValue): Input tensor.
+            state (Tensor | tuple[Tensor, ...] | OpValue): Current state.
+            kwargs (OpValue): Additional keyword arguments.
 
         Returns:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
         """
+        inp_t = inputs if isinstance(inputs, Tensor) else ensure_tensor(inputs)
         if self._config.input_keep_prob < 1.0:
-            inputs = ensure_tensor(dropout(inputs, rate=1.0 - self._config.input_keep_prob))
-        out, new_state = _unpack_pair(ensure_callable(self._cell)(inputs, state, **kwargs))
+            inp_t = ensure_tensor(dropout(inp_t, rate=1.0 - self._config.input_keep_prob))
+        out, new_state = _unpack_pair(require_callable(self._cell)(inp_t, state, **kwargs))
         if self._config.output_keep_prob < 1.0:
             out = dropout(ensure_tensor(out), rate=1.0 - self._config.output_keep_prob)
         return out, new_state
@@ -359,31 +377,31 @@ class RNNCellDropoutWrapper:
 class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
-    def __init__(self, cell: TensorOrScalar, residual_fn: TensorOrScalar = None, **kwargs: TensorOrScalar) -> None:
+    def __init__(self, cell: OpValue, residual_fn: OpValue = None, **kwargs: OpValue) -> None:
         """Init.
 
         Args:
-            cell (TensorOrScalar): Input `cell` argument (cell).
-            residual_fn (TensorOrScalar): Input `residual_fn` argument (residual fn).
-            **kwargs (TensorOrScalar): Keyword args.
+            cell (OpValue): Input `cell` argument (cell).
+            residual_fn (OpValue): Input `residual_fn` argument (residual fn).
+            **kwargs (OpValue): Keyword args.
         """
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs: TensorOrScalar, state: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def __call__(self, inputs: OpValue, state: OpValue, **kwargs: OpValue) -> OpValue:
         """Call.
 
         Args:
-            inputs (TensorOrScalar): Input `inputs` argument (inputs).
-            state (TensorOrScalar): Input `state` argument (state).
-            **kwargs (TensorOrScalar): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            state (OpValue): Input `state` argument (state).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
         """
-        out, new_state = _unpack_pair(ensure_callable(self._cell)(inputs, state, **kwargs))
+        out, new_state = _unpack_pair(require_callable(self._cell)(inputs, state, **kwargs))
         if self._residual_fn is not None:
-            out = ensure_callable(self._residual_fn)(inputs, out)
+            out = require_callable(self._residual_fn)(inputs, out)
         else:
             out = add(inputs, out)
         return out, new_state

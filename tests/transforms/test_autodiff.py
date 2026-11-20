@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_operand_list
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.transforms.autodiff import (
     _accumulate_gradients,
@@ -29,10 +30,10 @@ from ml_switcheroo_compiler.transforms.autodiff import (
     jvp,
 )
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
+from tests.testing_utils import EagerBoundCallable, EagerTensorProtocol, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
 
 
 def test_add_nodes() -> None:
@@ -98,30 +99,30 @@ def test_accumulate_gradients() -> None:
 
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff.get_vjp") as mock_get_vjp:
         mock_get_vjp.return_value = lambda g, n, adj: ["adj_i1", "adj_i2"]
-        adjoints = ensure_tensor_dict({})
-        ensure_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints)
+        adjoints: dict[str, str] = {}
+        _accumulate_gradients(graph, n1, "adj_n1", adjoints)
         assert adjoints["i1"] == "adj_i1"
 
-        ensure_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints)
+        _accumulate_gradients(graph, n1, "adj_n1", adjoints)
         assert adjoints["i1"].startswith("adj_i1_add")
 
         # Test Unconnected
         mock_get_vjp.return_value = lambda g, n, adj: [UnconnectedGradients.NONE, UnconnectedGradients.ZERO]
-        adjoints2 = ensure_tensor_dict({})
-        ensure_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
-        ensure_callable(_accumulate_gradients)(graph, n1_no_remat, "adj_n1", adjoints2)
+        adjoints2: dict[str, str] = {}
+        _accumulate_gradients(graph, n1, "adj_n1", adjoints2)
+        _accumulate_gradients(graph, n1_no_remat, "adj_n1", adjoints2)
         assert "i1" not in adjoints2
 
         # Test Missing VJP
         mock_get_vjp.side_effect = ValueError("missing")
         with pytest.raises(MissingJVPRuleError):
-            ensure_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
+            _accumulate_gradients(graph, n1, "adj_n1", adjoints2)
 
         # Test length mismatch
         mock_get_vjp.side_effect = None
         mock_get_vjp.return_value = lambda g, n, adj: ["adj_i1"]
         with pytest.raises(ValueError):
-            ensure_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
+            _accumulate_gradients(graph, n1, "adj_n1", adjoints2)
 
 
 def test_backward_pass() -> None:
@@ -229,7 +230,7 @@ def test_compile_jvp_expr() -> None:
 def test_invoke_style2_jvp_rule() -> None:
     """Test function test_invoke_style2_jvp_rule."""
 
-    def dummy_jvp(x_tangent: EagerValue, x: EagerValue) -> EagerValue:
+    def dummy_jvp(x_tangent: BackendArg, x: BackendArg) -> BackendArg:
         """Test function dummy_jvp.
 
         Args:
@@ -237,7 +238,7 @@ def test_invoke_style2_jvp_rule() -> None:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_jvp`.
+            BackendArg: Computed output value from `dummy_jvp`.
         """
         return "x_tangent + 1"
 
@@ -248,11 +249,11 @@ def test_invoke_style2_jvp_rule() -> None:
     node = LogicalNode("n", "Add", inputs=["i"])
 
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff._compile_jvp_expr", return_value="compiled"):
-        res = ensure_callable(_invoke_style2_jvp_rule)(dummy_jvp, sig, graph, node, ["t_i"])
+        res = require_callable(_invoke_style2_jvp_rule)(dummy_jvp, sig, graph, node, ["t_i"])
         assert res == "compiled"
 
     # Return non-str
-    def dummy_jvp2(x_tangent: EagerValue, x: EagerValue) -> EagerValue:
+    def dummy_jvp2(x_tangent: BackendArg, x: BackendArg) -> BackendArg:
         """Test function dummy_jvp2.
 
         Args:
@@ -260,31 +261,34 @@ def test_invoke_style2_jvp_rule() -> None:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_jvp2`.
+            BackendArg: Computed output value from `dummy_jvp2`.
         """
         return 42
 
-    res2 = ensure_callable(_invoke_style2_jvp_rule)(dummy_jvp2, sig, graph, node, ["t_i"])
+    res2 = require_callable(_invoke_style2_jvp_rule)(dummy_jvp2, sig, graph, node, ["t_i"])
     assert res2 == 42
 
     # Error
-    def dummy_jvp3(x_tangent: EagerValue, x: EagerValue) -> None:
+    def dummy_jvp3(x_tangent: BackendArg, x: BackendArg) -> None:
         """Test function dummy_jvp3.
 
         Args:
             x_tangent: Test parameter `x_tangent`.
             x: Test parameter `x`.
+
+        Raises:
+            ValueError: When raised during `dummy_jvp3` (err).
         """
         raise ValueError("err")
 
     with pytest.raises(MissingJVPRuleError):
-        ensure_callable(_invoke_style2_jvp_rule)(dummy_jvp3, sig, graph, node, ["t_i"])
+        require_callable(_invoke_style2_jvp_rule)(dummy_jvp3, sig, graph, node, ["t_i"])
 
 
 def test_invoke_jvp_rule() -> None:
     """Test function test_invoke_jvp_rule."""
 
-    def jvp_style1(graph: EagerValue, node: EagerValue, tangent: EagerValue) -> EagerValue:
+    def jvp_style1(graph: LogicalGraph, node: LogicalNode, tangent: typing.Sequence[str] | str) -> str:
         """Test function jvp_style1.
 
         Args:
@@ -293,28 +297,34 @@ def test_invoke_jvp_rule() -> None:
             tangent: Test parameter `tangent`.
 
         Returns:
-            EagerValue: Computed output value from `jvp_style1`.
+            str: Computed output value from `jvp_style1`.
         """
         return "t1"
 
     graph = LogicalGraph()
     node = LogicalNode("n", "Add", inputs=["i"])
-    assert ensure_callable(_invoke_jvp_rule)(jvp_style1, graph, node, ["t"]) == "t1"
+    assert _invoke_jvp_rule(jvp_style1, graph, node, ["t"]) == "t1"
 
-    def jvp_style1_err(graph: EagerValue, node: EagerValue, tangent: EagerValue) -> None:
+    def jvp_style1_err(graph: LogicalGraph, node: LogicalNode, tangent: typing.Sequence[str] | str) -> str:
         """Test function jvp_style1_err.
 
         Args:
             graph: Test parameter `graph`.
             node: Test parameter `node`.
             tangent: Test parameter `tangent`.
+
+        Returns:
+            str: Unreachable return annotation.
+
+        Raises:
+            ValueError: If input arguments, shapes, or configuration values in `jvp_style1_err` are invalid.
         """
         raise ValueError()
 
     with pytest.raises(MissingJVPRuleError):
-        ensure_callable(_invoke_jvp_rule)(jvp_style1_err, graph, node, ["t"])
+        _invoke_jvp_rule(jvp_style1_err, graph, node, ["t"])
 
-    def jvp_style2(tangent_x: EagerValue, x: EagerValue) -> EagerValue:
+    def jvp_style2(tangent_x: BackendArg, x: BackendArg) -> BackendArg:
         """Test function jvp_style2.
 
         Args:
@@ -322,14 +332,14 @@ def test_invoke_jvp_rule() -> None:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `jvp_style2`.
+            BackendArg: Computed output value from `jvp_style2`.
         """
         return "t2"
 
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff._invoke_style2_jvp_rule", return_value="t2"):
-        assert ensure_callable(_invoke_jvp_rule)(jvp_style2, graph, node, ["t"]) == "t2"
+        assert require_callable(_invoke_jvp_rule)(jvp_style2, graph, node, ["t"]) == "t2"
 
-    def jvp_bad(x: EagerValue) -> None:
+    def jvp_bad(x: BackendArg) -> None:
         """Test function jvp_bad.
 
         Args:
@@ -338,7 +348,7 @@ def test_invoke_jvp_rule() -> None:
         pass
 
     with pytest.raises(MissingJVPRuleError):
-        ensure_callable(_invoke_jvp_rule)(jvp_bad, graph, node, ["t"])
+        require_callable(_invoke_jvp_rule)(jvp_bad, graph, node, ["t"])
 
 
 def test_process_jvp_node() -> None:
@@ -355,38 +365,38 @@ def test_process_jvp_node() -> None:
 
     n1_missing = LogicalNode("n1_missing", "Output", inputs=["i_missing"], shape_metadata=())
     graph.nodes["i_missing"] = LogicalNode("i_missing", "Input", shape_metadata=())
-    tangents_empty = ensure_tensor_dict({})
-    ensure_callable(_process_jvp_node)(graph, n1_missing, tangents_empty)
+    tangents_empty: dict[str, str] = {}
+    _process_jvp_node(graph, n1_missing, tangents_empty)
     assert "i_missing" in tangents_empty
 
     # Test Input/Constant (ignored)
     n2 = LogicalNode("n2", "Input")
-    tangents2 = ensure_tensor_dict({})
-    ensure_callable(_process_jvp_node)(graph, n2, tangents2)
+    tangents2: dict[str, str] = {}
+    _process_jvp_node(graph, n2, tangents2)
     assert "n2" not in tangents2
 
     # Test tangent not present (ignored)
     n3 = LogicalNode("n3", "Add", inputs=["missing"])
-    ensure_callable(_process_jvp_node)(graph, n3, tangents2)
+    _process_jvp_node(graph, n3, tangents2)
     assert "n3" not in tangents2
 
     # Test normal node
     n4 = LogicalNode("n4", "Add", inputs=["i1"])
-    ensure_eager_tensor(tangents2)["i1"] = "t1"
+    tangents2["i1"] = "t1"
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp") as mock_get:
         mock_get.return_value = lambda graph, node, tangent: "t_out"
-        ensure_callable(_process_jvp_node)(graph, n4, tangents2)
+        _process_jvp_node(graph, n4, tangents2)
         assert tangents2["n4"] == "t_out"
 
         # Test missing JVP
         mock_get.side_effect = ValueError()
         with pytest.raises(ValueError):
-            ensure_callable(_process_jvp_node)(graph, n4, tangents2)
+            _process_jvp_node(graph, n4, tangents2)
 
         mock_get.side_effect = None
         with mock.patch("ml_switcheroo_compiler.transforms.autodiff._invoke_jvp_rule", side_effect=ValueError):
             with pytest.raises(ValueError):
-                ensure_callable(_process_jvp_node)(graph, n4, tangents2)
+                _process_jvp_node(graph, n4, tangents2)
 
 
 def test_forward_pass_jvp() -> None:
@@ -414,7 +424,10 @@ def test_jvp_hvp() -> None:
         jvp(graph, ["n2"], ["t2"], ["n2"])
         assert len(g_out.outputs) == 1
 
-    with mock.patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_grad, mock.patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_jvp:
+    with (
+        mock.patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_grad,
+        mock.patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_jvp,
+    ):
         mock_grad_out = LogicalGraph()
         mock_grad_out.outputs = ["grad_out"]
         mock_grad.return_value = mock_grad_out
@@ -440,7 +453,16 @@ def test_jvp_hvp() -> None:
             hvp(graph, ["p1"], ["t1"], ["out1"], mode="reverse-over-forward")
 
 
-def _test_autodiff_remaining_coverage_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestAutodiffRemainingCoverageBranchesState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_autodiff_remaining_coverage_branches` split helpers."""
+
+    _process_jvp_node: EagerBoundCallable
+    _should_rematerialize: EagerBoundCallable
+    g_jvp: LogicalGraph
+    grad: EagerBoundCallable
+
+
+def _test_autodiff_remaining_coverage_branches_part_1(_state: _TestAutodiffRemainingCoverageBranchesState) -> None:
     """Execute part 1 of test_autodiff_remaining_coverage_branches.
 
     Args:
@@ -490,13 +512,16 @@ def _test_autodiff_remaining_coverage_branches_part_1(_state: dict[str, EagerTen
     # 117: yaml file does not exist
     with mock.patch("os.path.exists", return_value=False):
         assert _load_rematerialization_rules() == {}
-    _state.update(ensure_tensor_dict({"_add_nodes": _add_nodes, "_get_reachable_from_output": _get_reachable_from_output, "_is_zero_node": _is_zero_node, "_load_rematerialization_rules": _load_rematerialization_rules}))
-    _state.update(ensure_tensor_dict({"_process_jvp_node": _process_jvp_node, "_should_rematerialize": _should_rematerialize, "g_zero": g_zero, "grad": grad}))
-    _state.update(ensure_tensor_dict({"n_const_0": n_const_0, "n_other": n_other, "n_out": n_out, "n_unreachable": n_unreachable}))
-    _state.update(ensure_tensor_dict({"n_zeros": n_zeros, "reachable": reachable}))
+    _state.update(
+        {
+            "_process_jvp_node": require_callable(_process_jvp_node),
+            "_should_rematerialize": require_callable(_should_rematerialize),
+            "grad": require_callable(grad),
+        }
+    )
 
 
-def _test_autodiff_remaining_coverage_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_autodiff_remaining_coverage_branches_part_2(_state: _TestAutodiffRemainingCoverageBranchesState) -> None:
     """Execute part 2 of test_autodiff_remaining_coverage_branches.
 
     Args:
@@ -524,8 +549,12 @@ def _test_autodiff_remaining_coverage_branches_part_2(_state: dict[str, EagerTen
     g_lowered.nodes["in1"] = LogicalNode("in1", "Input", shape_metadata=(2, 4))
     g_lowered.nodes["v1"] = LogicalNode("v1", "Identity", inputs=["in1"], shape_metadata=(2, 4))
 
-    with mock.patch("ml_switcheroo_compiler.transforms.passes.vectorization.vectorization_pass", return_value=g_lowered):
-        with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp", return_value=lambda g, n, c: [c]):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.vectorization.vectorization_pass", return_value=g_lowered
+    ):
+        with mock.patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp", return_value=lambda g, n, c: [c]
+        ):
             out_g = grad(g_vmap, ["in1"], "v1")
             assert out_g is not None
 
@@ -533,12 +562,11 @@ def _test_autodiff_remaining_coverage_branches_part_2(_state: dict[str, EagerTen
     g_jvp = LogicalGraph("g_jvp")
     node_inp = LogicalNode("inp", "Input", shape_metadata=())
     g_jvp.nodes["inp"] = node_inp
-    _state.update(ensure_tensor_dict({"g_jvp": g_jvp, "g_lowered": g_lowered, "g_vmap": g_vmap, "node_chk": node_chk}))
-    _state.update(ensure_tensor_dict({"node_high": node_high, "node_inp": node_inp, "out_g": out_g, "rules_high": rules_high}))
-    _state.update(ensure_tensor_dict({"_should_rematerialize": _should_rematerialize, "grad": grad}))
+    _state.update({"g_jvp": g_jvp})
+    _state.update({"_should_rematerialize": require_callable(_should_rematerialize), "grad": require_callable(grad)})
 
 
-def _test_autodiff_remaining_coverage_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_autodiff_remaining_coverage_branches_part_3(_state: _TestAutodiffRemainingCoverageBranchesState) -> None:
     """Execute part 3 of test_autodiff_remaining_coverage_branches.
 
     Args:
@@ -548,30 +576,64 @@ def _test_autodiff_remaining_coverage_branches_part_3(_state: dict[str, EagerTen
     node_none = LogicalNode("n_none", "CustomOp", inputs=["inp"], shape_metadata=())
     g_jvp.nodes["n_none"] = node_none
     tangents = {"inp": "inp_tan"}
-    with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda graph, node, tangents: None):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp",
+        return_value=lambda graph, node, tangents: None,
+    ):
         _process_jvp_node(g_jvp, node_none, tangents)
         assert "n_none" not in tangents
-    _state.update(ensure_tensor_dict({"node_none": node_none, "tangents": tangents}))
 
 
 def test_autodiff_remaining_coverage_branches() -> None:
     """Test lines 27, 30, 32, 48, 50, 93->92, 115-117, 137, 309-317, and 582 in autodiff.py."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestAutodiffRemainingCoverageBranchesState = {}
     _test_autodiff_remaining_coverage_branches_part_1(_state)
     _test_autodiff_remaining_coverage_branches_part_2(_state)
     _test_autodiff_remaining_coverage_branches_part_3(_state)
     assert len(_state) > 0
 
 
-def _test_autodiff_extended_vjp_and_hvp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestAutodiffExtendedVjpAndHvpCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_autodiff_extended_vjp_and_hvp_coverage` split helpers."""
+
+    UnconnectedGradients: EagerTensorProtocol
+    _avg_pool2d_vjp: EagerBoundCallable
+    _batch_norm_vjp: EagerBoundCallable
+    _conv2d_vjp_rule: EagerBoundCallable
+    _group_norm_vjp: EagerBoundCallable
+    _layer_norm_vjp: EagerBoundCallable
+    _max_pool2d_with_argmax_vjp: EagerBoundCallable
+    _rms_norm_vjp: EagerBoundCallable
+    conv2d_vjp_input: EagerBoundCallable
+    conv2d_vjp_weight: EagerBoundCallable
+    g_hvp: LogicalGraph
+    g_nn: LogicalGraph
+    grad: EagerBoundCallable
+    hvp: EagerBoundCallable
+    res_rule_2: list[str]
+
+
+def _test_autodiff_extended_vjp_and_hvp_coverage_part_1(_state: _TestAutodiffExtendedVjpAndHvpCoverageState) -> None:
     """Execute part 1 of test_autodiff_extended_vjp_and_hvp_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    from ml_switcheroo_compiler.transforms.autodiff import _avg_pool2d_vjp, _batch_norm_vjp, _conv2d_vjp_rule, _group_norm_vjp, _layer_norm_vjp, _max_pool2d_with_argmax_vjp, _rms_norm_vjp, conv2d_vjp_input, conv2d_vjp_weight, grad, hvp
+    from ml_switcheroo_compiler.transforms.autodiff import (
+        _avg_pool2d_vjp,
+        _batch_norm_vjp,
+        _conv2d_vjp_rule,
+        _group_norm_vjp,
+        _layer_norm_vjp,
+        _max_pool2d_with_argmax_vjp,
+        _rms_norm_vjp,
+        conv2d_vjp_input,
+        conv2d_vjp_weight,
+        grad,
+        hvp,
+    )
 
-    UnconnectedGradients = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.transforms.autodiff")).UnconnectedGradients)
+    UnconnectedGradients = importlib.import_module("ml_switcheroo_compiler.transforms.autodiff").UnconnectedGradients
 
     # cotangent_id as list, tuple, and scalar for multi-output grad
     g_multi = LogicalGraph("g_multi")
@@ -583,7 +645,9 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_1(_state: dict[str, EagerT
     g_multi.nodes["c1"] = LogicalNode("c1", "Input", shape_metadata=(2,))
     g_multi.nodes["c2"] = LogicalNode("c2", "Input", shape_metadata=(2,))
 
-    with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp", return_value=lambda g, n, c: [c]):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp", return_value=lambda g, n, c: [c]
+    ):
         out_list = grad(g_multi, ["x"], ["out1", "out2"], cotangent_id=["c1", "c2"])
         assert out_list is not None
 
@@ -600,31 +664,62 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_1(_state: dict[str, EagerT
     g_hvp.nodes["x"] = LogicalNode("x", "Input", shape_metadata=(2,))
     g_hvp.nodes["y1"] = LogicalNode("y1", "Identity", inputs=["x"], shape_metadata=(2,))
     g_hvp.nodes["y2"] = LogicalNode("y2", "Identity", inputs=["x"], shape_metadata=(2,))
-    _state.update(ensure_tensor_dict({"UnconnectedGradients": UnconnectedGradients, "_avg_pool2d_vjp": _avg_pool2d_vjp, "_batch_norm_vjp": _batch_norm_vjp, "_conv2d_vjp_rule": _conv2d_vjp_rule}))
-    _state.update(ensure_tensor_dict({"_group_norm_vjp": _group_norm_vjp, "_layer_norm_vjp": _layer_norm_vjp, "_max_pool2d_with_argmax_vjp": _max_pool2d_with_argmax_vjp, "_rms_norm_vjp": _rms_norm_vjp}))
-    _state.update(ensure_tensor_dict({"conv2d_vjp_input": conv2d_vjp_input, "conv2d_vjp_weight": conv2d_vjp_weight, "g_hvp": g_hvp, "g_multi": g_multi}))
-    _state.update(ensure_tensor_dict({"grad": grad, "hvp": hvp, "out_list": out_list, "out_single_for_multi": out_single_for_multi}))
-    _state.update(ensure_tensor_dict({"out_tuple": out_tuple}))
+    _state.update(
+        {
+            "UnconnectedGradients": UnconnectedGradients,
+            "_avg_pool2d_vjp": require_callable(_avg_pool2d_vjp),
+            "_batch_norm_vjp": require_callable(_batch_norm_vjp),
+            "_conv2d_vjp_rule": require_callable(_conv2d_vjp_rule),
+        }
+    )
+    _state.update(
+        {
+            "_group_norm_vjp": require_callable(_group_norm_vjp),
+            "_layer_norm_vjp": require_callable(_layer_norm_vjp),
+            "_max_pool2d_with_argmax_vjp": require_callable(_max_pool2d_with_argmax_vjp),
+            "_rms_norm_vjp": require_callable(_rms_norm_vjp),
+        }
+    )
+    _state.update(
+        {
+            "conv2d_vjp_input": require_callable(conv2d_vjp_input),
+            "conv2d_vjp_weight": require_callable(conv2d_vjp_weight),
+            "g_hvp": g_hvp,
+        }
+    )
+    _state.update({"grad": require_callable(grad), "hvp": require_callable(hvp)})
 
 
-def _test_autodiff_extended_vjp_and_hvp_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_autodiff_extended_vjp_and_hvp_coverage_part_2(_state: _TestAutodiffExtendedVjpAndHvpCoverageState) -> None:
     """Execute part 2 of test_autodiff_extended_vjp_and_hvp_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    _conv2d_vjp_rule, conv2d_vjp_input, conv2d_vjp_weight, g_hvp = _state["_conv2d_vjp_rule"], _state["conv2d_vjp_input"], _state["conv2d_vjp_weight"], _state["g_hvp"]
+    _conv2d_vjp_rule, conv2d_vjp_input, conv2d_vjp_weight, g_hvp = (
+        _state["_conv2d_vjp_rule"],
+        _state["conv2d_vjp_input"],
+        _state["conv2d_vjp_weight"],
+        _state["g_hvp"],
+    )
     hvp = _state["hvp"]
-    with mock.patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_g, mock.patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_j:
+    with (
+        mock.patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_g,
+        mock.patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_j,
+    ):
         m_graph = LogicalGraph("mock_graph")
         m_graph.outputs = ["y1", "y2"]
         mock_g.return_value = m_graph
         mock_j.return_value = m_graph
 
-        hvp_for = hvp(g_hvp, ["x"], ["vx"], ["y1", "y2"], mode="forward-over-reverse", projected_tangents=["pt1", "pt2"])
+        hvp_for = hvp(
+            g_hvp, ["x"], ["vx"], ["y1", "y2"], mode="forward-over-reverse", projected_tangents=["pt1", "pt2"]
+        )
         assert id(hvp_for) == id(m_graph)
 
-        hvp_rof = hvp(g_hvp, ["x"], ["vx"], ["y1", "y2"], mode="reverse-over-forward", projected_tangents=["pt1", "pt2"])
+        hvp_rof = hvp(
+            g_hvp, ["x"], ["vx"], ["y1", "y2"], mode="reverse-over-forward", projected_tangents=["pt1", "pt2"]
+        )
         assert id(hvp_rof) == id(m_graph)
 
     # Neural network VJP rules
@@ -642,30 +737,45 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_2(_state: dict[str, EagerT
         shape_metadata=(1, 8, 16, 16),
         attributes={"strides": (2, 2), "dilations": (1, 1), "padding": "SAME", "groups": 1},
     )
-    in_adj = conv2d_vjp_input(g_nn, conv_node_2, "cot")
-    w_adj = conv2d_vjp_weight(g_nn, conv_node_2, "cot")
-    assert ensure_eager_tensor(g_nn.nodes)[in_adj].op_type == "Conv2DInputGrad"
-    assert ensure_eager_tensor(g_nn.nodes)[w_adj].op_type == "Conv2DWeightGrad"
+    in_adj = str(conv2d_vjp_input(g_nn, conv_node_2, "cot"))
+    w_adj = str(conv2d_vjp_weight(g_nn, conv_node_2, "cot"))
+    assert g_nn.nodes[in_adj].op_type == "Conv2DInputGrad"
+    assert g_nn.nodes[w_adj].op_type == "Conv2DWeightGrad"
 
-    res_rule_2 = _conv2d_vjp_rule(g_nn, conv_node_2, "cot")
+    res_rule_2 = [str(x) for x in coerce_operand_list(_conv2d_vjp_rule(g_nn, conv_node_2, "cot"))]
     assert len(res_rule_2) == 2
-    assert ensure_eager_tensor(g_nn.nodes)[ensure_eager_tensor(res_rule_2)[0]].op_type == "Conv2DInputGrad"
-    _state.update(ensure_tensor_dict({"conv_node_2": conv_node_2, "g_nn": g_nn, "hvp_for": hvp_for, "hvp_rof": hvp_rof}))
-    _state.update(ensure_tensor_dict({"in_adj": in_adj, "m_graph": m_graph, "mock_g": mock_g, "mock_j": mock_j}))
-    _state.update(ensure_tensor_dict({"res_rule_2": res_rule_2, "w_adj": w_adj}))
-    _state.update(ensure_tensor_dict({"_conv2d_vjp_rule": _conv2d_vjp_rule, "conv2d_vjp_input": conv2d_vjp_input, "conv2d_vjp_weight": conv2d_vjp_weight}))
-    _state.update(ensure_tensor_dict({"g_hvp": g_hvp, "hvp": hvp}))
+    assert g_nn.nodes[res_rule_2[0]].op_type == "Conv2DInputGrad"
+    _state.update({"g_nn": g_nn})
+    _state.update({"res_rule_2": res_rule_2})
+    _state.update(
+        {
+            "_conv2d_vjp_rule": require_callable(_conv2d_vjp_rule),
+            "conv2d_vjp_input": require_callable(conv2d_vjp_input),
+            "conv2d_vjp_weight": require_callable(conv2d_vjp_weight),
+        }
+    )
+    _state.update({"g_hvp": g_hvp, "hvp": require_callable(hvp)})
 
 
-def _test_autodiff_extended_vjp_and_hvp_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_autodiff_extended_vjp_and_hvp_coverage_part_3(_state: _TestAutodiffExtendedVjpAndHvpCoverageState) -> None:
     """Execute part 3 of test_autodiff_extended_vjp_and_hvp_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    UnconnectedGradients, _avg_pool2d_vjp, _batch_norm_vjp, _conv2d_vjp_rule = _state["UnconnectedGradients"], _state["_avg_pool2d_vjp"], _state["_batch_norm_vjp"], _state["_conv2d_vjp_rule"]
-    _max_pool2d_with_argmax_vjp, g_nn, res_rule_2 = _state["_max_pool2d_with_argmax_vjp"], _state["g_nn"], _state["res_rule_2"]
-    assert g_nn.nodes[res_rule_2[1]].op_type == "Conv2DWeightGrad"
+    UnconnectedGradients, _avg_pool2d_vjp, _batch_norm_vjp, _conv2d_vjp_rule = (
+        _state["UnconnectedGradients"],
+        _state["_avg_pool2d_vjp"],
+        _state["_batch_norm_vjp"],
+        _state["_conv2d_vjp_rule"],
+    )
+    _max_pool2d_with_argmax_vjp, g_nn, res_rule_2 = (
+        _state["_max_pool2d_with_argmax_vjp"],
+        _state["g_nn"],
+        _state["res_rule_2"],
+    )
+    r2_list = [str(x) for x in coerce_operand_list(res_rule_2)]
+    assert g_nn.nodes[r2_list[1]].op_type == "Conv2DWeightGrad"
 
     # Conv2D VJP with 3 inputs (bias) and stride/dilation as keys
     conv_node_3 = LogicalNode(
@@ -675,7 +785,7 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_3(_state: dict[str, EagerT
         shape_metadata=(1, 8, 16, 16),
         attributes={"stride": (1, 1), "dilation": (1, 1), "padding": "VALID", "groups": 1},
     )
-    res_rule_3 = _conv2d_vjp_rule(g_nn, conv_node_3, "cot")
+    res_rule_3 = [str(x) for x in coerce_operand_list(_conv2d_vjp_rule(g_nn, conv_node_3, "cot"))]
     assert len(res_rule_3) == 3
     assert g_nn.nodes[res_rule_3[0]].op_type == "Conv2DInputGrad"
     assert g_nn.nodes[res_rule_3[1]].op_type == "Conv2DWeightGrad"
@@ -703,21 +813,35 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_3(_state: dict[str, EagerT
 
     bn_1 = LogicalNode("bn_1", "BatchNorm", inputs=["x"], shape_metadata=(1, 3, 16, 16), attributes={})
     assert len(_batch_norm_vjp(g_nn, bn_1, "cot")) == 1
-    _state.update(ensure_tensor_dict({"ap_node": ap_node, "bn_1": bn_1, "conv_node_3": conv_node_3, "mp_1": mp_1}))
-    _state.update(ensure_tensor_dict({"mp_2": mp_2, "res_ap": res_ap, "res_mp_1": res_mp_1, "res_mp_2": res_mp_2}))
-    _state.update(ensure_tensor_dict({"res_rule_3": res_rule_3}))
-    _state.update(ensure_tensor_dict({"UnconnectedGradients": UnconnectedGradients, "_avg_pool2d_vjp": _avg_pool2d_vjp, "_batch_norm_vjp": _batch_norm_vjp}))
-    _state.update(ensure_tensor_dict({"_conv2d_vjp_rule": _conv2d_vjp_rule, "_max_pool2d_with_argmax_vjp": _max_pool2d_with_argmax_vjp, "g_nn": g_nn}))
-    _state.update(ensure_tensor_dict({"res_rule_2": res_rule_2}))
+    _state.update(
+        {
+            "UnconnectedGradients": UnconnectedGradients,
+            "_avg_pool2d_vjp": require_callable(_avg_pool2d_vjp),
+            "_batch_norm_vjp": require_callable(_batch_norm_vjp),
+        }
+    )
+    _state.update(
+        {
+            "_conv2d_vjp_rule": require_callable(_conv2d_vjp_rule),
+            "_max_pool2d_with_argmax_vjp": require_callable(_max_pool2d_with_argmax_vjp),
+            "g_nn": g_nn,
+        }
+    )
+    _state.update({"res_rule_2": res_rule_2})
 
 
-def _test_autodiff_extended_vjp_and_hvp_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_autodiff_extended_vjp_and_hvp_coverage_part_4(_state: _TestAutodiffExtendedVjpAndHvpCoverageState) -> None:
     """Execute part 4 of test_autodiff_extended_vjp_and_hvp_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    UnconnectedGradients, _batch_norm_vjp, _layer_norm_vjp, _rms_norm_vjp = _state["UnconnectedGradients"], _state["_batch_norm_vjp"], _state["_layer_norm_vjp"], _state["_rms_norm_vjp"]
+    UnconnectedGradients, _batch_norm_vjp, _layer_norm_vjp, _rms_norm_vjp = (
+        _state["UnconnectedGradients"],
+        _state["_batch_norm_vjp"],
+        _state["_layer_norm_vjp"],
+        _state["_rms_norm_vjp"],
+    )
     g_nn = _state["g_nn"]
     bn_2 = LogicalNode("bn_2", "BatchNorm", inputs=["x", "gamma"], shape_metadata=(1, 3, 16, 16), attributes={})
     assert len(_batch_norm_vjp(g_nn, bn_2, "cot")) == 2
@@ -725,7 +849,9 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_4(_state: dict[str, EagerT
     bn_3 = LogicalNode("bn_3", "BatchNorm", inputs=["x", "gamma", "beta"], shape_metadata=(1, 3, 16, 16), attributes={})
     assert len(_batch_norm_vjp(g_nn, bn_3, "cot")) == 3
 
-    bn_4 = LogicalNode("bn_4", "BatchNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    bn_4 = LogicalNode(
+        "bn_4", "BatchNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={}
+    )
     res_bn_4 = _batch_norm_vjp(g_nn, bn_4, "cot")
     assert len(res_bn_4) == 4
     assert res_bn_4[3] == UnconnectedGradients.NONE
@@ -740,7 +866,9 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_4(_state: dict[str, EagerT
     ln_3 = LogicalNode("ln_3", "LayerNorm", inputs=["x", "gamma", "beta"], shape_metadata=(1, 3, 16, 16), attributes={})
     assert len(_layer_norm_vjp(g_nn, ln_3, "cot")) == 3
 
-    ln_4 = LogicalNode("ln_4", "LayerNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    ln_4 = LogicalNode(
+        "ln_4", "LayerNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={}
+    )
     res_ln_4 = _layer_norm_vjp(g_nn, ln_4, "cot")
     assert len(res_ln_4) == 4
     assert res_ln_4[3] == UnconnectedGradients.NONE
@@ -751,21 +879,31 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_4(_state: dict[str, EagerT
 
     rms_2 = LogicalNode("rms_2", "RMSNorm", inputs=["x", "gamma"], shape_metadata=(1, 3, 16, 16), attributes={})
     assert len(_rms_norm_vjp(g_nn, rms_2, "cot")) == 2
-    _state.update(ensure_tensor_dict({"bn_2": bn_2, "bn_3": bn_3, "bn_4": bn_4, "ln_1": ln_1}))
-    _state.update(ensure_tensor_dict({"ln_2": ln_2, "ln_3": ln_3, "ln_4": ln_4, "res_bn_4": res_bn_4}))
-    _state.update(ensure_tensor_dict({"res_ln_4": res_ln_4, "rms_1": rms_1, "rms_2": rms_2}))
-    _state.update(ensure_tensor_dict({"UnconnectedGradients": UnconnectedGradients, "_batch_norm_vjp": _batch_norm_vjp, "_layer_norm_vjp": _layer_norm_vjp}))
-    _state.update(ensure_tensor_dict({"_rms_norm_vjp": _rms_norm_vjp, "g_nn": g_nn}))
+    _state.update(
+        {
+            "UnconnectedGradients": UnconnectedGradients,
+            "_batch_norm_vjp": require_callable(_batch_norm_vjp),
+            "_layer_norm_vjp": require_callable(_layer_norm_vjp),
+        }
+    )
+    _state.update({"_rms_norm_vjp": require_callable(_rms_norm_vjp), "g_nn": g_nn})
 
 
-def _test_autodiff_extended_vjp_and_hvp_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_autodiff_extended_vjp_and_hvp_coverage_part_5(_state: _TestAutodiffExtendedVjpAndHvpCoverageState) -> None:
     """Execute part 5 of test_autodiff_extended_vjp_and_hvp_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    UnconnectedGradients, _group_norm_vjp, _rms_norm_vjp, g_nn = _state["UnconnectedGradients"], _state["_group_norm_vjp"], _state["_rms_norm_vjp"], _state["g_nn"]
-    rms_3 = LogicalNode("rms_3", "RMSNorm", inputs=["x", "gamma", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    UnconnectedGradients, _group_norm_vjp, _rms_norm_vjp, g_nn = (
+        _state["UnconnectedGradients"],
+        _state["_group_norm_vjp"],
+        _state["_rms_norm_vjp"],
+        _state["g_nn"],
+    )
+    rms_3 = LogicalNode(
+        "rms_3", "RMSNorm", inputs=["x", "gamma", "extra"], shape_metadata=(1, 3, 16, 16), attributes={}
+    )
     res_rms_3 = _rms_norm_vjp(g_nn, rms_3, "cot")
     assert len(res_rms_3) == 3
     assert res_rms_3[2] == UnconnectedGradients.NONE
@@ -780,17 +918,17 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_5(_state: dict[str, EagerT
     gn_3 = LogicalNode("gn_3", "GroupNorm", inputs=["x", "gamma", "beta"], shape_metadata=(1, 3, 16, 16), attributes={})
     assert len(_group_norm_vjp(g_nn, gn_3, "cot")) == 3
 
-    gn_4 = LogicalNode("gn_4", "GroupNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    gn_4 = LogicalNode(
+        "gn_4", "GroupNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={}
+    )
     res_gn_4 = _group_norm_vjp(g_nn, gn_4, "cot")
     assert len(res_gn_4) == 4
     assert res_gn_4[3] == UnconnectedGradients.NONE
-    _state.update(ensure_tensor_dict({"gn_1": gn_1, "gn_2": gn_2, "gn_3": gn_3, "gn_4": gn_4}))
-    _state.update(ensure_tensor_dict({"res_gn_4": res_gn_4, "res_rms_3": res_rms_3, "rms_3": rms_3}))
 
 
 def test_autodiff_extended_vjp_and_hvp_coverage() -> None:
     """Test cotangent_id variations, projected_tangents in hvp, and neural network VJP rules."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestAutodiffExtendedVjpAndHvpCoverageState = {}
     _test_autodiff_extended_vjp_and_hvp_coverage_part_1(_state)
     _test_autodiff_extended_vjp_and_hvp_coverage_part_2(_state)
     _test_autodiff_extended_vjp_and_hvp_coverage_part_3(_state)

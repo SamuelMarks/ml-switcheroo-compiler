@@ -2,57 +2,14 @@
 
 from __future__ import annotations
 
-import typing
 from pathlib import Path
 
 import yaml
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmTemplatesConfig
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 _WASM_TEMPLATES: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = {}
-
-
-def _is_wasm_templates_dict(
-    val: EagerValue,
-) -> typing.TypeGuard[dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]]:
-    """Type guard narrowing `val` to the WASM templates dictionary structure.
-
-    Args:
-        val (EagerValue): Candidate dictionary.
-
-    Returns:
-        bool: Always True for validated model dumps.
-    """
-    return isinstance(val, dict) or val is not None
-
-
-def _as_config_ctor(
-    ctor: EagerValue,
-) -> TypedVariadicCallable[WasmTemplatesConfig]:
-    """Narrow `WasmTemplatesConfig` constructor to a variadic callable.
-
-    Args:
-        ctor (EagerValue): Model class constructor.
-
-    Returns:
-        TypedVariadicCallable[WasmTemplatesConfig]: Callable constructor.
-    """
-
-    def _guard(cand: EagerValue) -> typing.TypeGuard[TypedVariadicCallable[WasmTemplatesConfig]]:
-        """Check if candidate is callable.
-
-        Args:
-            cand (EagerValue): Candidate constructor.
-
-        Returns:
-            bool: True if callable.
-        """
-        return callable(cand)
-
-    assert _guard(ctor)
-    return ctor
 
 
 def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:
@@ -67,9 +24,16 @@ def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str,
     file_path: Path = Path(__file__).parent / file_name
     with open(file_path) as f:
         raw: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = yaml.safe_load(f)
-        dumped: EagerValue = _as_config_ctor(WasmTemplatesConfig)(**raw).model_dump()
-        assert _is_wasm_templates_dict(dumped)
-        return dumped
+        cfg = WasmTemplatesConfig.model_validate(raw)
+        templates_out: dict[str, dict[str, str]] = {
+            k: {str(tk): str(tv) for tk, tv in tcfg.model_dump().items() if tv is not None}
+            for k, tcfg in cfg.templates.items()
+        }
+        return {
+            "templates": templates_out,
+            "js_orchestration": dict(cfg.js_orchestration),
+            "cpp_helpers": list(cfg.cpp_helpers),
+        }
 
 
 def load_yaml_dir(dir_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:
@@ -159,10 +123,10 @@ def get_cpp_helpers() -> list[str]:
     return []
 
 
-_WASM_SIMD_OPS: dict[str, EagerValue] = {}
+_WASM_SIMD_OPS: dict[str, BackendArg] = {}
 
 
-def get_wasm_simd_ops() -> dict[str, EagerValue]:
+def get_wasm_simd_ops() -> dict[str, BackendArg]:
     """Retrieve full WASM SIMD operation mappings.
 
     Returns:

@@ -9,10 +9,9 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 import ml_switcheroo_compiler.transforms.passes.config_models as passes_cfg
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
@@ -33,29 +32,33 @@ class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
         self._output_returns: list[str] = []
         self.var_names: dict[str, str] = {"in1": "args[0]"}
 
-    def assign_var_name(self, node_id: str) -> str:
+    def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
         """Assign variable name.
 
         Args:
             node_id (str): Node id.
+            prefix (str): Variable name prefix.
 
         Returns:
             str: Assigned variable name.
         """
+        del prefix
         name = f"var_{node_id}"
         self.var_names[node_id] = name
         return name
 
-    def visit(self, node: LogicalNode, input_vars: list[str]) -> str:
+    def visit(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for node.
 
         Args:
             node (LogicalNode): The node.
             input_vars (list[str]): Input variables.
+            **kwargs (BackendArg): Additional keyword attributes.
 
         Returns:
             str: Code string.
         """
+        del node, kwargs
         return f"Identity({', '.join(input_vars)})"
 
     def _emit_body_return(self, returns: list[str]) -> None:
@@ -89,34 +92,34 @@ class _MockCustomModule:
         """
         return ("custom_zeros", shape)
 
-    def array(self, data: EagerValue, dtype: EagerValue | None = None) -> tuple[str, EagerValue, EagerValue | None]:
+    def array(self, data: BackendArg, dtype: BackendArg | None = None) -> tuple[str, BackendArg, BackendArg | None]:
         """Mock array.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (object | None): Data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg | None): Data type.
 
         Returns:
             tuple[str, object, object | None]: Descriptor.
         """
         return ("custom_array", data, dtype)
 
-    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
         """Mock asarray.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
             tuple[str, object]: Descriptor.
         """
         return ("custom_asarray", data)
 
-    def item(self, data: EagerValue) -> float:
+    def item(self, data: BackendArg) -> float:
         """Mock item.
 
         Args:
-            data (EagerValue): Input object.
+            data (BackendArg): Input object.
 
         Returns:
             float: 99.9.
@@ -155,7 +158,14 @@ class _MockScalarHolder:
         return 33.3
 
 
-def _test_transforms_passes_config_models_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestTransformsPassesConfigModelsState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_transforms_passes_config_models` split helpers."""
+
+    mesh_grid: passes_cfg.MeshPartitioningDefaultMesh
+    remat_thresh: passes_cfg.RematerializationThresholds
+
+
+def _test_transforms_passes_config_models_part_1(_state: _TestTransformsPassesConfigModelsState) -> None:
     """Execute part 1 of test_transforms_passes_config_models.
 
     Args:
@@ -245,20 +255,17 @@ def _test_transforms_passes_config_models_part_1(_state: dict[str, EagerTensorPr
 
     # Remat, heuristics, behavior
     remat_thresh = passes_cfg.RematerializationThresholds(min_memory_bytes=4096, max_compute_to_memory_ratio=2.5)
-    _state.update(ensure_tensor_dict({"contract": contract, "conv": conv, "cost_model": cost_model, "costs": costs}))
-    _state.update(ensure_tensor_dict({"fusion": fusion, "node_pat": node_pat, "opt_level": opt_level, "pass_cfg": pass_cfg}))
-    _state.update(ensure_tensor_dict({"pass_cfg_model": pass_cfg_model, "pipeline": pipeline, "remat_thresh": remat_thresh, "repl": repl}))
-    _state.update(ensure_tensor_dict({"stage": stage}))
+    _state.update({"remat_thresh": remat_thresh})
 
 
-def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_transforms_passes_config_models_part_2(_state: _TestTransformsPassesConfigModelsState) -> None:
     """Execute part 2 of test_transforms_passes_config_models.
 
     Args:
         _state: Shared test state dictionary.
     """
     remat_thresh = _state["remat_thresh"]
-    remat_rules = ensure_callable(passes_cfg.RematerializationRulesConfig)(
+    remat_rules = passes_cfg.RematerializationRulesConfig(
         target_ops=["Conv2D"],
         high_cost_ops=["MatMul"],
         thresholds=remat_thresh,
@@ -328,13 +335,11 @@ def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorPr
         devices=[0, 1, 2, 3, 4, 5, 6, 7],
     )
     assert mesh_grid.shape == [2, 4]
-    _state.update(ensure_tensor_dict({"behaviors": behaviors, "default_proto_path": default_proto_path, "heuristics": heuristics, "loaded_custom_proto": loaded_custom_proto}))
-    _state.update(ensure_tensor_dict({"loaded_protocol": loaded_protocol, "mesh_grid": mesh_grid, "obs_shape": obs_shape, "packet": packet}))
-    _state.update(ensure_tensor_dict({"payload": payload, "remat_rules": remat_rules, "rt_meta": rt_meta}))
-    _state.update(ensure_tensor_dict({"remat_thresh": remat_thresh}))
+    _state.update({"mesh_grid": mesh_grid})
+    _state.update({"remat_thresh": remat_thresh})
 
 
-def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_transforms_passes_config_models_part_3(_state: _TestTransformsPassesConfigModelsState) -> None:
     """Execute part 3 of test_transforms_passes_config_models.
 
     Args:
@@ -342,16 +347,18 @@ def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorPr
     """
     mesh_grid = _state["mesh_grid"]
     dp_strat = passes_cfg.DataParallelStrategyConfig(mesh_axis="dp", tensor_dim=0)
-    tp_strat = passes_cfg.TensorModelParallelStrategyConfig(mesh_axis="tp", row_parallel_dim=0, col_parallel_dim=1, contracting_dim=-1)
+    tp_strat = passes_cfg.TensorModelParallelStrategyConfig(
+        mesh_axis="tp", row_parallel_dim=0, col_parallel_dim=1, contracting_dim=-1
+    )
     pp_strat = passes_cfg.PipelineParallelStrategyConfig(mesh_axis="pp", stage_dim=None)
     strategies = passes_cfg.MeshPartitioningStrategiesConfig(
         data_parallel=dp_strat,
         tensor_model_parallel=tp_strat,
         pipeline_parallel=pp_strat,
     )
-    mesh_cfg = ensure_callable(passes_cfg.DeviceMeshPartitioningConfig)(default_mesh=mesh_grid, strategies=strategies)
-    root_mesh_cfg = ensure_callable(passes_cfg.DeviceMeshPartitioningRootConfig)(device_mesh_partitioning=mesh_cfg)
-    assert ensure_eager_tensor(root_mesh_cfg.device_mesh_partitioning.default_mesh.shape) == ensure_eager_tensor([2, 4])
+    mesh_cfg = passes_cfg.DeviceMeshPartitioningConfig(default_mesh=mesh_grid, strategies=strategies)
+    root_mesh_cfg = passes_cfg.DeviceMeshPartitioningRootConfig(device_mesh_partitioning=mesh_cfg)
+    assert root_mesh_cfg.device_mesh_partitioning.default_mesh.shape == [2, 4]
 
     # SPMD Communication matrix
     comm_cond = passes_cfg.SpmdCommunicationCondition(
@@ -373,14 +380,11 @@ def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorPr
     default_mesh_path = os.path.join(os.path.dirname(passes_cfg.__file__), "spmd_mappings", "mesh_partitioning.yaml")
     loaded_custom_mesh = passes_cfg.load_mesh_partitioning(default_mesh_path)
     assert loaded_custom_mesh.default_mesh.shape == loaded_mesh.default_mesh.shape
-    _state.update(ensure_tensor_dict({"comm_cond": comm_cond, "comm_rule": comm_rule, "default_mesh_path": default_mesh_path, "dp_strat": dp_strat}))
-    _state.update(ensure_tensor_dict({"loaded_custom_mesh": loaded_custom_mesh, "loaded_mesh": loaded_mesh, "matrix_cfg": matrix_cfg, "mesh_cfg": mesh_cfg}))
-    _state.update(ensure_tensor_dict({"pp_strat": pp_strat, "root_mesh_cfg": root_mesh_cfg, "strategies": strategies, "tp_strat": tp_strat}))
 
 
 def test_transforms_passes_config_models() -> None:
     """Verify all Pydantic models and helper loaders in transforms/passes/config_models.py."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestTransformsPassesConfigModelsState = {}
     _test_transforms_passes_config_models_part_1(_state)
     _test_transforms_passes_config_models_part_2(_state)
     _test_transforms_passes_config_models_part_3(_state)

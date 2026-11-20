@@ -4,15 +4,32 @@ from __future__ import annotations
 
 import typing
 
+from pytest_mock import MockerFixture
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, Squareplus, isotonic_regression, log_softmax, one_hot, rrelu, sigmoid, softmax
+from ml_switcheroo_compiler.ops.nn.activations import (
+    HardSilu,
+    HardSwish,
+    LogSoftmax,
+    OneHot,
+    Rrelu,
+    Sigmoid,
+    Softmax,
+    Squareplus,
+    isotonic_regression,
+    log_softmax,
+    one_hot,
+    rrelu,
+    sigmoid,
+    softmax,
+)
 from ml_switcheroo_compiler.tracing import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTensorStub, MockTestStub, extract_test_dtype, extract_test_shape, unpack_pair
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_isotonic_regression_tracing() -> None:
@@ -21,10 +38,10 @@ def test_isotonic_regression_tracing() -> None:
     global_tracing_state.start_tracing()
     try:
         y = Tensor(None, TensorConfig((5,), "float32", "cpu"))
-        out1, out2 = ensure_callable(isotonic_regression)(y)
-        assert ensure_eager_tensor(out1).shape == (5,)
-        assert ensure_eager_tensor(out2).shape == (5,)
-        assert ensure_eager_tensor(ensure_eager_tensor(out2).dtype) == DType.Int32
+        out1, out2 = unpack_pair(isotonic_regression(y))
+        assert extract_test_shape(out1) == (5,)
+        assert extract_test_shape(out2) == (5,)
+        assert extract_test_dtype(out2) == DType.Int32
     finally:
         global_tracing_state.stop_tracing()
         config.eager_mode = True
@@ -72,7 +89,7 @@ def test_isotonic_regression_eager() -> None:
         config.eager_mode = False
 
 
-def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
+def test_activations_eager_mode(mocker: MockerFixture) -> None:
     """Verify the behavior and output invariants of test activations eager mode.
 
     Args:
@@ -83,7 +100,7 @@ def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
     class DummyBackend:
         """Test class DummyBackend."""
 
-        def execute_op(self, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def execute_op(self, op_name: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -92,11 +109,11 @@ def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return op_name
 
-    ensure_callable(mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=ensure_callable(DummyBackend)())
+    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=DummyBackend())
 
     assert softmax("x", axis=1) == "Softmax"
 
@@ -107,22 +124,22 @@ def test_rrelu_non_eager_mode() -> None:
     """Verify the behavior and output invariants of test rrelu non eager mode."""
     config.eager_mode = False
 
-    class DummyNode:
+    class DummyNode(MockTensorStub):
         """Test class DummyNode."""
 
         id = "n"
 
-    res = ensure_callable(rrelu)(ensure_callable(DummyNode)())
-    assert res is not None
+    res = rrelu(DummyNode())
+    assert str(res).startswith("rrelu")
 
 
 def test_activations_infer_shape_broadcast() -> None:
     """Verify the behavior and output invariants of test activations infer shape broadcast."""
 
-    class DummyTensor:
+    class DummyTensor(MockTestStub):
         """Test class DummyTensor."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -134,19 +151,19 @@ def test_activations_infer_shape_broadcast() -> None:
     t2 = DummyTensor((2, 1))
 
     op = Softmax()
-    res = ensure_callable(op.infer_shape)(t1, t2)
+    res = op.infer_shape(t1, t2)
     assert res == (2, 3)
 
     op2 = LogSoftmax()
-    res2 = ensure_callable(op2.infer_shape)(t1, t2)
+    res2 = op2.infer_shape(t1, t2)
     assert res2 == (2, 3)
 
     op3 = Sigmoid()
-    res3 = ensure_callable(op3.infer_shape)(t1, t2)
+    res3 = op3.infer_shape(t1, t2)
     assert res3 == (2, 3)
 
     op4 = Rrelu()
-    res4 = ensure_callable(op4.infer_shape)(t1, t2)
+    res4 = op4.infer_shape(t1, t2)
     assert res4 == (2, 3)
 
 
@@ -154,10 +171,10 @@ def test_onehot_infer_shape() -> None:
     """Verify the behavior and output invariants of test onehot infer shape."""
     op = OneHot()
 
-    class DummyTensor:
+    class DummyTensor(MockTestStub):
         """Test class DummyTensor."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -167,7 +184,7 @@ def test_onehot_infer_shape() -> None:
 
     t1 = DummyTensor((2, 3))
 
-    res = ensure_callable(op.infer_shape)(t1, 5, axis=1)
+    res = op.infer_shape(t1, 5, axis=1)
     assert res == (2, 5, 3)
 
 
@@ -175,7 +192,7 @@ def test_activations_non_eager_mode() -> None:
     """Verify the behavior and output invariants of test activations non eager mode."""
     config.eager_mode = False
 
-    class DummyNode:
+    class DummyNode(MockTensorStub):
         """Test class DummyNode."""
 
         id = "n"
@@ -187,20 +204,20 @@ def test_activations_non_eager_mode() -> None:
 
         shape_metadata = DummyShape()
 
-    res = ensure_callable(softmax)(ensure_callable(DummyNode)())
-    assert res is not None
+    res = softmax(DummyNode())
+    assert str(res).startswith("softmax")
 
-    res = ensure_callable(log_softmax)(ensure_callable(DummyNode)())
-    assert res is not None
+    res = log_softmax(DummyNode())
+    assert str(res).startswith("logsoftmax")
 
-    res = ensure_callable(sigmoid)(ensure_callable(DummyNode)())
-    assert res is not None
+    res = sigmoid(DummyNode())
+    assert tuple(res.shape) == ()
 
-    res = ensure_callable(one_hot)(ensure_callable(DummyNode)(), 5)
-    assert res is not None
+    res = one_hot(DummyNode(), 5)
+    assert str(res).startswith("onehot")
 
-    res = ensure_callable(rrelu)(ensure_callable(DummyNode)())
-    assert res is not None
+    res = rrelu(DummyNode())
+    assert str(res).startswith("rrelu")
 
 
 def test_activations_infer_shape_missing() -> None:
@@ -208,10 +225,10 @@ def test_activations_infer_shape_missing() -> None:
     # Rrelu missing shapes
     assert Rrelu().infer_shape() == ()
 
-    class DummyTensor:
+    class DummyTensor(MockTestStub):
         """Test class DummyTensor."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -221,11 +238,11 @@ def test_activations_infer_shape_missing() -> None:
 
     t = DummyTensor((2, 2))
 
-    assert ensure_callable(ensure_callable(HardSilu)().infer_shape)(t) == (2, 2)
+    assert HardSilu().infer_shape(t) == (2, 2)
     assert HardSilu().infer_shape() == ()
 
-    assert ensure_callable(ensure_callable(HardSwish)().infer_shape)(t) == (2, 2)
+    assert HardSwish().infer_shape(t) == (2, 2)
     assert HardSwish().infer_shape() == ()
 
-    assert ensure_callable(ensure_callable(Squareplus)().infer_shape)(t) == (2, 2)
+    assert Squareplus().infer_shape(t) == (2, 2)
     assert Squareplus().infer_shape() == ()

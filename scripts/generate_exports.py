@@ -3,19 +3,30 @@
 from __future__ import annotations
 
 import ast
-import importlib
-import inspect
 import os
 import re
 import subprocess
 import sys
 import tempfile
 import types
+import typing
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 
 from ml_switcheroo_ir import AttributeValue
+
+from ml_switcheroo_compiler.backends.protocols import (
+    BackendOperand,
+    adapt_backend_module,
+)
+
+
+@typing.runtime_checkable
+class _HasAllAttrProtocol(typing.Protocol):
+    """Protocol for modules or mocks exposing an `__all__` attribute."""
+
+    __all__: list[str] | tuple[str, ...] | set[str] | AttributeValue
 
 
 def _has_nonempty_all(mod: AttributeValue | types.ModuleType) -> bool:
@@ -27,43 +38,75 @@ def _has_nonempty_all(mod: AttributeValue | types.ModuleType) -> bool:
     Returns:
         bool: True if `__all__` exists and is truthy.
     """
-    for k, v in inspect.getmembers(mod):
-        if k == "__all__":
-            return bool(v)
+    if isinstance(mod, _HasAllAttrProtocol):
+        return bool(mod.__all__)
     return False
 
 
 def _lookup_all_exports(mod: AttributeValue | types.ModuleType) -> list[str] | None:
-    """Look up `__all__` on `mod` via `inspect.getmembers` if it is a sequence or set.
+    """Look up `__all__` on `mod` via structural protocol check if it is a sequence or set.
 
     Args:
         mod (AttributeValue | types.ModuleType): Target module or object.
 
     Returns:
-        list[str] | None: Sorted list of exported names if `__all__` is a sequence/set, `[]` if defined as another type, or `None` if absent.
+        list[str] | None: Sorted list of exported names if `__all__` is a sequence/set, `[]` if defined as another
+            type, or `None` if absent.
     """
-    for k, v in inspect.getmembers(mod):
-        if k == "__all__":
-            if isinstance(v, (list, tuple, set)):
-                return sorted({str(x) for x in v})
-            return [] if v is not None else None
+    if isinstance(mod, _HasAllAttrProtocol):
+        v = mod.__all__
+        if isinstance(v, (list, tuple, set)):
+            return sorted({str(x) for x in v})
+        return [] if v is not None else None
     return None
 
 
-def _is_submodule_member(mod: AttributeValue | types.ModuleType, name: str) -> bool:
+def _ast_defines_non_module_symbol(filepath: str | None, name: str) -> bool:
+    """Return True if `filepath` explicitly defines or imports `name` as a non-submodule symbol.
+
+    Args:
+        filepath (str | None): Module source file path.
+        name (str): Candidate symbol identifier.
+
+    Returns:
+        bool: True when `name` is explicitly bound in the module AST as a function, class, variable, or symbol import.
+    """
+    if not filepath or not os.path.isfile(filepath):
+        return False
+    try:
+        with open(filepath, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=filepath)
+    except (OSError, SyntaxError):
+        return False
+    for node in tree.body:
+        is_def = isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name
+        is_assign = isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in node.targets)
+        is_ann = isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name
+        is_imp = (
+            isinstance(node, ast.ImportFrom)
+            and node.module is not None
+            and any((alias.asname or alias.name) == name for alias in node.names)
+        )
+        if is_def or is_assign or is_ann or is_imp:
+            return True
+    return False
+
+
+def _is_submodule_member(mod: BackendOperand | types.ModuleType, name: str) -> bool:
     """Return True if member `name` on `mod` is a `types.ModuleType`.
 
     Args:
-        mod (AttributeValue | types.ModuleType): Target module or object.
+        mod (BackendOperand | types.ModuleType): Target module or object.
         name (str): Member name to inspect.
 
     Returns:
         bool: True if the member is a module.
     """
-    for k, v in inspect.getmembers(mod):
-        if k == name:
-            return isinstance(v, types.ModuleType)
-    return False
+    if isinstance(mod, types.ModuleType) and f"{mod.__name__}.{name}" in sys.modules:
+        if not _ast_defines_non_module_symbol(mod.__file__, name):
+            return True
+    found, raw_val = adapt_backend_module(mod).resolve_symbol(name)
+    return bool(found and isinstance(raw_val, types.ModuleType))
 
 
 def _get_exports_from_submodule(modname: str) -> list[str]:
@@ -76,15 +119,29 @@ def _get_exports_from_submodule(modname: str) -> list[str]:
         list[str]: A sorted list of the module's exported symbol names.
     """
     try:
-        mod: types.ModuleType = importlib.import_module(modname)
-    except Exception as e:
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+        mod: types.ModuleType = BackendRegistry.load_scoped_module(modname)
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ) as e:
         print(f"Failed to import {modname}: {e}")
         return []
 
     all_exports = _lookup_all_exports(mod)
     if all_exports is not None and all_exports:
         return all_exports
-    return sorted({n for n in dir(mod) if not n.startswith("_") and not _is_submodule_member(mod, n)})
+    return sorted(
+        {n for n in dir(mod) if not n.startswith("_") and n != "annotations" and not _is_submodule_member(mod, n)}
+    )
 
 
 def _append_import_lines(
@@ -132,8 +189,16 @@ def _extract_existing_all(source: str) -> list[str] | None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "__all__" and isinstance(node.value, (ast.List, ast.Tuple)):
-                    return [str(elt.value) for elt in node.value.elts if isinstance(elt, ast.Constant) and isinstance(elt.value, str)]
+                if (
+                    isinstance(target, ast.Name)
+                    and target.id == "__all__"
+                    and isinstance(node.value, (ast.List, ast.Tuple))
+                ):
+                    return [
+                        str(elt.value)
+                        for elt in node.value.elts
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                    ]
     return None
 
 
@@ -150,7 +215,11 @@ def _format_and_write_if_changed(filepath: str, old_source: str, new_source: str
         tmp_name: str = tmp.name
 
     try:
-        subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        subprocess.run(
+            ["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name],
+            capture_output=True,
+            check=False,
+        )
         subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
         with open(tmp_name) as f:
             new_source_formatted: str = f.read()
@@ -175,7 +244,8 @@ def generate_init(
         filepath (str): The path to the __init__.py file to write.
         module_name (str): The base name of the module.
         submodules (list[str]): A list of submodules to import from.
-        extra_imports (Optional[list[tuple[str, list[str]]]]): A list of tuples containing an external module name and a list of symbols to import.
+        extra_imports (Optional[list[tuple[str, list[str]]]]): A list of tuples containing an external module name and
+            a list of symbols to import.
 
     Returns:
         None
@@ -202,7 +272,14 @@ def generate_init(
     if existing_all is not None and sorted(list(set(existing_all))) == all_exports:
         return
 
-    new_source: str = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\nfrom __future__ import annotations\n\n' + "\n".join(import_lines) + "\n\n"
+    new_source: str = (
+        (
+            f'# pylint: disable=too-many-lines\n"""Public package exports for `{module_name}`."""\n\nfrom '
+            "__future__ import annotations\n\n"
+        )
+        + "\n".join(import_lines)
+        + "\n\n"
+    )
     new_source += "# pylint: disable=duplicate-code\n"
     new_source += "__all__ = [\n"
     for e in all_exports:
@@ -210,6 +287,7 @@ def generate_init(
     new_source += "]\n"
 
     _format_and_write_if_changed(filepath, old_source, new_source)
+    sys.modules.pop(module_name, None)
 
 
 def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> list[str]:
@@ -224,9 +302,12 @@ def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> lis
     """
     magic_from: re.Match[str] | None = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
     magic_auto: re.Match[str] | None = re.search(r"#\s*auto-generate-all", source_for_magic)
-    magic_exclude: re.Match[str] | None = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
-
-    exclude_set: set[str] = {m.strip() for m in magic_exclude.group(1).split(",")} if magic_exclude else set()
+    exclude_set: set[str] = {
+        m.strip()
+        for line in re.findall(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
+        for m in line.split(",")
+        if m.strip()
+    }
 
     if magic_from:
         raw_exports: list[str] = []
@@ -234,11 +315,20 @@ def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> lis
             raw_exports.extend(_get_exports_from_submodule(sm))
         return sorted({e for e in raw_exports if e not in exclude_set})
     if magic_auto:
-        return sorted({n for n in dir(mod) if not n.startswith("_") and not _is_submodule_member(mod, n) and n not in exclude_set})
+        return sorted(
+            {
+                n
+                for n in dir(mod)
+                if not n.startswith("_")
+                and n != "annotations"
+                and not _is_submodule_member(mod, n)
+                and n not in exclude_set
+            }
+        )
 
     exports_attr = _lookup_all_exports(mod)
     if exports_attr is None:
-        return sorted({n for n in dir(mod) if not n.startswith("_")})
+        return sorted({n for n in dir(mod) if not n.startswith("_") and n != "annotations"})
     return exports_attr
 
 
@@ -253,8 +343,17 @@ def _find_all_lines_to_remove(tree: ast.Module) -> set[int]:
     """
     lines_to_remove: set[int] = set()
     for node in ast.walk(tree):
-        is_assign = isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets)
-        is_call = isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) and node.value.func.value.id == "__all__" and node.value.func.attr in ("extend", "append")
+        is_assign = isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets
+        )
+        is_call = (
+            isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id == "__all__"
+            and node.value.func.attr in ("extend", "append")
+        )
         if (is_assign or is_call) and isinstance(node, ast.stmt):
             lineno = node.lineno
             end_lineno = node.end_lineno
@@ -285,8 +384,20 @@ def process_file(filepath: str) -> None:
         modname = modname[:-9]
 
     try:
-        mod: types.ModuleType = importlib.import_module(modname)
-    except Exception as e:
+        from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+        mod: types.ModuleType = BackendRegistry.load_scoped_module(modname)
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ) as e:
         print(f"Skipping {filepath} due to import error: {e}")
         return
 
@@ -317,6 +428,7 @@ def process_file(filepath: str) -> None:
     new_source += "]\n"
 
     _format_and_write_if_changed(filepath, source, new_source)
+    sys.modules.pop(modname, None)
 
 
 def main() -> None:
@@ -333,7 +445,7 @@ def main() -> None:
         "interpolation",
         "mixing",
         "transforms",
-        "frontend",
+        "api",
     ]
     # First, generate vision exports specifically
     generate_init(
@@ -362,6 +474,7 @@ def main() -> None:
     ops_subs: list[str] = [
         "audio",
         "base",
+        "foreign_call",
         "control_flow",
         "creation",
         "io",
@@ -369,19 +482,12 @@ def main() -> None:
         "text",
         "signal",
         "sparse",
-        "dummy_ops",
         "ragged",
         "tensor_array",
         "state",
         "device",
-        "generated.missing_ops",
-        "generated.polynomials",
-        "generated.histograms",
-        "generated.creation",
-        "generated.math_extras",
-        "generated.shape_extras",
         "raw_ops",
-        "creation.frontend",
+        "creation.api",
         "binary",
         "unary",
         "linalg",
@@ -391,39 +497,6 @@ def main() -> None:
         "normalization",
         "vision",
         "image",
-        "stats.descriptive_extras",
-        "stats.cumulative",
-        "stats.type_testing",
-        "stats.limits",
-        "stats.math_misc",
-        "stats.linalg_misc",
-        "stats.sort_search",
-        "stats.utils",
-        "manipulation.function_application",
-        "manipulation.slicing",
-        "manipulation.axis",
-        "manipulation.indices",
-        "manipulation.mutations",
-        "manipulation.formatting",
-        "manipulation.creation",
-        "manipulation.solvers",
-        "manipulation.sets",
-        "manipulation.clipping",
-        "manipulation.properties",
-        "manipulation.equivalence",
-        "manipulation.statistics",
-        "manipulation.bitwise",
-        "manipulation.sorting",
-        "manipulation.math_signals",
-        "manipulation.misc",
-        "advanced_math.associative",
-        "advanced_math.special",
-        "advanced_math.bitwise",
-        "advanced_math.type_utils",
-        "advanced_math.distributions",
-        "advanced_math.prng",
-        "advanced_math.scatter",
-        "advanced_math.precision",
         "stats",
     ]
     generate_init(

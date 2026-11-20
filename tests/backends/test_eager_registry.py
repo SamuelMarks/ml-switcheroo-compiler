@@ -8,11 +8,17 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerOpRegistry
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerOpRegistry, coerce_bytes
+from tests.testing_utils import (
+    MockTestStub,
+    adapt_backend_module,
+    coerce_numeric,
+    coerce_operand_list,
+    extract_test_shape,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_eager_registry() -> None:
@@ -21,16 +27,16 @@ def test_eager_registry() -> None:
     assert r.get("foo") is None
 
     @r.register("foo")
-    def foo(x: EagerValue) -> EagerValue:
+    def foo(x: BackendArg) -> BackendArg:
         """Test function foo.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `foo`.
+            BackendArg: Computed output value from `foo`.
         """
-        return ensure_eager_tensor(x) + ensure_eager_tensor(1)
+        return coerce_numeric(x) + 1
 
     assert r.get("foo") is foo
 
@@ -47,16 +53,16 @@ def test_eager_registry_fallback() -> None:
     r = EagerOpRegistry()
 
     @global_eager_registry.register("global_foo_test")
-    def gfoo(x: EagerValue) -> EagerValue:
+    def gfoo(x: BackendArg) -> BackendArg:
         """Test function gfoo.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `gfoo`.
+            BackendArg: Computed output value from `gfoo`.
         """
-        return ensure_eager_tensor(x) + ensure_eager_tensor(2)
+        return coerce_numeric(x) + 2
 
     assert r.dispatch("global_foo_test", 3) == 5
 
@@ -75,58 +81,60 @@ def test_decode_image_eager() -> None:
     """Test function test_decode_image_eager."""
     import struct
 
-    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_decode_image_camel
+    from ml_switcheroo_compiler.backends.eager.reference_math.math_string_io import _np_decode_image_camel
 
     # Test empty args
-    assert ensure_callable(len)(ensure_callable(_np_decode_image_camel)(None)) == 0
+    assert len(coerce_operand_list(_np_decode_image_camel(None))) == 0
 
     # Test not bytes
     with pytest.raises(RuntimeError, match="Expected bytes"):
-        _np_decode_image_camel(ensure_mod(None), np.array([1, 2, 3]))
+        _np_decode_image_camel(None, np.array([1, 2, 3]))
 
     # Construct valid 10x10 RGB PNG header
     png_bytes = b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">IIBBBBB", 10, 10, 8, 2, 0, 0, 0)
 
     # Default channels
-    res = _np_decode_image_camel(ensure_mod(None), png_bytes)
-    assert ensure_eager_tensor(res).shape == (10, 10, 3)
+    res = _np_decode_image_camel(None, png_bytes)
+    assert extract_test_shape(res) == (10, 10, 3)
 
     # Channels = 1
-    res1 = _np_decode_image_camel(ensure_mod(None), png_bytes, channels=1)
-    assert ensure_eager_tensor(res1).shape == (10, 10, 1)
+    res1 = _np_decode_image_camel(None, png_bytes, channels=1)
+    assert extract_test_shape(res1) == (10, 10, 1)
 
     # Channels = 4
-    res4 = _np_decode_image_camel(ensure_mod(None), png_bytes, channels=4)
-    assert ensure_eager_tensor(res4).shape == (10, 10, 4)
+    res4 = _np_decode_image_camel(None, png_bytes, channels=4)
+    assert extract_test_shape(res4) == (10, 10, 4)
 
 
 def test_encode_image_eager() -> None:
     """Test function test_encode_image_eager."""
-    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_encode_image_camel
+    from ml_switcheroo_compiler.backends.eager.reference_math.math_string_io import _np_encode_image_camel
+    from ml_switcheroo_compiler.core.shape import OpValue
 
     # Test empty args
-    res = _np_encode_image_camel(ensure_mod(None))
-    assert ensure_eager_tensor(ensure_eager_tensor(res).item)() == b""
+    res = _np_encode_image_camel(None)
+    res_item: OpValue = np.asarray(res).tolist()
+    assert res_item == b""
 
     # Shape with 1 channel
     arr = np.ones((10, 10, 1), dtype=np.uint8)
-    res = _np_encode_image_camel(ensure_mod(None), arr)
+    res = _np_encode_image_camel(None, arr)
     assert isinstance(res, np.ndarray)
 
     # Non-uint8 dtype
     arr2 = np.ones((10, 10, 3), dtype=np.float32)
-    res2 = _np_encode_image_camel(ensure_mod(None), arr2)
+    res2 = _np_encode_image_camel(None, arr2)
     assert isinstance(res2, np.ndarray)
 
     # Trigger exception
-    with patch("struct.pack", side_effect=Exception("mock error")):
+    with patch("struct.pack", side_effect=RuntimeError("mock error")):
         with pytest.raises(RuntimeError):
-            _np_encode_image_camel(ensure_mod(None), arr2)
+            _np_encode_image_camel(None, arr2)
 
 
 def test_load_vision_formats_missing() -> None:
     """Test function test_load_vision_formats_missing."""
-    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _load_vision_formats
+    from ml_switcheroo_compiler.backends.eager.reference_math.math_string_io import _load_vision_formats
 
     with patch("os.path.exists", return_value=False):
         assert _load_vision_formats() == {}
@@ -136,26 +144,26 @@ def test_dynamic_fallback() -> None:
     """Test function test_dynamic_fallback."""
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
-    class DummyObj:
+    class DummyObj(MockTestStub):
         """Test class DummyObj."""
 
-        def my_op(self, *args: EagerValue) -> EagerValue:
+        def my_op(self, *args: BackendArg) -> BackendArg:
             """Test function my_op.
 
             Args:
                 args: Test parameter `args`.
 
             Returns:
-                EagerValue: Computed output value from `my_op`.
+                BackendArg: Computed output value from `my_op`.
             """
             return 42
 
-    assert ensure_callable(global_eager_registry.dispatch)("My_Op", ensure_callable(DummyObj)()) == 42
+    assert global_eager_registry.dispatch("My_Op", DummyObj()) == 42
 
-    class DummyBackend:
+    class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
 
-        def my_backend_op(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def my_backend_op(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function my_backend_op.
 
             Args:
@@ -163,11 +171,11 @@ def test_dynamic_fallback() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `my_backend_op`.
+                BackendArg: Computed output value from `my_backend_op`.
             """
             return 43
 
-        def subtract(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def subtract(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function subtract.
 
             Args:
@@ -175,15 +183,15 @@ def test_dynamic_fallback() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `subtract`.
+                BackendArg: Computed output value from `subtract`.
             """
             return 44
 
-    assert ensure_callable(global_eager_registry.dispatch)("My_Backend_Op", 1, backend_module=ensure_callable(DummyBackend)()) == 43
-    assert ensure_callable(global_eager_registry.dispatch)("sub", ensure_callable(DummyBackend)(), backend_module=ensure_callable(DummyBackend)()) == 44
+    assert global_eager_registry.dispatch("My_Backend_Op", 1, backend_module=DummyBackend()) == 43
+    assert global_eager_registry.dispatch("sub", DummyBackend(), backend_module=DummyBackend()) == 44
 
     with pytest.raises(ValueError, match="not found in registry and no universal fallback"):
-        ensure_callable(global_eager_registry.dispatch)("missing_op_on_backend", backend_module=ensure_callable(DummyBackend)())
+        global_eager_registry.dispatch("missing_op_on_backend", backend_module=DummyBackend())
 
 
 def test_custom_vjp_and_tuple() -> None:
@@ -193,20 +201,91 @@ def test_custom_vjp_and_tuple() -> None:
     assert global_eager_registry.dispatch("CustomVJP", None, 1) == 1
     assert global_eager_registry.dispatch("CustomVJP", None, 1, 2) == (1, 2)
 
-    def my_bwd(res: EagerValue, *args: EagerValue) -> EagerValue:
+    def my_bwd(res: BackendArg, *args: BackendArg) -> BackendArg:
         """Test function my_bwd.
 
         Args:
-            res: Test parameter `res`.
-            args: Test parameter `args`.
+            res (BackendArg): Test parameter `res`.
+            *args (BackendArg): Test parameter `args`.
 
         Returns:
-            EagerValue: Computed output value from `my_bwd`.
+            BackendArg: Computed output value from `my_bwd`.
         """
-        return ensure_callable(sum)(args)
+        del res
+        return sum([coerce_numeric(x) for x in args])
 
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn=my_bwd) == 3
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn="not callable") is None
 
     assert global_eager_registry.dispatch("TupleGetItem", None, (10, 20), index=1) == 20
     assert global_eager_registry.dispatch("TupleGetItem", None, "not a tuple", index=0) is None
+
+
+def test_eager_registry_narrowing_and_schema_hooks() -> None:
+    """Verify runtime narrowing utilities, Pydantic validator hooks, and split protocol exports."""
+    from ml_switcheroo_compiler.backends.eager_registry import (
+        CORE_EAGER_OP_TABLE,
+        BackendArrayProtocol,
+        BackendContextManagerProtocol,
+        BackendRNGProtocol,
+        EagerOpCallable,
+        EagerTensorProtocol,
+        coerce_bool,
+        coerce_float,
+        coerce_float_list,
+        coerce_int,
+        coerce_int_list,
+        coerce_int_or_tuple,
+        coerce_operand_list,
+        coerce_opt_callable,
+        coerce_opt_int,
+        coerce_opt_int_seq,
+        coerce_opt_str,
+        coerce_shape,
+        coerce_str,
+        unpack_pair,
+        unpack_quad,
+        unpack_triple,
+    )
+    from ml_switcheroo_compiler.backends.eager_registry.types_base import _passthrough_tensor_val
+
+    assert BackendArrayProtocol is not None
+    assert BackendContextManagerProtocol is not None
+    assert BackendRNGProtocol is not None
+    assert EagerOpCallable is not None
+    assert "CustomVJP" in CORE_EAGER_OP_TABLE
+
+    assert _passthrough_tensor_val(7) == 7
+    dummy_handler = adapt_backend_module(np).asarray([0.0])
+    schema = EagerTensorProtocol.__get_pydantic_core_schema__(int, dummy_handler)
+    assert isinstance(schema, dict) and schema["type"] == "function-plain"
+
+    assert coerce_int(5) == 5
+    assert coerce_float(2.5) == 2.5
+    assert coerce_shape((2, 3)) == (2, 3)
+    assert coerce_int_list([1, 2]) == [1, 2]
+    assert coerce_str("abc") == "abc"
+    assert coerce_opt_str(None) is None
+    assert coerce_opt_str("xyz") == "xyz"
+    assert coerce_opt_int(None) is None
+    assert coerce_opt_int(9) == 9
+    assert coerce_bool(True) is True
+    assert coerce_bytes(b"raw") == b"raw"
+    assert coerce_bytes([65, 66]) == b"AB"
+    assert coerce_float_list([1.0, 2.0]) == [1.0, 2.0]
+    assert coerce_operand_list([1, "a"]) == [1, "a"]
+
+    pair = unpack_pair((1, 2))
+    assert len(pair) == 2
+    triple = unpack_triple((1, 2, 3))
+    assert len(triple) == 3
+    quad = unpack_quad((1, 2, 3, 4))
+    assert len(quad) == 4
+
+    assert coerce_opt_int_seq(None) is None
+    assert coerce_opt_int_seq((1, 2)) == (1, 2)
+    assert coerce_int_or_tuple(3) == 3
+    assert coerce_int_or_tuple((3, 4)) == (3, 4)
+    assert coerce_opt_callable(None) is None
+    fn_ref = coerce_opt_callable(len)
+    assert fn_ref is not None

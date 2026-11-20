@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import NodeDict
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.transforms.passes.rematerialization import (
+    _estimate_compute,
+    _estimate_memory,
+    _load_rules,
+    rematerialization_pass,
+)
 
 if typing.TYPE_CHECKING:
     pass
@@ -45,11 +49,14 @@ def test_rematerialization_pass() -> None:
 
     rules = _load_rules()
 
+    from tests.testing_utils import MockNodeStub
+
     # Also coverage for the internal functions:
     assert _estimate_memory(n1) == 4.0
-    ensure_mutable(n1).shape_metadata = ensure_eager_tensor(5)
-    assert _estimate_memory(n1) == 4.0
-    assert _estimate_compute(n1, rules) == 1.0
+    n1_scalar = MockNodeStub(id="n1_scalar", op_type="Input")
+    pytest.MonkeyPatch().setattr(n1_scalar, "shape_metadata", 5, raising=False)
+    assert _estimate_memory(n1_scalar) == 4.0
+    assert _estimate_compute(n1_scalar, rules) == 1.0
     n3.op_type = "Conv2D"
     n3.shape_metadata = (10, 10)
     assert _estimate_compute(n3, rules) == 10000.0
@@ -68,7 +75,8 @@ def test_rematerialization_pass() -> None:
 
 def test_rematerialization_already_exists() -> None:
     """Test function test_rematerialization_already_exists."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
 
     g = IRGraph()
@@ -110,9 +118,12 @@ def test_rematerialization_max_dist() -> None:
     consumers = {"n1": ["n2"]}
     node_indices = {"n1": 0, "n2": 5}
 
-    rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
+    rules: dict[str, list[str] | dict[str, float | int]] = {
+        "target_ops": ["A"],
+        "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0},
+    }
 
-    res = ensure_callable(_find_target_nodes)([node], consumers, node_indices, rules)
+    res = _find_target_nodes([node], consumers, node_indices, rules)
     assert not res
 
 

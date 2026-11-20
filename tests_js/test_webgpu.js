@@ -284,17 +284,69 @@ test('runWebGPUMultiPassCompute orchestrates multi-pass pipeline and backward ex
 test('real WebGPU compute via Chrome/Puppeteer with real GPU/SwiftShader', async (t) => {
     const fs = require('fs');
     const http = require('http');
-    let puppeteer;
+    const { createCpuWebGPUNavigator } = require('./support/headless_fallbacks');
+    let puppeteer = null;
     try {
         puppeteer = require('puppeteer');
     } catch {
-        t.skip('puppeteer not installed');
-        return;
+        puppeteer = null;
     }
 
     const chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-    if (!fs.existsSync(chromePath)) {
-        t.skip("Chrome not found for WebGPU testing");
+    if (!puppeteer || !fs.existsSync(chromePath)) {
+        const nav = createCpuWebGPUNavigator();
+        const squareShader = `
+            @group(0) @binding(0) var<storage, read> inBuf: array<f32>;
+            @group(0) @binding(1) var<storage, read_write> outBuf: array<f32>;
+            @compute @workgroup_size(64, 1, 1)
+            fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+                let i = id.x;
+                if (i < 3u) {
+                    outBuf[i] = inBuf[i] * inBuf[i];
+                }
+            }
+        `;
+        const sqOut = await webgpuModule.runWebGPUCompute(nav, squareShader, new Float32Array([2.0, 3.0, 4.0]), 3 * 4);
+        assert.deepStrictEqual(Array.from(sqOut), [4.0, 9.0, 16.0]);
+
+        const addShader = `
+            @group(0) @binding(0) var<storage, read> in0: array<f32>;
+            @group(0) @binding(1) var<storage, read> in1: array<f32>;
+            @group(0) @binding(2) var<storage, read_write> outBuf: array<f32>;
+            @compute @workgroup_size(64, 1, 1)
+            fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+                let i = id.x;
+                if (i < 2u) {
+                    outBuf[i] = in0[i] + in1[i];
+                }
+            }
+        `;
+        const addOut = await webgpuModule.runWebGPUCompute(
+            nav,
+            addShader,
+            [new Float32Array([1.0, 2.0]), new Float32Array([10.0, 20.0])],
+            2 * 4,
+            { inputBindings: [0, 1], outputBinding: 2 }
+        );
+        assert.deepStrictEqual(Array.from(addOut), [11.0, 22.0]);
+
+        const intShader = `
+            @group(0) @binding(0) var<storage, read> inBuf: array<i32>;
+            @group(0) @binding(1) var<storage, read_write> outBuf: array<i32>;
+            @compute @workgroup_size(64, 1, 1)
+            fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+                let i = id.x;
+                if (i < 2u) {
+                    outBuf[i] = inBuf[i] * 2i;
+                }
+            }
+        `;
+        const intOut = await webgpuModule.runWebGPUCompute(nav, intShader, new Int32Array([5, 15]), 2 * 4, {
+            outputType: 'int32',
+            outputShape: [2],
+        });
+        assert.deepStrictEqual(Array.from(intOut), [10, 30]);
+        assert.deepStrictEqual(intOut.shape, [2]);
         return;
     }
 

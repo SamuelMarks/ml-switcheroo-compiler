@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list, ensure_str, get_active_backend
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list, coerce_str, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data
+from ml_switcheroo_compiler.core.shape import OpValue, extract_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -19,12 +19,12 @@ class CudaKernelOp(OpDef):
 
     op_name = "CudaKernel"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -38,12 +38,12 @@ class MetalKernelOp(OpDef):
 
     op_name = "MetalKernel"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape for MetalKernel.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -57,12 +57,12 @@ class PrecompiledCudaKernelOp(OpDef):
 
     op_name = "PrecompiledCudaKernel"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -116,7 +116,10 @@ def _eager_custom_kernel(
         name=ctx.launch_config.name,
     )
     device = inputs[0].device if inputs else config.default_device
-    return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(ensure_eager_list(data), ctx.output_shapes, ctx.output_dtypes)]
+    return [
+        Tensor(d, TensorConfig(s, dt, device))
+        for d, s, dt in zip(coerce_operand_list(data), ctx.output_shapes, ctx.output_dtypes)
+    ]
 
 
 def cuda_kernel(
@@ -130,21 +133,32 @@ def cuda_kernel(
 
     Args:
         source (str): Input `source` argument (source).
-        inputs (list): Input `inputs` argument (inputs).
-        output_shapes (list): Input `output_shapes` argument (output shapes).
-        output_dtypes (list): Input `output_dtypes` argument (output dtypes).
-        launch_config (Optional): Input `launch_config` argument (launch config).
+        inputs (list[Tensor]): Input `inputs` argument (inputs).
+        output_shapes (list[tuple[int, ...]]): Input `output_shapes` argument (output shapes).
+        output_dtypes (list[DType]): Input `output_dtypes` argument (output dtypes).
+        launch_config (KernelLaunchConfig | None): Input `launch_config` argument (launch config).
 
     Returns:
         list: Computed `list` output.
     """
-    conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
+    conf = (
+        launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
+    )
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext(op_type="CudaKernel", code_or_binary=source, output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
+        return _eager_custom_kernel(
+            inputs,
+            KernelContext(
+                op_type="CudaKernel",
+                code_or_binary=source,
+                output_shapes=output_shapes,
+                output_dtypes=output_dtypes,
+                launch_config=conf,
+            ),
+        )
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs: dict[str, TensorOrScalar] = {
+        attrs: dict[str, OpValue] = {
             "source": source,
             "grid": conf.grid,
             "block": conf.block,
@@ -167,21 +181,32 @@ def metal_kernel(
 
     Args:
         source (str): Input `source` argument (source).
-        inputs (list): Input `inputs` argument (inputs).
-        output_shapes (list): Input `output_shapes` argument (output shapes).
-        output_dtypes (list): Input `output_dtypes` argument (output dtypes).
-        launch_config (Optional): Input `launch_config` argument (launch config).
+        inputs (list[Tensor]): Input `inputs` argument (inputs).
+        output_shapes (list[tuple[int, ...]]): Input `output_shapes` argument (output shapes).
+        output_dtypes (list[DType]): Input `output_dtypes` argument (output dtypes).
+        launch_config (KernelLaunchConfig | None): Input `launch_config` argument (launch config).
 
     Returns:
         list: Computed `list` output.
     """
-    conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
+    conf = (
+        launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
+    )
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext(op_type="MetalKernel", code_or_binary=source, output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
+        return _eager_custom_kernel(
+            inputs,
+            KernelContext(
+                op_type="MetalKernel",
+                code_or_binary=source,
+                output_shapes=output_shapes,
+                output_dtypes=output_dtypes,
+                launch_config=conf,
+            ),
+        )
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs: dict[str, TensorOrScalar] = {
+        attrs: dict[str, OpValue] = {
             "source": source,
             "grid": conf.grid,
             "block": conf.block,
@@ -204,21 +229,32 @@ def precompiled_cuda_kernel(
 
     Args:
         binary (bytes): Input `binary` argument (binary).
-        inputs (list): Input `inputs` argument (inputs).
-        output_shapes (list): Input `output_shapes` argument (output shapes).
-        output_dtypes (list): Input `output_dtypes` argument (output dtypes).
-        launch_config (Optional): Input `launch_config` argument (launch config).
+        inputs (list[Tensor]): Input `inputs` argument (inputs).
+        output_shapes (list[tuple[int, ...]]): Input `output_shapes` argument (output shapes).
+        output_dtypes (list[DType]): Input `output_dtypes` argument (output dtypes).
+        launch_config (KernelLaunchConfig | None): Input `launch_config` argument (launch config).
 
     Returns:
         list: Computed `list` output.
     """
-    conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
+    conf = (
+        launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
+    )
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext(op_type="PrecompiledCudaKernel", code_or_binary=ensure_str(binary), output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
+        return _eager_custom_kernel(
+            inputs,
+            KernelContext(
+                op_type="PrecompiledCudaKernel",
+                code_or_binary=coerce_str(binary),
+                output_shapes=output_shapes,
+                output_dtypes=output_dtypes,
+                launch_config=conf,
+            ),
+        )
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs: dict[str, TensorOrScalar] = {
+        attrs: dict[str, OpValue] = {
             "binary": binary,
             "grid": conf.grid,
             "block": conf.block,

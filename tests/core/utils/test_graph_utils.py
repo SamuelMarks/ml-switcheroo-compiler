@@ -5,51 +5,51 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockGraphStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class MockNode:
+class MockNode(LogicalNode):
     """Test class MockNode."""
 
-    def __init__(self, id: EagerValue, inputs: EagerValue) -> None:
+    def __init__(self, id: str, inputs: list[str]) -> None:
         """Test function __init__.
 
         Args:
-            id: Test parameter `id`.
-            inputs: Test parameter `inputs`.
+            id (str): Node identifier.
+            inputs (list[str]): Upstream input node identifiers.
         """
-        self.id = id
-        self.inputs = inputs
+        super().__init__(id=id, op_type="Mock", inputs=inputs)
 
 
-class MockGraphDict:
+class MockGraphDict(MockGraphStub):
     """Test class MockGraphDict."""
 
-    def __init__(self, nodes: EagerValue) -> None:
+    def __init__(self, nodes: BackendArg) -> None:
         """Test function __init__.
 
         Args:
             nodes: Test parameter `nodes`.
         """
-        self.nodes = nodes
+        pytest.MonkeyPatch().setattr(self, "nodes", nodes, raising=False)
 
 
-class MockGraphList:
+class MockGraphList(MockGraphStub):
     """Test class MockGraphList."""
 
-    def __init__(self, nodes: EagerValue) -> None:
+    def __init__(self, nodes: BackendArg) -> None:
         """Test function __init__.
 
         Args:
             nodes: Test parameter `nodes`.
         """
-        self.nodes = nodes
+        pytest.MonkeyPatch().setattr(self, "nodes", nodes, raising=False)
 
 
 def test_topological_sort_dict() -> None:
@@ -58,8 +58,8 @@ def test_topological_sort_dict() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n2"])
 
-    graph = ensure_callable(MockGraphDict)({"n3": n3, "n1": n1, "n2": n2})
-    sorted_nodes = ensure_callable(topological_sort)(graph)
+    graph = MockGraphDict({"n3": n3, "n1": n1, "n2": n2})
+    sorted_nodes = topological_sort(graph)
     assert [n.id for n in sorted_nodes] == ["n1", "n2", "n3"]
 
 
@@ -69,8 +69,8 @@ def test_topological_sort_list() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n2"])
 
-    graph = ensure_callable(MockGraphList)([n3, n1, n2])
-    sorted_nodes = ensure_callable(topological_sort)(graph)
+    graph = MockGraphList([n3, n1, n2])
+    sorted_nodes = topological_sort(graph)
     assert [n.id for n in sorted_nodes] == ["n1", "n2", "n3"]
 
 
@@ -80,16 +80,16 @@ def test_topological_sort_cycle() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n2"])
 
-    graph = ensure_callable(MockGraphDict)({"n1": n1, "n2": n2, "n3": n3})
+    graph = MockGraphDict({"n1": n1, "n2": n2, "n3": n3})
     with pytest.raises(CompilationError, match="Cycle detected in graph."):
-        ensure_callable(topological_sort)(graph)
+        topological_sort(graph)
 
 
 def test_topological_sort_missing_node() -> None:
     """Test function test_topological_sort_missing_node."""
     n1 = MockNode("n1", ["n_missing"])
-    graph = ensure_callable(MockGraphDict)({"n1": n1})
-    sorted_nodes = ensure_callable(topological_sort)(graph)
+    graph = MockGraphDict({"n1": n1})
+    sorted_nodes = topological_sort(graph)
     # The missing node won't crash, it just visits and adds to visited and ignores adding to sorted list.
     assert [n.id for n in sorted_nodes] == ["n1"]
 
@@ -100,22 +100,22 @@ def test_topological_sort_already_visited() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n1"])
     n4 = MockNode("n4", ["n2", "n3"])
-    graph = ensure_callable(MockGraphDict)({"n1": n1, "n2": n2, "n3": n3, "n4": n4})
-    sorted_nodes = ensure_callable(topological_sort)(graph)
+    graph = MockGraphDict({"n1": n1, "n2": n2, "n3": n3, "n4": n4})
+    sorted_nodes = topological_sort(graph)
     assert len(sorted_nodes) == 4
 
 
 def test_topological_sort_missing_node_list() -> None:
     """Test function test_topological_sort_missing_node_list."""
     n1 = MockNode("n1", ["n_missing"])
-    graph = ensure_callable(MockGraphList)([n1])
-    sorted_nodes = ensure_callable(topological_sort)(graph)
+    graph = MockGraphList([n1])
+    sorted_nodes = topological_sort(graph)
     assert [n.id for n in sorted_nodes] == ["n1"]
 
 
 def test_topological_sort_nodes_neither_dict_nor_list() -> None:
     """Test function test_topological_sort_nodes_neither_dict_nor_list."""
     n1 = MockNode("n1", [])
-    graph = ensure_callable(MockGraphDict)((n1,))
-    sorted_nodes = ensure_callable(topological_sort)(graph)
+    graph = MockGraphDict((n1,))
+    sorted_nodes = topological_sort(graph)
     assert sorted_nodes == []

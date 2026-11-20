@@ -5,10 +5,13 @@ from __future__ import annotations
 import os
 import shutil
 import typing
+from pathlib import Path
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
@@ -20,11 +23,10 @@ from ml_switcheroo_compiler.export.export_api import (
     validate_saved_model_binary,
     validate_stablehlo_binary,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_cpp_compile_aot() -> None:
@@ -50,14 +52,16 @@ def test_webgpu_compile_aot() -> None:
     g.outputs = ["out0"]
 
     gen = WebGPUCodeGenerator(g)
-    bundle = gen.compile_aot()
-    assert isinstance(ensure_eager_tensor(bundle), dict)
+    artifact = gen.compile_aot()
+    assert isinstance(artifact, CompiledArtifact)
+    bundle = artifact.callable_fn
+    assert isinstance(bundle, dict)
     assert bundle["format"] == "webgpu_wgsl_bundle"
     assert bundle["status"] == "ready_to_dispatch"
     assert "shaderCode" in str(bundle["code"])
 
 
-def test_wasm_compile_aot(tmp_path: EagerTensorProtocol) -> None:
+def test_wasm_compile_aot(tmp_path: Path) -> None:
     """Test WasmCodeGenerator compile_aot producing wasm artifacts and raising CompilationError when toolchain missing.
 
     Args:
@@ -78,8 +82,9 @@ def test_wasm_compile_aot(tmp_path: EagerTensorProtocol) -> None:
     with patch.object(shutil, "which", return_value="/usr/bin/emcc"):
         with patch("subprocess.run"):
             res = gen.compile_aot(output_dir=str(tmp_path))
-            assert isinstance(ensure_eager_tensor(res), tuple)
-            assert len(ensure_eager_tensor(res)) == 2
+            assert isinstance(res, CompiledArtifact)
+            assert isinstance(res.callable_fn, tuple)
+            assert len(res.callable_fn) == 2
 
 
 def test_compile_function_strict_diagnostics() -> None:
@@ -89,24 +94,24 @@ def test_compile_function_strict_diagnostics() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Identity test function.
 
         Args:
-            x (EagerValue): Input tensor.
+            x (BackendArg): Input tensor.
 
         Returns:
-            EagerValue: Unmodified input tensor.
+            BackendArg: Unmodified input tensor.
         """
         return x
 
     t = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
     c = compile_function(f, backend="non_existent_backend", strict=True)
     with pytest.raises(CompilationError, match="Target backend 'non_existent_backend' not found"):
-        ensure_callable(c)(t)
+        require_callable(c)(t)
 
 
-def test_binary_validation_utilities(tmp_path: EagerTensorProtocol) -> None:
+def test_binary_validation_utilities(tmp_path: Path) -> None:
     """Test binary validation utilities for ONNX, StableHLO, and SavedModel.
 
     Args:

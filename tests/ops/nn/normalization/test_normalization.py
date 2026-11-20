@@ -1,14 +1,13 @@
-"""Tests for test_normalization."""
+"""Behavioral unit tests for normalization."""
 
 from __future__ import annotations
 
 import typing
 
-# ruff: noqa: E501
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.normalization import (
@@ -32,13 +31,13 @@ from ml_switcheroo_compiler.ops.nn.normalization import (
     weighted_moments,
     zero_fraction,
 )
+from ml_switcheroo_compiler.ops.normalization.api import group_mean, group_variance, spectral_normalization
+from ml_switcheroo_compiler.ops.normalization.api import group_norm as frontend_group_norm
 from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm, GroupVariance
-from ml_switcheroo_compiler.ops.normalization.frontend import group_mean, group_variance, spectral_normalization
-from ml_switcheroo_compiler.ops.normalization.frontend import group_norm as frontend_group_norm
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import unpack_pair
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_normalization_coverage() -> None:
@@ -46,20 +45,20 @@ def test_normalization_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert ensure_callable(GroupMean)().infer_shape(t) == (1, 2)
-    assert ensure_callable(GroupVariance)().infer_shape(t) == (1, 2)
-    assert ensure_callable(GroupNorm)().infer_shape(t) == (1, 2)
+    assert GroupMean().infer_shape(t) == (1, 2)
+    assert GroupVariance().infer_shape(t) == (1, 2)
+    assert GroupNorm().infer_shape(t) == (1, 2)
 
     import sys
 
-    norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.frontend"]
+    norm_frontend = sys.modules["ml_switcheroo_compiler.ops.normalization.api"]
 
     class DummyOp:
         """Test class DummyOp."""
 
         device = "cpu"
 
-        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def __call__(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function __call__.
 
             Args:
@@ -67,18 +66,18 @@ def test_normalization_coverage() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `__call__`.
+                BackendArg: Computed output value from `__call__`.
             """
             return "normed"
 
     orig_get_op = norm_frontend.get_op
-    ensure_mutable(norm_frontend).get_op = ensure_eager_tensor(lambda x: DummyOp)
+    pytest.MonkeyPatch().setattr(norm_frontend, "get_op", lambda x: DummyOp, raising=False)
     try:
-        assert ensure_eager_tensor(group_mean(t, 1)) == ensure_eager_tensor("normed")
-        assert ensure_eager_tensor(group_variance(t, 1)) == ensure_eager_tensor("normed")
-        assert ensure_eager_tensor(frontend_group_norm(t, 1)) == ensure_eager_tensor("normed")
+        assert group_mean(t, 1) == "normed"
+        assert group_variance(t, 1) == "normed"
+        assert frontend_group_norm(t, 1) == "normed"
     finally:
-        ensure_mutable(norm_frontend).get_op = ensure_eager_tensor(orig_get_op)
+        pytest.MonkeyPatch().setattr(norm_frontend, "get_op", orig_get_op, raising=False)
 
     with pytest.raises(Exception, match=r".*"):
         spectral_normalization(t, t)
@@ -93,27 +92,29 @@ def test_tracing_normalization_ops() -> None:
     global_tracing_state.start_tracing("test_norm_trace")
 
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-    ensure_mutable(t).id = ensure_eager_tensor("tensor_n0")
+    pytest.MonkeyPatch().setattr(t, "id", "tensor_n0", raising=False)
 
     try:
         # Test normalize_moments tracing
-        mean, variance = ensure_callable(normalize_moments)(t, t, t, t)
-        assert isinstance(ensure_eager_tensor(mean), Tensor)
-        assert isinstance(ensure_eager_tensor(variance), Tensor)
+        mean, variance = unpack_pair(normalize_moments(t, t, t, t))
+        assert isinstance(mean, Tensor)
+        assert isinstance(variance, Tensor)
         assert mean.shape == (1, 2)
         assert variance.shape == (1, 2)
 
         # Test sufficient_statistics tracing
-        counts, mean_ss, variance_ss, shift = ensure_callable(sufficient_statistics)(t, 1)
-        assert isinstance(ensure_eager_tensor(counts), Tensor)
-        assert isinstance(ensure_eager_tensor(mean_ss), Tensor)
-        assert isinstance(ensure_eager_tensor(variance_ss), Tensor)
-        assert isinstance(ensure_eager_tensor(shift), Tensor)
+        from tests.testing_utils import coerce_operand_list
+
+        counts, mean_ss, variance_ss, shift = coerce_operand_list(sufficient_statistics(t, 1))
+        assert isinstance(counts, Tensor)
+        assert isinstance(mean_ss, Tensor)
+        assert isinstance(variance_ss, Tensor)
+        assert isinstance(shift, Tensor)
 
         # Test weighted_moments tracing
-        w_mean, w_variance = ensure_callable(weighted_moments)(t, 1, t)
-        assert isinstance(ensure_eager_tensor(w_mean), Tensor)
-        assert isinstance(ensure_eager_tensor(w_variance), Tensor)
+        w_mean, w_variance = unpack_pair(weighted_moments(t, 1, t))
+        assert isinstance(w_mean, Tensor)
+        assert isinstance(w_variance, Tensor)
         assert w_mean.shape == (1, 2)
         assert w_variance.shape == (1, 2)
     finally:
@@ -138,7 +139,9 @@ def test_normalization_brute() -> None:
     batch_normalization(t1, mean_t, var_t, axis=-1, config=BatchNormConfig(scale=scale, offset=offset))
     rms_normalization(t1, scale)
     batch_norm_with_global_normalization(t1, mean_t, var_t, offset, scale)
-    batch_norm_with_global_normalization(t1, mean_t, var_t, offset, scale, config=BatchNormGlobalConfig(scale_after_normalization=False))
+    batch_norm_with_global_normalization(
+        t1, mean_t, var_t, offset, scale, config=BatchNormGlobalConfig(scale_after_normalization=False)
+    )
     lrn(t1)
     lrn(t1, LRNConfig())
     l2_normalize(t1, axis=-1)
@@ -151,13 +154,37 @@ def test_normalization_brute() -> None:
     layer_norm(t1, normalized_shape=(8,), scale=scale, offset=offset)
     layer_norm(t1, normalized_shape=(8,))
 
-    group_norm(t1, num_groups=2, scale=Tensor(np.ones(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")), offset=Tensor(np.zeros(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")))
+    group_norm(
+        t1,
+        num_groups=2,
+        scale=Tensor(np.ones(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")),
+        offset=Tensor(np.zeros(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")),
+    )
     group_norm(t1, num_groups=2)
     with pytest.raises(ValueError):
         group_norm(t1, num_groups=3)
 
-    instance_norm(t1, scale=Tensor(np.ones(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")), offset=Tensor(np.zeros(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")))
+    instance_norm(
+        t1,
+        scale=Tensor(np.ones(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")),
+        offset=Tensor(np.zeros(4).astype(np.float32), TensorConfig((4,), "float32", "cpu")),
+    )
     instance_norm(t1)
 
     batch_norm(t1, mean_t, var_t, axis=-1)
     rms_norm(t1, scale)
+
+
+def test_normalization_basic_ops() -> None:
+    """Verify GroupMean, GroupVariance, and GroupNorm ops."""
+    gm = GroupMean()
+    assert gm.op_name == "GroupMean"
+    assert gm.infer_shape() == ()
+
+    gv = GroupVariance()
+    assert gv.op_name == "GroupVariance"
+    assert gv.infer_shape() == ()
+
+    gn = GroupNorm()
+    assert gn.op_name == "GroupNorm"
+    assert gn.infer_shape() == ()

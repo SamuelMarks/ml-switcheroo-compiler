@@ -7,43 +7,49 @@ import resource
 import sys
 import time
 import typing
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_opt_callable
-from ml_switcheroo_compiler.backends.protocols import has_backend_member, resolve_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    coerce_opt_callable,
+)
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
-    import keras
+    import keras as keras
 except ImportError:
     keras = None
 
+from ml_switcheroo_ir import IRGraph
+
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
+@typing.runtime_checkable
 class _NumpyCallableProtocol(typing.Protocol):
     """Protocol for tensors exposing `.numpy()`."""
 
-    def numpy(self) -> EagerValue:
+    def numpy(self) -> BackendArg:
         """Convert tensor to host NumPy array.
 
         Returns:
-            EagerValue: Host NumPy array.
+            BackendArg: Host NumPy array.
         """
         ...
 
 
-def _is_numpy_callable(val: EagerValue) -> typing.TypeGuard[_NumpyCallableProtocol]:
+def _is_numpy_callable(val: BackendArg) -> typing.TypeGuard[_NumpyCallableProtocol]:
     """Check whether `val` exposes a `.numpy` attribute.
 
     Args:
-        val (EagerValue): Candidate tensor value.
+        val (BackendArg): Candidate tensor value.
 
     Returns:
         bool: True if `val` has a `.numpy` attribute.
     """
-    return has_backend_member(val, "numpy")
+    return isinstance(val, _NumpyCallableProtocol)
 
 
 def _get_process_memory_mb() -> float:
@@ -65,16 +71,20 @@ def _get_keras_peak_memory_mb() -> float:
     Returns:
         float: Peak memory allocation in megabytes.
     """
-    if keras is not None and resolve_backend_member(keras, "backend")[0]:
+    if keras is not None and adapt_backend_module(keras).resolve_symbol("backend")[0]:
         try:
             torch_mod = sys.modules.get("torch")
-            if torch_mod is not None and resolve_backend_member(torch_mod, "cuda")[0] and torch_mod.cuda.is_available():
+            if (
+                torch_mod is not None
+                and adapt_backend_module(torch_mod).resolve_symbol("cuda")[0]
+                and torch_mod.cuda.is_available()
+            ):
                 return float(torch_mod.cuda.max_memory_allocated() / (1024.0 * 1024.0))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         try:
             tf_mod = sys.modules.get("tensorflow")
-            if tf_mod is not None and resolve_backend_member(tf_mod, "config")[0]:
+            if tf_mod is not None and adapt_backend_module(tf_mod).resolve_symbol("config")[0]:
                 mem_info = tf_mod.config.experimental.get_memory_info("GPU:0")
                 if "peak" in mem_info and mem_info["peak"] > 0:
                     return float(mem_info["peak"]) / (1024.0 * 1024.0)
@@ -83,11 +93,12 @@ def _get_keras_peak_memory_mb() -> float:
     return _get_process_memory_mb()
 
 
-def _sync_keras_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ...] | dict[str, EagerValue]) -> None:
+def _sync_keras_result(result: BackendArg | list[BackendArg] | tuple[BackendArg, ...] | dict[str, BackendArg]) -> None:
     """Force evaluation synchronization of Keras execution output.
 
     Args:
-        result (Union[object, list[object], tuple[object, ...], dict[str, object]]): Evaluated tensor or collection.
+        result (BackendArg | list[BackendArg] | tuple[BackendArg, ...] | dict[str, BackendArg]):
+            Evaluated tensor or collection.
     """
     if keras is None:
         return
@@ -97,13 +108,17 @@ def _sync_keras_result(result: EagerValue | list[EagerValue] | tuple[EagerValue,
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_keras_result(item)
-    elif resolve_backend_member(keras, "ops")[0] and resolve_backend_member(keras.ops, "convert_to_numpy")[0] and callable(keras.ops.convert_to_numpy):
+    elif (
+        adapt_backend_module(keras).resolve_symbol("ops")[0]
+        and adapt_backend_module(keras.ops).resolve_symbol("convert_to_numpy")[0]
+        and callable(keras.ops.convert_to_numpy)
+    ):
         try:
             _ = keras.ops.convert_to_numpy(result)
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     else:
-        raw_res: EagerValue = result
+        raw_res: BackendArg = result
         if _is_numpy_callable(raw_res) and callable(raw_res.numpy):
             try:
                 _ = raw_res.numpy()
@@ -115,7 +130,7 @@ def _compute_metrics(
     latencies: list[float],
     peak_mem: float,
     warmup_iters: int,
-) -> dict[str, list[float] | float]:
+) -> ProfileMetricsDict:
     """Compute statistical latency percentiles and format metrics payload.
 
     Args:
@@ -124,7 +139,7 @@ def _compute_metrics(
         warmup_iters (int): Warmup iteration count.
 
     Returns:
-        dict[str, Union[list[float], float]]: Aggregated metrics.
+        ProfileMetricsDict: Aggregated metrics.
     """
     sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
     mean_lat: float = float(sum(latencies) / len(latencies)) if latencies else 0.0
@@ -149,13 +164,13 @@ class KerasProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> list[EagerValue]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> list[BackendArg]:
         """Convert inputs into topologically ordered Keras-compatible tensor inputs.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input data structures.
+            inputs: Named input data structures.
 
         Returns:
             list[object]: Topologically ordered list of tensor inputs.
@@ -163,9 +178,12 @@ class KerasProfiler:
         if keras is None:
             return []
 
-        keras_inputs_dict: dict[str, EagerValue] = {}
+        keras_inputs_dict: dict[str, BackendArg] = {}
         for k, val in inputs.items():
-            if resolve_backend_member(keras, "ops")[0] and resolve_backend_member(keras.ops, "convert_to_tensor")[0]:
+            if (
+                adapt_backend_module(keras).resolve_symbol("ops")[0]
+                and adapt_backend_module(keras.ops).resolve_symbol("convert_to_tensor")[0]
+            ):
                 keras_inputs_dict[k] = keras.ops.convert_to_tensor(val, dtype="float32")
             else:
                 keras_inputs_dict[k] = val
@@ -176,7 +194,7 @@ class KerasProfiler:
             return [keras_inputs_dict[k] for k in input_keys]
         return list(keras_inputs_dict.values())
 
-    def _compile_model(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
+    def _compile_model(self, graph: IRGraph) -> TypedVariadicCallable[BackendArg] | None:
         """Compile an IRGraph into an executable Keras Model or callable.
 
         Args:
@@ -188,39 +206,39 @@ class KerasProfiler:
         Raises:
             TypeError: If get_model cannot be resolved from the generated code.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
         from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 
         code: str = KerasCodeGenerator(graph).generate()
-        ns: dict[str, EagerValue] = {}
-        exec(code, ns)
+        ns = load_generated_code(code)
         get_model = ns.get("get_model")
         if not callable(get_model):
             raise TypeError("Failed to generate valid get_model function from KerasCodeGenerator")
         model = get_model()
-        return ensure_opt_callable(model)
+        return coerce_opt_callable(model)
 
     def _build_step_fn(
         self,
         has_ops: bool,
-        compiled_model: TypedVariadicCallable[EagerValue] | None,
-        keras_inputs: list[EagerValue],
-    ) -> Callable[[], EagerValue]:
+        compiled_model: TypedVariadicCallable[BackendArg] | None,
+        keras_inputs: list[BackendArg],
+    ) -> Callable[[], BackendArg]:
         """Build a single evaluation step callable for Keras backend.
 
         Args:
             has_ops (bool): Whether graph has operations.
-            compiled_model (Optional[TypedVariadicCallable[object]]): Compiled model callable.
-            keras_inputs (list[object]): List of prepared Keras tensor inputs.
+            compiled_model (TypedVariadicCallable[BackendArg] | None): Compiled model callable.
+            keras_inputs (list[BackendArg]): List of prepared Keras tensor inputs.
 
         Returns:
             Callable[[], object]: Step execution callable.
         """
 
-        def _execute_step() -> EagerValue:
+        def _execute_step() -> BackendArg:
             """Execute a single evaluation step on Keras backend.
 
             Returns:
-                EagerValue: Output tensor or accumulation.
+                BackendArg: Output tensor or accumulation.
             """
             if has_ops and compiled_model is not None:
                 if len(keras_inputs) == 1:
@@ -231,15 +249,25 @@ class KerasProfiler:
                 return res
 
             if not keras_inputs:
-                if resolve_backend_member(keras, "ops")[0] and resolve_backend_member(keras.ops, "zeros")[0]:
-                    return ensure_eager_tensor(keras.ops.zeros((1,), dtype="float32"))
+                if (
+                    adapt_backend_module(keras).resolve_symbol("ops")[0]
+                    and adapt_backend_module(keras.ops).resolve_symbol("zeros")[0]
+                ):
+                    from ml_switcheroo_compiler.backends.eager_registry import require_callable
+
+                    return require_callable(keras.ops.zeros)((1,), dtype="float32")
                 return 0.0
 
-            accum = keras_inputs[0]
-            if resolve_backend_member(keras, "ops")[0] and resolve_backend_member(keras.ops, "add")[0]:
-                accum = keras.ops.zeros_like(keras_inputs[0])
+            accum: BackendArg = keras_inputs[0]
+            if (
+                adapt_backend_module(keras).resolve_symbol("ops")[0]
+                and adapt_backend_module(keras.ops).resolve_symbol("add")[0]
+            ):
+                from ml_switcheroo_compiler.backends.eager_registry import require_callable
+
+                accum = require_callable(keras.ops.zeros_like)(keras_inputs[0])
                 for t in keras_inputs:
-                    accum = keras.ops.add(accum, t)
+                    accum = require_callable(keras.ops.add)(accum, t)
             _sync_keras_result(accum)
             return accum
 
@@ -248,22 +276,22 @@ class KerasProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on Keras backend with synchronization.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input tensors or buffers.
+            inputs: Named input tensors or buffers.
             device (Optional[str]): Execution device identifier.
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         del device
 
@@ -273,11 +301,21 @@ class KerasProfiler:
         keras_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
-        compiled_model: TypedVariadicCallable[EagerValue] | None = None
+        compiled_model: TypedVariadicCallable[BackendArg] | None = None
         if has_ops:
             try:
                 compiled_model = self._compile_model(graph)
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 compiled_model = None
 
         step_fn = self._build_step_fn(has_ops, compiled_model, keras_inputs)

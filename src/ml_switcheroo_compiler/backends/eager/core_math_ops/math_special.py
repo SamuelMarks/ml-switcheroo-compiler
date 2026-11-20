@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 
 from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
     EagerTensorProtocol,
-    EagerValue,
-    ensure_callable,
-    ensure_eager_tensor,
     global_eager_registry,
     numpy_eager_registry,
+    require_callable,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
-def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _dispatch_special(
+    op_name: str,
+    attr_name: str,
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Dispatch a special mathematical function to `backend_module` or `numpy_eager_registry`.
 
     Args:
@@ -26,20 +32,24 @@ def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModul
         **kwargs: Keyword arguments.
 
     Returns:
-        EagerValue: Evaluated special function result.
+        BackendArg: Evaluated special function result.
     """
-    special_mod = get_backend_member(backend_module, "special", backend_module)
-    func = get_backend_member(special_mod, attr_name, get_backend_member(backend_module, attr_name, None))
+    special_mod = adapt_backend_module(backend_module).get_symbol("special", backend_module)
+    func = adapt_backend_module(special_mod).get_symbol(
+        attr_name, adapt_backend_module(backend_module).get_symbol(attr_name, None)
+    )
     if callable(func):
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
-    np_handler = ensure_callable(numpy_eager_registry.get(op_name))
-    return np_handler(_resolve_eager_mod(backend_module), *args, **kwargs)
+    np_handler = numpy_eager_registry.get(op_name)
+    return require_callable(np_handler)(require_callable(_resolve_eager_mod)(backend_module), *args, **kwargs)
 
 
 @global_eager_registry.register("Erf")
-def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _erf(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager erf operation on the active backend array.
 
     Args:
@@ -48,12 +58,12 @@ def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    if has_backend_member(mod, "erf"):
-        _typed_ret_1: EagerValue = mod.erf(x)
+    x = args[0]
+    if adapt_backend_module(mod).has_symbol("erf"):
+        _typed_ret_1: BackendArg = adapt_backend_module(mod).require_symbol("erf")(x)
         return _typed_ret_1
     p = 0.3275911
     a1 = 0.254829592
@@ -62,15 +72,19 @@ def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     a4 = -1.453152027
     a5 = 1.061405429
 
-    sign: EagerTensorProtocol = mod.sign(x)
-    abs_x: EagerTensorProtocol = mod.abs(x)
+    sign: EagerTensorProtocol = adapt_backend_module(mod).require_symbol("sign")(x)
+    abs_x: EagerTensorProtocol = adapt_backend_module(mod).require_symbol("abs")(x)
     t: EagerTensorProtocol = 1.0 / (1.0 + p * abs_x)
-    y: EagerTensorProtocol = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * mod.exp(-abs_x * abs_x)
+    y: EagerTensorProtocol = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * adapt_backend_module(
+        mod
+    ).require_symbol("exp")(-abs_x * abs_x)
     return sign * y
 
 
 @global_eager_registry.register("Erfc")
-def _erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _erfc(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager erfc operation on the active backend array.
 
     Args:
@@ -79,18 +93,22 @@ def _erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    if has_backend_member(mod, "erfc"):
-        _typed_ret_2: EagerValue = mod.erfc(x)
+    x = args[0]
+    if adapt_backend_module(mod).has_symbol("erfc"):
+        _typed_ret_2: BackendArg = adapt_backend_module(mod).require_symbol("erfc")(x)
         return _typed_ret_2
-    return 1.0 - ensure_eager_tensor(_erf(backend_module, x))
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_numeric
+
+    return 1.0 - coerce_numeric(_erf(backend_module, x))
 
 
 @global_eager_registry.register("Erfinv")
-def _erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _erfinv(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager erfinv operation on the active backend array.
 
     Args:
@@ -99,22 +117,28 @@ def _erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_numeric
+
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    if has_backend_member(mod, "erfinv"):
-        _typed_ret_3: EagerValue = mod.erfinv(x)
+    x = coerce_numeric(args[0])
+    if adapt_backend_module(mod).has_symbol("erfinv"):
+        _typed_ret_3: BackendArg = adapt_backend_module(mod).require_symbol("erfinv")(x)
         return _typed_ret_3
     a = 0.147
-    ln_1_x2: EagerTensorProtocol = mod.log(1.0 - x * x + 1e-12)
+    ln_1_x2: EagerTensorProtocol = adapt_backend_module(mod).require_symbol("log")(1.0 - x * x + 1e-12)
     term1: EagerTensorProtocol = 2.0 / (3.141592653589793 * a) + ln_1_x2 / 2.0
     term2: EagerTensorProtocol = ln_1_x2 / a
-    return mod.sign(x) * mod.sqrt(mod.sqrt(term1 * term1 - term2) - term1)
+    return adapt_backend_module(mod).require_symbol("sign")(x) * adapt_backend_module(mod).require_symbol("sqrt")(
+        adapt_backend_module(mod).require_symbol("sqrt")(term1 * term1 - term2) - term1
+    )
 
 
 @global_eager_registry.register("BesselI0")
-def _bessel_i0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_i0(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel i0 operation on the active backend array.
 
     Args:
@@ -123,13 +147,15 @@ def _bessel_i0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselI0", "i0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselI0e")
-def _bessel_i0e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_i0e(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel i0e operation on the active backend array.
 
     Args:
@@ -138,13 +164,15 @@ def _bessel_i0e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselI0e", "i0e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselI1")
-def _bessel_i1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_i1(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel i1 operation on the active backend array.
 
     Args:
@@ -153,13 +181,15 @@ def _bessel_i1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselI1", "i1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselI1e")
-def _bessel_i1e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_i1e(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel i1e operation on the active backend array.
 
     Args:
@@ -168,13 +198,15 @@ def _bessel_i1e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselI1e", "i1e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselJ0")
-def _bessel_j0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_j0(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel j0 operation on the active backend array.
 
     Args:
@@ -183,13 +215,15 @@ def _bessel_j0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselJ0", "j0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselJ1")
-def _bessel_j1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_j1(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel j1 operation on the active backend array.
 
     Args:
@@ -198,13 +232,15 @@ def _bessel_j1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselJ1", "j1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselJn")
-def _bessel_jn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_jn(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel jn operation on the active backend array.
 
     Args:
@@ -213,13 +249,15 @@ def _bessel_jn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselJn", "jv", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK0")
-def _bessel_k0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_k0(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel k0 operation on the active backend array.
 
     Args:
@@ -228,13 +266,15 @@ def _bessel_k0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselK0", "k0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK0e")
-def _bessel_k0e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_k0e(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel k0e operation on the active backend array.
 
     Args:
@@ -243,13 +283,15 @@ def _bessel_k0e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselK0e", "k0e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK1")
-def _bessel_k1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_k1(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel k1 operation on the active backend array.
 
     Args:
@@ -258,13 +300,15 @@ def _bessel_k1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselK1", "k1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselK1e")
-def _bessel_k1e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_k1e(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel k1e operation on the active backend array.
 
     Args:
@@ -273,13 +317,15 @@ def _bessel_k1e(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselK1e", "k1e", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselY0")
-def _bessel_y0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_y0(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel y0 operation on the active backend array.
 
     Args:
@@ -288,13 +334,15 @@ def _bessel_y0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselY0", "y0", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("BesselY1")
-def _bessel_y1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bessel_y1(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager bessel y1 operation on the active backend array.
 
     Args:
@@ -303,13 +351,15 @@ def _bessel_y1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("BesselY1", "y1", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Digamma")
-def _digamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _digamma(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager digamma operation on the active backend array.
 
     Args:
@@ -318,13 +368,15 @@ def _digamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("Digamma", "digamma", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Igammac")
-def _igammac(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _igammac(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager igammac operation on the active backend array.
 
     Args:
@@ -333,13 +385,15 @@ def _igammac(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("Igammac", "gammaincc", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Polygamma")
-def _polygamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _polygamma(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager polygamma operation on the active backend array.
 
     Args:
@@ -348,13 +402,15 @@ def _polygamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("Polygamma", "polygamma", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Igamma")
-def _igamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _igamma(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager igamma operation on the active backend array.
 
     Args:
@@ -363,13 +419,15 @@ def _igamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("Igamma", "gammainc", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("Gamma")
-def _gamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _gamma(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager gamma operation on the active backend array.
 
     Args:
@@ -378,13 +436,15 @@ def _gamma(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("Gamma", "gamma", backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("ModifiedBesselI1")
-def _np_modifiedbesseli1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_modifiedbesseli1(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np modifiedbesseli1 operation on the active backend array.
 
     Args:
@@ -393,6 +453,6 @@ def _np_modifiedbesseli1(backend_module: BackendModuleProtocol, *args: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _dispatch_special("ModifiedBesselI1", "i1", backend_module, *args, **kwargs)

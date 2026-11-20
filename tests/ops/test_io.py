@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import os
 import shutil
-import typing
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pytest_mock import MockerFixture
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.io import (
+    BinaryRecordOptions,
+    BinaryRecordWriter,
     DecodeBase64,
     DecodeCsv,
     DecodeImage,
@@ -23,8 +26,6 @@ from ml_switcheroo_compiler.ops.io import (
     Fromiter,
     Fromstring,
     Load,
-    ParseExample,
-    ParseSequenceExample,
     ParseTensor,
     ReadFile,
     Save,
@@ -34,8 +35,6 @@ from ml_switcheroo_compiler.ops.io import (
     SerializeTensor,
     SparsePlus,
     SparseSigmoid,
-    TFRecordOptions,
-    TFRecordWriter,
     WriteFile,
     _eager_base64,
     _fallback_load,
@@ -52,8 +51,6 @@ from ml_switcheroo_compiler.ops.io import (
     gfile_makedirs,
     gfile_stat,
     load,
-    parse_example,
-    parse_sequence_example,
     parse_tensor,
     read_file,
     save,
@@ -69,10 +66,7 @@ from ml_switcheroo_compiler.ops.io import (
     sparse_sigmoid,
     write_file,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_shape
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from tests.testing_utils import MockTestStub, coerce_shape, extract_test_shape, require_callable
 
 
 def test_fallback_load() -> None:
@@ -117,7 +111,7 @@ def test_mlx_settings() -> None:
     core_config.backend = original_backend
 
 
-def test_gfile(tmp_path: EagerTensorProtocol) -> None:
+def test_gfile(tmp_path: Path) -> None:
     """test_gfile.
 
     Args:
@@ -144,22 +138,22 @@ def test_gfile(tmp_path: EagerTensorProtocol) -> None:
     shutil.rmtree(test_dir)
 
 
-def test_tfrecord(tmp_path: EagerTensorProtocol) -> None:
-    """test_tfrecord.
+def test_binary_record(tmp_path: Path) -> None:
+    """Test BinaryRecordOptions and BinaryRecordWriter file writing.
 
     Args:
         tmp_path: Test parameter `tmp_path`.
     """
-    options = TFRecordOptions("GZIP")
+    options = BinaryRecordOptions("GZIP")
     assert options.compression_type == "GZIP"
-    tfrecord1 = str(tmp_path / "dataset1.tfrecord")
-    tfrecord2 = str(tmp_path / "dataset2.tfrecord")
-    writer = TFRecordWriter(tfrecord1, options)
-    assert writer.path == tfrecord1
+    rec1 = str(tmp_path / "dataset1.bin")
+    rec2 = str(tmp_path / "dataset2.bin")
+    writer = BinaryRecordWriter(rec1, options)
+    assert writer.path == rec1
     assert writer.options == options
     writer.write("data")
     writer.close()
-    with TFRecordWriter(tfrecord2) as w:
+    with BinaryRecordWriter(rec2) as w:
         w.write("data")
 
 
@@ -204,12 +198,10 @@ def test_opdefs_infer_shape() -> None:
     assert WriteFile().infer_shape(t) == (2, 3)
     assert DecodeImage().infer_shape(t) == (2, 3)
     assert DecodeCsv().infer_shape(t) == (2, 3)
-    assert ParseExample().infer_shape(t) == (2, 3)
     assert SerializeTensor().infer_shape(t) == (2, 3)
     assert ParseTensor().infer_shape(t) == (2, 3)
     assert EncodeBase64().infer_shape(t) == (2, 3)
     assert DecodeBase64().infer_shape(t) == (2, 3)
-    assert ParseSequenceExample().infer_shape(t) == (2, 3)
     assert SparsePlus().infer_shape(t) == (2, 3)
     assert SparsePlus().infer_shape() == ()
     assert SparseSigmoid().infer_shape(t) == (2, 3)
@@ -241,24 +233,31 @@ def test_frontend_functions_eager() -> None:
         mock_backend.execute_op.assert_called_with("SavezCompressed", "file")
         read_file("file")
         mock_backend.execute_op.assert_called_with("ReadFile", "file", name=None)
-        ensure_callable(write_file)("file", "content")
+        require_callable(write_file)("file", "content")
         mock_backend.execute_op.assert_called_with("WriteFile", "file", "content", name=None)
         decode_image("content")
-        mock_backend.execute_op.assert_called_with("DecodeImage", "content", channels=0, dtype=DType.UInt8, name=None, expand_animations=True)
-        ensure_callable(decode_csv)("content", [1])
-        mock_backend.execute_op.assert_called_with("DecodeCsv", "content", record_defaults=[1], field_delim=",", use_quote_delim=True, na_value="", select_cols=None, name=None)
-        ensure_callable(parse_example)("serialized", {"a": 1})
-        mock_backend.execute_op.assert_called_with("ParseExample", "serialized", features={"a": 1}, example_names=None, name=None)
-        ensure_callable(serialize_tensor)("tensor")
+        mock_backend.execute_op.assert_called_with(
+            "DecodeImage", "content", channels=0, dtype=DType.UInt8, name=None, expand_animations=True
+        )
+        require_callable(decode_csv)("content", [1])
+        mock_backend.execute_op.assert_called_with(
+            "DecodeCsv",
+            "content",
+            record_defaults=[1],
+            field_delim=",",
+            use_quote_delim=True,
+            na_value="",
+            select_cols=None,
+            name=None,
+        )
+        require_callable(serialize_tensor)("tensor")
         mock_backend.execute_op.assert_called_with("SerializeTensor", "tensor", name=None)
-        ensure_callable(parse_tensor)("serialized", DType.UInt8)
+        require_callable(parse_tensor)("serialized", DType.UInt8)
         mock_backend.execute_op.assert_called_with("ParseTensor", "serialized", out_type=DType.UInt8, name=None)
-        ensure_callable(encode_base64)("content")
+        encode_base64("content")
         mock_backend.execute_op.assert_called_with("EncodeBase64", "content", pad=False, name=None)
-        ensure_callable(decode_base64)("content")
+        decode_base64("content")
         mock_backend.execute_op.assert_called_with("DecodeBase64", "content", name=None)
-        ensure_callable(parse_sequence_example)("serialized")
-        mock_backend.execute_op.assert_called_with("ParseSequenceExample", "serialized", context_features=None, sequence_features=None, example_names=None, name=None)
         sparse_plus("a", "b")
         mock_backend.execute_op.assert_called_with("SparsePlus", "a", "b")
         sparse_sigmoid("a")
@@ -289,11 +288,28 @@ def test_frontend_functions_lazy() -> None:
         write_file("file", t)
         mock_emit.assert_called_with("WriteFile", ["file", t], {"name": None}, (), "float32")
         decode_image(t)
-        mock_emit.assert_called_with("DecodeImage", [t], {"channels": 0, "dtype": DType.UInt8, "name": None, "expand_animations": True}, (2, 3), "float32")
+        mock_emit.assert_called_with(
+            "DecodeImage",
+            [t],
+            {"channels": 0, "dtype": DType.UInt8, "name": None, "expand_animations": True},
+            (2, 3),
+            "float32",
+        )
         decode_csv(t, [1])
-        mock_emit.assert_called_with("DecodeCsv", [t], {"record_defaults": [1], "field_delim": ",", "use_quote_delim": True, "na_value": "", "select_cols": None, "name": None}, (2, 3), "float32")
-        parse_example(t, {"a": 1})
-        mock_emit.assert_called_with("ParseExample", [t], {"features": {"a": 1}, "example_names": None, "name": None}, (2, 3), "float32")
+        mock_emit.assert_called_with(
+            "DecodeCsv",
+            [t],
+            {
+                "record_defaults": [1],
+                "field_delim": ",",
+                "use_quote_delim": True,
+                "na_value": "",
+                "select_cols": None,
+                "name": None,
+            },
+            (2, 3),
+            "float32",
+        )
         serialize_tensor(t)
         mock_emit.assert_called_with("SerializeTensor", [t], {"name": None}, (2, 3), "float32")
         parse_tensor(t, DType.UInt8)
@@ -302,8 +318,6 @@ def test_frontend_functions_lazy() -> None:
         mock_emit.assert_called_with("EncodeBase64", [t], {"pad": False, "name": None}, (2, 3), "float32")
         decode_base64(t)
         mock_emit.assert_called_with("DecodeBase64", [t], {"name": None}, (2, 3), "float32")
-        parse_sequence_example(t)
-        mock_emit.assert_called_with("ParseSequenceExample", [t], {"context_features": None, "sequence_features": None, "example_names": None, "name": None}, (2, 3), "float32")
         sparse_plus(t, t)
         mock_emit.assert_called_with("SparsePlus", [t, t], {}, (2, 3), "float32")
         sparse_sigmoid(t)
@@ -316,31 +330,50 @@ def test_frontend_functions_lazy() -> None:
 class MockArray:
     """MockArray."""
 
-    def __init__(self, shape: EagerValue) -> None:
+    def __init__(self, shape: BackendArg) -> None:
         """__init__.
 
         Args:
             shape: Test parameter `shape`.
         """
-        self.shape: tuple[int, ...] = ensure_shape(tuple(ensure_shape(shape)))
+        self.shape: tuple[int, ...] = coerce_shape(tuple(coerce_shape(shape)))
 
 
 def test_io_ops_infer_shape() -> None:
     """test_io_ops_infer_shape."""
-    ops = [Load(), Save(), SaveGguf(), Savez(), SavezCompressed(), ReadFile(), WriteFile(), DecodeImage(), DecodeCsv(), ParseExample(), SerializeTensor(), ParseTensor(), EncodeBase64(), DecodeBase64(), ParseSequenceExample(), SparsePlus(), SparseSigmoid()]
+    ops = [
+        Load(),
+        Save(),
+        SaveGguf(),
+        Savez(),
+        SavezCompressed(),
+        ReadFile(),
+        WriteFile(),
+        DecodeImage(),
+        DecodeCsv(),
+        SerializeTensor(),
+        ParseTensor(),
+        EncodeBase64(),
+        DecodeBase64(),
+        SparsePlus(),
+        SparseSigmoid(),
+    ]
     for op in ops:
-        assert op.infer_shape(MockArray(ensure_eager_tensor((2, 2)))) == (2, 2)
-        assert op.infer_shape(MockArray(ensure_eager_tensor((2, 2))), MockArray((2, 1))) == (2, 2)
-        assert op.infer_shape(MockArray(ensure_eager_tensor((2, 1))), MockArray((2, 2))) == (2, 2)
-        assert op.infer_shape() == ()
+        assert op.dispatch_infer_shape(MockArray((2, 2))) == (2, 2)
+        assert op.dispatch_infer_shape(MockArray((2, 2)), MockArray((2, 1))) == (2, 2)
+        assert op.dispatch_infer_shape(MockArray((2, 1)), MockArray((2, 2))) == (2, 2)
+        assert op.dispatch_infer_shape() == ()
 
 
 def test_fallback_load_2() -> None:
     """test_fallback_load_2."""
     from unittest.mock import patch
 
-    assert ensure_callable(_fallback_load)(123) is None
-    with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.load", return_value="safetensors"):
+    assert require_callable(_fallback_load)(123) is None
+    with patch(
+        "ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.load",
+        return_value="safetensors",
+    ):
         assert _fallback_load("test.safetensors") == "safetensors"
     with patch("ml_switcheroo_compiler.ops.io.numpy_io.load_npz", return_value="npz"):
         assert _fallback_load("test.npz") == "npz"
@@ -363,21 +396,19 @@ def test_io_functions_eager() -> None:
         mock_backend.execute_op.return_value = "eager_result"
         mock_backend.asarray.return_value = "eager_result"
         assert load(t) == "eager_result"
-        assert ensure_eager_tensor(save(t)) == ensure_eager_tensor("eager_result")
-        assert ensure_eager_tensor(save_gguf(t)) == ensure_eager_tensor("eager_result")
-        assert ensure_eager_tensor(savez(t)) == ensure_eager_tensor("eager_result")
-        assert ensure_eager_tensor(savez_compressed(t)) == ensure_eager_tensor("eager_result")
+        assert save(t) == "eager_result"
+        assert save_gguf(t) == "eager_result"
+        assert savez(t) == "eager_result"
+        assert savez_compressed(t) == "eager_result"
         assert read_file(t) == "eager_result"
-        assert ensure_eager_tensor(write_file(t, t)) == ensure_eager_tensor("eager_result")
-        assert ensure_eager_tensor(decode_image(t)) == ensure_eager_tensor("eager_result")
-        assert ensure_eager_tensor(decode_csv(t, [])) == ensure_eager_tensor("eager_result")
-        assert ensure_eager_tensor(parse_example(t, {})) == ensure_eager_tensor("eager_result")
+        assert write_file(t, t) == "eager_result"
+        assert decode_image(t) == "eager_result"
+        assert decode_csv(t, []) == "eager_result"
         assert serialize_tensor(t) == "eager_result"
         assert parse_tensor(t, DType.Float32) == "eager_result"
         with patch("ml_switcheroo_compiler.ops.io._eager_base64", return_value="eager_result"):
             assert encode_base64(t) == "eager_result"
             assert decode_base64(t) == "eager_result"
-        assert ensure_eager_tensor(parse_sequence_example(t)) == ensure_eager_tensor("eager_result")
         assert sparse_plus(t) == "eager_result"
         assert sparse_sigmoid(t) == "eager_result"
     config.eager_mode = False
@@ -400,20 +431,18 @@ def test_io_functions_tracing() -> None:
     t = Tensor(data=FakeData(), config=TensorConfig((2,), DType.Float32, None))
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="dummy_node"):
         assert load(t) == "dummy_node"
-        assert ensure_eager_tensor(save(t)) == ensure_eager_tensor("dummy_node")
-        assert ensure_eager_tensor(save_gguf(t)) == ensure_eager_tensor("dummy_node")
-        assert ensure_eager_tensor(savez(t)) == ensure_eager_tensor("dummy_node")
-        assert ensure_eager_tensor(savez_compressed(t)) == ensure_eager_tensor("dummy_node")
+        assert save(t) == "dummy_node"
+        assert save_gguf(t) == "dummy_node"
+        assert savez(t) == "dummy_node"
+        assert savez_compressed(t) == "dummy_node"
         assert read_file(t) == "dummy_node"
-        assert ensure_eager_tensor(write_file(t, t)) == ensure_eager_tensor("dummy_node")
-        assert ensure_eager_tensor(decode_image(t)) == ensure_eager_tensor("dummy_node")
-        assert ensure_eager_tensor(decode_csv(t, [])) == ensure_eager_tensor("dummy_node")
-        assert ensure_eager_tensor(parse_example(t, {})) == ensure_eager_tensor("dummy_node")
+        assert write_file(t, t) == "dummy_node"
+        assert decode_image(t) == "dummy_node"
+        assert decode_csv(t, []) == "dummy_node"
         assert serialize_tensor(t) == "dummy_node"
         assert parse_tensor(t, DType.Float32) == "dummy_node"
         assert encode_base64(t) == "dummy_node"
         assert decode_base64(t) == "dummy_node"
-        assert ensure_eager_tensor(parse_sequence_example(t)) == ensure_eager_tensor("dummy_node")
         assert sparse_plus(t) == "dummy_node"
         assert sparse_sigmoid(t) == "dummy_node"
     config.eager_mode = True
@@ -423,10 +452,10 @@ def test_missing_io_ops_classes() -> None:
     """test_missing_io_ops_classes."""
     from ml_switcheroo_compiler.ops.io import Fromfile, Fromfunction, Fromiter, Fromstring
 
-    class FakeTensor:
+    class FakeTensor(MockTestStub):
         """FakeTensor."""
 
-        def __init__(self, shape: EagerValue) -> None:
+        def __init__(self, shape: BackendArg) -> None:
             """__init__.
 
             Args:
@@ -437,15 +466,15 @@ def test_missing_io_ops_classes() -> None:
     for op_cls in [Fromfile, Fromstring, Fromiter, Fromfunction]:
         op = op_cls()
         if type(op).__name__ == "Fromfunction":
-            assert op.infer_shape() == ()
+            assert op.dispatch_infer_shape() == ()
             t1 = FakeTensor((2, 3))
             t2 = FakeTensor((1, 3))
-            assert op.infer_shape(ensure_eager_tensor(t1), (2, 3)) == (2, 3)
+            assert op.dispatch_infer_shape(t1, (2, 3)) == (2, 3)
         else:
-            assert op.infer_shape() == (None,)
+            assert op.dispatch_infer_shape() == (None,)
             t1 = FakeTensor((2, 3))
             t2 = FakeTensor((1, 3))
-            assert op.infer_shape(ensure_eager_tensor(t1), ensure_eager_tensor(t2)) == (None,)
+            assert op.dispatch_infer_shape(t1, t2) == (None,)
 
 
 def test_mlx_settings_missing_attributes() -> None:
@@ -477,22 +506,22 @@ def test_base64_edge_cases() -> None:
     assert _eager_base64("encode", [b"hello", b"world"]) == [b"aGVsbG8", b"d29ybGQ"]
 
 
-def test_tf_record_writer(tmp_path: EagerTensorProtocol) -> None:
-    """test_tf_record_writer.
+def test_binary_record_writer(tmp_path: Path) -> None:
+    """Test BinaryRecordOptions and BinaryRecordWriter context manager.
 
     Args:
         tmp_path: Test parameter `tmp_path`.
     """
-    opts = TFRecordOptions("GZIP")
+    opts = BinaryRecordOptions("GZIP")
     assert opts.compression_type == "GZIP"
-    writer = TFRecordWriter(str(tmp_path / "path"), opts)
+    writer = BinaryRecordWriter(str(tmp_path / "path"), opts)
     writer.write(b"data")
     writer.close()
     with writer as w:
         assert w == writer
 
 
-def test_misc_io_functions(tmp_path: EagerTensorProtocol) -> None:
+def test_misc_io_functions(tmp_path: Path) -> None:
     """test_misc_io_functions.
 
     Args:
@@ -515,7 +544,7 @@ def test_misc_io_functions(tmp_path: EagerTensorProtocol) -> None:
     assert (tmp_path / "dir").exists()
 
 
-def test_image_decoding(tmp_path: EagerTensorProtocol, mocker: EagerTensorProtocol) -> None:
+def test_image_decoding(tmp_path: Path, mocker: MockerFixture) -> None:
     """test_image_decoding.
 
     Args:
@@ -528,7 +557,7 @@ def test_image_decoding(tmp_path: EagerTensorProtocol, mocker: EagerTensorProtoc
         """Test class DummyDecodeBackend."""
 
         @staticmethod
-        def decode_image_bytes(data: EagerValue, channels: EagerValue = 0) -> EagerValue:
+        def decode_image_bytes(data: BackendArg, channels: BackendArg = 0) -> BackendArg:
             """Test function decode_image_bytes.
 
             Args:
@@ -536,7 +565,7 @@ def test_image_decoding(tmp_path: EagerTensorProtocol, mocker: EagerTensorProtoc
                 channels: Test parameter `channels`.
 
             Returns:
-                EagerValue: Computed output value from `decode_image_bytes`.
+                BackendArg: Computed output value from `decode_image_bytes`.
             """
             return np.array([])
 
@@ -568,9 +597,9 @@ def test_eager_base64_2() -> None:
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
             mock_backend = mock_get_backend.return_value
             mock_backend.execute_op.return_value = t_enc.data
-            assert encode_base64(t) is not None
+            assert tuple(extract_test_shape(encode_base64(t))) == (1,)
             mock_backend.execute_op.return_value = t.data
-            assert decode_base64(t_enc) is not None
+            assert tuple(extract_test_shape(decode_base64(t_enc))) == (1,)
     finally:
         config.eager_mode = old_eager
 

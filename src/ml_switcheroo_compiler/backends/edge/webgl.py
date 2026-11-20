@@ -3,55 +3,61 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 
 import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, ensure_int, ensure_str
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    EagerTensorProtocol,
+    coerce_int,
+    coerce_str,
+)
 from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplatesConfig
-from ml_switcheroo_compiler.backends.protocols import get_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _node_inputs_list(node: EagerValue) -> list[str]:
+def _node_inputs_list(node: BackendArg) -> list[str]:
     """Return string list of input IDs on `node`.
 
     Args:
-        node (EagerValue): Target node.
+        node (BackendArg): Target node.
 
     Returns:
         list[str]: Node input IDs.
     """
-    raw = get_backend_member(node, "inputs", [])
+    raw = adapt_backend_module(node).get_symbol("inputs", [])
     return [str(x) for x in raw] if isinstance(raw, (list, tuple)) else []
 
 
-def _node_shape_meta(node: EagerValue) -> tuple[EagerValue, ...] | list[EagerValue] | None:
+def _node_shape_meta(node: BackendArg) -> tuple[BackendArg, ...] | list[BackendArg] | None:
     """Return `shape_metadata` sequence on `node` if present.
 
     Args:
-        node (EagerValue): Target node.
+        node (BackendArg): Target node.
 
     Returns:
-        tuple[EagerValue, ...] | list[EagerValue] | None: Shape metadata sequence or None.
+        tuple[BackendArg, ...] | list[BackendArg] | None: Shape metadata sequence or None.
     """
-    raw = get_backend_member(node, "shape_metadata", None)
+    raw = adapt_backend_module(node).get_symbol("shape_metadata", None)
     return raw if isinstance(raw, (list, tuple)) else None
 
 
-def _graph_nodes_map(graph: EagerValue) -> dict[str, EagerTensorProtocol | IRNode]:
+def _graph_nodes_map(graph: BackendArg) -> dict[str, EagerTensorProtocol | IRNode]:
     """Return `nodes` mapping on `graph`.
 
     Args:
-        graph (EagerValue): Target graph.
+        graph (BackendArg): Target graph.
 
     Returns:
         dict[str, EagerTensorProtocol | IRNode]: Nodes mapping.
     """
-    raw = get_backend_member(graph, "nodes", {})
-    return {str(k): v for k, v in raw.items()} if isinstance(raw, dict) else {}
+    raw = adapt_backend_module(graph).get_symbol("nodes", {})
+    return {str(k): v for k, v in raw.items()} if isinstance(raw, Mapping) else {}
 
 
 @register_backend("edge_webgl")
@@ -124,7 +130,11 @@ class WebGLCodeGenerator(BaseGenerator):
         """
         norm_op: str = op_type.lower()
         norm_no_underscore: str = norm_op.replace("_", "")
-        template_config = self.config.templates.get(norm_op) or self.config.templates.get(norm_no_underscore) or next((v for k, v in self.config.templates.items() if k.replace("_", "") == norm_no_underscore), None)
+        template_config = (
+            self.config.templates.get(norm_op)
+            or self.config.templates.get(norm_no_underscore)
+            or next((v for k, v in self.config.templates.items() if k.replace("_", "") == norm_no_underscore), None)
+        )
         if not template_config:
             raise ValueError(f"Missing WebGL shader template for operation: {op_type}")
 
@@ -136,7 +146,9 @@ class WebGLCodeGenerator(BaseGenerator):
         return escaped_shader, custom_setup
 
     @staticmethod
-    def _build_texture_binding_lines(node: EagerTensorProtocol | IRNode, clean_id: str, input_map: dict[str, int]) -> list[str]:
+    def _build_texture_binding_lines(
+        node: EagerTensorProtocol | IRNode, clean_id: str, input_map: dict[str, int]
+    ) -> list[str]:
         """Build JavaScript statements binding input textures and sampler uniforms.
 
         Args:
@@ -156,7 +168,9 @@ class WebGLCodeGenerator(BaseGenerator):
             else:
                 binding_lines.append(f"    gl.bindTexture(gl.TEXTURE_2D, texOut_{in_id.replace('-', '_')});")
             if i < len(uniform_names):
-                binding_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, '{uniform_names[i]}'), {i});")
+                binding_lines.append(
+                    f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, '{uniform_names[i]}'), {i});"
+                )
         return binding_lines
 
     def _extract_input_spatial_dims(self, node: EagerTensorProtocol | IRNode) -> tuple[int, int, int, int, int]:
@@ -189,11 +203,11 @@ class WebGLCodeGenerator(BaseGenerator):
         return k_dim, in_h, in_w, k_h, k_w
 
     @staticmethod
-    def _parse_slice_starts(starts: EagerValue) -> tuple[int, int]:
+    def _parse_slice_starts(starts: BackendArg) -> tuple[int, int]:
         """Parse slice start offsets into (start_x, start_y) coordinates.
 
         Args:
-            starts (EagerValue): Raw starts attribute value.
+            starts (BackendArg): Raw starts attribute value.
 
         Returns:
             tuple[int, int]: Parsed (start_x, start_y) integer offsets.
@@ -210,7 +224,9 @@ class WebGLCodeGenerator(BaseGenerator):
             return 0, starts
         return 0, 0
 
-    def _build_node_setup_lines(self, node: EagerTensorProtocol | IRNode, clean_id: str, width: int, height: int, custom_setup: str) -> list[str]:
+    def _build_node_setup_lines(
+        self, node: EagerTensorProtocol | IRNode, clean_id: str, width: int, height: int, custom_setup: str
+    ) -> list[str]:
         """Build custom uniform setup and N-D stride uniform statements for a node.
 
         Args:
@@ -226,8 +242,10 @@ class WebGLCodeGenerator(BaseGenerator):
         setup_lines: list[str] = []
         if custom_setup:
             k_dim, in_h, in_w, k_h, k_w = self._extract_input_spatial_dims(node)
-            raw_attrs = get_backend_member(node, "attributes", {})
-            attrs: dict[str, EagerValue] = {str(k): v for k, v in raw_attrs.items()} if isinstance(raw_attrs, dict) else {}
+            raw_attrs = adapt_backend_module(node).get_symbol("attributes", {})
+            attrs: dict[str, BackendArg] = (
+                {str(k): v for k, v in raw_attrs.items()} if isinstance(raw_attrs, dict) else {}
+            )
             start_x, start_y = self._parse_slice_starts(attrs.get("starts", attrs.get("start", [0, 0])))
             raw_axis = attrs.get("axis", 0)
             concat_axis: int = int(raw_axis) if isinstance(raw_axis, int) else 0
@@ -294,19 +312,25 @@ class WebGLCodeGenerator(BaseGenerator):
         """
         js.append(f'    const shader_{clean_id} = "{escaped_shader}";')
         js.append(f"    const prog_{clean_id} = createProgram(gl, vsSource, shader_{clean_id});")
-        raw_attrs = get_backend_member(node, "attributes", {})
-        num_outputs: int = int(ensure_int(raw_attrs.get("num_outputs", 1))) if isinstance(raw_attrs, dict) else 1
+        raw_attrs = adapt_backend_module(node).get_symbol("attributes", {})
+        num_outputs: int = int(coerce_int(raw_attrs.get("num_outputs", 1))) if isinstance(raw_attrs, dict) else 1
         js.append("    gl.bindFramebuffer(gl.FRAMEBUFFER, currentFbo);")
         if num_outputs > 1:
             draw_buffers: list[str] = []
             for out_i in range(num_outputs):
                 js.append(f"    let texOut_{clean_id}_{out_i} = createTexture(gl, null, {width}, {height});")
-                js.append(f"    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT{out_i}, gl.TEXTURE_2D, texOut_{clean_id}_{out_i}, 0);")
+                js.append(
+                    f"    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT{out_i}, gl.TEXTURE_2D, "
+                    f"texOut_{clean_id}_{out_i}, 0);"
+                )
                 draw_buffers.append(f"gl.COLOR_ATTACHMENT{out_i}")
             js.append(f"    gl.drawBuffers([{', '.join(draw_buffers)}]);")
         else:
             js.append(f"    let texOut_{clean_id} = createTexture(gl, null, {width}, {height});")
-            js.append(f"    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texOut_{clean_id}, 0);")
+            js.append(
+                "    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, "
+                f"texOut_{clean_id}, 0);"
+            )
         js.append(f"    gl.viewport(0, 0, {width}, {height});")
         js.append(f"    gl.useProgram(prog_{clean_id});")
         js.extend(binding_lines)
@@ -318,7 +342,9 @@ class WebGLCodeGenerator(BaseGenerator):
         js.append("    gl.drawArrays(gl.TRIANGLES, 0, 6);")
         js.append("    currentFbo = (currentFbo === main_fbo) ? fboPong : main_fbo;")
 
-    def _emit_node(self, node: EagerTensorProtocol | IRNode, input_map: dict[str, int], js: list[str]) -> tuple[int, int]:
+    def _emit_node(
+        self, node: EagerTensorProtocol | IRNode, input_map: dict[str, int], js: list[str]
+    ) -> tuple[int, int]:
         """Emit WebGL operations for a single node.
 
         Args:
@@ -332,8 +358,8 @@ class WebGLCodeGenerator(BaseGenerator):
         Raises:
             ValueError: If shader template is missing for the operation.
         """
-        op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
-        clean_id: str = ensure_str(get_backend_member(node, "id", "")).replace("-", "_")
+        op_type: str = coerce_str(adapt_backend_module(node).get_symbol("op_type", ""))
+        clean_id: str = coerce_str(adapt_backend_module(node).get_symbol("id", "")).replace("-", "_")
 
         width, height = self._resolve_texture_dims(node)
         escaped_shader, custom_setup = self._lookup_shader_template(op_type)
@@ -370,7 +396,10 @@ class WebGLCodeGenerator(BaseGenerator):
 
         js.append("function evaluate_webgl(gl, inputs) {")
         js.append("    // Vertex shader for full screen quad")
-        js.append("    const vsSource = `#version 300 es\\nin vec4 aVertexPosition;\\nvoid main() {\\n  gl_Position = aVertexPosition;\\n}`;")
+        js.append(
+            "    const vsSource = `#version 300 es\\nin vec4 aVertexPosition;\\nvoid main() {\\n  "
+            "gl_Position = aVertexPosition;\\n}`;"
+        )
         js.append("    // Ping-pong framebuffers for multi-pass compute without stalls")
         js.append("    const main_fbo = gl.createFramebuffer();")
         js.append("    const fboPong = gl.createFramebuffer();")
@@ -379,15 +408,15 @@ class WebGLCodeGenerator(BaseGenerator):
         input_map: dict[str, int] = {}
         input_idx: int = 0
         for node in _graph_nodes_map(self.graph).values():
-            if ensure_str(get_backend_member(node, "op_type", "")) == "Input":
-                input_map[ensure_str(get_backend_member(node, "id", ""))] = input_idx
+            if coerce_str(adapt_backend_module(node).get_symbol("op_type", "")) == "Input":
+                input_map[coerce_str(adapt_backend_module(node).get_symbol("id", ""))] = input_idx
                 input_idx += 1
 
         last_width: int = 32
         last_height: int = 32
 
         for node in _graph_nodes_map(self.graph).values():
-            if ensure_str(get_backend_member(node, "op_type", "")) == "Input":
+            if coerce_str(adapt_backend_module(node).get_symbol("op_type", "")) == "Input":
                 continue
 
             last_width, last_height = self._emit_node(node, input_map, js)
@@ -397,36 +426,36 @@ class WebGLCodeGenerator(BaseGenerator):
 
         return "\n".join(js)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into ahead-of-time WebGL executable artifact.
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options.
+            **kwargs (BackendArg): Compiler options.
 
         Returns:
-            EagerValue: Executable compiled artifact.
+            BackendArg: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
         js_source = self.generate()
 
-        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
+        def runner(*args: BackendArg, **runner_kwargs: BackendArg) -> BackendArg:
             """Execute compiled WebGL artifact using fallback graph evaluation.
 
             Args:
-                *args (EagerValue): Input tensor arguments.
-                **runner_kwargs (EagerValue): Optional execution options.
+                *args (BackendArg): Input tensor arguments.
+                **runner_kwargs (BackendArg): Optional execution options.
 
             Returns:
-                EagerValue: Output tensor or tuple of output tensors.
+                BackendArg: Output tensor or tuple of output tensors.
             """
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            feed_dict: dict[str, EagerValue] = {}
+            feed_dict: dict[str, BackendArg] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = get_backend_member(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = adapt_backend_module(arg).get_symbol("data", arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
                 return res_dict
@@ -434,7 +463,11 @@ class WebGLCodeGenerator(BaseGenerator):
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
-        shaders_map = {node_id: f"shader_{node_id}" for node_id, node in _graph_nodes_map(graph).items() if ensure_str(get_backend_member(node, "op_type", "")).lower() not in ("input", "output")}
+        shaders_map = {
+            node_id: f"shader_{node_id}"
+            for node_id, node in _graph_nodes_map(graph).items()
+            if coerce_str(adapt_backend_module(node).get_symbol("op_type", "")).lower() not in ("input", "output")
+        }
 
         return CompiledArtifact(
             callable_fn=runner,

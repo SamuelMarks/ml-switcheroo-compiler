@@ -7,8 +7,7 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import AttrValue
-from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 
 
 class _PositionalConfigModel(pydantic.BaseModel):
@@ -16,14 +15,14 @@ class _PositionalConfigModel(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    def __init__(self, *args: AttrValue, **kwargs: AttrValue) -> None:
+    def __init__(self, *args: OpValue, **kwargs: OpValue) -> None:
         """Initialize configuration model from positional or keyword arguments.
 
         Args:
-            *args (AttrValue): Positional field values.
-            **kwargs (AttrValue): Keyword field values.
+            *args (OpValue): Positional field values.
+            **kwargs (OpValue): Keyword field values.
         """
-        pos_kw: dict[str, AttrValue] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
+        pos_kw: dict[str, OpValue] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
         super().__init__(**{**pos_kw, **kwargs})
 
 
@@ -34,11 +33,11 @@ class ConvConfig(_PositionalConfigModel):
     padding: Sequence[tuple[int, int]] | str | None = "VALID"
     lhs_dilation: Sequence[int] | None = None
     rhs_dilation: Sequence[int] | None = None
-    dimension_numbers: AttrValue = None
+    dimension_numbers: OpValue = None
     feature_group_count: int = 1
     batch_group_count: int = 1
-    precision: AttrValue = None
-    preferred_element_type: AttrValue = None
+    precision: OpValue = None
+    preferred_element_type: OpValue = None
 
 
 class WindowConfig(_PositionalConfigModel):
@@ -95,26 +94,29 @@ class BBoxConfig(_PositionalConfigModel):
 class PerspectiveConfig(_PositionalConfigModel):
     """Perspective transformation configuration."""
 
-    interpolation: str | AttrValue = "bilinear"
-    fill_value: float | AttrValue = 0.0
-    data_format: str | AttrValue | None = None
+    interpolation: str | OpValue = "bilinear"
+    fill_value: float | OpValue = 0.0
+    data_format: str | OpValue | None = None
 
 
 class BlurConfig(_PositionalConfigModel):
     """Gaussian blur configuration."""
 
-    kernel_size: int | Sequence[int] | AttrValue
-    sigma: float | Sequence[float] | AttrValue
-    data_format: str | AttrValue | None = None
+    kernel_size: int | Sequence[int] | OpValue
+    sigma: float | Sequence[float] | OpValue
+    data_format: str | OpValue | None = None
 
-    def __init__(self, *args: AttrValue, **kwargs: AttrValue) -> None:
+    def __init__(self, *args: OpValue, **kwargs: OpValue) -> None:
         """Initialize BlurConfig requiring kernel_size and sigma.
 
         Args:
-            *args (AttrValue): Positional field values.
-            **kwargs (AttrValue): Keyword field values.
+            *args (OpValue): Positional field values.
+            **kwargs (OpValue): Keyword field values.
+
+        Raises:
+            TypeError: If an argument passed to `__init__` has an incompatible type.
         """
-        pos_kw: dict[str, AttrValue] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
+        pos_kw: dict[str, OpValue] = {k: args[i] for i, k in enumerate(type(self).model_fields.keys()) if i < len(args)}
         merged = {**pos_kw, **kwargs}
         if "kernel_size" not in merged or "sigma" not in merged:
             msg = "BlurConfig.__init__() missing required arguments: 'kernel_size' and 'sigma'"
@@ -125,9 +127,9 @@ class BlurConfig(_PositionalConfigModel):
 class ElasticConfig(_PositionalConfigModel):
     """Elastic transformation configuration."""
 
-    interpolation: str | AttrValue = "bilinear"
-    fill_value: float | AttrValue = 0.0
-    data_format: str | AttrValue | None = None
+    interpolation: str | OpValue = "bilinear"
+    fill_value: float | OpValue = 0.0
+    data_format: str | OpValue | None = None
 
 
 class ResizeOptions(_PositionalConfigModel):

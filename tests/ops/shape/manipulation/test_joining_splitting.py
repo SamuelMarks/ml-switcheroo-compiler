@@ -10,13 +10,13 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import append, column_stack, dsplit, dstack, hsplit, hstack, vsplit, vstack
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_obj
+from tests.testing_utils import coerce_operand_list, coerce_shape, ensure_tensor, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
+def _t(data: BackendArg, shape: tuple[BackendArg, ...]) -> Tensor:
     """Helper to create test tensor.
 
     Args:
@@ -26,7 +26,7 @@ def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
     Returns:
         Tensor: Computed output value from `_t`.
     """
-    return ensure_tensor_obj(ensure_callable(Tensor)(data, ensure_callable(TensorConfig)(shape, "float32", "cpu")))
+    return ensure_tensor(Tensor(data, TensorConfig(coerce_shape(shape), "float32", "cpu")))
 
 
 def test_append_eager() -> None:
@@ -35,7 +35,7 @@ def test_append_eager() -> None:
     x = _t(np.array([1, 2, 3]), (3,))
     y = _t(np.array([4, 5]), (2,))
     out = append(x, y)
-    assert ensure_eager_tensor(out).shape == (5,)
+    assert extract_test_shape(out) == (5,)
 
 
 def test_append_tracing() -> None:
@@ -46,7 +46,7 @@ def test_append_tracing() -> None:
         x = _t(np.array([1, 2, 3]), (3,))
         y = _t(np.array([4, 5]), (2,))
         out = append(x, y)
-        assert ensure_eager_tensor(out).shape == (5,)
+        assert extract_test_shape(out) == (5,)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -57,7 +57,7 @@ def test_column_stack_eager() -> None:
     x = _t(np.array([1, 2, 3]), (3,))
     y = _t(np.array([4, 5, 6]), (3,))
     out = column_stack([x, y])
-    assert ensure_eager_tensor(out).shape == (3, 2)
+    assert extract_test_shape(out) == (3, 2)
 
 
 def test_column_stack_tracing() -> None:
@@ -79,7 +79,7 @@ def test_dstack_eager() -> None:
     x = _t(np.array([[1, 2], [3, 4]]), (2, 2))
     y = _t(np.array([[5, 6], [7, 8]]), (2, 2))
     out = dstack([x, y])
-    assert ensure_eager_tensor(out).shape == (2, 2, 2)
+    assert extract_test_shape(out) == (2, 2, 2)
 
 
 def test_dstack_tracing() -> None:
@@ -101,7 +101,7 @@ def test_hstack_eager() -> None:
     x = _t(np.array([1, 2]), (2,))
     y = _t(np.array([3, 4]), (2,))
     out = hstack([x, y])
-    assert ensure_eager_tensor(out).shape == (4,)
+    assert extract_test_shape(out) == (4,)
 
 
 def test_hstack_tracing() -> None:
@@ -123,7 +123,7 @@ def test_vstack_eager() -> None:
     x = _t(np.array([1, 2]), (2,))
     y = _t(np.array([3, 4]), (2,))
     out = vstack([x, y])
-    assert ensure_eager_tensor(out).shape == (2, 2)
+    assert extract_test_shape(out) == (2, 2)
 
 
 def test_vstack_tracing() -> None:
@@ -144,8 +144,8 @@ def test_dsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2, 2)), (2, 2, 2))
     out = dsplit(x, 2)
-    assert ensure_callable(len)(out) == 2
-    assert ensure_eager_tensor(out)[0].shape == (2, 2, 1)
+    assert len(coerce_operand_list(out)) == 2
+    assert extract_test_shape(coerce_operand_list(out)[0]) == (2, 2, 1)
 
 
 def test_dsplit_tracing() -> None:
@@ -155,8 +155,8 @@ def test_dsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2, 2)), (2, 2, 2))
         out = dsplit(x, 2)
-        assert ensure_callable(len)(out) == 2
-        assert ensure_eager_tensor(out)[0].shape == (2, 2, 1)
+        assert len(coerce_operand_list(out)) == 2
+        assert extract_test_shape(coerce_operand_list(out)[0]) == (2, 2, 1)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -166,8 +166,8 @@ def test_hsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2)), (2, 2))
     out = hsplit(x, 2)
-    assert ensure_callable(len)(out) == 2
-    assert ensure_eager_tensor(out)[0].shape == (2, 1)
+    assert len(coerce_operand_list(out)) == 2
+    assert extract_test_shape(coerce_operand_list(out)[0]) == (2, 1)
 
 
 def test_hsplit_tracing() -> None:
@@ -177,8 +177,8 @@ def test_hsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2)), (2, 2))
         out = hsplit(x, 2)
-        assert ensure_callable(len)(out) == 2
-        assert ensure_eager_tensor(out)[0].shape == (2, 1)
+        assert len(coerce_operand_list(out)) == 2
+        assert extract_test_shape(coerce_operand_list(out)[0]) == (2, 1)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -188,8 +188,8 @@ def test_vsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2)), (2, 2))
     out = vsplit(x, 2)
-    assert ensure_callable(len)(out) == 2
-    assert ensure_eager_tensor(out)[0].shape == (1, 2)
+    assert len(coerce_operand_list(out)) == 2
+    assert extract_test_shape(coerce_operand_list(out)[0]) == (1, 2)
 
 
 def test_vsplit_tracing() -> None:
@@ -199,7 +199,7 @@ def test_vsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2)), (2, 2))
         out = vsplit(x, 2)
-        assert ensure_callable(len)(out) == 2
-        assert ensure_eager_tensor(out)[0].shape == (1, 2)
+        assert len(coerce_operand_list(out)) == 2
+        assert extract_test_shape(coerce_operand_list(out)[0]) == (1, 2)
     finally:
         global_tracing_state.stop_tracing()

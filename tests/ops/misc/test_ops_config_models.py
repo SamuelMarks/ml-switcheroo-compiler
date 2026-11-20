@@ -10,7 +10,7 @@ import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 import ml_switcheroo_compiler.ops.config_models as ops_cfg
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
@@ -31,29 +31,33 @@ class _MockDummyGenerator(gen_mixins.GeneratorLifecycleMixin):
         self._output_returns: list[str] = []
         self.var_names: dict[str, str] = {"in1": "args[0]"}
 
-    def assign_var_name(self, node_id: str) -> str:
+    def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
         """Assign variable name.
 
         Args:
             node_id (str): Node id.
+            prefix (str): Variable name prefix.
 
         Returns:
             str: Assigned variable name.
         """
+        del prefix
         name = f"var_{node_id}"
         self.var_names[node_id] = name
         return name
 
-    def visit(self, node: LogicalNode, input_vars: list[str]) -> str:
+    def visit(self, node: LogicalNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Generate code for node.
 
         Args:
             node (LogicalNode): The node.
             input_vars (list[str]): Input variables.
+            **kwargs (BackendArg): Additional keyword attributes.
 
         Returns:
             str: Code string.
         """
+        del node, kwargs
         return f"Identity({', '.join(input_vars)})"
 
     def _emit_body_return(self, returns: list[str]) -> None:
@@ -87,34 +91,34 @@ class _MockCustomModule:
         """
         return ("custom_zeros", shape)
 
-    def array(self, data: EagerValue, dtype: EagerValue | None = None) -> tuple[str, EagerValue, EagerValue | None]:
+    def array(self, data: BackendArg, dtype: BackendArg | None = None) -> tuple[str, BackendArg, BackendArg | None]:
         """Mock array.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (object | None): Data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg | None): Data type.
 
         Returns:
             tuple[str, object, object | None]: Descriptor.
         """
         return ("custom_array", data, dtype)
 
-    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
         """Mock asarray.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
             tuple[str, object]: Descriptor.
         """
         return ("custom_asarray", data)
 
-    def item(self, data: EagerValue) -> float:
+    def item(self, data: BackendArg) -> float:
         """Mock item.
 
         Args:
-            data (EagerValue): Input object.
+            data (BackendArg): Input object.
 
         Returns:
             float: 99.9.

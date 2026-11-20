@@ -4,28 +4,28 @@ from __future__ import annotations
 
 import sys
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.mapping_loader import dispatch_eager_op, load_backend_mappings
-from ml_switcheroo_compiler.backends.protocols import resolve_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
 def execute_op(
-    cls: type,
+    cls: type | None,
     op_type: str,
-    *args: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute operation eagerly on TensorFlow backend with native argument validation.
 
     Args:
-        cls (type): The caller class or context.
+        cls (type | None): The caller class or context.
         op_type (str): The name of the operation.
-        *args (EagerValue): Positional arguments for the op.
-        **kwargs (EagerValue): Keyword arguments for the op.
+        *args (BackendArg): Positional arguments for the op.
+        **kwargs (BackendArg): Keyword arguments for the op.
 
     Returns:
-        EagerValue: Result of native TensorFlow evaluation.
+        BackendArg: Result of native TensorFlow evaluation.
 
     Raises:
         BackendNotSupportedError: If TensorFlow is unavailable or op is unmapped.
@@ -41,13 +41,23 @@ def execute_op(
         raise BackendNotSupportedError("TensorFlow is not installed or available in this environment.")
 
     # Convert Python sequences to native TensorFlow tensor primitives where possible
-    has_conv, conv_fn = resolve_backend_member(tf, "convert_to_tensor")
-    processed_args: list[EagerValue] = []
+    has_conv, conv_fn = adapt_backend_module(tf).resolve_symbol("convert_to_tensor")
+    processed_args: list[BackendArg] = []
     for arg in args:
-        if isinstance(arg, (list, tuple)) and has_conv:
+        if isinstance(arg, (list, tuple)) and has_conv and conv_fn is not None:
             try:
-                processed_args.append(ensure_callable(conv_fn)(arg))
-            except Exception:
+                processed_args.append(conv_fn(arg))
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 processed_args.append(arg)
         else:
             processed_args.append(arg)

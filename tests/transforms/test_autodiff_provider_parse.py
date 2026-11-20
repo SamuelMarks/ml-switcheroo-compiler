@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
+from tests.testing_utils import MockGraphStub, MockNodeStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -15,14 +15,16 @@ def test_autodiff_provider_parse_expression() -> None:
     """Test function test_autodiff_provider_parse_expression."""
     from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import _parse_expression
 
-    class DummyGraph:
+    class DummyGraph(MockGraphStub):
         """Test class DummyGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            from ml_switcheroo_ir import NodeDict
 
-    class DummyNode:
+            self.nodes = NodeDict()
+
+    class DummyNode(MockNodeStub):
         """Test class DummyNode."""
 
         def __init__(self) -> None:
@@ -38,71 +40,75 @@ def test_autodiff_provider_parse_expression() -> None:
         mock_emit.return_value = "res_id"
 
         # Test cotangent
-        res = ensure_callable(_parse_expression)(graph, "$cotangent", node, cotangent="C")
+        res = _parse_expression(graph, "$cotangent", node, cotangent="C")
         assert res == "C"
 
-        res = ensure_callable(_parse_expression)(graph, "ZerosLike($x)", node, cotangent="C")
+        res = _parse_expression(graph, "ZerosLike($x)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "ZerosLike"
 
-        res = ensure_callable(_parse_expression)(graph, "Mul($cotangent, 2)", node, cotangent="C")
+        res = _parse_expression(graph, "Mul($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Mul", "Multiply")
 
-        res = ensure_callable(_parse_expression)(graph, "Add(1, $cotangent)", node, cotangent="C")
+        res = _parse_expression(graph, "Add(1, $cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Add"
 
-        res = ensure_callable(_parse_expression)(graph, "Sub($cotangent, $in0)", node, cotangent="C")
+        res = _parse_expression(graph, "Sub($cotangent, $in0)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Sub", "Subtract")
 
-        res = ensure_callable(_parse_expression)(graph, "Div($in0, $cotangent)", node, cotangent="C")
+        res = _parse_expression(graph, "Div($in0, $cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Div", "TrueDivide")
 
-        res = ensure_callable(_parse_expression)(graph, "Neg($cotangent)", node, cotangent="C")
+        res = _parse_expression(graph, "Neg($cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Neg", "Negative")
 
-        res = ensure_callable(_parse_expression)(graph, "Pow($cotangent, 2)", node, cotangent="C")
+        res = _parse_expression(graph, "Pow($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Pow"
 
         # Test tangents
-        res = ensure_callable(_parse_expression)(graph, "$tangent[0]", node, tangents=["T0", "T1"])
+        res = _parse_expression(graph, "$tangent[0]", node, tangents=["T0", "T1"])
         assert res == "T0"
 
         # Input
-        res = ensure_callable(_parse_expression)(graph, "$input[1]", node)
+        res = _parse_expression(graph, "$input[1]", node)
         assert res == "in1"
 
         # Nested Parens
-        res = ensure_callable(_parse_expression)(graph, "Func(Arg(1))", node)
+        res = _parse_expression(graph, "Func(Arg(1))", node)
         assert mock_emit.call_args[0][1] == "Func"
-        res = ensure_callable(_parse_expression)(graph, "ReduceSum($in0)", node)
+        res = _parse_expression(graph, "ReduceSum($in0)", node)
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "ReduceSum"
 
-        res = ensure_callable(_parse_expression)(graph, "Exp($in0)", node)
+        res = _parse_expression(graph, "Exp($in0)", node)
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Exp"
 
         # Attributes
-        res = ensure_callable(_parse_expression)(graph, "$attr", node)
+        res = _parse_expression(graph, "$attr", node)
         assert res == "$attr"
 
         # Constants
-        res = ensure_callable(_parse_expression)(graph, "Constant(1.5)", node)
+        res = _parse_expression(graph, "Constant(1.5)", node)
         assert res.startswith("cst_ad")
 
 
 def test_get_vjp_from_data() -> None:
     """Test function test_get_vjp_from_data."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
 
-    with patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"MyOp": {"autodiff": {"vjp": ["in0 * cotangent", "in1"]}}}):
+    with patch(
+        "ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY",
+        {"MyOp": {"autodiff": {"vjp": ["in0 * cotangent", "in1"]}}},
+    ):
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", MagicMock()):
                 with patch("yaml.safe_load", return_value={"MyOp": {"vjp": ["mock", "mock2"]}}):
@@ -112,8 +118,11 @@ def test_get_vjp_from_data() -> None:
         graph = IRGraph()
         node = IRNode("n1", "MyOp", inputs=["in0", "in1"])
 
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression", return_value="parsed"):
-            res = ensure_callable(vjp_fn)(graph, node, "C")
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression",
+            return_value="parsed",
+        ):
+            res = vjp_fn(graph, node, "C")
             assert len(res) == 2
             assert list(res) == ["parsed", "parsed"]
 
@@ -140,17 +149,24 @@ def test_get_vjp_from_data() -> None:
 
 def test_get_jvp_from_data() -> None:
     """Test function test_get_jvp_from_data."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
 
-    with patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"MyOp": {"autodiff": {"jvp": "in0 * tangents[0]"}}}):
+    with patch(
+        "ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY",
+        {"MyOp": {"autodiff": {"jvp": "in0 * tangents[0]"}}},
+    ):
         jvp_fn = get_jvp_from_data("MyOp")
         assert callable(jvp_fn)
 
         graph = IRGraph()
         node = IRNode("n1", "MyOp", inputs=["in0"])
 
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression", return_value="parsed"):
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression",
+            return_value="parsed",
+        ):
             res = jvp_fn(graph, node, ["T0"])
             assert res == "parsed"
 
@@ -172,4 +188,5 @@ def test_get_jvp_from_data() -> None:
 
     with patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"MyOp2": {}}):
         jvp_fn = get_jvp_from_data("MyOp2")
-        assert ensure_eager_tensor(jvp_fn).__name__ == "_fallback_finite_difference_jvp"
+        assert jvp_fn is not None
+        assert jvp_fn.__name__ == "_fallback_finite_difference_jvp"

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dispatch import dispatch
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_dispatch() -> None:
@@ -20,7 +20,7 @@ def test_dispatch() -> None:
     class DummySub:
         """Test class DummySub."""
 
-        def func(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def func(self, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function func.
 
             Args:
@@ -28,7 +28,7 @@ def test_dispatch() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `func`.
+                BackendArg: Computed output value from `func`.
             """
             return "res"
 

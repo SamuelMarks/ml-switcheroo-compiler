@@ -1,12 +1,12 @@
-"""Implementation of cholesky operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.cholesky`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.linalg.decompositions.cholesky`."""
 
 from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_tensor_pair
+from ml_switcheroo_compiler.backends.registry import unpack_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
@@ -19,12 +19,12 @@ if typing.TYPE_CHECKING:
 class Cholesky(OpDef):
     """Cholesky Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer output shape for Cholesky decomposition.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor or shape arguments.
-            **kwargs (EagerTensorProtocol): Optional keyword arguments.
+            *args (OpValue): Input tensor or shape arguments.
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Triangular factor output shape (..., N, N).
@@ -35,7 +35,7 @@ class Cholesky(OpDef):
         return _extract_linalg_shape(inp)
 
 
-def cholesky(input: Tensor) -> TensorOrScalar:
+def cholesky(input: Tensor) -> OpValue:
     """Compute the Cholesky decomposition of a symmetric/Hermitian positive-definite.
 
     Args:
@@ -49,8 +49,8 @@ def cholesky(input: Tensor) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = backend.execute_op("Cholesky", input.data)
-        arr = ensure_eager_tensor(backend.array(data))
-        return Tensor(arr, TensorConfig(arr.shape, input.dtype, input.device))
+        arr = backend.array(data)
+        return Tensor(arr, TensorConfig(extract_shape(arr), input.dtype, input.device))
     return _emit_linalg_node("Cholesky", [input], {}, [input.shape], [input.dtype])
 
 
@@ -58,12 +58,14 @@ def cholesky(input: Tensor) -> TensorOrScalar:
 class CholeskyEx(OpDef):
     """CholeskyEx Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(
+        self, *args: OpValue, **kwargs: OpValue
+    ) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer output shapes for CholeskyEx decomposition.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor or shape arguments.
-            **kwargs (EagerTensorProtocol): Optional keyword arguments.
+            *args (OpValue): Input tensor or shape arguments.
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (factor_shape (..., N, N), info_shape (...)).
@@ -76,7 +78,7 @@ class CholeskyEx(OpDef):
         return (shape, info_shape)
 
 
-def cholesky_ex(input: Tensor, check_errors: bool = False) -> TensorOrScalar:
+def cholesky_ex(input: Tensor, check_errors: bool = False) -> OpValue:
     """Compute the Cholesky decomposition with an info tensor.
 
     Args:
@@ -90,9 +92,11 @@ def cholesky_ex(input: Tensor, check_errors: bool = False) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        L, info = ensure_tensor_pair(backend.execute_op("CholeskyEx", input.data, check_errors=check_errors))
+        L, info = unpack_pair(backend.execute_op("CholeskyEx", input.data, check_errors=check_errors))
         return (
-            Tensor(L, TensorConfig(L.shape, input.dtype, input.device)),
-            Tensor(info, TensorConfig(info.shape, "int32", input.device)),
+            Tensor(L, TensorConfig(extract_shape(L), input.dtype, input.device)),
+            Tensor(info, TensorConfig(extract_shape(info), "int32", input.device)),
         )
-    return _emit_linalg_node("CholeskyEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"])
+    return _emit_linalg_node(
+        "CholeskyEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"]
+    )

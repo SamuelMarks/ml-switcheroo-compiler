@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph
+
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 def test_templates_validity() -> None:

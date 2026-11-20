@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 import typing
 from collections.abc import Callable
+from types import ModuleType
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import LogicalGraph as IRGraph
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg as BackendArg,
+)
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerCallableProtocol as EagerCallableProtocol,
 )
@@ -17,52 +22,46 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol as EagerTensorProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue as EagerValue,
-)
-from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol as ShapeProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_bool as ensure_bool,
+    coerce_bool as coerce_bool,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_bytes as ensure_bytes,
+    coerce_bytes as coerce_bytes,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_callable as ensure_callable,
+    coerce_float as coerce_float,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_eager_list as ensure_eager_list,
+    coerce_int as coerce_int,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_eager_tensor as ensure_eager_tensor,
+    coerce_operand_list as coerce_operand_list,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_float as ensure_float,
+    coerce_opt_int as coerce_opt_int,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_int as ensure_int,
+    coerce_opt_int_seq as coerce_opt_int_seq,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_opt_int as ensure_opt_int,
+    coerce_opt_str as coerce_opt_str,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_opt_int_seq as ensure_opt_int_seq,
+    coerce_shape as coerce_shape,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_opt_str as ensure_opt_str,
+    coerce_str as coerce_str,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_shape as ensure_shape,
+    require_callable as require_callable,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_str as ensure_str,
+    unpack_pair as unpack_pair,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_tensor_pair as ensure_tensor_pair,
-)
-from ml_switcheroo_compiler.backends.eager_registry import (
-    ensure_tensor_triple as ensure_tensor_triple,
+    unpack_triple as unpack_triple,
 )
 from ml_switcheroo_compiler.backends.protocols import (
     BackendModuleProtocol as BackendModuleProtocol,
@@ -71,7 +70,10 @@ from ml_switcheroo_compiler.backends.protocols import (
     BackendNamespaceProtocol as BackendNamespaceProtocol,
 )
 from ml_switcheroo_compiler.backends.protocols import (
-    ensure_mod as ensure_mod,
+    EagerBackendAdapter as EagerBackendAdapter,
+)
+from ml_switcheroo_compiler.backends.protocols import (
+    adapt_backend_module as adapt_backend_module,
 )
 from ml_switcheroo_compiler.core.config import config
 
@@ -267,22 +269,10 @@ BackendName = typing.Literal[
 ]
 
 
-def _is_backend_name(val: BackendName | str) -> typing.TypeGuard[BackendName]:
-    """Type guard narrowing a backend name string to `BackendName`.
-
-    Args:
-        val (BackendName | str): Candidate backend name.
-
-    Returns:
-        bool: True for valid string names.
-    """
-    return isinstance(val, str)
-
-
 class BackendRegistry:
     """Registry for pluggable backends."""
 
-    _registry: dict[BackendName, type[BaseGenerator]] = {}
+    _registry: dict[str, type[BaseGenerator]] = {}
 
     _LAZY_MODULES: dict[str, str] = {
         "jax": "ml_switcheroo_compiler.backends.jax",
@@ -316,11 +306,11 @@ class BackendRegistry:
     }
 
     @classmethod
-    def register(cls, name: BackendName, backend_class: type[BaseGenerator]) -> None:
+    def register(cls, name: BackendName | str, backend_class: type[BaseGenerator]) -> None:
         """Register a new backend for compilation and execution.
 
         Args:
-            name (BackendName): The name of the backend (e.g., 'numpy', 'pytorch').
+            name (BackendName | str): The name of the backend (e.g., 'numpy', 'pytorch').
             backend_class (type['BaseGenerator']): The class implementing the backend logic.
         """
         cls._registry[name] = backend_class
@@ -330,7 +320,7 @@ class BackendRegistry:
         """Attempt to lazily load a backend module if it hasn't been loaded yet.
 
         Args:
-            name (BackendName): The name of the backend to load.
+            name (BackendName | str): The name of the backend to load.
         """
         if name not in cls._registry and name in cls._LAZY_MODULES:
             try:
@@ -340,26 +330,25 @@ class BackendRegistry:
                 logging.error(f"FAILED TO IMPORT {cls._LAZY_MODULES[name]}: {e}")
 
     @classmethod
-    def _resolve_alias(cls, name: BackendName | str) -> BackendName:
+    def _resolve_alias(cls, name: BackendName | str) -> str:
         """Resolve backend name aliases to their canonical names.
 
         Args:
-            name (BackendName): The requested backend name or alias.
+            name (BackendName | str): The requested backend name or alias.
 
         Returns:
-            BackendName: The canonical backend name (e.g., 'pytorch' instead of 'torch').
+            str: The canonical backend name (e.g., 'pytorch' instead of 'torch').
         """
         if name not in cls._registry and name == "torch" and "pytorch" in cls._registry:
             return "pytorch"
-        assert _is_backend_name(name)
-        return name
+        return str(name)
 
     @classmethod
     def get(cls, name: BackendName | str) -> type[BaseGenerator]:
         """Retrieve a registered backend class by name.
 
         Args:
-            name (BackendName): The name of the backend to retrieve.
+            name (BackendName | str): The name of the backend to retrieve.
 
         Returns:
             type['BaseGenerator']: The registered backend class.
@@ -377,11 +366,12 @@ class BackendRegistry:
         return cls._registry[resolved_name]
 
     @classmethod
-    def get_all(cls) -> dict[BackendName, type[BaseGenerator]]:
+    def get_all(cls) -> dict[str, type[BaseGenerator]]:
         """Retrieve all registered backends, loading them if necessary.
 
         Returns:
-            dict[BackendName, type['BaseGenerator']]: A dictionary mapping canonical backend names to their implementing classes.
+            dict[str, type['BaseGenerator']]: A dictionary mapping canonical backend names to their
+                implementing classes.
         """
         for name in cls._LAZY_MODULES:
             if name not in cls._registry:
@@ -413,6 +403,24 @@ class BackendRegistry:
 
         return emit_backend_stateful_class(target_framework, graph, class_name=class_name)
 
+    @classmethod
+    def load_scoped_module(cls, module_name: str) -> ModuleType:
+        """Load a module via centralized backend-scoped dynamic import validation.
+
+        Args:
+            module_name (str): Dotted module path to import.
+
+        Returns:
+            ModuleType: Imported Python module object.
+
+        Raises:
+            ImportError: If ``module_name`` attempts an upward ``zero*`` import or fails to import.
+        """
+        root = module_name.lstrip(".").split(".")[0]
+        if root == "zero" or root.startswith(("zero_", "zero-")):
+            raise ImportError(f"Upward import of {module_name!r} is forbidden.")
+        return importlib.import_module(module_name)
+
 
 def get_active_backend() -> type[BaseGenerator]:
     """Retrieve the currently active backend class based on global configuration.
@@ -423,11 +431,11 @@ def get_active_backend() -> type[BaseGenerator]:
     return BackendRegistry.get(config.backend)
 
 
-def register_backend(name: BackendName) -> Callable[[type[BaseGenerator]], type[BaseGenerator]]:
+def register_backend(name: BackendName | str) -> Callable[[type[BaseGenerator]], type[BaseGenerator]]:
     """Decorate to register a class as a backend for a specific name.
 
     Args:
-        name (BackendName): The name to register the backend under.
+        name (BackendName | str): The name to register the backend under.
 
     Returns:
         Callable: A decorator that registers the backend class.

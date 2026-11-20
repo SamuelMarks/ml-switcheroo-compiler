@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_strict_mode_unimplemented_op() -> None:

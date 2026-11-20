@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import math
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_data, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_data, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import multiply, subtract
-from ml_switcheroo_compiler.ops.creation.frontend import arange
-from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
+from ml_switcheroo_compiler.ops.creation.api import arange
+from ml_switcheroo_compiler.ops.shape.api import expand_dims
 from ml_switcheroo_compiler.ops.shape.joining import concatenate
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import cos, exp, sin
@@ -25,17 +25,17 @@ class RopeOp(OpDef):
 
     op_name = "Rope"
 
-    def infer_shape(self, input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, input: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            input (EagerTensorProtocol): Input `input` argument (input).
-            **kwargs (TensorOrScalar): Keyword args.
+            input (OpValue): Input `input` argument (input).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_1: TensorOrScalar = extract_shape(input)
+        _typed_ret_1: OpValue = extract_shape(input)
         return _typed_ret_1
 
 
@@ -44,7 +44,7 @@ def rope(
     axis: int,
     base: float = 10000.0,
     offset: int = 0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Apply Rotary Positional Encoding (RoPE) to the input tensor.
 
     Args:
@@ -72,8 +72,8 @@ def sinusoidal_positional_encoding(
     seq_len: int,
     axis: int,
     base: float = 10000.0,
-    dtype: TensorOrScalar = None,
-) -> TensorOrScalar:
+    dtype: OpValue = None,
+) -> OpValue:
     """Generate sinusoidal positional encodings.
 
     Args:
@@ -95,8 +95,8 @@ def sinusoidal_positional_encoding(
 def alibi_mask(
     seq_len: int,
     num_heads: int,
-    dtype: TensorOrScalar = None,
-) -> TensorOrScalar:
+    dtype: OpValue = None,
+) -> OpValue:
     """Generate an ALiBi (Attention with Linear Biases) mask.
 
     Args:

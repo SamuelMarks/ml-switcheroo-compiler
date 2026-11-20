@@ -1,13 +1,31 @@
 """Tests for test_grad."""
 
 from __future__ import annotations
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_type_obj
+from tests.testing_utils import extract_test_dtype, extract_test_shape
+from tests.testing_utils import adapt_backend_module
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_ir import LogicalNode
+from tests.testing_utils import MockTestStub, coerce_numeric, coerce_operand_list, ensure_tensor, unpack_pair
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+import pytest
 
 import importlib
 import typing
 
 # ruff: noqa
-from ml_switcheroo_compiler.grad import CustomVJPFunction, RegisterGradient, checkpoint, custom_jvp, hvp, ir_grad, jvp, recompute_grad, remat, value_and_grad_wrt_vars, vjp
+from ml_switcheroo_compiler.grad import (
+    CustomVJPFunction,
+    RegisterGradient,
+    checkpoint,
+    custom_jvp,
+    hvp,
+    ir_grad,
+    jvp,
+    recompute_grad,
+    remat,
+    value_and_grad_wrt_vars,
+    vjp,
+)
 from ml_switcheroo_compiler.grad import (
     CustomVJPFunction,
     GradCheckOptions,
@@ -36,42 +54,42 @@ from ml_switcheroo_compiler.grad import (
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
     from collections.abc import Callable
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+    from ml_switcheroo_ir import IRGraph, IRNode
 
-CustomJVPFunction = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.grad")).CustomJVPFunction)
-CustomJVPFunction = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.grad")).CustomJVPFunction)
+CustomJVPFunction = importlib.import_module("ml_switcheroo_compiler.grad").CustomJVPFunction
+CustomJVPFunction = importlib.import_module("ml_switcheroo_compiler.grad").CustomJVPFunction
 
 
 def test_grad() -> None:
     """Test function test_grad."""
     assert UnconnectedGradients is not None
 
-    def my_fun(x: EagerValue) -> EagerValue:
+    def my_fun(x: BackendArg) -> BackendArg:
         """Test function my_fun.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_fun`.
+            BackendArg: Computed output value from `my_fun`.
         """
         return x
 
     vjp_fun = custom_vjp(my_fun)
     assert isinstance(vjp_fun, CustomVJPFunction)
-    vjp_fun.defvjp(lambda x: (x, x), lambda g, g_in: (g, None))
+    vjp_fun.defvjp(lambda x: (x, x), lambda g, g_in: (g,))
     assert vjp_fun(1) == 1
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    class DummyData:
+    class DummyData(MockTestStub):
         """Test class DummyData."""
 
         id = "id"
 
-    t = ensure_callable(Tensor)(data=ensure_callable(DummyData)(), config=ensure_callable(TensorConfig)((1,), DType.Float32, "cpu"))
-    assert ensure_callable(len)(ensure_callable(vjp_fun._extract_tensor_args)((t, 1))) == 1
+    t = Tensor(data=DummyData(), config=TensorConfig((1,), DType.Float32, "cpu"))
+    assert len(vjp_fun._extract_tensor_args((t, 1))) == 1
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -86,15 +104,15 @@ def test_grad() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: LogicalNode) -> None:
             """Test function add_node.
 
             Args:
                 node: Test parameter `node`.
             """
-            ensure_eager_tensor(ensure_eager_tensor(self).nodes)[ensure_eager_tensor(node).id] = node
+            self.nodes[node.id] = node
 
     state.global_tracing_state.start_tracing("test_grad_overwrite_bwd")
     res = vjp_fun(t)
@@ -104,12 +122,12 @@ def test_grad() -> None:
     f_vg = value_and_grad_wrt_vars(my_fun)
     assert f_vg(1) == (1, {})
 
-    class TensorWithGrad:
+    class TensorWithGrad(MockTestStub):
         """Test class TensorWithGrad."""
 
         grad = 0.0
 
-    class TensorNoGrad:
+    class TensorNoGrad(MockTestStub):
         """Test class TensorNoGrad."""
 
         pass
@@ -120,10 +138,10 @@ def test_grad() -> None:
     from ml_switcheroo_compiler.core.errors import TracingError
 
     with pytest.raises(TracingError):
-        ensure_callable(backward)(tg)
+        backward(tg)
     with pytest.raises(TracingError):
-        ensure_callable(backward)(tng)
-    assert isinstance(ensure_callable(custom_jvp)(my_fun), ensure_type_obj(CustomJVPFunction))
+        backward(tng)
+    assert isinstance(custom_jvp(my_fun), CustomJVPFunction)
     check_numerical_grads(my_fun, (1,))
     check_numerical_grads(my_fun, (1,), GradCheckOptions())
     RegisterGradient("op")
@@ -131,37 +149,42 @@ def test_grad() -> None:
     assert callable(checkpoint(my_fun))
     assert callable(remat(my_fun))
     assert callable(recompute_grad(my_fun))
-    assert ensure_callable(ir_grad)(my_fun)(1) == 1
+    assert ir_grad(my_fun)(1) == 1
     assert grad(my_fun)(1) == 1
-    assert ensure_callable(value_and_grad)(my_fun)(1) == (1, 1)
-    assert ensure_callable(jit)(my_fun)(1) == 1
+    assert value_and_grad(my_fun)(1) == (1, 1)
+    assert jit(my_fun)(1) == 1
     with disable_jit():
         pass
     assert eval_shape(my_fun, 1) == 1
     assert jvp(my_fun, (1,), (2,)) == (1, 2)
     assert jvp(lambda x: (x, x), (1,), (2,), has_aux=True) == ((1, 1), 2)
-    (res, fn) = ensure_callable(vjp)(my_fun, 1)
+    (res, fn) = vjp(my_fun, 1)
     assert res == 1
-    assert ensure_callable(fn)(2) == (2,)
-    (res, fn) = ensure_callable(vjp)(lambda x: (x, x), 1, has_aux=True)
+    assert fn(2) == (2,)
+    (res, fn) = vjp(lambda x: (x, x), 1, has_aux=True)
     assert res == (1, 1)
-    assert ensure_callable(fn)(2) == (2,)
+    assert fn(2) == (2,)
     assert hvp(my_fun, (1,), (2,)) == (1, 0.0)
     assert hvp(lambda x: (x, x), (1,), (2,), has_aux=True) == ((1, 1), 0.0)
 
 
 def test_grad_branches() -> None:
     """Test function test_grad_branches."""
+    import numpy as np
     from ml_switcheroo_compiler.grad import CustomVJPFunction
 
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import TensorConfig
+
     vjp_fun2 = CustomVJPFunction(lambda x: x)
-    assert ensure_callable(vjp_fun2._trace_fwd_graph)([1]) is None
+    t_trace = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
+    assert vjp_fun2._trace_fwd_graph([t_trace]) is None
     assert vjp_fun2._resolve_output_metadata([]) == ((), "float32", "cpu")
     from ml_switcheroo_compiler.grad import overwrite_with_gradient
 
     fn = overwrite_with_gradient(1, 2)
 
-    def _overwrite_fwd(t: EagerValue, g: EagerValue) -> EagerValue:
+    def _overwrite_fwd(t: BackendArg, g: BackendArg) -> BackendArg:
         """Test function _overwrite_fwd.
 
         Args:
@@ -169,11 +192,11 @@ def test_grad_branches() -> None:
             g: Test parameter `g`.
 
         Returns:
-            EagerValue: Computed output value from `_overwrite_fwd`.
+            BackendArg: Computed output value from `_overwrite_fwd`.
         """
         return (t, g)
 
-    def _overwrite_bwd(g: EagerValue, g_in: EagerValue) -> EagerValue:
+    def _overwrite_bwd(g: BackendArg, g_in: BackendArg) -> BackendArg:
         """Test function _overwrite_bwd.
 
         Args:
@@ -181,7 +204,7 @@ def test_grad_branches() -> None:
             g_in: Test parameter `g_in`.
 
         Returns:
-            EagerValue: Computed output value from `_overwrite_bwd`.
+            BackendArg: Computed output value from `_overwrite_bwd`.
         """
         return (g, None)
 
@@ -202,29 +225,33 @@ def test_grad_overwrite_bwd() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: LogicalNode) -> None:
             """Test function add_node.
 
             Args:
                 node: Test parameter `node`.
             """
-            ensure_eager_tensor(ensure_eager_tensor(self).nodes)[ensure_eager_tensor(node).id] = node
+            self.nodes[node.id] = node
 
     state.global_tracing_state.start_tracing("test_grad_overwrite_bwd")
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    class DummyData:
+    class DummyData(MockTestStub):
         """Test class DummyData."""
 
         id = "id"
 
-    t1 = ensure_callable(Tensor)(data=ensure_callable(DummyData)(), config=ensure_callable(TensorConfig)((1,), DType.Float32, "cpu"))
-    t2 = ensure_callable(Tensor)(data=ensure_callable(DummyData)(), config=ensure_callable(TensorConfig)((1,), DType.Float32, "cpu"))
+    t1 = Tensor(data=DummyData(), config=TensorConfig((1,), DType.Float32, "cpu"))
+    t2 = Tensor(data=DummyData(), config=TensorConfig((1,), DType.Float32, "cpu"))
     overwrite_with_gradient(t1, t2)
-    n = ensure_eager_tensor(list(ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).nodes).values()))[0] if ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).nodes) else None
+    n = (
+        list(adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("nodes").values())[0]
+        if adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("nodes")
+        else None
+    )
     if n is not None:
         bwd_fn = n.attributes["bwd_fn"]
         fwd_fn = n.attributes["fwd_graph"]
@@ -236,33 +263,38 @@ def test_grad_overwrite_bwd() -> None:
 
 def test_custom_vjp_function_none() -> None:
     """Test the correctness and edge cases of the custom vjp function none functionality."""
+    import numpy as np
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return x
 
     cg = CustomVJPFunction(f)
-    assert ensure_callable(cg._trace_fwd_graph)([1, 2]) is None
+    t_a = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
+    t_b = Tensor(np.array([2.0]), TensorConfig((1,), DType.Float32, "cpu"))
+    assert cg._trace_fwd_graph([t_a, t_b]) is None
 
 
 def test_value_and_grad_wrt_vars() -> None:
     """Test the correctness and edge cases of the value and grad wrt vars functionality."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return x
 
@@ -275,14 +307,14 @@ def test_value_and_grad_wrt_vars() -> None:
 def test_custom_jvp() -> None:
     """Test the correctness and edge cases of the custom jvp functionality."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return x
 
@@ -307,21 +339,23 @@ def test_register_gradient() -> None:
         _ = (graph, node)
         return cotangent
 
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
+
     dec(f)
-    assert ensure_eager_tensor(dec).op_type == "my_op"
+    assert has_vjp("my_op")
 
 
 def test_checkpoint_remat() -> None:
     """Test the correctness and edge cases of the checkpoint remat functionality."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return x
 
@@ -333,88 +367,88 @@ def test_checkpoint_remat() -> None:
 def test_jvp_vjp_hvp() -> None:
     """Test the correctness and edge cases of the jvp vjp hvp functionality."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: Tensor | float) -> Tensor | float:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            Tensor | float: Computed output value from `f`.
         """
-        return ensure_eager_tensor(x) * ensure_eager_tensor(2)
+        return x * 2
 
-    def f_aux(x: EagerValue) -> EagerValue:
+    def f_aux(x: Tensor | float) -> tuple[Tensor | float, dict[str, int]]:
         """Test function f_aux.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f_aux`.
+            tuple[Tensor | float, dict[str, int]]: Computed output value from `f_aux`.
         """
-        return (ensure_eager_tensor(x) * ensure_eager_tensor(2), {"a": 1})
+        return (x * 2, {"a": 1})
 
-    (val, tan) = ensure_callable(jvp)(f_aux, (1.0,), (0.5,), has_aux=True)
+    (val, tan) = jvp(f_aux, (1.0,), (0.5,), has_aux=True)
     assert val == (2.0, {"a": 1})
 
     # --- Shape and Dtype Inference Tests for AD Backward Passes ---
     import numpy as np
     from ml_switcheroo_compiler.grad.jvp_vjp import hvp
 
-    def hvp_test_func(x: EagerValue) -> EagerValue:
+    def hvp_test_func(x: Tensor) -> Tensor:
         """Test function hvp_test_func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `hvp_test_func`.
+            Tensor: Computed output value from `hvp_test_func`.
         """
-        return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
+        return (x * x) * x
 
     primal_x = np.array([2.0, 3.0], dtype=np.float32)
     tangent_v = np.array([1.0, 1.0], dtype=np.float32)
 
     # HVP of x^3 is d(3x^2)/dx * v = 6x * v
-    val_hvp, out_tan_hvp = ensure_callable(hvp)(hvp_test_func, primal_x, tangent_v)
-    assert ensure_eager_tensor(val_hvp).shape == (2,)
-    assert ensure_eager_tensor(ensure_eager_tensor(val_hvp).dtype) in (np.float32, np.float64)
-    assert ensure_eager_tensor(out_tan_hvp).shape == (2,)
-    assert ensure_eager_tensor(ensure_eager_tensor(out_tan_hvp).dtype) in (np.float32, np.float64)
-    assert ensure_callable(np.allclose)(out_tan_hvp, [12.0, 18.0])
+    val_hvp, out_tan_hvp = hvp(hvp_test_func, primal_x, tangent_v)
+    assert extract_test_shape(val_hvp) == (2,)
+    assert extract_test_dtype(val_hvp) in (np.float32, np.float64)
+    assert extract_test_shape(out_tan_hvp) == (2,)
+    assert extract_test_dtype(out_tan_hvp) in (np.float32, np.float64)
+    assert np.allclose(ensure_ndarray(out_tan_hvp), [12.0, 18.0])
     # --------------------------------------------------------------
     assert tan == 1.0
-    (val, tan) = ensure_callable(jvp)(f_aux, (1.0,), ((0.5,),), has_aux=True)
+    (val, tan) = jvp(f_aux, (1.0,), ((0.5,),), has_aux=True)
     assert tan == (1.0,)
-    (val, tan) = ensure_callable(jvp)(f, (1.0,), ((0.5,),), has_aux=False)
+    (val, tan) = jvp(f, (1.0,), ((0.5,),), has_aux=False)
     assert tan == (1.0,)
-    (val, vjp_fn) = ensure_callable(vjp)(f_aux, 1.0, has_aux=True)
+    (val, vjp_fn) = vjp(f_aux, 1.0, has_aux=True)
     assert val == (2.0, {"a": 1})
-    assert ensure_callable(vjp_fn)(0.5) == (1.0,)
-    (val, vjp_fn) = ensure_callable(vjp)(f, 1.0)
+    assert vjp_fn(0.5) == (1.0,)
+    (val, vjp_fn) = vjp(f, 1.0)
     assert val == 2.0
-    assert ensure_callable(vjp_fn)(0.5) == (1.0,)
-    (val, tan) = ensure_callable(hvp)(f_aux, (1.0,), (0.5,), has_aux=True)
+    assert vjp_fn(0.5) == (1.0,)
+    (val, tan) = hvp(f_aux, (1.0,), (0.5,), has_aux=True)
     assert val == (2.0, {"a": 1})
     assert tan == 0.0
-    (val, tan) = ensure_callable(hvp)(f_aux, (1.0,), ((0.5,),), has_aux=True)
+    (val, tan) = hvp(f_aux, (1.0,), ((0.5,),), has_aux=True)
     assert tan == (0.0,)
-    (val, tan) = ensure_callable(hvp)(f, (1.0,), ((0.5,),), has_aux=False)
+    (val, tan) = hvp(f, (1.0,), ((0.5,),), has_aux=False)
     assert tan == (0.0,)
 
 
 def test_ir_grad() -> None:
     """Test the correctness and edge cases of the ir grad functionality."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return x
 
@@ -469,7 +503,7 @@ def test_backward_under_tracing() -> None:
 
         # Under x^2 derivative at x=2 is 2x = 4.0
         assert v.grad is not None
-        ensure_callable(np.testing.assert_allclose)(v.grad, 4.0)
+        np.testing.assert_allclose(ensure_ndarray(v.grad), 4.0)
 
         # Non-scalar tensor backward should raise SwitcherooError
         p_non_scalar = ProxyTensor(id="non_scalar", shape=(2,), dtype="float32")
@@ -502,8 +536,8 @@ def test_non_trivial_analytical_grad() -> None:
     irg = ir_grad(f)
 
     assert g(4.0) == 11.0
-    assert ensure_callable(vg)(4.0) == (28.0, 11.0)
-    assert ensure_callable(irg)(4.0) == 11.0
+    assert vg(4.0) == (28.0, 11.0)
+    assert irg(4.0) == 11.0
 
 
 def test_analytical_vs_numerical_grads() -> None:
@@ -576,16 +610,16 @@ def test_grad_missing_coverage() -> None:
     # 2. check_numerical_grads failing
     from unittest.mock import patch
 
-    def dummy_func(x: EagerValue) -> EagerValue:
+    def dummy_func(x: BackendArg) -> BackendArg:
         """Test function dummy_func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_func`.
+            BackendArg: Computed output value from `dummy_func`.
         """
-        return ensure_eager_tensor(x) * ensure_eager_tensor(2.0)
+        return coerce_numeric(x) * 2.0
 
     with patch("ml_switcheroo_compiler.grad.testing.vjp") as mock_vjp:
         # Mock vjp to return a wrong gradient
@@ -596,14 +630,14 @@ def test_grad_missing_coverage() -> None:
     # 3. grad with boolean arg (line 594) and Exception in _to_original_type (line 596)
     from ml_switcheroo_compiler.grad import GradOptions
 
-    def f_bool(x: EagerValue) -> EagerValue:
+    def f_bool(x: BackendArg) -> BackendArg:
         """Test function f_bool.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f_bool`.
+            BackendArg: Computed output value from `f_bool`.
         """
         return x
 
@@ -631,29 +665,29 @@ def test_grad_missing_coverage() -> None:
             pass
 
         opts_bad = GradOptions()
-        ensure_mutable(opts_bad).argnums = ensure_eager_tensor(MyArgnums())
-        grad_multi = ensure_callable(grad)(f_bool, opts_bad)
+        pytest.MonkeyPatch().setattr(opts_bad, "argnums", MyArgnums(), raising=False)
+        grad_multi = grad(f_bool, opts_bad)
         res_multi = grad_multi(1.0)
         assert res_multi is not None
 
     # 4. grad with has_aux=True (line 619)
-    def f_aux(x: EagerValue) -> EagerValue:
+    def f_aux(x: Tensor | float) -> tuple[Tensor | float, dict[str, str]]:
         """Test function f_aux.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f_aux`.
+            tuple[Tensor | float, dict[str, str]]: Computed output value from `f_aux`.
         """
-        return ensure_eager_tensor(x) * ensure_eager_tensor(2.0), {"info": "aux"}
+        return x * 2.0, {"info": "aux"}
 
     grad_aux = grad(f_aux, GradOptions(has_aux=True))
     res_aux = grad_aux(3.0)
-    assert ensure_eager_tensor(res_aux)[0] == 2.0
+    assert coerce_operand_list(res_aux)[0] == 2.0
 
     # 5. grad with argnums as list/tuple (line 631-634)
-    def f_multi(x: EagerValue, y: EagerValue) -> EagerValue:
+    def f_multi(x: Tensor | float, y: Tensor | float) -> Tensor | float:
         """Test function f_multi.
 
         Args:
@@ -661,30 +695,29 @@ def test_grad_missing_coverage() -> None:
             y: Test parameter `y`.
 
         Returns:
-            EagerValue: Computed output value from `f_multi`.
+            Tensor | float: Computed output value from `f_multi`.
         """
-        return (ensure_eager_tensor(x) * ensure_eager_tensor(3.0)) + (ensure_eager_tensor(y) * ensure_eager_tensor(2.0))
+        return (x * 3.0) + (y * 2.0)
 
-    grad_multi = ensure_eager_tensor(grad(f_multi, GradOptions(argnums=(0, 1))))
+    grad_multi = grad(f_multi, GradOptions(argnums=(0, 1)))
     res_multi = grad_multi(1.0, 1.0)
     assert res_multi == (3.0, 2.0)
 
     # 6. jacobian with has_aux=True (line 1081) and out_arr.ndim > 0 (line 1116)
-    def f_jac_aux(x: EagerValue) -> EagerValue:
+    def f_jac_aux(x: Tensor) -> tuple[Tensor, dict[str, int]]:
         """Test function f_jac_aux.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f_jac_aux`.
+            tuple[Tensor, dict[str, int]]: Computed output value from `f_jac_aux`.
         """
-        return ensure_eager_tensor(x) * ensure_eager_tensor(3.0), {"aux": 1}
+        return x * 3.0, {"aux": 1}
 
     jac_aux = jacrev(f_jac_aux, GradOptions(has_aux=True))
-    j_res, _ = ensure_callable(jac_aux)(ensure_callable(np.array)([2.0, 3.0]))
-    print(f"J_RES SHAPE {j_res.shape}")
-    # assert j_res.shape == (2, 2)
+    j_res = jac_aux(np.array([2.0, 3.0]))
+    assert extract_test_shape(j_res) == (2, 2)
 
 
 def test_vjp_pytree_support() -> None:
@@ -699,14 +732,14 @@ def test_vjp_pytree_support() -> None:
     x_primal = (2.0, 3.0)
     y_primal = (4.0, 5.0)
 
-    val, vjp_fn = ensure_callable(vjp)(f, x_primal, y_primal)
+    val, vjp_fn = vjp(f, x_primal, y_primal)
 
     # Output value is (2.0*4.0, 3.0*5.0) = (8.0, 15.0)
     assert val == (8.0, 15.0)
 
     # Cotangent matching output structure
     cotangent = (1.0, 1.0)
-    grads = ensure_callable(vjp_fn)(cotangent)
+    grads = vjp_fn(cotangent)
 
     # Gradients w.r.t x: (y[0], y[1]) = (4.0, 5.0)
     # Gradients w.r.t y: (x[0], x[1]) = (2.0, 3.0)
@@ -726,8 +759,8 @@ def test_higher_order_derivatives() -> None:
     jr = jacrev(f1)
 
     # Jacobian of f1 with respect to [x0, x1] is [x1, x0] = [4.0, 3.0]
-    assert ensure_callable(np.allclose)(ensure_callable(jf)(x_primal), [4.0, 3.0])
-    assert ensure_callable(np.allclose)(ensure_callable(jr)(x_primal), [4.0, 3.0])
+    assert np.allclose(ensure_ndarray(jf(x_primal)), [4.0, 3.0])
+    assert np.allclose(ensure_ndarray(jr(x_primal)), [4.0, 3.0])
 
     # 2. Vector-to-vector function f2(x) = (x_0^2, x_1^3)
     f2 = lambda x: (x[0] * x[0], x[1] * x[1] * x[1])
@@ -742,8 +775,8 @@ def test_higher_order_derivatives() -> None:
     jr2 = jacrev(f2)
     x_primal2 = np.array([2.0, 3.0])
 
-    assert ensure_callable(np.allclose)(ensure_callable(jf2)(x_primal2), [[4.0, 0.0], [0.0, 27.0]])
-    assert ensure_callable(np.allclose)(ensure_callable(jr2)(x_primal2), [[4.0, 0.0], [0.0, 27.0]])
+    assert np.allclose(ensure_ndarray(jf2(x_primal2)), [[4.0, 0.0], [0.0, 27.0]])
+    assert np.allclose(ensure_ndarray(jr2(x_primal2)), [[4.0, 0.0], [0.0, 27.0]])
 
     # 3. Hessian of f3(x) = 0.5 * x_0^2 + 2.0 * x_0 * x_1 + 3.0 * x_1^2
     # grad(f3) = [x0 + 2*x1, 2*x0 + 6*x1]
@@ -752,4 +785,4 @@ def test_higher_order_derivatives() -> None:
     f3 = lambda x: 0.5 * x[0] * x[0] + 2.0 * x[0] * x[1] + 3.0 * x[1] * x[1]
 
     h_fn = hessian(f3)
-    assert ensure_callable(np.allclose)(ensure_callable(h_fn)(x_primal), [[1.0, 2.0], [2.0, 6.0]])
+    assert np.allclose(ensure_ndarray(h_fn(x_primal)), [[1.0, 2.0], [2.0, 6.0]])

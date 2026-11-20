@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 
 def test_mypy() -> None:
     """Verify static typing via mypy across src/ml_switcheroo_compiler/, scripts/, and tests/."""
     import shutil
     import subprocess
-
-    import pytest
 
     if not shutil.which("mypy"):
         pytest.skip("mypy executable not found")

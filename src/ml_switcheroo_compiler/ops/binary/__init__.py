@@ -12,26 +12,14 @@ from ml_switcheroo_compiler.ops.base import OpDef, get_op
 if typing.TYPE_CHECKING:
     from types import ModuleType
 
-    from ml_switcheroo_compiler.core.shape import TensorOrScalar
+    from ml_switcheroo_compiler.core.shape import OpValue
 
 _: ModuleType = _special
 _ = _math
 
 
-def _is_op_def(val: OpDef | None) -> typing.TypeGuard[OpDef]:
-    """Type guard narrowing `OpDef | None` to `OpDef`.
-
-    Args:
-        val (OpDef | None): Candidate op definition.
-
-    Returns:
-        bool: True for op definitions.
-    """
-    return not isinstance(val, bytes)
-
-
 def _safe_get_op(name: str) -> OpDef:
-    """Instantiate a registered binary op or return None if missing.
+    """Instantiate a registered binary op or construct a fallback `OpDef`.
 
     Args:
         name (str): Registered operation name.
@@ -42,9 +30,9 @@ def _safe_get_op(name: str) -> OpDef:
     try:
         return get_op(name)()
     except KeyError:
-        res: OpDef | None = None
-        assert _is_op_def(res)
-        return res
+        op = OpDef()
+        op.op_type = name
+        return op
 
 
 add = _safe_get_op("Add")
@@ -55,7 +43,7 @@ bitwise_or = _safe_get_op("BitwiseOr")
 bitwise_xor = _safe_get_op("BitwiseXor")
 copysign = _safe_get_op("Copysign")
 divide = _safe_get_op("Divide")
-divmod = _safe_get_op("Divmod")
+divmod = _special.Divmod()
 equal = _safe_get_op("Equal")
 float_power = _safe_get_op("FloatPower")
 floor_divide = _safe_get_op("FloorDivide")
@@ -98,15 +86,15 @@ polygamma = _safe_get_op("Polygamma")
 betainc = _safe_get_op("Betainc")
 
 
-def divide_no_nan(x: TensorOrScalar, y: TensorOrScalar) -> TensorOrScalar:
+def divide_no_nan(x: OpValue, y: OpValue) -> OpValue:
     """Divide no nan.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        y (TensorOrScalar): Input `y` argument (y).
+        x (OpValue): Input `x` argument (x).
+        y (OpValue): Input `y` argument (y).
 
     Returns:
-        TensorOrScalar: Computed `TensorOrScalar` output.
+        OpValue: Computed `OpValue` output.
     """
     from ml_switcheroo_compiler.core.tensor import ensure_tensor
     from ml_switcheroo_compiler.ops.creation import zeros_like
@@ -116,15 +104,15 @@ def divide_no_nan(x: TensorOrScalar, y: TensorOrScalar) -> TensorOrScalar:
     return where(equal(y, 0.0), zeros_like(x_tensor), divide(x, y))
 
 
-def polar(abs: TensorOrScalar, angle: TensorOrScalar) -> TensorOrScalar:
+def polar(abs: OpValue, angle: OpValue) -> OpValue:
     """Polar.
 
     Args:
-        abs (TensorOrScalar): Input `abs` argument (abs).
-        angle (TensorOrScalar): Input `angle` argument (angle).
+        abs (OpValue): Input `abs` argument (abs).
+        angle (OpValue): Input `angle` argument (angle).
 
     Returns:
-        TensorOrScalar: Computed `TensorOrScalar` output.
+        OpValue: Computed `OpValue` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -132,14 +120,14 @@ def polar(abs: TensorOrScalar, angle: TensorOrScalar) -> TensorOrScalar:
     return backend.execute_op("Polar", extract_data(abs), extract_data(angle))
 
 
-def view_as_complex(x: TensorOrScalar) -> TensorOrScalar:
+def view_as_complex(x: OpValue) -> OpValue:
     """View as complex.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
+        x (OpValue): Input `x` argument (x).
 
     Returns:
-        TensorOrScalar: Computed `TensorOrScalar` output.
+        OpValue: Computed `OpValue` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -147,14 +135,14 @@ def view_as_complex(x: TensorOrScalar) -> TensorOrScalar:
     return backend.execute_op("ViewAsComplex", extract_data(x))
 
 
-def view_as_real(x: TensorOrScalar) -> TensorOrScalar:
+def view_as_real(x: OpValue) -> OpValue:
     """View as real.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
+        x (OpValue): Input `x` argument (x).
 
     Returns:
-        TensorOrScalar: Computed `TensorOrScalar` output.
+        OpValue: Computed `OpValue` output.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 

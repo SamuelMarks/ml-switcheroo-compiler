@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import libcst as cst
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
 from ml_switcheroo_compiler.backends.cst_transpiler import (
@@ -15,7 +15,6 @@ from ml_switcheroo_compiler.backends.transpiler_config_models import (
     load_argument_rewrites,
     load_cst_rewrite_rules,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
 
@@ -187,8 +186,12 @@ def test_ir_to_ast_control_flow_and_data_structures() -> None:
             "cond": IRNode(id="cond", op_type="Input"),
             "c_node": IRNode(id="c_node", op_type="Cond", inputs=["cond", "x", "x"], attributes={"var_name": "res"}),
             "scan_node": IRNode(id="scan_node", op_type="Scan", inputs=["x"], attributes={"var_name": "scanned"}),
-            "dict_get": IRNode(id="dict_get", op_type="DictGet", inputs=["x"], attributes={"key": "weight", "var_name": "w"}),
-            "get_item": IRNode(id="get_item", op_type="GetItem", inputs=["x"], attributes={"index": 0, "var_name": "first"}),
+            "dict_get": IRNode(
+                id="dict_get", op_type="DictGet", inputs=["x"], attributes={"key": "weight", "var_name": "w"}
+            ),
+            "get_item": IRNode(
+                id="get_item", op_type="GetItem", inputs=["x"], attributes={"index": 0, "var_name": "first"}
+            ),
             "foreign": IRNode(
                 id="foreign",
                 op_type="ForeignCall",

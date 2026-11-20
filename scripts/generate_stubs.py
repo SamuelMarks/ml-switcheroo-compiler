@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import ast
-import importlib
 import inspect
 import json
 import keyword
 import os
+import typing
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
     SnapshotGroundingEngine,
     _resolve_default_snapshot_dir,
 )
-from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
+from ml_switcheroo_compiler.core.shape import IRAttrValue as AttributeValue
 
 
 def _sanitize_default(default_str: str) -> str:
@@ -71,13 +71,15 @@ def _format_param_list(
         p_default: AttributeValue = p.get("default")
         p_kind: AttributeValue = p.get("kind")
 
+        name_str = p_name.decode("utf-8", errors="replace") if isinstance(p_name, bytes) else str(p_name)
+        anno_str = p_anno.decode("utf-8", errors="replace") if isinstance(p_anno, bytes) else str(p_anno)
         if p_kind == "VAR_POSITIONAL":
-            p_str = f"*{p_name}"
+            p_str = f"*{name_str}"
         elif p_kind == "VAR_KEYWORD":
-            p_str = f"**{p_name}"
+            p_str = f"**{name_str}"
         else:
-            p_str = str(p_name)
-            p_str += f": {p_anno}" if p_anno else ": Tensor"
+            p_str = name_str
+            p_str += f": {anno_str}" if p_anno else ": Tensor"
             if p_default is not None:
                 sanitized: str = _sanitize_default(str(p_default))
                 p_str += f" = {sanitized}"
@@ -211,7 +213,10 @@ TENSOR_CLASS_STUB: list[str] = [
     "    device: str",
     "    ndim: int",
     "    size: int",
-    "    def __init__(self, data: object = ..., shape: Sequence[int] | None = ..., dtype: str | None = ...) -> None: ...",
+    (
+        "    def __init__(self, data: object = ..., shape: Sequence[int] | None = ..., dtype: str | "
+        "None = ...) -> None: ..."
+    ),
     "    def __len__(self) -> int: ...",
     "    def __getitem__(self, item: object) -> Tensor: ...",
     "    def __add__(self, other: Tensor | float | int) -> Tensor: ...",
@@ -243,7 +248,10 @@ OP_SIGNATURES: dict[str, str] = {
     "ceil": "(x: Tensor) -> Tensor",
     "clip": "(x: Tensor, min_val: Tensor | float, max_val: Tensor | float) -> Tensor",
     "concat": "(tensors: Sequence[Tensor], axis: int = ...) -> Tensor",
-    "conv2d": "(input: Tensor, weight: Tensor, bias: Tensor | None = ..., stride: int | tuple[int, int] = ..., padding: str | int | tuple[int, int] = ...) -> Tensor",
+    "conv2d": (
+        "(input: Tensor, weight: Tensor, bias: Tensor | None = ..., stride: int | tuple[int, int] = "
+        "..., padding: str | int | tuple[int, int] = ...) -> Tensor"
+    ),
     "cos": "(x: Tensor) -> Tensor",
     "cosh": "(x: Tensor) -> Tensor",
     "cumsum": "(x: Tensor, axis: int | None = ...) -> Tensor",
@@ -324,7 +332,12 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
         return "Tensor"
 
     cleaned: str = raw_annot.strip().strip("'\"").replace("array_like", "Tensor").replace("`np._NoValue`", "None")
-    if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"]) or " or " in cleaned or " and " in cleaned or (" " in cleaned and "[" not in cleaned):
+    if (
+        any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"])
+        or " or " in cleaned
+        or " and " in cleaned
+        or (" " in cleaned and "[" not in cleaned)
+    ):
         return "Tensor"
 
     try:
@@ -332,18 +345,18 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
         stmt0 = parsed.body[0]
         assert isinstance(stmt0, ast.AnnAssign)
         return _validate_annot_ast(stmt0.annotation, cleaned)
-    except Exception:
+    except (SyntaxError, ValueError, TypeError, MemoryError, RecursionError):
         return "Tensor"
 
 
 def format_params_via_ecosystem(
-    params: list[dict[str, AttributeValue] | AttributeValue],
+    params: typing.Sequence[typing.Mapping[str, AttributeValue] | AttributeValue],
     has_varargs: bool = False,
 ) -> str:
     """Format parameter definitions utilizing ml-ecosystem-snapshots stub formatter.
 
     Args:
-        params (list[dict[str, AttributeValue] | AttributeValue]): List of parameter dictionaries.
+        params (typing.Sequence[typing.Mapping[str, AttributeValue] | AttributeValue]): Parameter dicts or names.
         has_varargs (bool): Whether to append generic *args if not present. Defaults to False.
 
     Returns:
@@ -425,7 +438,9 @@ def _partition_item_params(params_data: AttributeValue) -> list[str]:
         else:
             pos_args.append(formatted)
 
-    param_strs: list[str] = [p for p in pos_args if not p.endswith("= ...")] + [p for p in pos_args if p.endswith("= ...")]
+    param_strs: list[str] = [p for p in pos_args if not p.endswith("= ...")] + [
+        p for p in pos_args if p.endswith("= ...")
+    ]
     if var_pos:
         param_strs.append(var_pos)
     elif kw_only:
@@ -448,21 +463,29 @@ def _format_snapshot_item_stub(item: dict[str, AttributeValue], seen_funcs: set[
     """
     name: str = str(item.get("name") or "")
     item_kind = str(item.get("kind") or "")
-    if not name.isidentifier() or keyword.iskeyword(name) or name.startswith("_") or name in seen_funcs or (item_kind and item_kind != "function"):
+    if (
+        not name.isidentifier()
+        or keyword.iskeyword(name)
+        or name.startswith("_")
+        or name in seen_funcs
+        or (item_kind and item_kind != "function")
+    ):
         return None
 
     param_strs = _partition_item_params(item.get("params", []))
     raw_ret = item.get("returns")
-    ret_type: str = raw_ret if (isinstance(raw_ret, str) and raw_ret.isidentifier() and raw_ret in SAFE_TYPES) else "Tensor"
+    ret_type: str = (
+        raw_ret if (isinstance(raw_ret, str) and raw_ret.isidentifier() and raw_ret in SAFE_TYPES) else "Tensor"
+    )
     seen_funcs.add(name)
     return f"def {name}({', '.join(param_strs)}) -> {ret_type}: ..."
 
 
-def _generate_stubs_from_snapshot(data: dict[str, AttributeValue], be_name: str, out_path: str) -> int:
+def _generate_stubs_from_snapshot(data: typing.Mapping[str, AttributeValue], be_name: str, out_path: str) -> int:
     """Generate high-fidelity stubs from snapshot JSON data.
 
     Args:
-        data (dict[str, AttributeValue]): Parsed snapshot JSON data.
+        data (typing.Mapping[str, AttributeValue]): Parsed snapshot JSON data.
         be_name (str): Backend name.
         out_path (str): Destination .pyi file path.
 
@@ -508,10 +531,12 @@ def _format_live_attr_stub(mod: AttributeValue, attr: str) -> str | None:
         str | None: Stub line or None if not callable.
     """
     try:
-        obj = dict(inspect.getmembers(mod)).get(attr)
-        if not callable(obj):
+        from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+        found, raw_obj = adapt_backend_module(mod).resolve_symbol(attr)
+        if not found or not callable(raw_obj):
             return None
-        sig = inspect.signature(obj)
+        sig = inspect.signature(raw_obj)
         pos_args: list[str] = []
         var_pos: str | None = None
         kw_only: list[str] = []
@@ -537,7 +562,17 @@ def _format_live_attr_stub(mod: AttributeValue, attr: str) -> str | None:
         if var_kw:
             param_strs.append(var_kw)
         return f"def {attr}({', '.join(param_strs)}) -> Tensor: ..."
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return f"def {attr}(*args: Tensor, **kwargs: Tensor) -> Tensor: ..."
 
 
@@ -563,8 +598,20 @@ def _generate_stubs_from_live_module(fw_name: str | tuple[str, ...], be_name: st
     mod_names = fw_name if isinstance(fw_name, tuple) else (fw_name,)
     for mod_name in mod_names:
         try:
-            mod = importlib.import_module(mod_name)
-        except Exception:
+            from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+            mod = BackendRegistry.load_scoped_module(mod_name)
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             continue
 
         for attr in sorted(dir(mod)):
@@ -659,16 +706,38 @@ def _try_generate_from_snapshot_files(
     if snapshot_file and os.path.exists(snapshot_file):
         try:
             return _generate_stubs_from_snapshot(_load_snapshot_json_file(snapshot_file), be_name, stub_path)
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             pass
 
     if os.path.isdir(snapshot_dir):
-        snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith((".json", ".json.gz"))]
+        snapshot_files = [
+            f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith((".json", ".json.gz"))
+        ]
         if snapshot_files:
             try:
                 latest_path = os.path.join(snapshot_dir, sorted(snapshot_files)[-1])
                 return _generate_stubs_from_snapshot(_load_snapshot_json_file(latest_path), be_name, stub_path)
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 pass
     return 0
 

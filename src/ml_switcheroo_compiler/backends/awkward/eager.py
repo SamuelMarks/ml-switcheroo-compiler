@@ -8,27 +8,26 @@ import operator
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_callable,
-    ensure_eager_tensor,
-    ensure_float,
-    ensure_float_list,
+    BackendArg,
+    coerce_float,
+    coerce_float_list,
+    require_callable,
 )
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
-def _unwrap_arg(arg: EagerValue) -> EagerValue:
+def _unwrap_arg(arg: BackendArg) -> BackendArg:
     """Unwrap Tensor into underlying array or scalar.
 
     Args:
-        arg (EagerValue): Input argument to unwrap.
+        arg (BackendArg): Input argument to unwrap.
 
     Returns:
-        EagerValue: Unwrapped raw data.
+        BackendArg: Unwrapped raw data.
     """
-    if type(arg).__name__ == "Tensor" and has_backend_member(arg, "data"):
-        return ensure_eager_tensor(get_backend_member(arg, "data"))
+    if type(arg).__name__ == "Tensor" and adapt_backend_module(arg).has_symbol("data"):
+        return adapt_backend_module(arg).require_symbol("data")
     return arg
 
 
@@ -185,33 +184,33 @@ _UNARY_OPS = {
 }
 
 
-def _eval_operator(fn_name: str, args: tuple[EagerValue, ...]) -> tuple[bool, EagerValue]:
+def _eval_operator(fn_name: str, args: tuple[BackendArg, ...]) -> tuple[bool, BackendArg]:
     """Evaluate native overloaded operators on Awkward operands.
 
     Args:
         fn_name (str): Lowercase operation name.
-        args (tuple[EagerValue, ...]): Operation arguments.
+        args (tuple[BackendArg, ...]): Operation arguments.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and result.
+        tuple[bool, BackendArg]: Handled flag and result.
     """
     if fn_name in _BINARY_OPS and len(args) >= 2:
-        return True, ensure_callable(_BINARY_OPS[fn_name])(args[0], args[1])
+        return True, require_callable(_BINARY_OPS[fn_name])(args[0], args[1])
     if fn_name in _UNARY_OPS and len(args) >= 1:
-        return True, ensure_callable(_UNARY_OPS[fn_name])(args[0])
+        return True, require_callable(_UNARY_OPS[fn_name])(args[0])
     return False, None
 
 
-def _flatten_ragged_items(data: list[EagerValue] | tuple[EagerValue, ...]) -> list[EagerValue]:
+def _flatten_ragged_items(data: list[BackendArg] | tuple[BackendArg, ...]) -> list[BackendArg]:
     """Flatten a 2-level ragged list or tuple into a 1D list of elements.
 
     Args:
-        data (list[EagerValue] | tuple[EagerValue, ...]): Input ragged sequence.
+        data (list[BackendArg] | tuple[BackendArg, ...]): Input ragged sequence.
 
     Returns:
-        list[EagerValue]: Flattened elements.
+        list[BackendArg]: Flattened elements.
     """
-    res: list[EagerValue] = []
+    res: list[BackendArg] = []
     for sub in data:
         if isinstance(sub, (list, tuple)):
             res.extend(sub)
@@ -222,74 +221,88 @@ def _flatten_ragged_items(data: list[EagerValue] | tuple[EagerValue, ...]) -> li
 
 def _eval_ragged_axis1_reduction(
     fn_name: str,
-    data: list[EagerValue] | tuple[EagerValue, ...],
-) -> tuple[bool, EagerValue]:
+    data: list[BackendArg] | tuple[BackendArg, ...],
+) -> tuple[bool, BackendArg]:
     """Evaluate inner-axis (axis=1 or -1) ragged list reductions.
 
     Args:
         fn_name (str): Lowercase reduction operation name.
-        data (list[EagerValue] | tuple[EagerValue, ...]): Ragged sequence data.
+        data (list[BackendArg] | tuple[BackendArg, ...]): Ragged sequence data.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and list of per-row reduced values.
+        tuple[bool, BackendArg]: Handled flag and list of per-row reduced values.
     """
     if fn_name == "count":
-        res: EagerValue = [len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data]
+        res: BackendArg = [
+            len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data
+        ]
     elif fn_name == "sum":
-        res = [sum(ensure_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [sum(coerce_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     elif fn_name == "mean":
-        res = [sum(ensure_float_list(sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
+        res = [
+            sum(coerce_float_list(sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data
+        ]
     elif fn_name == "min":
-        res = [min([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
+        res = [
+            min([float(v) for v in sub if isinstance(v, (int, float))])
+            if isinstance(sub, (list, tuple)) and sub
+            else sub
+            for sub in data
+        ]
     elif fn_name == "max":
-        res = [max([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
+        res = [
+            max([float(v) for v in sub if isinstance(v, (int, float))])
+            if isinstance(sub, (list, tuple)) and sub
+            else sub
+            for sub in data
+        ]
     else:
-        res = [math.prod(ensure_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [math.prod(coerce_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     return True, res
 
 
 def _eval_ragged_global_reduction(
     fn_name: str,
-    data: list[EagerValue] | tuple[EagerValue, ...],
-) -> tuple[bool, EagerValue]:
+    data: list[BackendArg] | tuple[BackendArg, ...],
+) -> tuple[bool, BackendArg]:
     """Evaluate global (all-axis) ragged list reductions.
 
     Args:
         fn_name (str): Lowercase reduction operation name.
-        data (list[EagerValue] | tuple[EagerValue, ...]): Ragged sequence data.
+        data (list[BackendArg] | tuple[BackendArg, ...]): Ragged sequence data.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and scalar reduction result.
+        tuple[bool, BackendArg]: Handled flag and scalar reduction result.
     """
     flat_items = _flatten_ragged_items(data)
     if fn_name == "count":
-        res: EagerValue = len([x for x in flat_items if x is not None])
+        res: BackendArg = len([x for x in flat_items if x is not None])
     elif fn_name == "sum":
-        res = sum(ensure_float_list(flat_items))
+        res = sum(coerce_float_list(flat_items))
     elif fn_name == "mean":
-        res = sum(ensure_float_list(flat_items)) / len(flat_items) if flat_items else 0.0
+        res = sum(coerce_float_list(flat_items)) / len(flat_items) if flat_items else 0.0
     elif fn_name in ("min", "max"):
         flat_floats = [float(x) for x in flat_items if isinstance(x, (int, float))]
         res = (min(flat_floats) if fn_name == "min" else max(flat_floats)) if flat_floats else None
     else:
-        res = math.prod(ensure_float_list(flat_items)) if flat_items else 1
+        res = math.prod(coerce_float_list(flat_items)) if flat_items else 1
     return True, res
 
 
 def _eval_ragged_fallback(
     fn_name: str,
-    args: tuple[EagerValue, ...],
-    kwargs: dict[str, EagerValue],
-) -> tuple[bool, EagerValue]:
+    args: tuple[BackendArg, ...],
+    kwargs: dict[str, BackendArg],
+) -> tuple[bool, BackendArg]:
     """Evaluate reference ragged and nested operations on Python lists without padding.
 
     Args:
         fn_name (str): Lowercase operation name.
-        args (tuple[EagerValue, ...]): Operation input arguments.
-        kwargs (dict[str, EagerValue]): Keyword options such as axis.
+        args (tuple[BackendArg, ...]): Operation input arguments.
+        kwargs (dict[str, BackendArg]): Keyword options such as axis.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and resulting structure.
+        tuple[bool, BackendArg]: Handled flag and resulting structure.
     """
     if not args or not isinstance(args[0], (list, tuple)):
         return False, None
@@ -307,76 +320,100 @@ def _eval_ragged_fallback(
 
 
 def _try_awkward_module_op(
-    ak_mod: EagerValue,
+    ak_mod: BackendArg,
     fn_name: str,
-    actual_args: tuple[EagerValue, ...],
-    kwargs: dict[str, EagerValue],
-) -> tuple[bool, EagerValue]:
+    actual_args: tuple[BackendArg, ...],
+    kwargs: dict[str, BackendArg],
+) -> tuple[bool, BackendArg]:
     """Attempt to execute operation directly on the awkward module.
 
     Args:
-        ak_mod (EagerValue): Loaded awkward module or None.
+        ak_mod (BackendArg): Loaded awkward module or None.
         fn_name (str): Lowercase operation name.
-        actual_args (tuple[EagerValue, ...]): Unwrapped positional arguments.
-        kwargs (dict[str, EagerValue]): Keyword arguments.
+        actual_args (tuple[BackendArg, ...]): Unwrapped positional arguments.
+        kwargs (dict[str, BackendArg]): Keyword arguments.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and evaluated result.
+        tuple[bool, BackendArg]: Handled flag and evaluated result.
 
     Raises:
         BackendNotSupportedError: When awkward function invocation fails.
     """
     if ak_mod is None:
         return False, None
-    target_fn_name: str | None = fn_name if has_backend_member(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
-    if target_fn_name is not None and has_backend_member(ak_mod, target_fn_name):
+    target_fn_name: str | None = (
+        fn_name if adapt_backend_module(ak_mod).has_symbol(fn_name) else AK_OPS_MAP.get(fn_name)
+    )
+    if target_fn_name is not None and adapt_backend_module(ak_mod).has_symbol(target_fn_name):
         try:
-            return True, ensure_callable(get_backend_member(ak_mod, target_fn_name))(*actual_args, **kwargs)
-        except Exception as exc:
+            return True, adapt_backend_module(ak_mod).require_op(target_fn_name)(*actual_args, **kwargs)
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ) as exc:
             msg = f"Failed executing awkward.{target_fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
     return False, None
 
 
-def _apply_math_recursive(fn: Callable[[float], float], val: EagerValue) -> EagerValue:
+def _apply_math_recursive(fn: Callable[[float], float], val: BackendArg) -> BackendArg:
     """Recursively apply a scalar math function across ragged or nested structures.
 
     Args:
         fn (Callable[[float], float]): Scalar mathematical function.
-        val (EagerValue): Input Awkward array, nested list, or scalar.
+        val (BackendArg): Input Awkward array, nested list, or scalar.
 
     Returns:
-        EagerValue: Transformed structure preserving raggedness.
+        BackendArg: Transformed structure preserving raggedness.
     """
-    source = ensure_callable(get_backend_member(val, "to_list"))() if has_backend_member(val, "to_list") else val
+    source = (
+        adapt_backend_module(val).require_op("to_list")() if adapt_backend_module(val).has_symbol("to_list") else val
+    )
     if isinstance(source, (list, tuple)):
         import awkward as ak
 
-        return ensure_eager_tensor(ak.Array([_apply_math_recursive(fn, x) for x in source]))
-    return fn(float(ensure_float(source)))
+        return require_callable(ak.Array)([_apply_math_recursive(fn, x) for x in source])
+    return fn(float(coerce_float(source)))
 
 
 def _try_math_ufunc(
     fn_name: str,
-    actual_args: tuple[EagerValue, ...],
-) -> tuple[bool, EagerValue]:
+    actual_args: tuple[BackendArg, ...],
+) -> tuple[bool, BackendArg]:
     """Attempt to execute unary mathematical operation on Awkward or nested data.
 
     Args:
         fn_name (str): Lowercase operation name.
-        actual_args (tuple[EagerValue, ...]): Unwrapped positional arguments.
+        actual_args (tuple[BackendArg, ...]): Unwrapped positional arguments.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and evaluated result.
+        tuple[bool, BackendArg]: Handled flag and evaluated result.
 
     Raises:
         BackendNotSupportedError: When mathematical evaluation fails.
     """
     if fn_name in _MATH_UFUNCS and actual_args:
         try:
-            raw_fn = get_backend_member(math, fn_name, _MATH_UFUNCS[fn_name])
-            return True, _apply_math_recursive(lambda x: float(ensure_float(ensure_callable(raw_fn)(x))), actual_args[0])
-        except Exception as exc:
+            raw_fn = adapt_backend_module(math).get_symbol(fn_name, _MATH_UFUNCS[fn_name])
+            return True, _apply_math_recursive(lambda x: float(coerce_float(raw_fn(x))), actual_args[0])
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ) as exc:
             msg = f"Failed executing math ufunc {fn_name} on Awkward array: {exc}"
             raise BackendNotSupportedError(msg) from exc
     return False, None
@@ -384,25 +421,25 @@ def _try_math_ufunc(
 
 def execute_op(
     op_type: str,
-    *args: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute operation eagerly on Awkward Array backend supporting native ragged structures.
 
     Args:
         op_type (str): Operation name string.
-        *args (EagerValue): Input tensor parameters.
-        **kwargs (EagerValue): Additional keyword attributes.
+        *args (BackendArg): Input tensor parameters.
+        **kwargs (BackendArg): Additional keyword attributes.
 
     Returns:
-        EagerValue: Evaluated Awkward array or scalar.
+        BackendArg: Evaluated Awkward array or scalar.
 
     Raises:
         BackendNotSupportedError: When the operation cannot be resolved or executed.
     """
     try:
         ak_mod = importlib.import_module("awkward")
-    except Exception:
+    except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError):
         ak_mod = None
 
     actual_args = tuple(_unwrap_arg(a) for a in args)

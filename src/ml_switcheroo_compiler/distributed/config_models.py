@@ -230,12 +230,13 @@ def load_consolidated_topology(yaml_path: str | None = None) -> DistributedTopol
         mesh_cfg = DeviceMeshYamlConfig.model_validate(mesh_raw)
         grids: dict[str, AttributeValue] = {}
         for name, cm in mesh_cfg.cluster_meshes.items():
-            grids[name] = {
-                "shape": cm.shape,
-                "axis_names": cm.axis_names,
-                "devices": cm.devices,
+            grid_entry: dict[str, AttributeValue] = {
+                "shape": list(cm.shape),
+                "axis_names": list(cm.axis_names),
+                "devices": list(cm.devices),
                 "topology": cm.topology,
             }
+            grids[name] = grid_entry
         consolidated_dict["device_mesh_grids"] = grids
 
     pipe_path = os.path.join(base_dir, "pipeline_topologies.yaml")

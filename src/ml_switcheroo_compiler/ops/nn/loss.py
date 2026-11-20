@@ -7,11 +7,11 @@ import uuid
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_tensor_pair, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend, unpack_pair
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     TracedDataProtocol,
     extract_data,
     extract_device,
@@ -33,8 +33,8 @@ from ml_switcheroo_compiler.ops.binary import (
     true_divide,
 )
 from ml_switcheroo_compiler.ops.binary import power as op_pow
-from ml_switcheroo_compiler.ops.creation.frontend import ones_like
-from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros
+from ml_switcheroo_compiler.ops.creation.api import ones_like
+from ml_switcheroo_compiler.ops.creation.api_basic import zeros
 from ml_switcheroo_compiler.ops.nn.activations import log_softmax, one_hot, softplus
 from ml_switcheroo_compiler.ops.nn.nlp import CtcLoss, ctc_loss
 from ml_switcheroo_compiler.ops.nn.normalization import l2_normalize
@@ -42,7 +42,7 @@ from ml_switcheroo_compiler.ops.reductions import argmax, mean, sum
 from ml_switcheroo_compiler.ops.reductions import mean as op_mean
 from ml_switcheroo_compiler.ops.reductions import sum as op_sum
 from ml_switcheroo_compiler.ops.registry import get_op
-from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
+from ml_switcheroo_compiler.ops.shape.api import expand_dims
 from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis, where
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import abs, exp, log, negative, square
@@ -50,7 +50,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
-def l1_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def l1_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute Mean Absolute Error (L1) loss between true and predicted tensors.
 
     Args:
@@ -58,12 +58,12 @@ def l1_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Predicted tensor.
 
     Returns:
-        TensorOrScalar: Scalar mean L1 loss tensor.
+        OpValue: Scalar mean L1 loss tensor.
     """
     return mean(abs(subtract(y_true, y_pred)))
 
 
-def mse_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def mse_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute Mean Squared Error (L2) loss between true and predicted tensors.
 
     Args:
@@ -71,12 +71,12 @@ def mse_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Predicted tensor.
 
     Returns:
-        TensorOrScalar: Scalar mean squared error loss tensor.
+        OpValue: Scalar mean squared error loss tensor.
     """
     return mean(square(subtract(y_true, y_pred)))
 
 
-def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> TensorOrScalar:
+def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> OpValue:
     """Compute Huber loss between true and predicted tensors.
 
     Args:
@@ -85,7 +85,7 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> TensorOrSc
         delta (float): Threshold at which to change between quadratic and linear loss.
 
     Returns:
-        TensorOrScalar: Scalar Huber loss tensor.
+        OpValue: Scalar Huber loss tensor.
     """
     error = subtract(y_true, y_pred)
     abs_error = abs(error)
@@ -97,7 +97,7 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> TensorOrSc
     return mean(loss)
 
 
-def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> TensorOrScalar:
+def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> OpValue:
     """Compute Smooth L1 loss with transition parameter beta.
 
     Args:
@@ -106,7 +106,7 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> TensorO
         beta (float): Threshold parameter controlling the quadratic region.
 
     Returns:
-        TensorOrScalar: Scalar Smooth L1 loss tensor.
+        OpValue: Scalar Smooth L1 loss tensor.
     """
     if beta < 1e-5:
         return l1_loss(y_true, y_pred)
@@ -121,7 +121,7 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> TensorO
     return mean(loss)
 
 
-def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> TensorOrScalar:
+def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> OpValue:
     """Compute cosine similarity distance loss (1 - cos_sim).
 
     Args:
@@ -130,7 +130,7 @@ def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Te
         axis (int): Dimension along which cosine similarity is computed.
 
     Returns:
-        TensorOrScalar: Scalar cosine similarity loss tensor.
+        OpValue: Scalar cosine similarity loss tensor.
     """
     y_true_norm = l2_normalize(y_true, axis=axis)
     y_pred_norm = l2_normalize(y_pred, axis=axis)
@@ -139,7 +139,7 @@ def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Te
     return mean(subtract(1.0, cos_sim))
 
 
-def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute Kullback-Leibler divergence loss.
 
     Args:
@@ -147,7 +147,7 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Log-probability predictions tensor.
 
     Returns:
-        TensorOrScalar: Scalar KL divergence loss tensor.
+        OpValue: Scalar KL divergence loss tensor.
     """
     safe_y_true = where(greater(y_true, 0.0), y_true, ones_like(y_true))
     true_log = multiply(y_true, log(safe_y_true))
@@ -156,7 +156,7 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
     return mean(kl)
 
 
-def hinge_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def hinge_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute Hinge loss for binary classification with labels in {-1, 1}.
 
     Args:
@@ -164,13 +164,13 @@ def hinge_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Predicted score tensor.
 
     Returns:
-        TensorOrScalar: Scalar hinge loss tensor.
+        OpValue: Scalar hinge loss tensor.
     """
     margin = subtract(1.0, multiply(y_true, y_pred))
     return mean(maximum(0.0, margin))
 
 
-def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> TensorOrScalar:
+def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> OpValue:
     """Compute Gaussian Negative Log Likelihood loss.
 
     Args:
@@ -180,7 +180,7 @@ def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 
         eps (float): Clamping stability value for variance.
 
     Returns:
-        TensorOrScalar: Scalar Gaussian NLL loss tensor.
+        OpValue: Scalar Gaussian NLL loss tensor.
     """
     var_safe = maximum(var, eps)
 
@@ -191,7 +191,7 @@ def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 
     return mean(loss)
 
 
-def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute numerically stable Log-Cosh loss of the prediction error.
 
     Args:
@@ -199,7 +199,7 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Predicted tensor.
 
     Returns:
-        TensorOrScalar: Scalar Log-Cosh loss tensor.
+        OpValue: Scalar Log-Cosh loss tensor.
     """
     error = subtract(y_pred, y_true)
     abs_error = abs(error)
@@ -210,7 +210,7 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
     return mean(stable_logcosh)
 
 
-def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> TensorOrScalar:
+def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> OpValue:
     """Compute Margin Ranking loss between pairs of inputs.
 
     Args:
@@ -220,14 +220,14 @@ def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: 
         margin (float): Margin offset parameter.
 
     Returns:
-        TensorOrScalar: Scalar margin ranking loss tensor.
+        OpValue: Scalar margin ranking loss tensor.
     """
     diff = subtract(input1, input2)
     loss = add(multiply(multiply(-1.0, target), diff), margin)
     return mean(maximum(0.0, loss))
 
 
-def nll_loss(y_pred: Tensor, y_true: Tensor) -> TensorOrScalar:
+def nll_loss(y_pred: Tensor, y_true: Tensor) -> OpValue:
     """Compute Negative Log Likelihood loss from log-probabilities and class indices.
 
     Args:
@@ -235,14 +235,16 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> TensorOrScalar:
         y_true (Tensor): Class index tensor of shape (N,).
 
     Returns:
-        TensorOrScalar: Scalar negative log likelihood loss tensor.
+        OpValue: Scalar negative log likelihood loss tensor.
     """
     y_true_expanded = expand_dims(y_true, axis=-1)
     gathered = take_along_axis(y_pred, y_true_expanded, axis=-1)
     return mean(multiply(-1.0, gathered))
 
 
-def triplet_loss(anchor: Tensor, positive: Tensor, negative_sample: Tensor, margin: float = 1.0, p: float = 2.0) -> TensorOrScalar:
+def triplet_loss(
+    anchor: Tensor, positive: Tensor, negative_sample: Tensor, margin: float = 1.0, p: float = 2.0
+) -> OpValue:
     """Compute Triplet Margin loss over anchor, positive, and negative embeddings.
 
     Args:
@@ -253,7 +255,7 @@ def triplet_loss(anchor: Tensor, positive: Tensor, negative_sample: Tensor, marg
         p (float): Norm degree for distance calculation (1.0 or 2.0).
 
     Returns:
-        TensorOrScalar: Scalar triplet loss tensor.
+        OpValue: Scalar triplet loss tensor.
     """
     if p == 2.0:
         d_pos = sum(square(subtract(anchor, positive)), axis=-1)
@@ -266,7 +268,7 @@ def triplet_loss(anchor: Tensor, positive: Tensor, negative_sample: Tensor, marg
     return mean(loss)
 
 
-def msle_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def msle_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute Mean Squared Logarithmic Error loss.
 
     Args:
@@ -274,7 +276,7 @@ def msle_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Predicted tensor.
 
     Returns:
-        TensorOrScalar: Scalar MSLE loss tensor.
+        OpValue: Scalar MSLE loss tensor.
     """
     safe_pred = maximum(y_pred, 0.0)
     safe_true = maximum(y_true, 0.0)
@@ -283,7 +285,7 @@ def msle_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
     return mean(square(subtract(log_pred, log_true)))
 
 
-def mape_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
+def mape_loss(y_true: Tensor, y_pred: Tensor) -> OpValue:
     """Compute Mean Absolute Percentage Error loss.
 
     Args:
@@ -291,7 +293,7 @@ def mape_loss(y_true: Tensor, y_pred: Tensor) -> TensorOrScalar:
         y_pred (Tensor): Predicted tensor.
 
     Returns:
-        TensorOrScalar: Scalar MAPE loss tensor.
+        OpValue: Scalar MAPE loss tensor.
     """
     eps = 1e-7
     diff = abs(subtract(y_true, y_pred))
@@ -312,12 +314,12 @@ class CircleLoss(OpDef):
 
     op_name = "CircleLoss"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer scalar output shape for CircleLoss.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (TensorOrScalar): Keyword arguments.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Empty tuple representing scalar loss shape.
@@ -332,12 +334,12 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
 
     op_name = "CategoricalGeneralizedCrossEntropy"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer scalar output shape for CategoricalGeneralizedCrossEntropy.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (TensorOrScalar): Keyword arguments.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Empty tuple representing scalar loss shape.
@@ -351,7 +353,7 @@ def dice_loss(
     y_pred: Tensor,
     axis: tuple[int, ...] | int | None = None,
     smooth: float = 1e-5,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute the Dice loss for segmentation masks.
 
     Args:
@@ -361,7 +363,7 @@ def dice_loss(
         smooth (float): Smoothing constant to prevent division by zero.
 
     Returns:
-        TensorOrScalar: Calculated Dice loss tensor.
+        OpValue: Calculated Dice loss tensor.
     """
     intersection = op_sum(multiply(y_true, y_pred), axis=axis)
     y_true_sum = op_sum(y_true, axis=axis)
@@ -374,7 +376,7 @@ def dice_loss(
     return subtract(1.0, dice_coeff)
 
 
-def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> TensorOrScalar:
+def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> OpValue:
     """Compute Categorical Generalized Cross Entropy (GCE) loss.
 
     Args:
@@ -384,7 +386,7 @@ def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: flo
         axis (int): Class dimension axis.
 
     Returns:
-        TensorOrScalar: Computed GCE loss tensor.
+        OpValue: Computed GCE loss tensor.
     """
     epsilon = 1e-7
     y_pred_clipped = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
@@ -404,7 +406,7 @@ def _compute_circle_margins(margin: float) -> tuple[float, float, float, float]:
     return 1.0 + margin, -margin, 1.0 - margin, margin
 
 
-def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> tuple[TensorOrScalar, TensorOrScalar]:
+def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> tuple[OpValue, OpValue]:
     """Compute scaled positive and negative class logits for circle loss.
 
     Args:
@@ -413,7 +415,7 @@ def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> tuple
         gamma (float): Scale factor.
 
     Returns:
-        tuple[TensorOrScalar, TensorOrScalar]: Positive and negative scaled logits.
+        tuple[OpValue, OpValue]: Positive and negative scaled logits.
     """
     O_p, O_n, Delta_p, Delta_n = _compute_circle_margins(margin)
     alpha_p = maximum(0.0, subtract(O_p, y_pred))
@@ -424,17 +426,17 @@ def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> tuple
     return logit_p, logit_n
 
 
-def _compute_circle_loss_reduction(logit_p: TensorOrScalar, logit_n: TensorOrScalar, mask_p: Tensor, mask_n: TensorOrScalar) -> TensorOrScalar:
+def _compute_circle_loss_reduction(logit_p: OpValue, logit_n: OpValue, mask_p: Tensor, mask_n: OpValue) -> OpValue:
     """Reduce positive and negative circle loss logits into per-sample loss.
 
     Args:
-        logit_p (TensorOrScalar): Positive class scaled logits.
-        logit_n (TensorOrScalar): Negative class scaled logits.
+        logit_p (OpValue): Positive class scaled logits.
+        logit_n (OpValue): Negative class scaled logits.
         mask_p (Tensor): Positive class indicator mask.
-        mask_n (TensorOrScalar): Negative class indicator mask.
+        mask_n (OpValue): Negative class indicator mask.
 
     Returns:
-        TensorOrScalar: Reduced circle loss tensor.
+        OpValue: Reduced circle loss tensor.
     """
     inf_val = 1e9
     neg_inf_p = ops.multiply(ops.subtract(1.0, mask_p), -inf_val)
@@ -446,7 +448,7 @@ def _compute_circle_loss_reduction(logit_p: TensorOrScalar, logit_n: TensorOrSca
     return ops.log(ops.add(1.0, ops.exp(loss)))
 
 
-def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> TensorOrScalar:
+def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> OpValue:
     """Compute Circle loss over similarity scores and binary masks.
 
     Args:
@@ -456,7 +458,7 @@ def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: flo
         gamma (float): Scale factor.
 
     Returns:
-        TensorOrScalar: Computed Circle loss tensor.
+        OpValue: Computed Circle loss tensor.
     """
     mask_p = y_true
     mask_n = subtract(1.0, y_true)
@@ -464,7 +466,7 @@ def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: flo
     return _compute_circle_loss_reduction(logit_p, logit_n, mask_p, mask_n)
 
 
-def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> TensorOrScalar:
+def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> OpValue:
     """Compute Tversky loss, an asymmetric generalization of Dice loss.
 
     Args:
@@ -474,7 +476,7 @@ def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float
         beta (float): Penalty weight for false negatives.
 
     Returns:
-        TensorOrScalar: Calculated Tversky loss tensor.
+        OpValue: Calculated Tversky loss tensor.
     """
     intersection = op_sum(multiply(y_true, y_pred), axis=-1)
     fps = op_sum(multiply(subtract(1.0, y_true), y_pred), axis=-1)
@@ -484,7 +486,7 @@ def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float
     return subtract(1.0, true_divide(intersection, denom))
 
 
-def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> TensorOrScalar:
+def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> OpValue:
     """Clip probability predictions to [1e-7, 1 - 1e-7] when from_logits is False.
 
     Args:
@@ -492,14 +494,14 @@ def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> TensorOrScala
         from_logits (bool): Whether predictions are unnormalized logits.
 
     Returns:
-        TensorOrScalar: Clipped probability tensor or raw logits.
+        OpValue: Clipped probability tensor or raw logits.
     """
     if not from_logits:
         return get_op("Clip")()(y_pred, 1e-7, 1.0 - 1e-7)
     return y_pred
 
 
-def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> TensorOrScalar:
+def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> OpValue:
     """Compute element-wise binary crossentropy from logits or probabilities.
 
     Args:
@@ -508,7 +510,7 @@ def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Tens
         from_logits (bool): Whether predictions are logits.
 
     Returns:
-        TensorOrScalar: Element-wise binary crossentropy tensor.
+        OpValue: Element-wise binary crossentropy tensor.
     """
     neg_op = get_op("Negative")()
     if from_logits:
@@ -531,7 +533,7 @@ def binary_crossentropy(
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute binary crossentropy loss with optional label smoothing.
 
     Args:
@@ -542,7 +544,7 @@ def binary_crossentropy(
         axis (int): Reduction axis.
 
     Returns:
-        TensorOrScalar: Reduced binary crossentropy loss tensor.
+        OpValue: Reduced binary crossentropy loss tensor.
     """
     if label_smoothing > 0.0:
         y_true = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
@@ -558,7 +560,7 @@ def categorical_crossentropy(
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute categorical crossentropy loss across one-hot labels.
 
     Args:
@@ -569,12 +571,12 @@ def categorical_crossentropy(
         axis (int): Class axis.
 
     Returns:
-        TensorOrScalar: Categorical crossentropy loss tensor.
+        OpValue: Categorical crossentropy loss tensor.
     """
     epsilon = 1e-7
 
     if label_smoothing > 0.0:
-        num_classes = y_pred.shape[axis]
+        num_classes = extract_shape(y_pred)[axis]
         smooth_val = label_smoothing / float(num_classes)
         y_true = add(multiply(y_true, 1.0 - label_smoothing), smooth_val)
 
@@ -591,7 +593,7 @@ def sparse_categorical_crossentropy(
     from_logits: bool = False,
     ignore_class: int | None = None,
     axis: int = -1,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute sparse categorical crossentropy loss for integer class targets.
 
     Args:
@@ -602,9 +604,9 @@ def sparse_categorical_crossentropy(
         axis (int): Class dimension axis.
 
     Returns:
-        TensorOrScalar: Sparse categorical crossentropy loss tensor.
+        OpValue: Sparse categorical crossentropy loss tensor.
     """
-    num_classes = y_pred.shape[axis]
+    num_classes = extract_shape(y_pred)[axis]
     y_true_one_hot = one_hot(y_true, num_classes, axis=axis)
     loss = categorical_crossentropy(ensure_tensor(y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
 
@@ -639,7 +641,8 @@ def ctc_decode(
     """
     _ = (sequence_lengths, greedy, beam_width)
     paths = argmax(inputs, axis=-1)
-    batch_size = inputs.shape[0] if len(inputs.shape) >= 2 else 1
+    in_shape = extract_shape(inputs)
+    batch_size = in_shape[0] if len(in_shape) >= 2 else 1
     log_probs = zeros((batch_size, top_paths), dtype=inputs.dtype)
     return [paths] * top_paths, log_probs
 
@@ -650,24 +653,26 @@ class AdaptiveLogSoftmaxWithLoss(OpDef):
 
     op_name = "AdaptiveLogSoftmaxWithLoss"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[tuple[int, ...], tuple[int, ...]]:
         """Infer output and scalar loss shapes for AdaptiveLogSoftmaxWithLoss.
 
         Args:
-            *args (EagerTensorProtocol): Input and target operands.
-            **kwargs (TensorOrScalar): Keyword attributes.
+            *args (OpValue): Input and target operands.
+            **kwargs (OpValue): Keyword attributes.
 
         Returns:
             tuple[tuple[int, ...], tuple[int, ...]]: Tuple of (target_shape, scalar_shape).
         """
         _ = kwargs
-        return (args[1].shape, ())
+        from ml_switcheroo_compiler.core.shape import extract_int_shape
+
+        return (extract_int_shape(args[1]), ())
 
 
 def _emit_adaptive_log_softmax_with_loss_node(
     input_tensor: Tensor,
     target: Tensor,
-    cutoffs: TensorOrScalar,
+    cutoffs: OpValue,
     add_cluster_prob: bool,
 ) -> tuple[Tensor, Tensor]:
     """Emit a LogicalNode for AdaptiveLogSoftmaxWithLoss during graph tracing.
@@ -675,7 +680,7 @@ def _emit_adaptive_log_softmax_with_loss_node(
     Args:
         input_tensor (Tensor): Input activations tensor.
         target (Tensor): Target class indices tensor.
-        cutoffs (TensorOrScalar): Vocabulary cluster cutoff boundaries.
+        cutoffs (OpValue): Vocabulary cluster cutoff boundaries.
         add_cluster_prob (bool): Whether to append cluster log-probabilities.
 
     Returns:
@@ -689,8 +694,8 @@ def _emit_adaptive_log_softmax_with_loss_node(
 
     out_id = str(uuid.uuid4())
     loss_id = f"{out_id}:loss"
-    in_data: TensorOrScalar = input_tensor.data
-    tgt_data: TensorOrScalar = target.data
+    in_data: OpValue = input_tensor.data
+    tgt_data: OpValue = target.data
 
     node = LogicalNode(
         id=out_id,
@@ -716,7 +721,7 @@ def _emit_adaptive_log_softmax_with_loss_node(
 def adaptive_log_softmax_with_loss(
     input: Tensor,
     target: Tensor,
-    cutoffs: TensorOrScalar,
+    cutoffs: OpValue,
     add_cluster_prob: bool = True,
 ) -> tuple[Tensor, Tensor]:
     """Compute adaptive log softmax probabilities and NLL loss.
@@ -724,7 +729,7 @@ def adaptive_log_softmax_with_loss(
     Args:
         input (Tensor): Input activations tensor.
         target (Tensor): Target class indices tensor.
-        cutoffs (TensorOrScalar): Vocabulary cluster cutoff boundaries.
+        cutoffs (OpValue): Vocabulary cluster cutoff boundaries.
         add_cluster_prob (bool): Whether to include cluster probabilities.
 
     Returns:
@@ -734,7 +739,7 @@ def adaptive_log_softmax_with_loss(
         from ml_switcheroo_compiler.backends.registry import get_active_backend as _get_active_backend
 
         backend = _get_active_backend()
-        out, loss = ensure_tensor_pair(
+        out, loss = unpack_pair(
             backend.execute_op(
                 "AdaptiveLogSoftmaxWithLoss",
                 input.data,
@@ -756,12 +761,12 @@ class LogPoissonLoss(OpDef):
 
     op_name = "LogPoissonLoss"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer output shape for LogPoissonLoss matching targets shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional arguments (targets, log_input).
-            **kwargs (TensorOrScalar): Keyword arguments.
+            *args (OpValue): Positional arguments (targets, log_input).
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred output shape.
@@ -775,7 +780,7 @@ def log_poisson_loss(
     log_input: Tensor,
     compute_full_loss: bool = False,
     name: str | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute log Poisson loss: exp(log_input) - targets * log_input.
 
     When compute_full_loss is True, adds Stirling's approximation:
@@ -788,7 +793,7 @@ def log_poisson_loss(
         name (Optional[str]): Optional operation name.
 
     Returns:
-        TensorOrScalar: Element-wise log Poisson loss tensor.
+        OpValue: Element-wise log Poisson loss tensor.
     """
     _ = name
     base_loss = subtract(exp(log_input), multiply(targets, log_input))
@@ -808,12 +813,12 @@ class InTopK(OpDef):
 
     op_name = "InTopK"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer output shape of InTopK matching the 1D targets shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional arguments (targets, predictions).
-            **kwargs (TensorOrScalar): Keyword arguments.
+            *args (OpValue): Positional arguments (targets, predictions).
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred shape tuple.
@@ -827,7 +832,7 @@ def in_top_k(
     predictions: Tensor,
     k: int,
     name: str | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Determine whether target classes are within the top K predictions.
 
     Args:
@@ -837,7 +842,7 @@ def in_top_k(
         name (Optional[str]): Optional operation name.
 
     Returns:
-        TensorOrScalar: Boolean tensor of shape (batch_size,) indicating top-k membership.
+        OpValue: Boolean tensor of shape (batch_size,) indicating top-k membership.
     """
     target_shape = extract_shape(targets)
     if config.eager_mode:
@@ -849,7 +854,7 @@ def in_top_k(
     return _emit_shape_node("InTopK", [targets, predictions], {"k": k, "name": name}, target_shape, "bool")
 
 
-def l2_loss(t: Tensor, name: str | None = None) -> TensorOrScalar:
+def l2_loss(t: Tensor, name: str | None = None) -> OpValue:
     """Compute half the squared L2 norm of a tensor without square root: sum(t ** 2) / 2.
 
     Args:
@@ -857,13 +862,13 @@ def l2_loss(t: Tensor, name: str | None = None) -> TensorOrScalar:
         name (Optional[str]): Optional operation name.
 
     Returns:
-        TensorOrScalar: Scalar L2 loss tensor.
+        OpValue: Scalar L2 loss tensor.
     """
     _ = name
     return multiply(sum(multiply(t, t)), 0.5)
 
 
-def scale_regularization_loss(regularization_loss: Tensor, name: str | None = None) -> TensorOrScalar:
+def scale_regularization_loss(regularization_loss: Tensor, name: str | None = None) -> OpValue:
     """Scale the sum of regularization losses across replicas.
 
     Args:
@@ -871,7 +876,7 @@ def scale_regularization_loss(regularization_loss: Tensor, name: str | None = No
         name (Optional[str]): Optional operation name.
 
     Returns:
-        TensorOrScalar: Scaled regularization loss tensor.
+        OpValue: Scaled regularization loss tensor.
     """
     _ = name
     return regularization_loss

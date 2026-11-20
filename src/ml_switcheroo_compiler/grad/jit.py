@@ -7,14 +7,9 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import (
-    AttrValue,
-    VariadicCallableProtocol,
-    invoke_callable,
-)
-from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.core.shape import IRAttrValue, OpValue, VariadicCallableProtocol, is_variadic_callable
 
-from .utils import GradValue
+from .utils import DifferentiableFn, PrimalTree, as_primal_tree
 
 
 class JitOptions(pydantic.BaseModel):
@@ -22,23 +17,23 @@ class JitOptions(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    static_argnums: AttrValue = None
-    static_argnames: AttrValue = None
-    donate_argnums: AttrValue = None
-    donate_argnames: AttrValue = None
+    static_argnums: IRAttrValue = None
+    static_argnames: IRAttrValue = None
+    donate_argnums: IRAttrValue = None
+    donate_argnames: IRAttrValue = None
     keep_unused: bool = False
-    device: AttrValue = None
-    backend: AttrValue = None
+    device: IRAttrValue = None
+    backend: IRAttrValue = None
     inline: bool = False
-    abstracted_axes: AttrValue = None
+    abstracted_axes: IRAttrValue = None
 
 
-def jit(fun: GradValue, options: JitOptions | GradValue = None) -> VariadicCallableProtocol:
+def jit(fun: DifferentiableFn, options: JitOptions | None = None) -> VariadicCallableProtocol:
     """Wrap `fun` for just-in-time compilation with `options`.
 
     Args:
-        fun (GradValue): Function to JIT compile.
-        options (JitOptions | GradValue): Optional `JitOptions` configuration.
+        fun (DifferentiableFn): Function to JIT compile.
+        options (JitOptions | None): Optional `JitOptions` configuration.
 
     Returns:
         VariadicCallableProtocol: JIT-wrapped callable.
@@ -46,19 +41,21 @@ def jit(fun: GradValue, options: JitOptions | GradValue = None) -> VariadicCalla
     _ = options if options is not None else JitOptions()
 
     def wrapped(
-        *args: GradValue,
-        **kwargs: GradValue,
-    ) -> GradValue:
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> PrimalTree:
         """Execute JIT-wrapped function `fun`.
 
         Args:
-            *args (GradValue): Positional call arguments.
-            **kwargs (GradValue): Keyword call arguments.
+            *args (OpValue): Positional call arguments.
+            **kwargs (OpValue): Keyword call arguments.
 
         Returns:
-            GradValue: Result of evaluating `fun(*args, **kwargs)`.
+            PrimalTree: Result of evaluating `fun(*args, **kwargs)`.
         """
-        return invoke_callable(fun, *args, **kwargs)
+        _callable_fn_1: OpValue = fun
+        assert is_variadic_callable(_callable_fn_1)
+        return as_primal_tree(_callable_fn_1(*args, **kwargs))
 
     return wrapped
 
@@ -73,15 +70,21 @@ def disable_jit() -> typing.Iterator[None]:
     yield
 
 
-def eval_shape(fun: GradValue, *args: GradValue, **kwargs: GradValue) -> GradValue:
+def eval_shape(
+    fun: DifferentiableFn,
+    *args: PrimalTree | OpValue,
+    **kwargs: PrimalTree | OpValue,
+) -> PrimalTree:
     """Evaluate the output shape and dtype of `fun(*args, **kwargs)`.
 
     Args:
-        fun (GradValue): Function whose output shape is to be inferred.
-        *args (GradValue): Positional arguments or shape specs.
-        **kwargs (GradValue): Keyword arguments.
+        fun (DifferentiableFn): Function whose output shape is to be inferred.
+        *args (PrimalTree | OpValue): Positional arguments or shape specs.
+        **kwargs (PrimalTree | OpValue): Keyword arguments.
 
     Returns:
-        GradValue: Evaluated output of `fun(*args, **kwargs)`.
+        PrimalTree: Evaluated output of `fun(*args, **kwargs)`.
     """
-    return invoke_callable(fun, *args, **kwargs)
+    _callable_fn_2: OpValue = fun
+    assert is_variadic_callable(_callable_fn_2)
+    return as_primal_tree(_callable_fn_2(*args, **kwargs))

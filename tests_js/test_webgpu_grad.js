@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
+const { createCpuWebGPUDevice } = require('./support/headless_fallbacks');
 let puppeteer;
 try {
     puppeteer = require('puppeteer');
@@ -10,16 +11,9 @@ try {
     puppeteer = null;
 }
 
-test('WebGPU can evaluate AD gradient graphs (forward, VJP, JVP)', async (t) => {
-    if (!puppeteer) {
-        t.skip('puppeteer not installed in node_modules');
-        return;
-    }
+test('WebGPU can evaluate AD gradient graphs (forward, VJP, JVP)', async () => {
     const chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-    if (!fs.existsSync(chromePath)) {
-        t.skip("Chrome not found for WebGPU testing");
-        return;
-    }
+    const useHeadlessFallback = !puppeteer || !fs.existsSync(chromePath);
 
     const script = `
 import ml_switcheroo_compiler as compiler
@@ -29,7 +23,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad, jvp as graph_jvp
 from collections.abc import Mapping
-from ml_switcheroo_compiler.ir.core import LogicalGraph, IRNode
+from ml_switcheroo_ir import LogicalGraph, IRNode
 
 def simple_fn(x):
     return x * x
@@ -69,8 +63,11 @@ with ConfigContext(backend="numpy"):
 `;
 
     fs.writeFileSync('temp_webgpu_test.py', script);
-    execSync('python3 temp_webgpu_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
-    fs.unlinkSync('temp_webgpu_test.py');
+    try {
+        execSync('python3 temp_webgpu_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
+    } finally {
+        if (fs.existsSync('temp_webgpu_test.py')) fs.unlinkSync('temp_webgpu_test.py');
+    }
 
     const fwdCode = fs.readFileSync('temp_fwd_webgpu.js', 'utf8');
     const vjpCode = fs.readFileSync('temp_vjp_webgpu.js', 'utf8');
@@ -81,6 +78,35 @@ with ConfigContext(backend="numpy"):
 
     assert.ok(fwdCode.includes('var<storage, read>'));
     assert.ok(vjpCode.includes('device.createCommandEncoder()'));
+
+    if (useHeadlessFallback) {
+        const device = createCpuWebGPUDevice();
+
+        const fwdFn = new Function('device', 'inputs', fwdCode + '\nreturn execute(device, inputs);');
+        const fwdMatches = Array.from(fwdCode.matchAll(/inputs\["([^"]+)"\]/g));
+        const fwdInputs = {};
+        for (const m of fwdMatches) fwdInputs[m[1]] = new Float32Array([3.0]);
+        const fwdRes = await fwdFn(device, fwdInputs);
+
+        const vjpFn = new Function('device', 'inputs', vjpCode + '\nreturn execute(device, inputs);');
+        const vjpMatches = Array.from(vjpCode.matchAll(/inputs\["([^"]+)"\]/g));
+        const vjpInputs = {};
+        for (const m of vjpMatches) vjpInputs[m[1]] = new Float32Array([3.0]);
+        const vjpRes = await vjpFn(device, vjpInputs);
+
+        const jvpFn = new Function('device', 'inputs', jvpCode + '\nreturn execute(device, inputs);');
+        const jvpMatches = Array.from(jvpCode.matchAll(/inputs\["([^"]+)"\]/g));
+        const jvpInputs = {};
+        for (const m of jvpMatches) {
+            jvpInputs[m[1]] = m[1] === 'tan_x' ? new Float32Array([1.0]) : new Float32Array([3.0]);
+        }
+        const jvpRes = await jvpFn(device, jvpInputs);
+
+        assert.strictEqual(Array.from(Object.values(fwdRes)[0])[0], 9.0);
+        assert.strictEqual(Array.from(Object.values(vjpRes)[0])[0], 6.0);
+        assert.strictEqual(Array.from(Object.values(jvpRes)[0])[0], 6.0);
+        return;
+    }
 
     // Execute on real WebGPU in headless Chrome
     const server = http.createServer((req, res) => {

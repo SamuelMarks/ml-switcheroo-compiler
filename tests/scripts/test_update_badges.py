@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import io
 import json
 import subprocess
 import typing
@@ -18,10 +19,9 @@ from scripts.update_badges import (
     get_test_coverage,
     update_readme,
 )
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_get_color() -> None:
@@ -188,7 +188,9 @@ def test_get_doc_coverage_no_files() -> None:
 
 def test_get_doc_coverage_success() -> None:
     """Verify `get_doc_coverage` across documented and undocumented modules/classes/functions."""
-    mock_walk = ensure_eager_tensor([("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
+    mock_walk: list[tuple[str, list[str], list[str]]] = [
+        ("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])
+    ]
 
     core_content = '''"""Module doc."""
 class MyClass:
@@ -214,25 +216,25 @@ def no_doc_func():
     pass
 """
 
-    def mock_open_file(path: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def mock_open_file(path: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> io.StringIO:
         """Mock file opener returning `core_content` or `bad_content`.
 
         Args:
-            path (EagerValue): Requested file path.
-            *args (EagerValue): Positional open arguments.
-            **kwargs (EagerValue): Keyword open arguments.
+            path (BackendArg): Requested file path.
+            *args (BackendArg): Positional open arguments.
+            **kwargs (BackendArg): Keyword open arguments.
 
         Returns:
-            EagerValue: Mock file handle.
+            io.StringIO: Mock file handle.
 
         Raises:
             FileNotFoundError: If an unexpected path is opened.
         """
         _ = (args, kwargs)
-        if ensure_eager_tensor("core.py") in ensure_eager_tensor(path):
-            return ensure_eager_tensor(mock_open(read_data=core_content)())
-        if ensure_eager_tensor("bad.py") in ensure_eager_tensor(path):
-            return ensure_eager_tensor(mock_open(read_data=bad_content)())
+        if "core.py" in str(path):
+            return io.StringIO(core_content)
+        if "bad.py" in str(path):
+            return io.StringIO(bad_content)
         raise FileNotFoundError("File not found")
 
     with (
@@ -247,12 +249,12 @@ def no_doc_func():
 
 def test_get_doc_coverage_exception_in_file() -> None:
     """Verify `get_doc_coverage` gracefully handles syntax errors in inspected files."""
-    mock_walk = ensure_eager_tensor([("src/ml_switcheroo_compiler", [], ["fail.py"])])
+    mock_walk: list[tuple[str, list[str], list[str]]] = [("src/ml_switcheroo_compiler", [], ["fail.py"])]
     with (
         patch("os.path.exists", return_value=True),
         patch("os.walk", return_value=mock_walk),
         patch("builtins.open", mock_open()),
-        patch("ast.parse", side_effect=Exception("Parse error")),
+        patch("ast.parse", side_effect=SyntaxError("Parse error")),
     ):
         cov = get_doc_coverage()
     assert cov == 0.0
@@ -284,7 +286,10 @@ def test_update_readme_success() -> None:
         update_readme()
 
     written = "".join([call.args[0] for call in m_open().write.call_args_list])
-    assert "[![Release](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml)" in written
+    assert (
+        "[![Release](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml)"
+        in written
+    )
     assert "test_coverage-100%25-brightgreen" in written
     assert "doc_coverage-95.5%25-green" in written
 

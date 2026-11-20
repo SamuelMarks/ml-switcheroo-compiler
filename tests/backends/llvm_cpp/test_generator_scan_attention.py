@@ -7,8 +7,9 @@ from ml_switcheroo_ir import NodeDict
 
 def test_scan_and_attention() -> None:
     """Test Scan and Attention."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Scan", inputs=["in_val"], shape_metadata=[10])

@@ -13,7 +13,13 @@ def test_pytorch_distributed_simulators() -> None:
     except ImportError:
         pytest.skip("PyTorch not installed")
 
-    from ml_switcheroo_compiler.backends.pytorch.eager import _get_torch_reduce_op, _torch_all_gather, _torch_all_reduce, _torch_all_to_all, _torch_reduce_scatter
+    from ml_switcheroo_compiler.backends.pytorch.eager import (
+        _get_torch_reduce_op,
+        _torch_all_gather,
+        _torch_all_reduce,
+        _torch_all_to_all,
+        _torch_reduce_scatter,
+    )
 
     tensor = torch.tensor([1, 2, 3])
 

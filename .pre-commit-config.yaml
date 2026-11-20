@@ -33,11 +33,15 @@ repos:
   - args:
     - --config-file
     - pyproject.toml
+    - src/ml_switcheroo_compiler
+    - scripts
+    - tests
     entry: mypy
     files: ^(src/ml_switcheroo_compiler|scripts|tests)/.*\.py$
     id: mypy
     language: system
     name: mypy
+    pass_filenames: false
     require_serial: true
     types:
     - python

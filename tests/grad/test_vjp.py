@@ -1,4 +1,4 @@
-"""Tests for test_vjp."""
+"""Behavioral unit tests for vjp."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import CompilerError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import jvp
+from ml_switcheroo_compiler.grad.custom_vjp_ops import CustomVJPFunction
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
+def make_tensor(val: BackendArg, shape: tuple[int, ...] | None = None) -> Tensor:
     """Test function make_tensor.
 
     Args:
@@ -26,12 +26,11 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
         shape: Test parameter `shape`.
 
     Returns:
-        EagerValue: Computed output value from `make_tensor`.
+        Tensor: Computed output value from `make_tensor`.
     """
-    val = np.array(val, dtype=np.float32)
-    if shape is None:
-        shape = val.shape
-    return ensure_callable(Tensor)(val, ensure_callable(TensorConfig)(shape, DType.Float32, ensure_callable(Device)("cpu")))
+    arr = np.array(val, dtype=np.float32)
+    resolved_shape: tuple[int, ...] = shape if shape is not None else arr.shape
+    return Tensor(arr, TensorConfig(resolved_shape, DType.Float32, Device("cpu")))
 
 
 def test_jvp_binary() -> None:
@@ -82,7 +81,7 @@ def test_jvp_binary() -> None:
     evaluated_bin = 0
     for op in ops:
 
-        def f(x: EagerValue, y: EagerValue, op_bound: EagerValue = op) -> EagerValue:
+        def f(x: BackendArg, y: BackendArg, op_bound: str = op) -> BackendArg:
             """Test function f.
 
             Args:
@@ -91,12 +90,12 @@ def test_jvp_binary() -> None:
                 op_bound: Test parameter `op_bound`.
 
             Returns:
-                EagerValue: Computed output value from `f`.
+                BackendArg: Computed output value from `f`.
             """
-            return ensure_callable(dispatch_op)(op_bound, x, y)
+            return dispatch_op(op_bound, x, y)
 
         try:
-            res, out_tangent = ensure_callable(jvp)(f, (x, y), (tx, ty))
+            res, out_tangent = jvp(f, (x, y), (tx, ty))
             assert res is not None
             assert out_tangent is not None
             evaluated_bin += 1
@@ -154,7 +153,7 @@ def test_jvp_unary() -> None:
     evaluated_un = 0
     for op in ops:
 
-        def f(x: EagerValue, op_bound: EagerValue = op) -> EagerValue:
+        def f(x: BackendArg, op_bound: str = op) -> BackendArg:
             """Test function f.
 
             Args:
@@ -162,15 +161,24 @@ def test_jvp_unary() -> None:
                 op_bound: Test parameter `op_bound`.
 
             Returns:
-                EagerValue: Computed output value from `f`.
+                BackendArg: Computed output value from `f`.
             """
-            return ensure_callable(dispatch_op)(op_bound, x)
+            return dispatch_op(op_bound, x)
 
         try:
-            res, out_tangent = ensure_callable(jvp)(f, (x,), (tx,))
+            res, out_tangent = jvp(f, (x,), (tx,))
             assert res is not None
             assert out_tangent is not None
             evaluated_un += 1
         except (ValueError, TypeError, RuntimeError, NotImplementedError, KeyError, CompilerError):
             evaluated_un += 1
     assert evaluated_un == len(ops)
+
+
+def test_custom_vjp_infer_shape_empty_tensor_args() -> None:
+    """Verify CustomVJPFunction._resolve_output_metadata with empty tensor_args."""
+    cvjp = CustomVJPFunction(lambda: 42)
+    shape, dtype, device = cvjp._resolve_output_metadata([])
+    assert shape == ()
+    assert dtype == "float32"
+    assert device == "cpu"

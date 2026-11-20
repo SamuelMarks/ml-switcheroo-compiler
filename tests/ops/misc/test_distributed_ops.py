@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+
+from ml_switcheroo_compiler.core.config import Config
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.distributed_ops import (
     AllGather,
     AllReduce,
@@ -41,17 +45,30 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
     reduce_scatter,
     shard_tensor,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, get_backend_member, has_backend_member
+from tests.testing_utils import (
+    EagerBoundCallable,
+    extract_test_shape,
+    require_callable,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestDistributedOpsState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_distributed_ops` split helpers."""
+
+    config: Config
+    mp: pytest.MonkeyPatch
+    patch: EagerBoundCallable
+    t: Tensor
+
+
+def _test_distributed_ops_part_1(_state: _TestDistributedOpsState) -> None:
     """Execute part 1 of test_distributed_ops.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestDistributedOpsState): Shared test state dictionary.
     """
     import ml_switcheroo_compiler.backends.registry as reg
     from ml_switcheroo_compiler.core.config import config
@@ -61,16 +78,16 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     class DummyBackend:
         """Test class DummyBackend."""
 
-        def execute_op(self, __op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def execute_op(self, __op: BackendArg, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
-                __op: Test parameter `__op`.
-                a: Test parameter `a`.
-                k: Test parameter `k`.
+                __op (BackendArg): Test parameter `__op`.
+                *a (BackendArg): Test parameter `a`.
+                **k (BackendArg): Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
 
             class T:
@@ -83,42 +100,38 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     import ml_switcheroo_compiler.ops.distributed_ops as dist
 
-    orig_dist_backend = ensure_eager_tensor(ensure_eager_tensor(dist).get_active_backend)
-    orig_reg_backend = get_backend_member(reg, "_ACTIVE_BACKEND", None)
-    has_reg_backend = has_backend_member(reg, "_ACTIVE_BACKEND")
-    ensure_mutable(dist).get_active_backend = ensure_eager_tensor(lambda: DummyBackend())
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
+    mp = _state["mp"]
+    mp.setattr(dist, "get_active_backend", lambda: DummyBackend(), raising=False)
+    mp.setattr(reg, "_ACTIVE_BACKEND", DummyBackend(), raising=False)
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
-    assert ensure_eager_tensor(shard_tensor(t, None, None)).shape == (1,)
-    assert ensure_eager_tensor(nccl_all_reduce(t)).shape == (1,)
-    _state.update(ensure_tensor_dict({"DummyBackend": DummyBackend, "Tensor": Tensor, "TensorConfig": TensorConfig, "config": config}))
-    _state.update(ensure_tensor_dict({"dist": dist, "has_reg_backend": has_reg_backend, "orig_dist_backend": orig_dist_backend, "orig_reg_backend": orig_reg_backend}))
-    _state.update(ensure_tensor_dict({"reg": reg, "t": t}))
+    assert extract_test_shape(shard_tensor(t, None, None)) == (1,)
+    assert extract_test_shape(nccl_all_reduce(t)) == (1,)
+    _state.update({"config": config, "t": t})
 
 
-def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_distributed_ops_part_2(_state: _TestDistributedOpsState) -> None:
     """Execute part 2 of test_distributed_ops.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestDistributedOpsState): Shared test state dictionary.
     """
     t = _state["t"]
-    assert ensure_eager_tensor(ensure_callable(hierarchical_copy_all_reduce)(t)).shape == (1,)
-    assert ensure_eager_tensor(ensure_callable(broadcast)(t)).shape == (1,)
-    assert ensure_eager_tensor(ensure_callable(all_gather)(t)).shape == (1,)
-    assert ensure_eager_tensor(ensure_callable(reduce)(t)).shape == (1,)
-    assert ensure_eager_tensor(ensure_callable(all_reduce)(t)).shape == (1,)
-    assert ensure_eager_tensor(ensure_callable(reduce_scatter)(t)).shape == (1,)
-    assert ensure_eager_tensor(all_to_all(t)).shape == (1,)
-    assert ensure_eager_tensor(broadcast_arrays(t)).shape == (1,)
-    assert ensure_eager_tensor(broadcast_to(t)).shape == (1,)
-    assert ensure_eager_tensor(broadcast_to_rank(t)).shape == (1,)
-    assert ensure_eager_tensor(broadcasted_iota(t)).shape == (1,)
-    assert ensure_eager_tensor(pbroadcast(t)).shape == (1,)
+    assert extract_test_shape(hierarchical_copy_all_reduce(t)) == (1,)
+    assert extract_test_shape(broadcast(t)) == (1,)
+    assert extract_test_shape(all_gather(t)) == (1,)
+    assert extract_test_shape(reduce(t)) == (1,)
+    assert extract_test_shape(all_reduce(t)) == (1,)
+    assert extract_test_shape(reduce_scatter(t)) == (1,)
+    assert extract_test_shape(all_to_all(t)) == (1,)
+    assert extract_test_shape(broadcast_arrays(t)) == (1,)
+    assert extract_test_shape(broadcast_to(t)) == (1,)
+    assert extract_test_shape(broadcast_to_rank(t)) == (1,)
+    assert extract_test_shape(broadcasted_iota(t)) == (1,)
+    assert extract_test_shape(pbroadcast(t)) == (1,)
 
     assert ShardTensor().infer_shape(t) == (1,)
     assert NcclAllReduce().infer_shape(t) == (1,)
@@ -130,16 +143,16 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     assert ReduceScatter().infer_shape(t) == (1,)
     assert AllToAll().infer_shape() == ()
     assert BroadcastArrays().infer_shape() == ()
-    _state.update(ensure_tensor_dict({"t": t}))
+    _state.update({"t": t})
 
 
-def _test_distributed_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_distributed_ops_part_3(_state: _TestDistributedOpsState) -> None:
     """Execute part 3 of test_distributed_ops.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestDistributedOpsState): Shared test state dictionary.
     """
-    config, t = _state["config"], _state["t"]
+    config, mp, t = _state["config"], _state["mp"], _state["t"]
     assert BroadcastTo().infer_shape() == ()
     assert BroadcastToRank().infer_shape() == ()
     assert BroadcastedIota().infer_shape() == ()
@@ -152,31 +165,30 @@ def _test_distributed_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     assert Ppermute().infer_shape(t) == (1,)
     assert PsumScatter().infer_shape(t) == (None,)
 
-    ensure_mutable(config).eager_mode = ensure_eager_tensor(False)
+    mp.setattr(config, "eager_mode", False, raising=False)
 
     from unittest.mock import patch
 
-    _state.update(ensure_tensor_dict({"patch": patch}))
-    _state.update(ensure_tensor_dict({"config": config, "t": t}))
+    _state.update({"patch": require_callable(patch)})
+    _state.update({"config": config, "t": t})
 
 
-def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_distributed_ops_part_4(_state: _TestDistributedOpsState) -> None:
     """Execute part 4 of test_distributed_ops.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestDistributedOpsState): Shared test state dictionary.
     """
-    config, dist, has_reg_backend, orig_dist_backend = _state["config"], _state["dist"], _state["has_reg_backend"], _state["orig_dist_backend"]
-    orig_reg_backend, patch, reg, t = _state["orig_reg_backend"], _state["patch"], _state["reg"], _state["t"]
+    config, mp, patch, t = _state["config"], _state["mp"], _state["patch"], _state["t"]
     with patch("ml_switcheroo_compiler.ops.distributed_ops._emit_shape_node", return_value="emitted"):
-        assert ensure_callable(shard_tensor)(t, None, None) == "emitted"
-        assert ensure_callable(nccl_all_reduce)(t) == "emitted"
-        assert ensure_callable(hierarchical_copy_all_reduce)(t) == "emitted"
-        assert ensure_callable(broadcast)(t) == "emitted"
-        assert ensure_callable(all_gather)(t) == "emitted"
-        assert ensure_callable(reduce)(t) == "emitted"
-        assert ensure_callable(all_reduce)(t) == "emitted"
-        assert ensure_callable(reduce_scatter)(t) == "emitted"
+        assert shard_tensor(t, None, None) == "emitted"
+        assert nccl_all_reduce(t) == "emitted"
+        assert hierarchical_copy_all_reduce(t) == "emitted"
+        assert broadcast(t) == "emitted"
+        assert all_gather(t) == "emitted"
+        assert reduce(t) == "emitted"
+        assert all_reduce(t) == "emitted"
+        assert reduce_scatter(t) == "emitted"
         assert all_to_all(t) == "emitted"
         assert broadcast_arrays(t) == "emitted"
         assert broadcast_to(t) == "emitted"
@@ -184,19 +196,19 @@ def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None
         assert broadcasted_iota(t) == "emitted"
         assert pbroadcast(t) == "emitted"
 
-    ensure_mutable(config).eager_mode = ensure_eager_tensor(True)
-    ensure_mutable(dist).get_active_backend = ensure_eager_tensor(orig_dist_backend)
-    if has_reg_backend:
-        ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(orig_reg_backend)
-    else:
-        del reg._ACTIVE_BACKEND
+    mp.undo()
+    config.eager_mode = True
 
 
 def test_distributed_ops() -> None:
     """Test function test_distributed_ops."""
-    _state: dict[str, EagerTensorProtocol] = {}
-    _test_distributed_ops_part_1(_state)
-    _test_distributed_ops_part_2(_state)
-    _test_distributed_ops_part_3(_state)
-    _test_distributed_ops_part_4(_state)
-    assert len(_state) > 0
+    mp = pytest.MonkeyPatch()
+    try:
+        _state: _TestDistributedOpsState = {"mp": mp}
+        _test_distributed_ops_part_1(_state)
+        _test_distributed_ops_part_2(_state)
+        _test_distributed_ops_part_3(_state)
+        _test_distributed_ops_part_4(_state)
+        assert len(_state) > 0
+    finally:
+        mp.undo()

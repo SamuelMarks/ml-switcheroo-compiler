@@ -5,11 +5,21 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
+import pytest
+
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.kernels import CudaKernelOp, KernelLaunchConfig, MetalKernelOp, PrecompiledCudaKernelOp, cuda_kernel, metal_kernel, precompiled_cuda_kernel
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.ops.kernels import (
+    CudaKernelOp,
+    KernelLaunchConfig,
+    MetalKernelOp,
+    PrecompiledCudaKernelOp,
+    cuda_kernel,
+    metal_kernel,
+    precompiled_cuda_kernel,
+)
+from tests.testing_utils import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -23,12 +33,20 @@ def test_cuda_kernel_tracing(mock_emit: EagerTensorProtocol) -> None:
         mock_emit (EagerTensorProtocol): The mock_emit parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    ensure_mutable(mock_emit).return_value = ensure_eager_tensor(Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
+    pytest.MonkeyPatch().setattr(
+        mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")), raising=False
+    )
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=False):
-        outs = cuda_kernel(source="void kernel() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
+        outs = cuda_kernel(
+            source="void kernel() {}",
+            inputs=[t1],
+            output_shapes=[(2, 2)],
+            output_dtypes=[DType.Float32],
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
+        )
         assert len(outs) == 1
         assert mock_emit.called
 
@@ -41,12 +59,20 @@ def test_metal_kernel_tracing(mock_emit: EagerTensorProtocol) -> None:
         mock_emit (EagerTensorProtocol): The mock_emit parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    ensure_mutable(mock_emit).return_value = ensure_eager_tensor(Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
+    pytest.MonkeyPatch().setattr(
+        mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")), raising=False
+    )
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=False):
-        outs = metal_kernel(source="kernel void foo() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
+        outs = metal_kernel(
+            source="kernel void foo() {}",
+            inputs=[t1],
+            output_shapes=[(2, 2)],
+            output_dtypes=[DType.Float32],
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
+        )
         assert len(outs) == 1
         assert mock_emit.called
 
@@ -59,12 +85,20 @@ def test_precompiled_cuda_kernel_tracing(mock_emit: EagerTensorProtocol) -> None
         mock_emit (EagerTensorProtocol): The mock_emit parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    ensure_mutable(mock_emit).return_value = ensure_eager_tensor(Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
+    pytest.MonkeyPatch().setattr(
+        mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")), raising=False
+    )
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=False):
-        outs = precompiled_cuda_kernel(binary=b"dummy_binary", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
+        outs = precompiled_cuda_kernel(
+            binary=b"dummy_binary",
+            inputs=[t1],
+            output_shapes=[(2, 2)],
+            output_dtypes=[DType.Float32],
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
+        )
         assert len(outs) == 1
         assert mock_emit.called
 
@@ -77,12 +111,18 @@ def test_cuda_kernel_eager(mock_execute_op: EagerTensorProtocol) -> None:
         mock_execute_op (EagerTensorProtocol): The mock_execute_op parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    ensure_mutable(mock_execute_op).return_value = ensure_eager_tensor([None])
+    pytest.MonkeyPatch().setattr(mock_execute_op, "return_value", [None], raising=False)
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=True):
-        outs = cuda_kernel(source="void kernel() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
+        outs = cuda_kernel(
+            source="void kernel() {}",
+            inputs=[t1],
+            output_shapes=[(2, 2)],
+            output_dtypes=[DType.Float32],
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
+        )
         assert len(outs) == 1
         assert mock_execute_op.called
 
@@ -95,12 +135,18 @@ def test_metal_kernel_eager(mock_execute_op: EagerTensorProtocol) -> None:
         mock_execute_op (EagerTensorProtocol): The mock_execute_op parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    ensure_mutable(mock_execute_op).return_value = ensure_eager_tensor([None])
+    pytest.MonkeyPatch().setattr(mock_execute_op, "return_value", [None], raising=False)
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=True):
-        outs = metal_kernel(source="kernel void foo() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
+        outs = metal_kernel(
+            source="kernel void foo() {}",
+            inputs=[t1],
+            output_shapes=[(2, 2)],
+            output_dtypes=[DType.Float32],
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
+        )
         assert len(outs) == 1
         assert mock_execute_op.called
 
@@ -113,12 +159,18 @@ def test_precompiled_cuda_kernel_eager(mock_execute_op: EagerTensorProtocol) -> 
         mock_execute_op (EagerTensorProtocol): The mock_execute_op parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    ensure_mutable(mock_execute_op).return_value = ensure_eager_tensor([None])
+    pytest.MonkeyPatch().setattr(mock_execute_op, "return_value", [None], raising=False)
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=True):
-        outs = precompiled_cuda_kernel(binary=b"dummy_binary", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
+        outs = precompiled_cuda_kernel(
+            binary=b"dummy_binary",
+            inputs=[t1],
+            output_shapes=[(2, 2)],
+            output_dtypes=[DType.Float32],
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
+        )
         assert len(outs) == 1
         assert mock_execute_op.called
 
@@ -127,7 +179,7 @@ def test_op_defs() -> None:
     """Test the op defs behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     op1 = CudaKernelOp()
     assert op1.infer_shape() == ()

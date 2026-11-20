@@ -10,7 +10,12 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.linalg.einsum_frontend import _get_remaining_dims, _infer_dot_general_shape, einsum, tensordot
+from ml_switcheroo_compiler.ops.linalg.einsum_api import (
+    _get_remaining_dims,
+    _infer_dot_general_shape,
+    einsum,
+    tensordot,
+)
 
 
 def test_tensordot_eager_trace() -> None:
@@ -22,7 +27,7 @@ def test_tensordot_eager_trace() -> None:
         res = tensordot(t, t, axes=1)
         assert isinstance(res, Tensor)
     config.eager_mode = False
-    mod = sys.modules["ml_switcheroo_compiler.ops.linalg.einsum_frontend"]
+    mod = sys.modules["ml_switcheroo_compiler.ops.linalg.einsum_api"]
     with patch.object(mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = "mock"
         assert tensordot(t, t, axes=1) == "mock"
@@ -47,7 +52,7 @@ def test_einsum_eager_trace() -> None:
         res = einsum("ij,jk->ik", t, t)
         assert isinstance(res, Tensor)
     config.eager_mode = False
-    mod = sys.modules["ml_switcheroo_compiler.ops.linalg.einsum_frontend"]
+    mod = sys.modules["ml_switcheroo_compiler.ops.linalg.einsum_api"]
     with patch.object(mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = "mock"
         assert einsum("ij,jk->ik", t, t) == "mock"
@@ -62,6 +67,6 @@ def test_helpers() -> None:
 
 def test_generate_tensordot_einsum_strings_empty() -> None:
     """Test function test_generate_tensordot_einsum_strings_empty."""
-    from ml_switcheroo_compiler.ops.linalg.einsum_frontend import _generate_tensordot_einsum_strings
+    from ml_switcheroo_compiler.ops.linalg.einsum_api import _generate_tensordot_einsum_strings
 
     assert _generate_tensordot_einsum_strings((), (), (), ()) == ("", "", "")

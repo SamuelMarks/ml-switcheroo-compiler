@@ -6,32 +6,32 @@ import typing
 from unittest.mock import patch
 
 import pytest
+from ml_switcheroo_ir import IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 from ml_switcheroo_compiler.backends.dask.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRNode
-from tests.testing_utils import ensure_callable, ensure_tensor_list
+from tests.testing_utils import MockGraphStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 pytest.importorskip("dask")
 
 
-class DummyGraph:
+class DummyGraph(MockGraphStub):
     """Test class DummyGraph."""
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.nodes = ensure_tensor_list([])
+        self.nodes: NodeDict = NodeDict()
 
 
 class DummyDa:
     """Test class DummyDa."""
 
-    def add(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def add(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function add.
 
         Args:
@@ -39,7 +39,7 @@ class DummyDa:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `add`.
+            BackendArg: Computed output value from `add`.
         """
         return "add_res"
 
@@ -48,7 +48,7 @@ def test_dask_eager_execute_op() -> None:
     """Test function test_dask_eager_execute_op."""
     cp_mock = DummyDa()
 
-    def dummy_eager(module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def dummy_eager(module: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function dummy_eager.
 
         Args:
@@ -57,25 +57,27 @@ def test_dask_eager_execute_op() -> None:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_eager`.
+            BackendArg: Computed output value from `dummy_eager`.
         """
         return "dummy_eager_res"
 
     global_eager_registry.register("TestOpDask")(dummy_eager)
-    res = ensure_callable(execute_op)(None, "TestOpDask")
+    res = execute_op(None, "TestOpDask")
     assert res == "dummy_eager_res"
     if "Add" in global_eager_registry._registry:
         del global_eager_registry._registry["Add"]
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
-        mock_schema = type("Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}})()
+        mock_schema = type(
+            "Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}}
+        )()
         mock_mappings.return_value = mock_schema
         with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": cp_mock}):
-            res2 = ensure_callable(execute_op)(None, "Add")
+            res2 = execute_op(None, "Add")
             assert res2 == "add_res"
     if "UnknownOpDask" in global_eager_registry._registry:
         del global_eager_registry._registry["UnknownOpDask"]
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        ensure_callable(execute_op)(None, "UnknownOpDask")
+        execute_op(None, "UnknownOpDask")
 
 
 def test_dask_eager_execute_op_exception() -> None:
@@ -83,19 +85,23 @@ def test_dask_eager_execute_op_exception() -> None:
     if "OpThatRaisesDask" in global_eager_registry._registry:
         del global_eager_registry._registry["OpThatRaisesDask"]
     with pytest.raises(BackendNotSupportedError):
-        ensure_callable(execute_op)(None, "OpThatRaisesDask")
+        execute_op(None, "OpThatRaisesDask")
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
-        mock_schema = type("Dummy", (), {"operations": {"SnakeOp": type("DummyOp", (), {"target_api": "snake_op", "custom_code": None})()}})()
+        mock_schema = type(
+            "Dummy",
+            (),
+            {"operations": {"SnakeOp": type("DummyOp", (), {"target_api": "snake_op", "custom_code": None})()}},
+        )()
         mock_mappings.return_value = mock_schema
         with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": DummyDa()}):
             with pytest.raises(BackendNotSupportedError):
-                ensure_callable(execute_op)(None, "SnakeOp")
+                execute_op(None, "SnakeOp")
 
 
 def test_dask_generator() -> None:
     """Test function test_dask_generator."""
     g = DummyGraph()
-    gen = ensure_callable(DaskGenerator)(g)
+    gen = DaskGenerator(g)
     assert gen.get_fallback_prefix() == "da"
     assert gen.get_helper_functions() == []
     node = IRNode("Einsum", op_type="Einsum")
@@ -112,14 +118,14 @@ def test_dask_types() -> None:
     """Test function test_dask_types."""
     with patch("ml_switcheroo_compiler.backends.dask.types.da") as mock_da:
         mock_da.zeros.return_value = "zeros"
-        assert ensure_callable(zeros)(None, (2,)) == "zeros"
+        assert zeros(None, (2,)) == "zeros"
         mock_da.array.return_value = "array"
-        assert ensure_callable(array)(None, [1]) == "array"
-        assert ensure_callable(array)(None, [1], dtype="float32") == "array"
+        assert array(None, [1]) == "array"
+        assert array(None, [1], dtype="float32") == "array"
         from unittest.mock import MagicMock
 
         mock_asarray_ret = MagicMock()
         mock_asarray_ret.compute.return_value.item.return_value = 1.0
         mock_da.asarray.return_value = mock_asarray_ret
-        assert ensure_callable(asarray)(None, [1]) == mock_asarray_ret
-        assert ensure_callable(item)(None, [1]) == 1.0
+        assert asarray(None, [1]) == mock_asarray_ret
+        assert item(None, [1]) == 1.0

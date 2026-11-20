@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.backends.registry import coerce_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -13,12 +13,12 @@ class Indices(OpDef):
 
     op_name = "Indices"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -27,7 +27,7 @@ class Indices(OpDef):
             return ()
         dimensions = args[0]
         dim_len = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
-        return (dim_len, *ensure_shape(dimensions)) if dim_len > 0 else ()
+        return (dim_len, *coerce_shape(dimensions)) if dim_len > 0 else ()
 
 
 @register_op("Ix")
@@ -36,12 +36,12 @@ class Ix(OpDef):
 
     op_name = "Ix"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -65,12 +65,12 @@ class MaskIndices(OpDef):
 
     op_name = "MaskIndices"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -84,12 +84,12 @@ class Mgrid(OpDef):
 
     op_name = "Mgrid"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -103,12 +103,12 @@ class Ogrid(OpDef):
 
     op_name = "Ogrid"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -122,12 +122,12 @@ class R(OpDef):
 
     op_name = "R"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -135,12 +135,12 @@ class R(OpDef):
         return (None,)
 
 
-def mgrid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def mgrid(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """nd_grid instance which returns a dense multi-dimensional 'meshgrid'.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -150,12 +150,12 @@ def mgrid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     return dispatch_op("Mgrid", *args, **kwargs)
 
 
-def ogrid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ogrid(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """nd_grid instance which returns an open multi-dimensional 'meshgrid'.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -165,12 +165,12 @@ def ogrid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     return dispatch_op("Ogrid", *args, **kwargs)
 
 
-def r_(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def r_(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Translate slice objects to concatenation along the first axis.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -180,12 +180,12 @@ def r_(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     return dispatch_op("R", *args, **kwargs)
 
 
-def indices(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def indices(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Return an array representing the indices of a grid.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -195,12 +195,12 @@ def indices(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     return dispatch_op("Indices", *args, **kwargs)
 
 
-def ix_(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def ix_(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Construct an open mesh from multiple sequences.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -210,12 +210,12 @@ def ix_(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     return dispatch_op("Ix", *args, **kwargs)
 
 
-def mask_indices(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def mask_indices(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Return the indices to access (n, n) arrays.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

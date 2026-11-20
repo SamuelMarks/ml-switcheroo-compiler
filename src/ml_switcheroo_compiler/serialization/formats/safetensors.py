@@ -7,25 +7,15 @@ import struct
 import typing
 from collections.abc import Mapping, Sequence
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core.constants import SAFETENSORS_HEADER_SIZE_BYTES
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
-
-def _is_safetensors_entry(val: dict[str, bytes | str | list[int]]) -> typing.TypeGuard[TensorLike]:
-    """Type guard narrowing a raw buffer dictionary fallback to `TensorLike`.
-
-    Args:
-        val (dict[str, bytes | str | list[int]]): Raw buffer dict.
-
-    Returns:
-        bool: True if val is a dict.
-    """
-    return isinstance(val, dict)
+SafetensorsEntry = typing.Union[TensorLike, dict[str, typing.Union[bytes, str, list[int]]]]  # noqa: UP007
 
 
+@typing.runtime_checkable
 class _FromBufferBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `from_buffer(buffer, dtype, shape)`."""
 
@@ -43,10 +33,11 @@ class _FromBufferBackendProtocol(typing.Protocol):
         ...
 
 
+@typing.runtime_checkable
 class _SafetensorsArrayProtocol(typing.Protocol):
     """Protocol for array-like objects serializable into Safetensors format."""
 
-    dtype: TensorOrScalar
+    dtype: OpValue
     shape: Sequence[int]
 
     def tobytes(self) -> bytes:
@@ -58,41 +49,41 @@ class _SafetensorsArrayProtocol(typing.Protocol):
         ...
 
 
-def _is_from_buffer_backend(val: TensorOrScalar) -> typing.TypeGuard[_FromBufferBackendProtocol]:
+def _is_from_buffer_backend(val: OpValue) -> typing.TypeGuard[_FromBufferBackendProtocol]:
     """Check whether `val` exposes `from_buffer`.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
         bool: True if `val` has `from_buffer`.
     """
-    return has_backend_member(val, "from_buffer")
+    return isinstance(val, _FromBufferBackendProtocol)
 
 
-def _is_safetensors_array(val: TensorOrScalar) -> typing.TypeGuard[_SafetensorsArrayProtocol]:
+def _is_safetensors_array(val: OpValue) -> typing.TypeGuard[_SafetensorsArrayProtocol]:
     """Check whether `val` exposes `dtype`, `shape`, and `tobytes`.
 
     Args:
-        val (TensorOrScalar): Candidate array object.
+        val (OpValue): Candidate array object.
 
     Returns:
         bool: True if `val` has `dtype`, `shape`, and `tobytes`.
     """
-    return has_backend_member(val, "dtype") and has_backend_member(val, "shape") and has_backend_member(val, "tobytes")
+    return isinstance(val, _SafetensorsArrayProtocol)
 
 
 class SafetensorsWeightFormat(WeightLoader, WeightSaver):
     """Safetensors weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, TensorLike]:
+    def load(self, filepath: str) -> dict[str, SafetensorsEntry]:
         """Load safetensors weights.
 
         Args:
             filepath (str): Input `filepath` argument (filepath).
 
         Returns:
-            dict[str, TensorLike]: Loaded weights dictionary.
+            dict[str, SafetensorsEntry]: Loaded weights dictionary.
         """
         with open(filepath, "rb") as f:
             header_size_bytes = f.read(8)
@@ -103,7 +94,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
             header_bytes = f.read(header_size)
             header = json.loads(header_bytes.decode("utf-8"))
 
-            weights: dict[str, TensorLike] = {}
+            weights: dict[str, SafetensorsEntry] = {}
             for k, v in header.items():
                 if k == "__metadata__":
                     continue
@@ -113,7 +104,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-                backend: TensorOrScalar = get_active_backend()
+                backend: OpValue = get_active_backend()
                 if _is_from_buffer_backend(backend):
                     weights[k] = backend.from_buffer(buffer, dtype=v["dtype"], shape=v["shape"])
                 else:
@@ -123,16 +114,15 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                         "dtype": v["dtype"],
                         "shape": v["shape"],
                     }
-                    assert _is_safetensors_entry(fallback_entry)
                     weights[k] = fallback_entry
 
             return weights
 
-    def save(self, weights_np: TensorOrScalar, filepath: str) -> None:
+    def save(self, weights_np: OpValue, filepath: str) -> None:
         """Save safetensors weights.
 
         Args:
-            weights_np (TensorOrScalar): Input `weights_np` argument (weights np).
+            weights_np (OpValue): Input `weights_np` argument (weights np).
             filepath (str): Input `filepath` argument (filepath).
         """
         header = {}
@@ -141,7 +131,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
         assert isinstance(weights_np, Mapping)
         for k, v in weights_np.items():
-            raw_v: TensorOrScalar = v
+            raw_v: OpValue = v
             if not _is_safetensors_array(raw_v):
                 continue
 

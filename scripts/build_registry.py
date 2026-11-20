@@ -8,9 +8,13 @@ import pprint
 import yaml
 
 from ml_switcheroo_compiler.ops.generated_registry import (
-    OpRegistryValue,
-    _normalize_and_validate_op,
-    load_backend_mappings,
+    OpRegistryValue as OpRegistryValue,
+)
+from ml_switcheroo_compiler.ops.generated_registry import (
+    _normalize_and_validate_op as _normalize_and_validate_op,
+)
+from ml_switcheroo_compiler.ops.generated_registry import (
+    load_backend_mappings as load_backend_mappings,
 )
 
 
@@ -57,12 +61,19 @@ def build(
     with open(out_file, "w", encoding="utf-8") as f:
         f.write('"""Auto-generated operation registry."""\n\n')
         f.write("# AUTO-GENERATED FILE. DO NOT EDIT.\n")
-        f.write("# Generated from src/ml_switcheroo_compiler/ops/definitions/*.yaml\n\nfrom __future__ import annotations\n\nimport typing\nfrom collections.abc import Mapping\n\n")
+        f.write(
+            "# Generated from src/ml_switcheroo_compiler/ops/definitions/*.yaml\n\nfrom __future__ "
+            "import annotations\n\nimport typing\nfrom collections.abc import Mapping\n\n"
+        )
 
         # __all__ definition
         all_list_str: str = ',\n    "OPS_REGISTRY"'
         f.write(f"__all__ = [\n    {all_list_str.strip(', ')}\n]\n\n")
-        f.write('OpRegistryValue = typing.Union[\n    str,\n    int,\n    float,\n    bool,\n    list["OpRegistryValue"],\n    dict[str, "OpRegistryValue"],\n    Mapping[str, "OpRegistryValue"],\n    tuple["OpRegistryValue", ...],\n    None,\n]\n\n')
+        f.write(
+            "OpRegistryValue = typing.Union[\n    str,\n    int,\n    float,\n    bool,\n    "
+            'list["OpRegistryValue"],\n    dict[str, "OpRegistryValue"],\n    Mapping[str, '
+            '"OpRegistryValue"],\n    tuple["OpRegistryValue", ...],\n    None,\n]\n\n'
+        )
 
         # Format the dictionary directly into python source
         formatted_dict: str = pprint.pformat(ops_data, indent=4, sort_dicts=True)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list
 from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.linalg.matmul import matmul
@@ -39,7 +39,7 @@ def lstm_cell(
         z = add(z, bias)
 
     # Split z into i, f, c_bar, o
-    parts = [ensure_tensor(t) for t in ensure_eager_list(split(z, 4, axis=-1))]
+    parts = [ensure_tensor(t) for t in coerce_operand_list(split(z, 4, axis=-1))]
     i, f, c_bar, o = parts[0], parts[1], parts[2], parts[3]
 
     i = _sigmoid(i)

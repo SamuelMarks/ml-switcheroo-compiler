@@ -39,20 +39,33 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_zoom_eager,
 )
 from ml_switcheroo_compiler.backends.eager.vision_utils import GeometricGridConfig
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
+
+
+class _TestRNG(random.Random):
+    """Random number generator compatible with `CallableObjectProtocol` and `BackendArg`."""
+
+    @property
+    def __name__(self) -> str:
+        """Return the generator identifier.
+
+        Returns:
+            str: Name of the test RNG.
+        """
+        return "TestRNG"
 
 
 @pytest.fixture
-def mock_prepare() -> Iterator[EagerValue]:
+def mock_prepare() -> Iterator[BackendArg]:
     """Test function mock_prepare.
 
     Yields:
-        EagerValue: Yielded test context or value from `mock_prepare`.
+        BackendArg: Yielded test context or value from `mock_prepare`.
     """
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._prepare_eager_transform") as m:
         ctx = MagicMock()
@@ -73,23 +86,23 @@ def test_flips(mock_prepare: EagerTensorProtocol) -> None:
         mock_prepare: Test parameter `mock_prepare`.
     """
     img = np.array([[[1, 2], [3, 4]]])
-    rng_high = random.Random()
-    ensure_mutable(rng_high).random = ensure_eager_tensor(lambda: 0.6)
-    res = ensure_callable(_flip_horizontal)(img, rng_high)
+    rng_high = _TestRNG()
+    pytest.MonkeyPatch().setattr(rng_high, "random", lambda: 0.6, raising=False)
+    res = _flip_horizontal(img, rng_high)
     assert id(res) != id(img)
 
-    rng_low = random.Random()
-    ensure_mutable(rng_low).random = ensure_eager_tensor(lambda: 0.4)
-    res = ensure_callable(_flip_horizontal)(img, rng_low)
+    rng_low = _TestRNG()
+    pytest.MonkeyPatch().setattr(rng_low, "random", lambda: 0.4, raising=False)
+    res = _flip_horizontal(img, rng_low)
     assert id(res) == id(img)
 
-    res = ensure_callable(_flip_vertical)(img, rng_high)
+    res = _flip_vertical(img, rng_high)
     assert id(res) != id(img)
-    res = ensure_callable(_flip_vertical)(img, rng_low)
+    res = _flip_vertical(img, rng_low)
     assert id(res) == id(img)
 
-    ensure_callable(_flip_both)(img, rng_high)
-    ensure_callable(_flip_both)(img, rng_low)
+    _flip_both(img, rng_high)
+    _flip_both(img, rng_low)
 
     imgs = np.ones((1, 4, 4, 3))
     random_flip_eager(np, imgs, mode="horizontal", seed=42)
@@ -105,18 +118,26 @@ def test_rotation_utils() -> None:
     params = AffineTransformParams(cos_a=1.0, sin_a=0.0, cx=2.0, cy=2.0)
     _apply_affine_transform(np.array([[1]]), np.array([[1]]), params)
 
-    cfg = ensure_callable(RotationConfig)(factor=0.1, fill_mode="reflect", interpolation="bilinear", seed=42, fill_value=0.0, data_format=None)
-    ensure_callable(_interpolate_pixels)(np, ensure_callable(np.ones)((1, 4, 4, 3)), ensure_callable(np.array)([[1]]), ensure_callable(np.array)([[1]]), cfg)
+    cfg = RotationConfig(
+        factor=0.1, fill_mode="reflect", interpolation="bilinear", seed=42, fill_value=0.0, data_format=None
+    )
+    _interpolate_pixels(
+        np,
+        np.ones((1, 4, 4, 3)),
+        np.array([[1]]),
+        np.array([[1]]),
+        cfg,
+    )
 
-    ensure_callable(_compute_rotation_grid)(np, 4, 4, ensure_callable(random.Random)(), 0.1)
+    _compute_rotation_grid(np, 4, 4, _TestRNG(), 0.1)
 
-    ensure_callable(random_rotation_eager)(np, ensure_callable(np.ones)((1, 4, 4, 3)), cfg)
-    assert cfg is not None
+    random_rotation_eager(np, np.ones((1, 4, 4, 3)), cfg)
+    assert type(cfg).__name__ == "RotationConfig"
 
 
 def test_crop_utils() -> None:
     """Test function test_crop_utils."""
-    ensure_callable(_crop_and_pad_single)(np, ensure_callable(np.ones)((4, 4, 3)), ensure_callable(random.Random)(), (2, 2, 1, 1))
+    _crop_and_pad_single(np, np.ones((4, 4, 3)), _TestRNG(), (2, 2, 1, 1))
     _compute_random_crop(np, np.ones((1, 4, 4, 3)))
     random_crop_eager(np, np.ones((1, 4, 4, 3)), (2, 2))
     assert callable(random_crop_eager)
@@ -135,12 +156,15 @@ def test_elastic(mock_prepare: EagerTensorProtocol) -> None:
         mock_prepare: Test parameter `mock_prepare`.
     """
     _blur_displacement(np, np.ones((1, 4, 4)), 0.1)
-    ensure_callable(_generate_random_elastic_grid)(np, (1, 4, 4), ensure_callable(random.Random)(), 0.1, 0.1)
+    _generate_random_elastic_grid(np, (1, 4, 4), _TestRNG(), 0.1, 0.1)
 
-    assert isinstance(ensure_callable(_get_elastic_factor)(ensure_callable(random.Random)(), 0.1), float)
-    assert isinstance(ensure_callable(_get_elastic_factor)(ensure_callable(random.Random)(), (0.1, 0.2)), float)
+    assert isinstance(_get_elastic_factor(_TestRNG(), 0.1), float)
+    assert isinstance(_get_elastic_factor(_TestRNG(), (0.1, 0.2)), float)
 
-    with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._apply_elastic_batch", return_value=np.ones((1, 4, 4, 3))):
+    with patch(
+        "ml_switcheroo_compiler.backends.eager.vision_augmentation._apply_elastic_batch",
+        return_value=np.ones((1, 4, 4, 3)),
+    ):
         random_elastic_transform_eager(np, np.ones((1, 4, 4, 3)), 0.1, 0.1)
         random_elastic_transform_eager(np, np.ones((1, 4, 4, 3)), (0.1, 0.2), (0.1, 0.2), interpolation="nearest")
 
@@ -151,15 +175,15 @@ def test_geometric(mock_prepare: EagerTensorProtocol) -> None:
     Args:
         mock_prepare: Test parameter `mock_prepare`.
     """
-    rng = random.Random()
-    cfg = ensure_callable(GeometricGridConfig)(H=4, W=4, rng=rng, factor1=0.1, factor2=0.1)
-    ensure_callable(_compute_zoom_grid)(np, cfg)
-    ensure_callable(_compute_translation_grid)(np, cfg)
+    rng = _TestRNG()
+    cfg = GeometricGridConfig(H=4, W=4, rng=rng, factor1=0.1, factor2=0.1)
+    _compute_zoom_grid(np, cfg)
+    _compute_translation_grid(np, cfg)
 
-    assert isinstance(ensure_callable(_get_shear_factor)(rng, 0.1), float)
-    assert isinstance(ensure_callable(_get_shear_factor)(rng, (0.1, 0.2)), float)
+    assert isinstance(_get_shear_factor(rng, 0.1), float)
+    assert isinstance(_get_shear_factor(rng, (0.1, 0.2)), float)
 
-    ensure_callable(_compute_shear_grid)(np, cfg)
+    _compute_shear_grid(np, cfg)
 
     imgs = np.ones((1, 4, 4, 3))
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_zoom_grid", return_value=(0, 0)):
@@ -167,7 +191,9 @@ def test_geometric(mock_prepare: EagerTensorProtocol) -> None:
         random_zoom_eager(np, imgs, height_factor=(0.1, 0.2), width_factor=None)
         random_zoom_eager(np, imgs, height_factor=0.1, width_factor=0.2)
 
-    with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_translation_grid", return_value=(0, 0)):
+    with patch(
+        "ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_translation_grid", return_value=(0, 0)
+    ):
         random_translation_eager(np, imgs, height_factor=0.1, width_factor=0.1)
 
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_shear_grid", return_value=(0, 0)):

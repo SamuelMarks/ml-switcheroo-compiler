@@ -1,10 +1,13 @@
-"""Unit and integration tests for middle-end optimization passes enhancements (DCE, CSE, Constant Folding, Operator Fusion)."""
+"""Unit and integration tests for middle-end optimization passes enhancements (DCE, CSE, Constant Folding.
+
+Operator Fusion).
+"""
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 from ml_switcheroo_compiler.transforms.passes.cse import (
     compute_node_structural_hash,
@@ -14,7 +17,6 @@ from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     operator_fusion_pass,
 )
-from tests.testing_utils import ensure_attrs, ensure_eager_tensor, ensure_mutable
 
 
 def test_dce_nested_subgraph_and_side_effect_free_loop() -> None:
@@ -86,11 +88,15 @@ def test_cse_commutative_structural_hashing() -> None:
 def test_cse_nested_subgraph_structural_hashing() -> None:
     """Test CSE structural hashing hashes nested IRGraph attributes."""
     g1 = IRGraph()
-    g1.nodes = NodeDict({"in1": IRNode(id="in1", op_type="Input"), "c1": IRNode(id="c1", op_type="Constant", attributes={"value": 1})})
+    g1.nodes = NodeDict(
+        {"in1": IRNode(id="in1", op_type="Input"), "c1": IRNode(id="c1", op_type="Constant", attributes={"value": 1})}
+    )
     g1.outputs = ["c1"]
 
     g2 = IRGraph()
-    g2.nodes = NodeDict({"in2": IRNode(id="in2", op_type="Input"), "c2": IRNode(id="c2", op_type="Constant", attributes={"value": 1})})
+    g2.nodes = NodeDict(
+        {"in2": IRNode(id="in2", op_type="Input"), "c2": IRNode(id="c2", op_type="Constant", attributes={"value": 1})}
+    )
     g2.outputs = ["c2"]
 
     n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes=ensure_attrs({"sub": g1}))
@@ -182,7 +188,9 @@ def test_constant_folding_backend_item_and_exception_handling() -> None:
     graph.outputs = ["op_fail"]
 
     # Test ValueError/RuntimeError during constant folding is gracefully handled
-    with patch("ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph", side_effect=ValueError("Invalid op")):
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph", side_effect=ValueError("Invalid op")
+    ):
         assert constant_folding_pass(graph) is False
 
     # Test backend.item branch and fallback when get_active_backend is None
@@ -213,7 +221,13 @@ def test_constant_folding_backend_item_and_exception_handling() -> None:
     assert val_res2 == 42
 
     # Test BackendRegistry.get exception fallback in constant_folding_pass
-    with patch("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", return_value=None), patch("ml_switcheroo_compiler.transforms.passes.constant_folding.BackendRegistry.get", side_effect=RuntimeError("Registry error")):
+    with (
+        patch("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", return_value=None),
+        patch(
+            "ml_switcheroo_compiler.transforms.passes.constant_folding.BackendRegistry.get",
+            side_effect=RuntimeError("Registry error"),
+        ),
+    ):
         assert constant_folding_pass(graph) is False
 
 
@@ -228,7 +242,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     g_ag = IRGraph()
     x = IRNode(id="x", op_type="Input")
     ag_node = IRNode(id="ag_in", op_type="Identity", inputs=["x"], attributes={"inject_collective": "AllGather"})
-    ensure_mutable(ag_node).sharding = ensure_eager_tensor(SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
+    ag_node.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"])
     g_ag.nodes = NodeDict({"x": x, "ag_in": ag_node})
     g_ag.outputs = ["ag_in"]
 
@@ -240,7 +254,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     g_a2a = IRGraph()
     x2 = IRNode(id="x2", op_type="Input")
     a2a_node = IRNode(id="a2a_in", op_type="Identity", inputs=["x2"], attributes={"inject_collective": "AllToAll"})
-    ensure_mutable(a2a_node).sharding = ensure_eager_tensor(SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
+    a2a_node.sharding = SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"])
     g_a2a.nodes = NodeDict({"x2": x2, "a2a_in": a2a_node})
     g_a2a.outputs = ["a2a_in"]
 

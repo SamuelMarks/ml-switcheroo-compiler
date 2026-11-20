@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.dce import _find_side_effect_nodes, dce_pass
-from tests.testing_utils import ensure_attrs, ensure_callable
+from tests.testing_utils import MockGraphStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -73,7 +73,9 @@ def test_dce_side_effect_preservation() -> None:
 def test_dce_no_op() -> None:
     """Test DCE on a graph where all nodes are reachable."""
     graph = IRGraph()
-    graph.nodes = NodeDict({"n1": IRNode(id="n1", op_type="Input", inputs=[]), "n2": IRNode(id="n2", op_type="Add", inputs=["n1", "n1"])})
+    graph.nodes = NodeDict(
+        {"n1": IRNode(id="n1", op_type="Input", inputs=[]), "n2": IRNode(id="n2", op_type="Add", inputs=["n1", "n1"])}
+    )
     graph.outputs = ["n2"]
 
     assert dce_pass(graph) is False
@@ -82,17 +84,18 @@ def test_dce_no_op() -> None:
 
 def test_dce_pass_no_outputs_attribute() -> None:
     """Test DCE pass on a graph object without an outputs attribute."""
-    from ml_switcheroo_ir import LogicalNode
 
-    class MockGraphWithoutOutputs:
+    class MockGraphWithoutOutputs(MockGraphStub):
         """Mock graph missing outputs attribute."""
 
         def __init__(self) -> None:
             """Initialize mock graph."""
-            self.nodes: dict[str, LogicalNode] = {}
+            from ml_switcheroo_ir import NodeDict
+
+            self.nodes = NodeDict()
 
     mock_graph = MockGraphWithoutOutputs()
-    res = ensure_callable(dce_pass)(mock_graph)
+    res = dce_pass(mock_graph)
     assert bool(res) is False
 
 

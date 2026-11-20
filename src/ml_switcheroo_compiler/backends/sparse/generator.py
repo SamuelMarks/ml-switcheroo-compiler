@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
-import typing
+
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, StaticEagerBackendAdapter
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.sparse.eager import execute_op as _sparse_execute_op
 from ml_switcheroo_compiler.backends.sparse.types import (
@@ -26,21 +28,6 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     zeros as _sparse_zeros,
 )
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, extract_data
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-
-def _is_sparse_compiled_fn(
-    fn: EagerValue,
-) -> typing.TypeGuard[TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]]:
-    """Type guard narrowing `fn` to a compiled sparse callable.
-
-    Args:
-        fn (EagerValue): Candidate callable.
-
-    Returns:
-        bool: True if callable.
-    """
-    return callable(fn)
 
 
 @register_backend("sparse_coo")
@@ -61,12 +48,12 @@ class SparseGenerator(PythonStringGenerator):
         return _sparse_zeros(cls, shape)
 
     @classmethod
-    def array(cls, data: EagerValue, dtype: EagerValue | None = None) -> COOTensor:
+    def array(cls, data: BackendArg, dtype: BackendArg | None = None) -> COOTensor:
         """Create a Sparse COO tensor from input data.
 
         Args:
-            data (EagerValue): Input array or sequence.
-            dtype (EagerValue | None): Optional target dtype.
+            data (BackendArg): Input array or sequence.
+            dtype (BackendArg | None): Optional target dtype.
 
         Returns:
             COOTensor: Constructed COO tensor.
@@ -74,11 +61,11 @@ class SparseGenerator(PythonStringGenerator):
         return _sparse_array(cls, data, dtype=str(dtype) if dtype is not None else None)
 
     @classmethod
-    def asarray(cls, data: EagerValue) -> COOTensor:
+    def asarray(cls, data: BackendArg) -> COOTensor:
         """Convert input data to a Sparse COO tensor.
 
         Args:
-            data (EagerValue): Input array or sequence.
+            data (BackendArg): Input array or sequence.
 
         Returns:
             COOTensor: Converted COO tensor.
@@ -86,11 +73,11 @@ class SparseGenerator(PythonStringGenerator):
         return _sparse_asarray(cls, data)
 
     @classmethod
-    def item(cls, data: EagerValue) -> float:
+    def item(cls, data: BackendArg) -> float:
         """Extract scalar float value from a Sparse COO tensor.
 
         Args:
-            data (EagerValue): Input 0D/1-element tensor.
+            data (BackendArg): Input 0D/1-element tensor.
 
         Returns:
             float: Extracted scalar value.
@@ -98,16 +85,16 @@ class SparseGenerator(PythonStringGenerator):
         return _sparse_item(cls, data)
 
     @classmethod
-    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute an operation eagerly on the Sparse COO backend.
 
         Args:
             op_type (str): Canonical operation name.
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Evaluated operation result.
+            BackendArg: Evaluated operation result.
         """
         return _sparse_execute_op(cls, op_type, *args, **kwargs)
 
@@ -139,11 +126,11 @@ class SparseGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, BackendArg] | None = None) -> dict[str, str]:
         """Retrieve operation formatting templates for Sparse COO kernels.
 
         Args:
-            kwargs (dict[str, object] | None): Keyword arguments passed to the visitor.
+            kwargs (dict[str, BackendArg] | None): Keyword arguments passed to the visitor.
 
         Returns:
             dict[str, str]: Map from op_type to formatting template.
@@ -199,31 +186,48 @@ class SparseGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return "\n".join(self.code)
 
-    def compile_fn(self) -> TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]:
+    def compile_fn(self) -> TypedVariadicCallable[BackendArg]:
         """Compile the generated Python code into an executable callable.
 
         Returns:
-            TypedVariadicCallable[Union[COOTensor, EagerValue, tuple[Union[COOTensor, EagerValue], ...]]]: Compiled function.
+            TypedVariadicCallable[BackendArg]: Compiled function.
 
         Raises:
             RuntimeError: If evaluation function was not defined in generated script.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
+
         source: str = self.generate()
-        namespace: dict[str, EagerValue] = {}
-        exec(source, namespace)
-        func: EagerValue | None = namespace.get(self._func_name)
-        if not _is_sparse_compiled_fn(func):
+        namespace = load_generated_code(source)
+        func: BackendArg | None = namespace.get(self._func_name)
+        if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        return func
+        from ml_switcheroo_compiler.backends.eager_registry import require_callable
 
-    def visit_Spmm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+        bound_fn = require_callable(func)
+
+        def _typed_runner(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
+            """Invoke compiled sparse evaluation function.
+
+            Args:
+                *args (BackendArg): Positional arguments.
+                **kwargs (BackendArg): Keyword arguments.
+
+            Returns:
+                BackendArg: Evaluated sparse output.
+            """
+            return bound_fn(*args, **kwargs)
+
+        return _typed_runner
+
+    def visit_Spmm(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse-dense matrix multiplication.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -231,13 +235,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.spmm({', '.join(input_vars)})"
 
-    def visit_Spgemm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Spgemm(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse-sparse matrix multiplication.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -245,13 +249,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.spgemm({', '.join(input_vars)})"
 
-    def visit_DenseSpmm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_DenseSpmm(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit dense-sparse matrix multiplication.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -259,13 +263,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.dense_spmm({', '.join(input_vars)})"
 
-    def visit_SparseMask(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_SparseMask(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse masking operation.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -273,13 +277,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.sparse_mask({', '.join(input_vars)})"
 
-    def visit_SparseSoftmax(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_SparseSoftmax(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse softmax kernel operation.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -287,13 +291,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.sparse_softmax({', '.join(input_vars)})"
 
-    def visit_GraphNormAdjacency(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_GraphNormAdjacency(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit graph normalized adjacency kernel.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -301,13 +305,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.graph_norm_adjacency({', '.join(input_vars)})"
 
-    def visit_GnnSpmmAttention(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_GnnSpmmAttention(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit GNN attention aggregation kernel.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -315,13 +319,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.gnn_spmm_attention({', '.join(input_vars)})"
 
-    def visit_SparseDropout(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_SparseDropout(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse dropout regularizer.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -329,13 +333,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.sparse_dropout({', '.join(input_vars)})"
 
-    def visit_CsrAdd(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_CsrAdd(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit CSR addition kernel.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -343,13 +347,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.csr_add({', '.join(input_vars)})"
 
-    def visit_CscAdd(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_CscAdd(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit CSC addition kernel.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -357,13 +361,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.csc_add({', '.join(input_vars)})"
 
-    def visit_CsrSub(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_CsrSub(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit CSR subtraction kernel.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -371,13 +375,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.csr_sub({', '.join(input_vars)})"
 
-    def visit_CscSub(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_CscSub(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit CSC subtraction kernel.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -385,13 +389,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.csc_sub({', '.join(input_vars)})"
 
-    def visit_Add(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Add(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse COO addition.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -399,13 +403,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.coo_add({', '.join(input_vars)})"
 
-    def visit_Sub(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Sub(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse COO subtraction.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -413,13 +417,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.coo_sub({', '.join(input_vars)})"
 
-    def visit_Mul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Mul(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse COO elementwise multiplication.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -427,13 +431,13 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.coo_mul({', '.join(input_vars)})"
 
-    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit sparse matrix multiplication.
 
         Args:
             node (IRNode): Target node.
             input_vars (list[str]): Input operand names.
-            **kwargs (EagerValue): Extra attributes.
+            **kwargs (BackendArg): Extra attributes.
 
         Returns:
             str: Generated code string.
@@ -441,43 +445,43 @@ class SparseGenerator(PythonStringGenerator):
         del node, kwargs
         return f"sp_kernels.coo_matmat({', '.join(input_vars)})"
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Handle fallback emission for nodes not explicitly specialized.
 
         Args:
             node (IRNode): Computation graph node.
             input_vars (list[str]): Input variable names.
-            **kwargs (EagerValue): Node attributes and keyword options.
+            **kwargs (BackendArg): Node attributes and keyword options.
 
         Returns:
             str: Generated code expression string.
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into ahead-of-time Sparse COO executable artifact.
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options.
+            **kwargs (BackendArg): Compiler options.
 
         Returns:
-            EagerValue: Executable compiled artifact.
+            BackendArg: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
         source_code = self.generate()
         compiled_fn = self.compile_fn()
 
-        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
+        def runner(*args: BackendArg, **runner_kwargs: BackendArg) -> BackendArg:
             """Execute compiled Sparse artifact or fallback graph evaluation.
 
             Args:
-                *args (EagerValue): Input tensor or sparse matrix arguments.
-                **runner_kwargs (EagerValue): Optional execution options.
+                *args (BackendArg): Input tensor or sparse matrix arguments.
+                **runner_kwargs (BackendArg): Optional execution options.
 
             Returns:
-                EagerValue: Output tensor or tuple of output tensors.
+                BackendArg: Output tensor or tuple of output tensors.
             """
             del runner_kwargs
             if compiled_fn is not None:
@@ -490,7 +494,7 @@ class SparseGenerator(PythonStringGenerator):
             from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            feed_dict: dict[str, EagerValue] = {}
+            feed_dict: dict[str, BackendArg] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = extract_data(arg)
@@ -498,7 +502,7 @@ class SparseGenerator(PythonStringGenerator):
             eval_be = BackendRegistry.get("pure_python") if active_be.__name__ == "SparseCodeGenerator" else active_be
             res_dict = evaluate_graph(graph, feed_dict, backend=eval_be)
             if not graph.outputs:
-                return ensure_eager_tensor(res_dict)
+                return res_dict
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
@@ -508,4 +512,41 @@ class SparseGenerator(PythonStringGenerator):
             binary_bytes=source_code.encode("utf-8"),
             source_code=source_code,
             metadata={"backend": "sparse_coo", "options": kwargs},
+        )
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for Sparse COO.
+
+        Returns:
+            EagerBackendAdapter: Concrete Sparse COO eager backend adapter.
+        """
+        import sparse
+
+        from . import kernels as sp_k
+
+        return StaticEagerBackendAdapter(
+            backend_name="sparse",
+            ops={
+                "abs": sp_k.coo_abs,
+                "add": sp_k.coo_add,
+                "sub": sp_k.coo_sub,
+                "subtract": sp_k.coo_sub,
+                "mul": sp_k.coo_mul,
+                "multiply": sp_k.coo_mul,
+                "neg": sp_k.coo_neg,
+                "relu": sp_k.coo_relu,
+                "mean": sp_k.coo_mean,
+                "dot": sp_k.coo_dot,
+                "matmul": sp_k.coo_dot,
+                "sum": sp_k.coo_sum,
+                "transpose": sp_k.coo_transpose,
+                "reshape": sp_k.coo_reshape,
+                "todense": sp_k.coo_todense,
+                "fromdense": sp_k.coo_fromdense,
+                "zeros": cls.zeros,
+                "array": cls.array,
+                "asarray": cls.asarray,
+            },
+            module=sparse,
         )

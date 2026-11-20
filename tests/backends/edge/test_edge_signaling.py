@@ -6,21 +6,26 @@ import http.client
 import json
 import typing
 
-from ml_switcheroo_compiler.backends.edge.distributed_webrtc.signaling import SignalingServer
-from tests.testing_utils import ensure_callable, ensure_tensor_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.edge.distributed_webrtc import SignalingServer
+from ml_switcheroo_compiler.distributed.webrtc_signaling import _GLOBAL_STORE
 
 
-def _test_edge_signaling_server_full_workflow_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestEdgeSignalingServerFullWorkflowState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_edge_signaling_server_full_workflow` split helpers."""
+
+    conn: http.client.HTTPConnection
+    port: int
+    resp: http.client.HTTPResponse
+
+
+def _test_edge_signaling_server_full_workflow_sub_1(_state: _TestEdgeSignalingServerFullWorkflowState) -> None:
     """Execute sub-part 1 of test_edge_signaling_server_full_workflow.
 
     Args:
         _state: Shared test state dictionary.
     """
     port = _state["port"]
-    conn = ensure_callable(http.client.HTTPConnection)("127.0.0.1", port)
+    conn = http.client.HTTPConnection("127.0.0.1", port)
 
     # 1. OPTIONS preflight
     conn.request("OPTIONS", "/")
@@ -38,23 +43,23 @@ def _test_edge_signaling_server_full_workflow_sub_1(_state: dict[str, EagerTenso
     )
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"status": "ok"}
+    assert json.loads(resp.read().decode("utf-8")) == {"status": "ok"}
 
     # 3. GET /offer existing and missing
     conn.request("GET", "/offer?peer_id=peer_a")
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"offer": "sdp_offer_data"}
+    assert json.loads(resp.read().decode("utf-8")) == {"offer": "sdp_offer_data"}
 
     conn.request("GET", "/offer?peer_id=unknown_peer")
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {}
-    _state.update(ensure_tensor_dict({"conn": conn, "resp": resp}))
-    _state.update(ensure_tensor_dict({"port": port}))
+    assert json.loads(resp.read().decode("utf-8")) == {}
+    _state.update({"conn": conn, "resp": resp})
+    _state.update({"port": port})
 
 
-def _test_edge_signaling_server_full_workflow_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_edge_signaling_server_full_workflow_sub_2(_state: _TestEdgeSignalingServerFullWorkflowState) -> None:
     """Execute sub-part 2 of test_edge_signaling_server_full_workflow.
 
     Args:
@@ -69,18 +74,18 @@ def _test_edge_signaling_server_full_workflow_sub_2(_state: dict[str, EagerTenso
     )
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"status": "ok"}
+    assert json.loads(resp.read().decode("utf-8")) == {"status": "ok"}
 
     # 5. GET /answer existing and missing
     conn.request("GET", "/answer?peer_id=peer_a")
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"answer": "sdp_answer_data"}
+    assert json.loads(resp.read().decode("utf-8")) == {"answer": "sdp_answer_data"}
 
     conn.request("GET", "/answer?peer_id=unknown_peer")
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {}
+    assert json.loads(resp.read().decode("utf-8")) == {}
 
     # 6. POST /candidate (first time: creates list; second time: appends)
     conn.request(
@@ -100,11 +105,11 @@ def _test_edge_signaling_server_full_workflow_sub_2(_state: dict[str, EagerTenso
         headers={"Content-Type": "application/json"},
     )
     resp = conn.getresponse()
-    _state.update(ensure_tensor_dict({"resp": resp}))
-    _state.update(ensure_tensor_dict({"conn": conn}))
+    _state.update({"resp": resp})
+    _state.update({"conn": conn})
 
 
-def _test_edge_signaling_server_full_workflow_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_edge_signaling_server_full_workflow_sub_3(_state: _TestEdgeSignalingServerFullWorkflowState) -> None:
     """Execute sub-part 3 of test_edge_signaling_server_full_workflow.
 
     Args:
@@ -118,12 +123,12 @@ def _test_edge_signaling_server_full_workflow_sub_3(_state: dict[str, EagerTenso
     conn.request("GET", "/candidate?peer_id=peer_a")
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"candidates": ["cand_1", "cand_2"]}
+    assert json.loads(resp.read().decode("utf-8")) == {"candidates": ["cand_1", "cand_2"]}
 
     conn.request("GET", "/candidate?peer_id=unknown_peer")
     resp = conn.getresponse()
     assert resp.status == 200
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"candidates": []}
+    assert json.loads(resp.read().decode("utf-8")) == {"candidates": []}
 
     # 8. POST /unknown -> 404
     conn.request(
@@ -134,18 +139,18 @@ def _test_edge_signaling_server_full_workflow_sub_3(_state: dict[str, EagerTenso
     )
     resp = conn.getresponse()
     assert resp.status == 404
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"error": "Not Found"}
+    assert json.loads(resp.read().decode("utf-8")) == {"error": "Not Found"}
 
     # 9. GET /unknown -> 404
     conn.request("GET", "/unknown_path?peer_id=peer_a")
     resp = conn.getresponse()
     assert resp.status == 404
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"error": "Not Found"}
-    _state.update(ensure_tensor_dict({"resp": resp}))
-    _state.update(ensure_tensor_dict({"conn": conn}))
+    assert json.loads(resp.read().decode("utf-8")) == {"error": "Not Found"}
+    _state.update({"resp": resp})
+    _state.update({"conn": conn})
 
 
-def _test_edge_signaling_server_full_workflow_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_edge_signaling_server_full_workflow_sub_4(_state: _TestEdgeSignalingServerFullWorkflowState) -> None:
     """Execute sub-part 4 of test_edge_signaling_server_full_workflow.
 
     Args:
@@ -155,22 +160,23 @@ def _test_edge_signaling_server_full_workflow_sub_4(_state: dict[str, EagerTenso
     conn.request("GET", "/offer")
     resp = conn.getresponse()
     assert resp.status == 400
-    assert ensure_callable(json.loads)(ensure_callable(resp.read)().decode("utf-8")) == {"error": "Missing peer_id"}
+    assert json.loads(resp.read().decode("utf-8")) == {"error": "Missing peer_id"}
 
     conn.close()
-    _state.update(ensure_tensor_dict({"resp": resp}))
-    _state.update(ensure_tensor_dict({"conn": conn}))
+    _state.update({"resp": resp})
+    _state.update({"conn": conn})
 
 
 def test_edge_signaling_server_full_workflow() -> None:
     """Verify complete HTTP signaling workflow: OPTIONS, offer, answer, candidate, and 404/400 errors."""
+    _GLOBAL_STORE.clear()
     server = SignalingServer(host="127.0.0.1", port=0)
     port = server.server.server_port
     server.start()
 
     try:
-        _state: dict[str, EagerTensorProtocol] = {}
-        _state.update(ensure_tensor_dict({"port": port, "server": server}))
+        _state: _TestEdgeSignalingServerFullWorkflowState = {}
+        _state.update({"port": port})
         for _sub_fn in (
             _test_edge_signaling_server_full_workflow_sub_1,
             _test_edge_signaling_server_full_workflow_sub_2,

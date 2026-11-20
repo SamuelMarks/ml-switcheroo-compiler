@@ -9,12 +9,13 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import extract_test_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -38,8 +39,8 @@ def test_tensor_backward_and_view() -> None:
     config.eager_mode = True
     t = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, "cpu"))
     t.backward()
-    assert ensure_eager_tensor(t.view(1)).shape == (1,)
-    assert ensure_eager_tensor(ensure_callable(t.view)([1])).shape == (1,)
+    assert extract_test_shape(t.view(1)) == (1,)
+    assert extract_test_shape(t.view([1])) == (1,)
 
 
 def test_tensor_more_methods() -> None:
@@ -91,7 +92,7 @@ def test_tensor_view() -> None:
         res = t.view(2, 2)
         assert res is t
 
-        res2 = ensure_callable(t.view)([2, 2])
+        res2 = t.view([2, 2])
         assert id(res2) == id(t)
 
 
@@ -103,4 +104,4 @@ def test_valid_force_edge_cases() -> None:
 
     t2 = Tensor(np.zeros((0, 5)), TensorConfig((0, 5), DType.Float32, "cpu"))
     assert t2.shape == (0, 5)
-    assert ensure_eager_tensor(ensure_eager_tensor(t2.data).size) == 0
+    assert ensure_ndarray(t2.data).size == 0

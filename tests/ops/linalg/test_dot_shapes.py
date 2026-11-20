@@ -6,12 +6,12 @@ import typing
 
 from hypothesis import given
 from hypothesis import strategies as st
-from ml_ecosystem_snapshots.compliance import validate_matmul_shapes
 
+from ml_switcheroo_compiler.core.shape import validate_matrix_multiply_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.dot import Dot
 from ml_switcheroo_compiler.ops.stats.descriptive import ApplyOverAxes
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -74,18 +74,18 @@ def test_dot_infer_shape_nd_contractions() -> None:
     assert op.infer_shape(None, None) == ()
 
     # Test objects with shape_metadata and lists/tuples
-    class DummyWithMetadata:
+    class DummyWithMetadata(MockTestStub):
         """Dummy object with shape_metadata."""
 
         shape_metadata = (3, 4)
 
-    class DummyWithEmptyMetadata:
+    class DummyWithEmptyMetadata(MockTestStub):
         """Dummy object with empty shape_metadata."""
 
         shape_metadata = ()
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(DummyWithMetadata)(), ensure_callable(DummyWithMetadata)()) == (3, 4)
-    assert ensure_callable(op.infer_shape)(ensure_callable(DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
+    assert op.infer_shape(DummyWithMetadata(), DummyWithMetadata()) == (3, 4)
+    assert op.infer_shape(DummyWithEmptyMetadata(), [2, 3]) == (2, 3)
     assert op.infer_shape("not_a_shape", "also_not") == ()
 
 
@@ -140,10 +140,8 @@ def test_hypothesis_dot_matrix_contracts(m: int, k: int, n: int) -> None:
     m2 = _make_tensor((k, n))
     assert op.infer_shape(m1, m2) == (m, n)
 
-    is_valid, out_shape, err = validate_matmul_shapes((m, k), (k, n), strict_2d=True)
-    assert is_valid is True
-    assert out_shape == [m, n]
-    assert err is None
+    out_shape = validate_matrix_multiply_shapes((m, k), (k, n), strict_2d=True)
+    assert out_shape == (m, n)
 
 
 @given(

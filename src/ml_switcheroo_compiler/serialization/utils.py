@@ -2,49 +2,24 @@
 
 from __future__ import annotations
 
+import io
 import typing
 from collections.abc import Mapping, Sequence
+from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import (
-    ShapeProtocol,
-    ensure_callable,
-)
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_ir import IRGraph
 
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeDim, is_variadic_callable
 
-def _is_util_tensor(val: TensorOrScalar) -> typing.TypeGuard[TensorLike]:
-    """Type guard narrowing `val` to `TensorLike`.
-
-    Args:
-        val (TensorOrScalar): Candidate array or list value.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
+TensorLike = OpValue
 
 
-def _ensure_util_tensor(val: TensorOrScalar) -> TensorLike:
-    """Narrow `val` to `TensorLike`.
-
-    Args:
-        val (TensorOrScalar): Candidate array or list value.
-
-    Returns:
-        TensorLike: Narrowed tensor.
-    """
-    assert _is_util_tensor(val)
-    return val
-
-
-def _extract_util_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+def _extract_util_shape(seq: Sequence[ShapeDim]) -> tuple[int, ...]:
     """Convert a sequence of dimensions into a concrete integer shape tuple.
 
     Args:
-        seq (Sequence[int | str | None]): Shape sequence.
+        seq (Sequence[ShapeDim]): Shape sequence.
 
     Returns:
         tuple[int, ...]: Concrete integer shape tuple.
@@ -52,11 +27,11 @@ def _extract_util_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
     return tuple(int(d) for d in seq if isinstance(d, int))
 
 
-def _ensure_util_bytes(val: TensorOrScalar | bytes | bytearray | memoryview) -> bytes:
+def _ensure_util_bytes(val: OpValue | bytes | bytearray | memoryview) -> bytes:
     """Convert a bytes-like value to `bytes`.
 
     Args:
-        val (TensorOrScalar | bytes | bytearray | memoryview): Bytes-like value.
+        val (OpValue | bytes | bytearray | memoryview): Bytes-like value.
 
     Returns:
         bytes: Raw bytes.
@@ -82,47 +57,18 @@ class _NumpyMethodProtocol(typing.Protocol):
 class _DataFieldProtocol(typing.Protocol):
     """Protocol for tensor wrappers exposing `.data`."""
 
-    data: TensorOrScalar | _NumpyMethodProtocol | _ToBytesMethodProtocol
-
-
-@typing.runtime_checkable
-class _ConcatCallableProtocol(typing.Protocol):
-    """Protocol for `ops.concatenate` accepting a sequence of arrays."""
-
-    def __call__(self, tensors: Sequence[TensorLike], axis: int = 0) -> TensorOrScalar:
-        """Concatenate arrays along `axis`.
-
-        Args:
-            tensors (Sequence[TensorLike]): Sequence of arrays.
-            axis (int): Concatenation axis.
-
-        Returns:
-            TensorOrScalar: Concatenated array.
-        """
-        ...
-
-
-def _is_concat_callable(val: TensorOrScalar) -> typing.TypeGuard[_ConcatCallableProtocol]:
-    """Type guard narrowing `val` to `_ConcatCallableProtocol`.
-
-    Args:
-        val (TensorOrScalar): Concatenate callable.
-
-    Returns:
-        bool: True if callable.
-    """
-    return callable(val)
+    data: OpValue
 
 
 @typing.runtime_checkable
 class _ToListMethodProtocol(typing.Protocol):
     """Protocol for tensors supporting `.tolist()`."""
 
-    def tolist(self) -> TensorOrScalar:
+    def tolist(self) -> OpValue:
         """Convert to nested Python list.
 
         Returns:
-            TensorOrScalar: Nested Python list.
+            OpValue: Nested Python list.
         """
         ...
 
@@ -157,11 +103,11 @@ class _ToBytesMethodProtocol(typing.Protocol):
 class _ArrayInterfaceProtocol(typing.Protocol):
     """Protocol for objects implementing `__array__`."""
 
-    def __array__(self) -> TensorOrScalar:
+    def __array__(self) -> OpValue:
         """Return NumPy array representation.
 
         Returns:
-            TensorOrScalar: NumPy array.
+            OpValue: NumPy array.
         """
         ...
 
@@ -177,18 +123,18 @@ class _DTypeNameProtocol(typing.Protocol):
 class _DTypeAttrProtocol(typing.Protocol):
     """Protocol for objects exposing `.dtype`."""
 
-    dtype: TensorOrScalar
+    dtype: OpValue
 
 
 @typing.runtime_checkable
 class _GetNpzBytesBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `get_npz_bytes`."""
 
-    def get_npz_bytes(self, weights: TensorOrScalar) -> bytes:
+    def get_npz_bytes(self, weights: OpValue) -> bytes:
         """Serialize weights mapping to `.npz` archive bytes.
 
         Args:
-            weights (TensorOrScalar): Weights dictionary.
+            weights (OpValue): Weights dictionary.
 
         Returns:
             bytes: Serialized `.npz` bytes.
@@ -230,30 +176,71 @@ class _NpzFilesProtocol(typing.Protocol):
         ...
 
 
-def _extract_numpy_weights(weights: dict[str, TensorLike]) -> dict[str, TensorLike]:
+@typing.runtime_checkable
+class _NpzLoadContextProtocol(typing.Protocol):
+    """Protocol for context managers returned by `module.load(target)`."""
+
+    def __enter__(self) -> _NpzFilesProtocol | int | None:
+        """Enter archive context.
+
+        Returns:
+            _NpzFilesProtocol | int | None: Loaded archive object.
+        """
+        ...
+
+    def __exit__(self, exc_type: OpValue, exc_val: OpValue, exc_tb: OpValue) -> OpValue:
+        """Exit archive context.
+
+        Args:
+            exc_type (OpValue): Exception type.
+            exc_val (OpValue): Exception instance.
+            exc_tb (OpValue): Traceback.
+
+        Returns:
+            OpValue: Suppression indicator.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _LoadableModuleProtocol(typing.Protocol):
+    """Protocol for backend modules exposing `.load(target)`."""
+
+    def load(self, target: io.BytesIO | str | bytes | TensorLike) -> _NpzLoadContextProtocol:
+        """Load archive from `target`.
+
+        Args:
+            target (io.BytesIO | str | bytes | TensorLike): Path or BytesIO stream.
+
+        Returns:
+            _NpzLoadContextProtocol: Context manager yielding archive mapping.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _GetModuleBackendProtocol(typing.Protocol):
+    """Protocol for backends exposing `get_module()`."""
+
+    def get_module(self) -> _LoadableModuleProtocol | int | None:
+        """Return underlying backend module.
+
+        Returns:
+            _LoadableModuleProtocol | int | None: Backend module.
+        """
+        ...
+
+
+def _extract_numpy_weights(weights: typing.Mapping[str, TensorLike]) -> dict[str, TensorLike]:
     """Extract numpy weights.
 
     Args:
-        weights (dict[str, TensorLike]): Input `weights` argument (weights).
+        weights (typing.Mapping[str, TensorLike]): Input `weights` argument (weights).
 
     Returns:
         dict[str, TensorLike]: Extracted weights dictionary.
     """
-    weights_np: dict[str, TensorLike] = {}
-    for k, w in weights.items():
-        if has_backend_member(w, "numpy"):
-            weights_np[k] = _ensure_util_tensor(ensure_callable(get_backend_member(w, "numpy"))())
-            continue
-
-        if has_backend_member(w, "data") and has_backend_member(get_backend_member(w, "data"), "numpy"):
-            weights_np[k] = _ensure_util_tensor(ensure_callable(get_backend_member(get_backend_member(w, "data"), "numpy"))())
-            continue
-
-        try:
-            weights_np[k] = _ensure_util_tensor(ensure_callable(get_backend_member(w, "tolist"))()) if has_backend_member(w, "tolist") else w
-        except (ValueError, TypeError):
-            weights_np[k] = w
-    return weights_np
+    return {k: to_numpy(w) for k, w in weights.items()}
 
 
 def to_numpy(tensor: TensorLike) -> TensorLike:
@@ -265,15 +252,20 @@ def to_numpy(tensor: TensorLike) -> TensorLike:
     Returns:
         TensorLike: Converted array.
     """
-    if has_backend_member(tensor, "numpy"):
-        return _ensure_util_tensor(ensure_callable(get_backend_member(tensor, "numpy"))())
-    if has_backend_member(tensor, "data") and has_backend_member(get_backend_member(tensor, "data"), "numpy"):
-        return _ensure_util_tensor(ensure_callable(get_backend_member(get_backend_member(tensor, "data"), "numpy"))())
+    probe: TensorLike | _NumpyMethodProtocol | _DataFieldProtocol | _ToListMethodProtocol = tensor
+    if type(probe) is not ModuleType and isinstance(probe, _NumpyMethodProtocol):
+        return probe.numpy()
+    if isinstance(probe, _DataFieldProtocol):
+        inner: TensorLike | _NumpyMethodProtocol = probe.data
+        if type(inner) is not ModuleType and isinstance(inner, _NumpyMethodProtocol):
+            return inner.numpy()
 
     try:
-        return _ensure_util_tensor(ensure_callable(get_backend_member(tensor, "tolist"))()) if has_backend_member(tensor, "tolist") else tensor
+        if type(probe) is not ModuleType and isinstance(probe, _ToListMethodProtocol):
+            return probe.tolist()
     except (ValueError, TypeError):
-        return tensor
+        pass
+    return tensor
 
 
 def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
@@ -287,28 +279,33 @@ def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
     """
     from ml_switcheroo_compiler import ops
 
-    concat_fn: TensorOrScalar = ops.concatenate
-    assert _is_concat_callable(concat_fn)
-    return _ensure_util_tensor(concat_fn(arrays, axis=0))
+    _callable_fn_1: OpValue = ops.concatenate
+    assert is_variadic_callable(_callable_fn_1)
+    return _callable_fn_1(arrays, axis=0)
 
 
-def is_numpy_array(array: TensorOrScalar) -> bool:
+def is_numpy_array(array: OpValue) -> bool:
     """Check if array is a numpy array.
 
     Args:
-        array (TensorOrScalar): Input `array` argument (array).
+        array (OpValue): Input `array` argument (array).
 
     Returns:
         bool: True if array is a numpy array or array-like.
     """
-    return type(array).__module__ == "numpy" or has_backend_member(array, "numpy") or isinstance(array, _ArrayInterfaceProtocol)
+    cand_arr: OpValue | _NumpyMethodProtocol | _ArrayInterfaceProtocol = array
+    return (
+        type(cand_arr).__module__ == "numpy"
+        or isinstance(cand_arr, _NumpyMethodProtocol)
+        or isinstance(cand_arr, _ArrayInterfaceProtocol)
+    )
 
 
-def _dtype_to_descr(dtype: TensorOrScalar) -> str:
+def _dtype_to_descr(dtype: OpValue) -> str:
     """Map DType to numpy descr string.
 
     Args:
-        dtype (TensorOrScalar): Input `dtype` argument (dtype).
+        dtype (OpValue): Input `dtype` argument (dtype).
 
     Returns:
         str: NumPy descriptor string.
@@ -334,16 +331,16 @@ def _dtype_to_descr(dtype: TensorOrScalar) -> str:
     return mapping.get(dtype, "<f4") if isinstance(dtype, DType) else "<f4"
 
 
-def _is_shape_obj(val: TensorOrScalar) -> typing.TypeGuard[ShapeProtocol]:
+def _is_shape_obj(val: OpValue) -> typing.TypeGuard[ShapeProtocol]:
     """Check whether `val` exposes a `shape` attribute.
 
     Args:
-        val (TensorOrScalar): Candidate array object.
+        val (OpValue): Candidate array object.
 
     Returns:
         bool: True if `val` has `shape`.
     """
-    return has_backend_member(val, "shape")
+    return isinstance(val, ShapeProtocol)
 
 
 def _extract_arr_shape_dtype(arr: TensorLike) -> tuple[tuple[int, ...], str]:
@@ -355,77 +352,87 @@ def _extract_arr_shape_dtype(arr: TensorLike) -> tuple[tuple[int, ...], str]:
     Returns:
         tuple[tuple[int, ...], str]: (shape, dtype_str).
     """
-    raw_arr: TensorOrScalar = arr
-    raw_dt: TensorOrScalar = get_backend_member(raw_arr, "dtype") if has_backend_member(raw_arr, "dtype") else None
-    if has_backend_member(raw_dt, "name"):
-        dtype_str = str(get_backend_member(raw_dt, "name"))
+    raw_arr: OpValue = arr
+    raw_dt: OpValue = raw_arr.dtype if isinstance(raw_arr, _DTypeAttrProtocol) else None
+    if isinstance(raw_dt, _DTypeNameProtocol):
+        dtype_str = str(raw_dt.name)
     else:
         dtype_str = str(raw_dt if raw_dt is not None else "<f4")
     shape_tup = _extract_util_shape(raw_arr.shape) if _is_shape_obj(raw_arr) else ()
     return shape_tup, dtype_str
 
 
-def _get_shape_and_dtype(tensor: TensorOrScalar) -> tuple[tuple[int, ...], str]:
+def _get_shape_and_dtype(
+    tensor: OpValue | _EvalMethodProtocol | _NumpyMethodProtocol | _DataFieldProtocol,
+) -> tuple[tuple[int, ...], str]:
     """Get shape and dtype from a generic tensor object.
 
     Args:
-        tensor (TensorOrScalar): The tensor object.
+        tensor (OpValue | _EvalMethodProtocol | _NumpyMethodProtocol | _DataFieldProtocol): The tensor object.
 
     Returns:
         tuple[tuple[int, ...], str]: (shape, dtype).
     """
-    if has_backend_member(tensor, "eval"):
-        return _extract_arr_shape_dtype(ensure_callable(get_backend_member(tensor, "eval"))())
-    if has_backend_member(tensor, "numpy"):
-        return _extract_arr_shape_dtype(_ensure_util_tensor(ensure_callable(get_backend_member(tensor, "numpy"))()))
-    if has_backend_member(tensor, "data") and has_backend_member(get_backend_member(tensor, "data"), "numpy"):
-        return _extract_arr_shape_dtype(_ensure_util_tensor(ensure_callable(get_backend_member(get_backend_member(tensor, "data"), "numpy"))()))
-    shape_tup = _extract_util_shape(tensor.shape) if _is_shape_obj(tensor) else ()
-    dtype_val = str(get_backend_member(tensor, "dtype")) if has_backend_member(tensor, "dtype") else "<f4"
+    if type(tensor) is not ModuleType and isinstance(tensor, _EvalMethodProtocol):
+        return _extract_arr_shape_dtype(tensor.eval())
+    if type(tensor) is not ModuleType and isinstance(tensor, _NumpyMethodProtocol):
+        return _extract_arr_shape_dtype(tensor.numpy())
+    if isinstance(tensor, _DataFieldProtocol):
+        inner: OpValue | _NumpyMethodProtocol = tensor.data
+        if type(inner) is not ModuleType and isinstance(inner, _NumpyMethodProtocol):
+            return _extract_arr_shape_dtype(inner.numpy())
+    shape_tup = _extract_util_shape(tensor.shape) if isinstance(tensor, ShapeProtocol) else ()
+    dtype_val = str(tensor.dtype) if isinstance(tensor, _DTypeAttrProtocol) else "<f4"
     return shape_tup, dtype_val
 
 
-def _extract_arr_bytes(arr: TensorOrScalar | _ToBytesMethodProtocol | _DataFieldProtocol) -> bytes:
+def _extract_arr_bytes(arr: OpValue | _ToBytesMethodProtocol | _DataFieldProtocol) -> bytes:
     """Extract raw bytes from an array object.
 
     Args:
-        arr (TensorOrScalar | _ToBytesMethodProtocol | _DataFieldProtocol): The array object.
+        arr (OpValue | _ToBytesMethodProtocol | _DataFieldProtocol): The array object.
 
     Returns:
         bytes: The raw data bytes.
     """
-    if has_backend_member(arr, "tobytes"):
-        return _ensure_util_bytes(ensure_callable(get_backend_member(arr, "tobytes"))())
-    if has_backend_member(arr, "data") and has_backend_member(get_backend_member(arr, "data"), "tobytes"):
-        return _ensure_util_bytes(ensure_callable(get_backend_member(get_backend_member(arr, "data"), "tobytes"))())
+    if type(arr) is not ModuleType and isinstance(arr, _ToBytesMethodProtocol):
+        return _ensure_util_bytes(arr.tobytes())
+    if isinstance(arr, _DataFieldProtocol):
+        inner: OpValue | _ToBytesMethodProtocol = arr.data
+        if type(inner) is not ModuleType and isinstance(inner, _ToBytesMethodProtocol):
+            return _ensure_util_bytes(inner.tobytes())
     return b""
 
 
-def _get_data_bytes(tensor: TensorOrScalar | _EvalMethodProtocol | _NumpyMethodProtocol | _DataFieldProtocol) -> bytes:
+def _get_data_bytes(
+    tensor: OpValue | _EvalMethodProtocol | _NumpyMethodProtocol | _DataFieldProtocol | _ToBytesMethodProtocol,
+) -> bytes:
     """Get raw data bytes from a generic tensor object.
 
     Args:
-        tensor (TensorOrScalar | _EvalMethodProtocol | _NumpyMethodProtocol | _DataFieldProtocol): The tensor object.
+        tensor: The tensor object to extract bytes from.
 
     Returns:
         bytes: The raw data bytes.
     """
-    if has_backend_member(tensor, "eval"):
-        return _extract_arr_bytes(ensure_callable(get_backend_member(tensor, "eval"))())
-    if has_backend_member(tensor, "numpy"):
-        return _extract_arr_bytes(ensure_callable(get_backend_member(tensor, "numpy"))())
-    if has_backend_member(tensor, "data") and has_backend_member(get_backend_member(tensor, "data"), "numpy"):
-        return _extract_arr_bytes(ensure_callable(get_backend_member(get_backend_member(tensor, "data"), "numpy"))())
-    if has_backend_member(tensor, "tobytes"):
-        return _ensure_util_bytes(ensure_callable(get_backend_member(tensor, "tobytes"))())
+    if type(tensor) is not ModuleType and isinstance(tensor, _EvalMethodProtocol):
+        return _extract_arr_bytes(tensor.eval())
+    if type(tensor) is not ModuleType and isinstance(tensor, _NumpyMethodProtocol):
+        return _extract_arr_bytes(tensor.numpy())
+    if isinstance(tensor, _DataFieldProtocol):
+        inner: OpValue | _NumpyMethodProtocol = tensor.data
+        if type(inner) is not ModuleType and isinstance(inner, _NumpyMethodProtocol):
+            return _extract_arr_bytes(inner.numpy())
+    if type(tensor) is not ModuleType and isinstance(tensor, _ToBytesMethodProtocol):
+        return _ensure_util_bytes(tensor.tobytes())
     return b""
 
 
-def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
+def _tensor_to_npy_bytes(tensor: OpValue) -> bytes:
     """Convert a tensor to npy bytes.
 
     Args:
-        tensor (TensorOrScalar): Input `tensor` argument (tensor).
+        tensor (OpValue): Input `tensor` argument (tensor).
 
     Returns:
         bytes: Serialized `.npy` byte stream.
@@ -447,11 +454,11 @@ def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
     return header + data_bytes
 
 
-def get_npz_bytes(weights: TensorOrScalar) -> bytes:
+def get_npz_bytes(weights: OpValue) -> bytes:
     """Get npz bytes.
 
     Args:
-        weights (TensorOrScalar): Input `weights` argument (weights).
+        weights (OpValue): Input `weights` argument (weights).
 
     Returns:
         bytes: Serialized `.npz` archive bytes.
@@ -461,9 +468,9 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
 
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar = get_active_backend()
-    if has_backend_member(backend, "get_npz_bytes"):
-        return _ensure_util_bytes(ensure_callable(get_backend_member(backend, "get_npz_bytes"))(weights))
+    backend: OpValue | _GetNpzBytesBackendProtocol = get_active_backend()
+    if isinstance(backend, _GetNpzBytesBackendProtocol):
+        return _ensure_util_bytes(backend.get_npz_bytes(weights))
 
     assert isinstance(weights, Mapping)
     buf = io.BytesIO()
@@ -476,16 +483,16 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
     return zf_out.getvalue()
 
 
-def _is_npz_files(val: TensorOrScalar) -> typing.TypeGuard[_NpzFilesProtocol]:
+def _is_npz_files(val: OpValue) -> typing.TypeGuard[_NpzFilesProtocol]:
     """Check whether `val` exposes a `files` attribute.
 
     Args:
-        val (TensorOrScalar): Loaded npz archive.
+        val (OpValue): Loaded npz archive.
 
     Returns:
         bool: True if `val` has `files`.
     """
-    return has_backend_member(val, "files")
+    return isinstance(val, _NpzFilesProtocol)
 
 
 def _decode_npy_payload(raw_npy: bytes) -> TensorLike:
@@ -507,15 +514,14 @@ def _decode_npy_payload(raw_npy: bytes) -> TensorLike:
     fmt_map = {"<f8": ("d", 8), "<f4": ("f", 4), "<i8": ("q", 8), "<i4": ("i", 4), "|b1": ("?", 1)}
     code, item_sz = fmt_map.get(descr, ("f", 4))
     count = len(payload) // item_sz if item_sz > 0 else 0
-    vals = list(struct.unpack(f"<{count}{code}", payload[: count * item_sz])) if count > 0 else []
-    return _ensure_util_tensor(vals)
+    return list(struct.unpack(f"<{count}{code}", payload[: count * item_sz])) if count > 0 else []
 
 
-def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:
+def parse_npz(file_obj: str | bytes | io.IOBase | TensorLike) -> dict[str, TensorLike]:
     """Parse npz file.
 
     Args:
-        file_obj (str | bytes | TensorLike): Input `file_obj` argument (file obj).
+        file_obj (str | bytes | io.IOBase | TensorLike): Input `file_obj` argument (file obj).
 
     Returns:
         dict[str, TensorLike]: Computed `dict[str, TensorLike]` output.
@@ -527,31 +533,50 @@ def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     try:
-        active_be: TensorOrScalar = get_active_backend()
-        target = io.BytesIO(file_obj) if isinstance(file_obj, (bytes, bytearray)) else file_obj
-        if has_backend_member(active_be, "get_module"):
-            active_mod = ensure_callable(get_backend_member(active_be, "get_module"))()
-            with ensure_callable(get_backend_member(active_mod, "load"))(target) as data:
-                raw_data: TensorOrScalar = data
-                files_list = raw_data.files if _is_npz_files(raw_data) else ()
-                return {k: _ensure_util_tensor(data)[k] for k in files_list}
+        active_be: OpValue | _GetModuleBackendProtocol = get_active_backend()
+        if isinstance(file_obj, (bytes, bytearray)):
+            target: io.BytesIO | str | bytes | TensorLike = io.BytesIO(file_obj)
+        elif isinstance(file_obj, io.IOBase):
+            raw_bytes = file_obj.read()
+            target = io.BytesIO(raw_bytes if isinstance(raw_bytes, (bytes, bytearray)) else b"")
+        else:
+            target = file_obj
+        if isinstance(active_be, _GetModuleBackendProtocol):
+            active_mod = active_be.get_module()
+            assert isinstance(active_mod, _LoadableModuleProtocol)
+            with active_mod.load(target) as data:
+                assert isinstance(data, _NpzFilesProtocol)
+                return {k: data[k] for k in data.files}
         assert isinstance(target, (str, os.PathLike, io.BytesIO))
         with zipfile.ZipFile(target, "r") as zf:
-            return {name[:-4] if name.endswith(".npy") else name: _decode_npy_payload(zf.read(name)) for name in zf.namelist()}
-    except Exception:
+            return {
+                name[:-4] if name.endswith(".npy") else name: _decode_npy_payload(zf.read(name))
+                for name in zf.namelist()
+            }
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return {}
 
 
-def _is_load_npz_backend(val: TensorOrScalar) -> typing.TypeGuard[_LoadNpzListBackendProtocol]:
+def _is_load_npz_backend(val: OpValue) -> typing.TypeGuard[_LoadNpzListBackendProtocol]:
     """Check whether `val` exposes a `load_npz` method.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
         bool: True if `val` has `load_npz`.
     """
-    return has_backend_member(val, "load_npz")
+    return isinstance(val, _LoadNpzListBackendProtocol)
 
 
 def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
@@ -565,11 +590,20 @@ def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar = get_active_backend()
+    backend: OpValue = get_active_backend()
     if _is_load_npz_backend(backend):
         try:
             return list(backend.load_npz(file_obj))
-        except Exception as e:
+        except (
+            EOFError,
+            ImportError,
+            ModuleNotFoundError,
+            OSError,
+            AttributeError,
+            RuntimeError,
+            TypeError,
+            ValueError,
+        ) as e:
             import logging
 
             logging.getLogger(__name__).warning(f"Backend load_npz failed: {e}. Falling back.")

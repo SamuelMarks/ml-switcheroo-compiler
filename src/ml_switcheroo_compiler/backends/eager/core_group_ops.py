@@ -1,19 +1,22 @@
-"""Implementation of core group ops operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_group_ops`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_group_ops`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
     EagerTensorProtocol,
-    EagerValue,
-    ensure_eager_tensor,
-    ensure_float,
-    ensure_int,
+    coerce_array,
+    coerce_float,
+    coerce_int,
+    coerce_numeric,
+    coerce_shape,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
 def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
@@ -29,7 +32,12 @@ def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
     return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
 
 
-def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: EagerValue, reduction_axes: tuple[int, ...]) -> EagerValue:
+def _invoke_grouped_op(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    op_name: str,
+    reshaped_x: BackendArg,
+    reduction_axes: tuple[int, ...],
+) -> BackendArg:
     """Execute the eager invoke grouped op operation on the active backend array.
 
     Args:
@@ -39,27 +47,32 @@ def _invoke_grouped_op(backend_module: EagerValue, op_name: str, reshaped_x: Eag
         reduction_axes (tuple[int, ...]): Input `reduction_axes` argument (reduction axes).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
 
     Raises:
         ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
-    mod = ensure_mod(backend_module)
+    mod = adapt_backend_module(backend_module)
     if op_name == "mean":
         try:
-            return ensure_eager_tensor(mod.mean(reshaped_x, axis=reduction_axes, keepdims=True))
+            return mod.require_symbol("mean")(reshaped_x, axis=reduction_axes, keepdims=True)
         except TypeError:
-            return ensure_eager_tensor(mod.mean(reshaped_x, dim=reduction_axes, keepdim=True))
+            return mod.require_symbol("mean")(reshaped_x, dim=reduction_axes, keepdim=True)
     if op_name == "variance":
         try:
-            return ensure_eager_tensor(mod.var(reshaped_x, axis=reduction_axes, keepdims=True))
+            return mod.require_symbol("var")(reshaped_x, axis=reduction_axes, keepdims=True)
         except TypeError:
-            return ensure_eager_tensor(mod.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False))
+            return mod.require_symbol("var")(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False)
     msg: str = f"Unknown grouped reduction op: {op_name}"
     raise ValueError(msg)
 
 
-def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerValue, **kwargs: int) -> EagerValue:
+def _apply_grouped_reduction(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    op_name: str,
+    x: BackendArg,
+    **kwargs: int,
+) -> BackendArg:
     """Execute the eager apply grouped reduction operation on the active backend array.
 
     Args:
@@ -69,12 +82,12 @@ def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerV
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    mod = ensure_mod(backend_module)
+    mod = adapt_backend_module(backend_module)
     groups: int = kwargs["groups"]
     axis: int = kwargs["axis"]
-    shape: list[int] = list(ensure_eager_tensor(x).shape)
+    shape: list[int] = list(coerce_shape(adapt_backend_module(x).require_symbol("shape")))
     ndims: int = len(shape)
     if axis < 0:
         axis += ndims
@@ -82,13 +95,17 @@ def _apply_grouped_reduction(backend_module: EagerValue, op_name: str, x: EagerV
     C_per_group: int = C // groups
     reshaped_dims: list[int] = shape.copy()
     reshaped_dims[axis : axis + 1] = [groups, C_per_group]
-    reshaped_x = mod.reshape(x, reshaped_dims)
+    reshaped_x = mod.require_symbol("reshape")(x, reshaped_dims)
     reduction_axes: tuple[int, ...] = _get_reduction_axes(reshaped_dims, axis)
     return _invoke_grouped_op(backend_module, op_name, reshaped_x, reduction_axes)
 
 
 @global_eager_registry.register("GroupMean")
-def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _group_mean(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager group mean operation on the active backend array.
 
     Args:
@@ -97,16 +114,20 @@ def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     x = args[0]
     groups: int = int(str(kwargs.get("groups") if "groups" in kwargs else args[1]))
-    axis: int = int(ensure_int(kwargs.get("axis", -1)))
+    axis: int = int(coerce_int(kwargs.get("axis", -1)))
     return _apply_grouped_reduction(backend_module, "mean", x, groups=groups, axis=axis)
 
 
 @global_eager_registry.register("GroupVariance")
-def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _group_variance(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager group variance operation on the active backend array.
 
     Args:
@@ -115,15 +136,20 @@ def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     x = args[0]
     groups: int = int(str(kwargs.get("groups") if "groups" in kwargs else args[1]))
-    axis: int = int(ensure_int(kwargs.get("axis", -1)))
+    axis: int = int(coerce_int(kwargs.get("axis", -1)))
     return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
 
-def _apply_affine_transform(backend_module: EagerValue, out: EagerValue, axis: int, **kwargs: EagerValue) -> EagerValue:
+def _apply_affine_transform(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    out: BackendArg,
+    axis: int,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Apply affine transform scaling to normalized output.
 
     Args:
@@ -133,28 +159,30 @@ def _apply_affine_transform(backend_module: EagerValue, out: EagerValue, axis: i
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    mod = ensure_mod(backend_module)
+    mod = adapt_backend_module(backend_module)
     weight = kwargs.get("weight")
     bias = kwargs.get("bias")
-    out_t = ensure_eager_tensor(out)
+    out_t = coerce_array(backend_module, out)
     shape: list[int] = list(out_t.shape)
     ndims: int = len(shape)
     if weight is not None:
         w_shape: list[int] = [1] * ndims
         w_shape[axis] = shape[axis]
-        w: EagerTensorProtocol = mod.reshape(weight, w_shape)
+        w: EagerTensorProtocol = mod.require_symbol("reshape")(weight, w_shape)
         out_t = out_t * w
     if bias is not None:
         b_shape: list[int] = [1] * ndims
         b_shape[axis] = shape[axis]
-        b: EagerTensorProtocol = mod.reshape(bias, b_shape)
+        b: EagerTensorProtocol = mod.require_symbol("reshape")(bias, b_shape)
         out_t = out_t + b
     return out_t
 
 
-def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, EagerValue]) -> tuple[EagerValue, int, EagerValue | None, EagerValue | None, int, float]:
+def _parse_group_norm_args(
+    args: tuple[BackendArg, ...], kwargs: dict[str, BackendArg]
+) -> tuple[BackendArg, int, BackendArg | None, BackendArg | None, int, float]:
     """Execute the eager parse group norm args operation on the active backend array.
 
     Args:
@@ -162,18 +190,24 @@ def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, Eager
         kwargs: Input `kwargs` argument (kwargs).
 
     Returns:
-        tuple[object, int, Optional[object], Optional[object], int, float]: Computed `tuple[object, int, Optional[object], Optional[object], int, float]` output.
+        tuple[BackendArg, int, BackendArg | None, BackendArg | None, int, float]: Parsed GroupNorm arguments.
     """
     x = args[0]
     groups: int = int(str(kwargs.get("groups") if "groups" in kwargs else args[1]))
     weight = kwargs.get("weight", None)
     bias = kwargs.get("bias", None)
-    axis: int = int(ensure_int(kwargs.get("axis", -1)))
-    epsilon: float = float(ensure_float(kwargs.get("epsilon", 1e-05)))
+    axis: int = int(coerce_int(kwargs.get("axis", -1)))
+    epsilon: float = float(coerce_float(kwargs.get("epsilon", 1e-05)))
     return (x, groups, weight, bias, axis, epsilon)
 
 
-def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[int], group_params: tuple[int, int], stats: tuple[EagerValue, EagerValue, float]) -> EagerValue:
+def _compute_group_norm(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    x: BackendArg,
+    shape: list[int],
+    group_params: tuple[int, int],
+    stats: tuple[BackendArg, BackendArg, float],
+) -> BackendArg:
     """Execute the eager compute group norm operation on the active backend array.
 
     Args:
@@ -184,21 +218,25 @@ def _compute_group_norm(backend_module: EagerValue, x: EagerValue, shape: list[i
         stats: Input `stats` argument (stats).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    mod = ensure_mod(backend_module)
+    mod = adapt_backend_module(backend_module)
     axis, groups = group_params
     mean, var, epsilon = stats
     C_per_group: int = shape[axis] // groups
     reshaped_dims: list[int] = shape.copy()
     reshaped_dims[axis : axis + 1] = [groups, C_per_group]
-    reshaped_x: EagerTensorProtocol = mod.reshape(x, reshaped_dims)
-    normalized = (reshaped_x - ensure_eager_tensor(mean)) / mod.sqrt(ensure_eager_tensor(var) + ensure_eager_tensor(epsilon))
-    return ensure_eager_tensor(mod.reshape(normalized, shape))
+    reshaped_x: EagerTensorProtocol = mod.require_symbol("reshape")(x, reshaped_dims)
+    normalized = (reshaped_x - coerce_numeric(mean)) / mod.require_symbol("sqrt")(coerce_numeric(var) + epsilon)
+    return mod.require_symbol("reshape")(normalized, shape)
 
 
 @global_eager_registry.register("GroupNorm")
-def _group_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _group_norm(
+    backend_module: BackendModuleProtocol | types.ModuleType,
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager group norm operation on the active backend array.
 
     Args:
@@ -207,10 +245,10 @@ def _group_norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     x, groups, weight, bias, axis, epsilon = _parse_group_norm_args(args, kwargs)
-    shape: list[int] = list(ensure_eager_tensor(x).shape)
+    shape: list[int] = list(coerce_shape(adapt_backend_module(x).require_symbol("shape")))
     ndims: int = len(shape)
     if axis < 0:
         axis += ndims

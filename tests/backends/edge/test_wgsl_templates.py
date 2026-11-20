@@ -16,10 +16,10 @@ from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
     get_wgsl_op_mapping,
     get_wgsl_template,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 def test_wgsl_provider_functions() -> None:
@@ -72,8 +72,8 @@ def test_wgsl_provider_non_dict_fallback() -> None:
     with patch("os.path.exists", side_effect=lambda p: not p.endswith("templates.yaml")):
         with patch("os.listdir", return_value=["ignore.txt", "broken.yaml"]):
             with patch("builtins.open", side_effect=OSError("corrupted file")):
-                d: dict[str, EagerValue] = {}
-                ensure_callable(provider._merge_modular_templates)(d)
+                d: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {}
+                provider._merge_modular_templates(d)
 
     # Reset
     provider._WGSL_TEMPLATES = {}
@@ -98,15 +98,24 @@ def test_wgsl_provider_branches() -> None:
         wp._WGSL_KERNELS = {"op_mappings": {"Bad": "not_a_dict"}}
         assert wp.get_wgsl_op_mapping("Bad") == {}
         wp._WGSL_TEMPLATES.clear()
-        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value="not_a_dict"):
+        with mock.patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value="not_a_dict"
+        ):
             _load_templates()
             assert "templates" in wp._WGSL_TEMPLATES
         wp._WGSL_TEMPLATES.clear()
-        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value={"templates": None, "bindings": None}):
+        with mock.patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels",
+            return_value={"templates": None, "bindings": None},
+        ):
             _load_templates()
             assert isinstance(wp._WGSL_TEMPLATES, dict)
         wp._WGSL_TEMPLATES.clear()
-        with mock.patch("os.path.exists", return_value=True), mock.patch("builtins.open", mock.mock_open(read_data="[1, 2, 3]")), mock.patch("yaml.safe_load", return_value=[1, 2, 3]):
+        with (
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("builtins.open", mock.mock_open(read_data="[1, 2, 3]")),
+            mock.patch("yaml.safe_load", return_value=[1, 2, 3]),
+        ):
             _load_templates()
             assert isinstance(wp._WGSL_TEMPLATES, dict)
     finally:
@@ -122,16 +131,25 @@ def test_wgsl_provider_kernels_config_and_global_bindings() -> None:
     """
     cfg = get_wgsl_kernels_config()
     assert isinstance(cfg, dict)
-    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value={"op_mappings": {"invalid_op": "not_a_dict"}}):
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels",
+        return_value={"op_mappings": {"invalid_op": "not_a_dict"}},
+    ):
         assert get_wgsl_op_mapping("invalid_op") == {}
-    mock_base = ensure_eager_tensor({"templates": {}})
+    mock_base: dict[str, dict[str, str]] = {"templates": {}}
     mock_kernels = {"templates": {"mock_k": {}}, "bindings": {"global_bindings": "// global bindings test"}}
     import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
 
     orig_templates = dict(wp._WGSL_TEMPLATES)
     try:
-        with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_base):
-            with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value=mock_kernels):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("builtins.open", MagicMock()),
+            patch("yaml.safe_load", return_value=mock_base),
+        ):
+            with patch(
+                "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value=mock_kernels
+            ):
                 wp._WGSL_TEMPLATES = {}
                 _load_templates()
                 assert wp._WGSL_TEMPLATES.get("global_bindings") == "// global bindings test"
@@ -181,26 +199,38 @@ def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
     with mock.patch("os.path.exists", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=mock_json_content)):
             schema_loaded = wp.get_wgsl_grounding_schema()
-            assert ensure_callable(len)(schema_loaded["ops"]) == 3
+            assert len(coerce_operand_list(schema_loaded["ops"])) == 3
 
     # 4. validate_wgsl_statement finding op in ops_list
     assert wp.validate_wgsl_statement("mock_op") is True
 
     # 5. validate_wgsl_statement finding op in get_wgsl_op_mapping
-    with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value="custom_mapped"):
+    with mock.patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value="custom_mapped"
+    ):
         assert wp.validate_wgsl_statement("unknown_in_ops") is True
 
     # 6. validate_wgsl_statement finding op in _WGSL_TEMPLATES (case-insensitive and exact match)
     with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value=None):
-        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES", {"templates": {"my_template": "code"}}):
+        with mock.patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES",
+            {"templates": {"my_template": "code"}},
+        ):
             assert wp.validate_wgsl_statement("MY_TEMPLATE") is True
             assert wp.validate_wgsl_statement("my_template") is True
             assert wp.validate_wgsl_statement("completely_unmatched_op") is False
 
     # 7. validate_wgsl_statement where ops is not a list and templates is not a dict
-    with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_grounding_schema", return_value={"ops": "not_a_list"}):
-        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value=None):
-            with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES", {"templates": "not_a_dict"}):
+    with mock.patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_grounding_schema",
+        return_value={"ops": "not_a_list"},
+    ):
+        with mock.patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value=None
+        ):
+            with mock.patch(
+                "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES", {"templates": "not_a_dict"}
+            ):
                 res = wp.validate_wgsl_statement("non_existent_op")
                 assert res is False
     wp._WGSL_GROUNDING_SCHEMA = None

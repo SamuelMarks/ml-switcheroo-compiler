@@ -1,4 +1,4 @@
-"""Implementation of memory profiler operations and utilities for the diagnostics subsystem (`ml_switcheroo_compiler.diagnostics.memory_profiler`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.diagnostics.memory_profiler`."""
 
 from __future__ import annotations
 

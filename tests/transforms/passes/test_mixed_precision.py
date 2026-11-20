@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.transforms.passes.mixed_precision import loss_scaling_pass, mixed_precision_pass
 
 
@@ -122,7 +123,9 @@ def test_loss_scaling_pass_reuse_scale() -> None:
 def test_mixed_precision_pass_other_op() -> None:
     """Test function test_mixed_precision_pass_other_op."""
     g = IRGraph()
-    n1 = IRNode(id="n1", op_type="Exp", attributes={"dtype": "float32"})  # In FP32_OPS, already float32, process returns False
+    n1 = IRNode(
+        id="n1", op_type="Exp", attributes={"dtype": "float32"}
+    )  # In FP32_OPS, already float32, process returns False
     n2 = IRNode(id="n2", op_type="UnknownOp", inputs=["n1"], attributes={"dtype": "float32"})
     g.nodes["n1"] = n1
     g.nodes["n2"] = n2

@@ -5,8 +5,14 @@ from __future__ import annotations
 import typing
 
 # ruff: noqa: E501
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.serialization.ir_format import graph_to_flatbuffers, graph_to_json, graph_to_protobuf, json_to_graph
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.serialization.ir_format import (
+    graph_to_flatbuffers,
+    graph_to_json,
+    graph_to_protobuf,
+    json_to_graph,
+)
 
 if typing.TYPE_CHECKING:
     pass

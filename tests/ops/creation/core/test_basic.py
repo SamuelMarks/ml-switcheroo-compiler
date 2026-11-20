@@ -4,22 +4,42 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.ops.creation.basic import Arange, Bartlett, Blackman, ConstantOfShape, CreationOp, Frombuffer, Full, Hamming, Hanning, Kaiser, Logspace, ManualSeed, Rand, Randint, Range, TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.ops.creation.basic import (
+    Arange,
+    Bartlett,
+    Blackman,
+    ConstantOfShape,
+    CreationOp,
+    Frombuffer,
+    Full,
+    Hamming,
+    Hanning,
+    Kaiser,
+    Logspace,
+    ManualSeed,
+    Rand,
+    Randint,
+    Range,
+    TrilIndices,
+    TrilIndicesFrom,
+    TriuIndices,
+    TriuIndicesFrom,
+)
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class DummyItem:
+class DummyItem(MockTestStub):
     """Test class DummyItem."""
 
-    def item(self) -> EagerValue:
+    def item(self) -> BackendArg:
         """Test function item.
 
         Returns:
-            EagerValue: Computed output value from `item`.
+            BackendArg: Computed output value from `item`.
         """
         return 5
 
@@ -44,21 +64,21 @@ def test_creation_basic() -> None:
     assert ri.infer_shape(0, 10, (2, 2)) == (2, 2)
     assert ri.infer_shape(0, 10) == ()
 
-    assert ensure_callable(ManualSeed)().infer_shape(42) == ()
+    assert ManualSeed().infer_shape(42) == ()
 
-    assert ensure_callable(ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
+    assert ConstantOfShape().infer_shape((2, 2)) == (2, 2)
     assert ConstantOfShape().infer_shape() == ()
 
-    assert ensure_callable(Range)().infer_shape((2, 2)) == (2, 2)
+    assert Range().infer_shape((2, 2)) == (2, 2)
     assert Range().infer_shape() == ()
 
     for cls in [Blackman, Bartlett, Hamming, Hanning, Kaiser]:
-        assert cls().infer_shape(5) == (5,)
-        assert cls().infer_shape(ensure_eager_tensor(DummyItem())) == (5,)
+        assert cls().dispatch_infer_shape(5) == (5,)
+        assert cls().dispatch_infer_shape(DummyItem()) == (5,)
 
     for cls in [TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom]:
-        assert cls().infer_shape((2, 2)) == (2, 2)
-        assert cls().infer_shape() == ()
+        assert cls().dispatch_infer_shape((2, 2)) == (2, 2)
+        assert cls().dispatch_infer_shape() == ()
 
     assert Logspace().infer_shape(1, 10) == (50,)
     assert Logspace().infer_shape(1, 10, num=10) == (10,)

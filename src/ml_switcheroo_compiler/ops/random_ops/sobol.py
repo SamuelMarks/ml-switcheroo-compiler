@@ -8,8 +8,9 @@ from ml_switcheroo_compiler.core.tensor import ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if typing.TYPE_CHECKING:
+    from ml_switcheroo_ir import IRNode
+
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ir.core import IRNode
 
 
 @register_op("SobolSample")

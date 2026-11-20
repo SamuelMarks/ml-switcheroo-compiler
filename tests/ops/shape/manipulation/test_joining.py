@@ -4,19 +4,22 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+from pytest_mock import MockerFixture
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.joining import append, column_stack, concatenate, dstack, hstack, stack, vstack
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub, ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -28,7 +31,7 @@ class MockTensor:
         self.data = [1, 2]
 
 
-def test_concatenate(mocker: EagerTensorProtocol) -> None:
+def test_concatenate(mocker: MockerFixture) -> None:
     """Test function test_concatenate.
 
     Args:
@@ -47,11 +50,11 @@ def test_concatenate(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((6, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(concatenate([t1, t2], 0)).config).shape == (6, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)), raising=False)
+    assert ensure_tensor(concatenate([t1, t2], 0)).config.shape == (6, 3)
 
 
-def test_stack(mocker: EagerTensorProtocol) -> None:
+def test_stack(mocker: MockerFixture) -> None:
     """Test function test_stack.
 
     Args:
@@ -66,11 +69,11 @@ def test_stack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(stack([t1, t2], 0)).config).shape == (2, 2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2, 2, 3)), raising=False)
+    assert ensure_tensor(stack([t1, t2], 0)).config.shape == (2, 2, 3)
 
 
-def test_vstack(mocker: EagerTensorProtocol) -> None:
+def test_vstack(mocker: MockerFixture) -> None:
     """Test function test_vstack.
 
     Args:
@@ -85,11 +88,11 @@ def test_vstack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((6, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(vstack([t1, t2])).config).shape == (6, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)), raising=False)
+    assert ensure_tensor(vstack([t1, t2])).config.shape == (6, 3)
 
 
-def test_hstack(mocker: EagerTensorProtocol) -> None:
+def test_hstack(mocker: MockerFixture) -> None:
     """Test function test_hstack.
 
     Args:
@@ -104,11 +107,11 @@ def test_hstack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 7)))
-    assert ensure_eager_tensor(ensure_eager_tensor(hstack([t1, t2])).config).shape == (2, 7)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2, 7)), raising=False)
+    assert ensure_tensor(hstack([t1, t2])).config.shape == (2, 7)
 
 
-def test_dstack(mocker: EagerTensorProtocol) -> None:
+def test_dstack(mocker: MockerFixture) -> None:
     """Test function test_dstack.
 
     Args:
@@ -123,11 +126,11 @@ def test_dstack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3, 2)))
-    assert ensure_eager_tensor(ensure_eager_tensor(dstack([t1, t2])).config).shape == (2, 3, 2)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3, 2)), raising=False)
+    assert ensure_tensor(dstack([t1, t2])).config.shape == (2, 3, 2)
 
 
-def test_append(mocker: EagerTensorProtocol) -> None:
+def test_append(mocker: MockerFixture) -> None:
     """Test function test_append.
 
     Args:
@@ -144,11 +147,11 @@ def test_append(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((6, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(append(t1, t2, axis=0)).config).shape == (6, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)), raising=False)
+    assert ensure_tensor(append(t1, t2, axis=0)).config.shape == (6, 3)
 
 
-def test_column_stack(mocker: EagerTensorProtocol) -> None:
+def test_column_stack(mocker: MockerFixture) -> None:
     """Test function test_column_stack.
 
     Args:
@@ -163,7 +166,7 @@ def test_column_stack(mocker: EagerTensorProtocol) -> None:
     assert column_stack([t1, t2]) == "hstack"
 
 
-def test_stack_dtype_branches(mocker: EagerTensorProtocol) -> None:
+def test_stack_dtype_branches(mocker: MockerFixture) -> None:
     """Test function test_stack_dtype_branches.
 
     Args:
@@ -172,49 +175,63 @@ def test_stack_dtype_branches(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.shape.joining._emit_shape_node", return_value="stack")
     config.eager_mode = False
 
-    class FakeDTypeName:
+    class FakeDTypeName(MockTestStub):
         """Test class FakeDTypeName."""
 
         name = "int32"
 
-    t1 = ensure_callable(Tensor)(ensure_callable(MockTensor)((2, 3)).data, ensure_callable(TensorConfig)((2, 3), ensure_callable(FakeDTypeName)(), "cpu"))
-    ensure_callable(stack)([t1, t1], 0)
+    t1 = Tensor(
+        MockTensor((2, 3)).data,
+        TensorConfig((2, 3), FakeDTypeName(), "cpu"),
+    )
+    stack([t1, t1], 0)
 
     class FakeDTypeDunderName:
         """Test class FakeDTypeDunderName."""
 
         __name__ = "int32"
 
-    t2 = ensure_callable(Tensor)(ensure_callable(MockTensor)((2, 3)).data, ensure_callable(TensorConfig)((2, 3), ensure_callable(FakeDTypeDunderName)(), "cpu"))
-    ensure_callable(stack)([t2, t2], 0)
+    t2 = Tensor(
+        MockTensor((2, 3)).data,
+        TensorConfig((2, 3), FakeDTypeDunderName(), "cpu"),
+    )
+    stack([t2, t2], 0)
 
-    class FakeDTypeValue:
+    class FakeDTypeValue(MockTestStub):
         """Test class FakeDTypeValue."""
 
         value = "int32"
 
-    t3 = ensure_callable(Tensor)(ensure_callable(MockTensor)((2, 3)).data, ensure_callable(TensorConfig)((2, 3), ensure_callable(FakeDTypeValue)(), "cpu"))
-    ensure_callable(stack)([t3, t3], 0)
+    t3 = Tensor(
+        MockTensor((2, 3)).data,
+        TensorConfig((2, 3), FakeDTypeValue(), "cpu"),
+    )
+    stack([t3, t3], 0)
 
-    class FakeDTypeInvalid:
+    class FakeDTypeInvalid(MockTestStub):
         """Test class FakeDTypeInvalid."""
 
         pass
 
-    t4 = ensure_callable(Tensor)(ensure_callable(MockTensor)((2, 3)).data, ensure_callable(TensorConfig)((2, 3), ensure_callable(FakeDTypeInvalid)(), "cpu"))
-    res4 = ensure_callable(stack)([t4, t4], 0)
-    assert res4 is not None
+    t4 = Tensor(
+        MockTensor((2, 3)).data,
+        TensorConfig((2, 3), FakeDTypeInvalid(), "cpu"),
+    )
+    res4 = stack([t4, t4], 0)
+    assert str(res4).startswith("stack")
 
 
-def test_stack_and_concatenate_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
+def test_stack_and_concatenate_exact_shape_deduction(mocker: MockerFixture) -> None:
     """Verify that stack and concatenate compute exact output shapes in graph mode.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:

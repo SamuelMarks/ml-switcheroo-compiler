@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, LogicalNode, NodeDict
 
 import ml_switcheroo_compiler.transforms.passes.operator_fusion as of
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.transforms.passes.config_models import FusionPatternConfig
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     NodePattern,
@@ -15,12 +15,11 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     YamlFusionRule,
     match_pattern,
 )
-from tests.testing_utils import ensure_callable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import LogicalNode
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_operator_fusion_extra_coverage() -> None:
@@ -28,8 +27,8 @@ def test_operator_fusion_extra_coverage() -> None:
     g = IRGraph()
     # 1. pattern capture=None for non-string input
     p = NodePattern(op_type=None, capture=None)
-    cap = ensure_tensor_dict({})
-    assert ensure_callable(match_pattern)(g, 123, p, cap)
+    cap: dict[str, BackendArg] = {}
+    assert match_pattern(g, 123, p, cap)
 
     # 2. rule apply returns {}
     class EmptyRule(YamlFusionRule):
@@ -37,9 +36,17 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize EmptyRule."""
-            ensure_callable(super().__init__)("EmptyRule", ensure_callable(FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            super().__init__(
+                "EmptyRule",
+                FusionPatternConfig.model_validate(
+                    {
+                        "pattern": {"op_type": "Dummy"},
+                        "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"},
+                    }
+                ),
+            )
 
-        def apply(self, graph: EagerValue, capture_map: EagerValue) -> dict[str, LogicalNode] | None:
+        def apply(self, graph: BackendArg, capture_map: BackendArg) -> dict[str, LogicalNode] | None:
             """Apply empty replacement.
 
             Args:
@@ -62,9 +69,17 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize DownstreamRule."""
-            ensure_callable(super().__init__)("Downstream", ensure_callable(FusionPatternConfig)(**{"pattern": {"op_type": "A"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            super().__init__(
+                "Downstream",
+                FusionPatternConfig.model_validate(
+                    {
+                        "pattern": {"op_type": "A"},
+                        "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"},
+                    }
+                ),
+            )
 
-        def apply(self, graph: EagerValue, capture_map: EagerValue) -> dict[str, LogicalNode] | None:
+        def apply(self, graph: BackendArg, capture_map: BackendArg) -> dict[str, LogicalNode] | None:
             """Apply downstream replacements.
 
             Args:
@@ -103,9 +118,17 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize CostRule."""
-            ensure_callable(super().__init__)("Cost", ensure_callable(FusionPatternConfig)(**{"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            super().__init__(
+                "Cost",
+                FusionPatternConfig.model_validate(
+                    {
+                        "pattern": {"op_type": "Exp"},
+                        "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"},
+                    }
+                ),
+            )
 
-        def apply(self, graph: EagerValue, capture_map: EagerValue) -> dict[str, LogicalNode] | None:
+        def apply(self, graph: BackendArg, capture_map: BackendArg) -> dict[str, LogicalNode] | None:
             """Apply cost replacement.
 
             Args:
@@ -126,7 +149,7 @@ def test_operator_fusion_extra_coverage() -> None:
             """Initialize RejectCostModel."""
             super().__init__(None)
 
-        def is_fusion_valid(self, replacements: EagerValue) -> bool:
+        def is_fusion_valid(self, replacements: BackendArg) -> bool:
             """Reject fusion.
 
             Args:
@@ -145,7 +168,15 @@ def test_operator_fusion_extra_coverage() -> None:
 
 def test_yaml_rule_apply_returns_none() -> None:
     """Test YamlFusionRule apply edge case returning None on invalid target."""
-    rule = ensure_callable(YamlFusionRule)("Test", ensure_callable(FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}}))
+    rule = YamlFusionRule(
+        "Test",
+        FusionPatternConfig.model_validate(
+            {
+                "pattern": {"op_type": "Dummy"},
+                "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"},
+            }
+        ),
+    )
     assert rule.apply(IRGraph(), {"val": 1.0}) is None
 
     n1 = IRNode("n1", "OldOp")
@@ -175,9 +206,9 @@ def test_operator_fusion_all_remaining_branches() -> None:
     from unittest.mock import mock_open, patch
 
     import yaml
+    from ml_switcheroo_ir import IRNode
 
     import ml_switcheroo_compiler.transforms.passes.operator_fusion as of
-    from ml_switcheroo_compiler.ir.core import IRNode
 
     # 1. 227->229: yaml exists but contains a non-dict (e.g. a list)
     with patch("os.path.exists", return_value=True):
@@ -304,7 +335,16 @@ def test_horizontal_fusion_siblings() -> None:
     assert g.nodes["r2"].op_type == "TupleGetItem"
 
 
-def _test_fusion_edge_cases_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestFusionEdgeCasesState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_fusion_edge_cases` split helpers."""
+
+    g4: LogicalGraph
+    g7: LogicalGraph
+    s1: LogicalNode
+    s2: LogicalNode
+
+
+def _test_fusion_edge_cases_part_1(_state: _TestFusionEdgeCasesState) -> None:
     """Execute part 1 of test_fusion_edge_cases.
 
     Args:
@@ -341,12 +381,10 @@ def _test_fusion_edge_cases_part_1(_state: dict[str, EagerTensorProtocol]) -> No
 
     # Bias node with non-Add op_type
     g4 = IRGraph()
-    _state.update(ensure_tensor_dict({"add": add, "empty_g": empty_g, "g": g, "g2": g2}))
-    _state.update(ensure_tensor_dict({"g3": g3, "g4": g4, "other": other, "r1": r1}))
-    _state.update(ensure_tensor_dict({"x": x, "y": y}))
+    _state.update({"g4": g4})
 
 
-def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_fusion_edge_cases_part_2(_state: _TestFusionEdgeCasesState) -> None:
     """Execute part 2 of test_fusion_edge_cases.
 
     Args:
@@ -355,7 +393,7 @@ def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     g4 = _state["g4"]
     g4.nodes["non_bias"] = IRNode("non_bias", "Mul", inputs=["a", "b"])
     g4.nodes["act"] = IRNode("act", "Relu", inputs=["non_bias"])
-    assert bool(ensure_callable(of.fuse_conv_bias_relu)(g4)) is False
+    assert bool(of.fuse_conv_bias_relu(g4)) is False
     g5 = IRGraph()
     g5.nodes["in_a"] = IRNode("in_a", "Input")
     g5.nodes["in_b"] = IRNode("in_b", "Input")
@@ -379,12 +417,12 @@ def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     g7.nodes["x"] = IRNode("x", "Input")
     s1 = IRNode("s1", "Relu", inputs=["x"], shape_metadata=[4, 4])
     s2 = IRNode("s2", "Sigmoid", inputs=["x"], shape_metadata=[8, 8])
-    _state.update(ensure_tensor_dict({"g5": g5, "g6": g6, "g7": g7, "s1": s1}))
-    _state.update(ensure_tensor_dict({"s2": s2}))
-    _state.update(ensure_tensor_dict({"g4": g4}))
+    _state.update({"g7": g7, "s1": s1})
+    _state.update({"s2": s2})
+    _state.update({"g4": g4})
 
 
-def _test_fusion_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_fusion_edge_cases_part_3(_state: _TestFusionEdgeCasesState) -> None:
     """Execute part 3 of test_fusion_edge_cases.
 
     Args:
@@ -393,19 +431,18 @@ def _test_fusion_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> No
     g7, s1, s2 = _state["g7"], _state["s1"], _state["s2"]
     g7.nodes["s1"] = s1
     g7.nodes["s2"] = s2
-    assert bool(ensure_callable(of.fuse_horizontal_patterns)(g7)) is False
+    assert bool(of.fuse_horizontal_patterns(g7)) is False
 
     # OperatorFusionPass class run
     pass_runner = of.OperatorFusionPass()
     g8 = IRGraph()
     g8.nodes["x"] = IRNode("x", "Input")
     assert pass_runner.run(g8) is False
-    _state.update(ensure_tensor_dict({"g8": g8, "pass_runner": pass_runner}))
 
 
 def test_fusion_edge_cases() -> None:
     """Test edge cases: empty graphs and non-matching multi-consumer nodes."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestFusionEdgeCasesState = {}
     _test_fusion_edge_cases_part_1(_state)
     _test_fusion_edge_cases_part_2(_state)
     _test_fusion_edge_cases_part_3(_state)

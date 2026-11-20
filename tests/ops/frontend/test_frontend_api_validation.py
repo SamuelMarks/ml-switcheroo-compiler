@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
 from ml_switcheroo_compiler.ops.linalg import decompositions as linalg_decomp
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import coerce_operand_list
 
 
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
@@ -28,7 +28,7 @@ def test_lazy_frontend_mocked_1(mock_proxy: MagicMock, mock_add_node: MagicMock)
     p_y = MagicMock(id="y", shape=(2, 2))
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
-    assert isinstance(shape.frontend.reshape(x, (4,)), Tensor)
+    assert isinstance(shape.api.reshape(x, (4,)), Tensor)
     assert isinstance(shape.squeeze(x), Tensor)
     assert isinstance(shape.expand_dims(x, 0), Tensor)
     assert isinstance(shape.permute(x, (1, 0)), Tensor)
@@ -37,9 +37,9 @@ def test_lazy_frontend_mocked_1(mock_proxy: MagicMock, mock_add_node: MagicMock)
     assert isinstance(shape.roll(x, 1), Tensor)
     assert isinstance(shape.concatenate((x, y)), Tensor)
     assert isinstance(shape.stack((x, y)), Tensor)
-    assert len(ensure_eager_tensor(shape.split(x, 2))) == 1
-    assert len(ensure_eager_tensor(shape.hsplit(x, 2))) == 2
-    assert len(ensure_eager_tensor(shape.vsplit(x, 2))) == 2
+    assert len(coerce_operand_list(shape.split(x, 2))) == 1
+    assert len(coerce_operand_list(shape.hsplit(x, 2))) == 2
+    assert len(coerce_operand_list(shape.vsplit(x, 2))) == 2
     assert mock_add_node.called
 
 
@@ -60,7 +60,7 @@ def test_lazy_frontend_mocked_2(mock_proxy: MagicMock, mock_add_node: MagicMock)
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
     t_3d = Tensor(MagicMock(id="3d", shape=(2, 2, 2)), TensorConfig((2, 2, 2), DType.Float32, "cpu"))
-    assert len(ensure_eager_tensor(shape.dsplit(t_3d, 2))) == 2
+    assert len(coerce_operand_list(shape.dsplit(t_3d, 2))) == 2
     assert isinstance(shape.misc.tile(x, (2, 2)), Tensor)
     assert isinstance(shape.misc.repeat(x, 2), Tensor)
     assert isinstance(shape.misc.pad(x, ((1, 1), (1, 1))), Tensor)
@@ -141,16 +141,16 @@ def test_lazy_frontend_mocked_4(mock_proxy: MagicMock, mock_add_node: MagicMock)
     z = Tensor(p_z, TensorConfig((3,), DType.Float32, "cpu"))
     assert isinstance(linalg_decomp.matrix_power(x, 2), Tensor)
     assert isinstance(linalg_decomp.cholesky(x), Tensor)
-    assert len(ensure_eager_tensor(linalg_decomp.qr(x))) == 2
-    assert len(ensure_eager_tensor(linalg_decomp.svd(x))) == 3
-    assert len(ensure_eager_tensor(linalg_decomp.eig(x))) == 2
-    assert len(ensure_eager_tensor(linalg_decomp.eigh(x))) == 2
+    assert len(coerce_operand_list(linalg_decomp.qr(x))) == 2
+    assert len(coerce_operand_list(linalg_decomp.svd(x))) == 3
+    assert len(coerce_operand_list(linalg_decomp.eig(x))) == 2
+    assert len(coerce_operand_list(linalg_decomp.eigh(x))) == 2
     assert isinstance(linalg_decomp.eigvals(x), Tensor)
     assert isinstance(linalg_decomp.eigvalsh(x), Tensor)
     assert isinstance(linalg_decomp.norm(x), Tensor)
     assert isinstance(linalg.cond(x), Tensor)
     assert isinstance(linalg_decomp.det(x), Tensor)
-    assert len(ensure_eager_tensor(linalg_decomp.slogdet(x))) == 2
+    assert len(coerce_operand_list(linalg_decomp.slogdet(x))) == 2
     assert isinstance(linalg.trace(x), Tensor)
     assert isinstance(linalg_decomp.solve(x, y), Tensor)
     assert isinstance(linalg_decomp.inv(x), Tensor)

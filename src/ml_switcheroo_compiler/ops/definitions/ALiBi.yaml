@@ -3,7 +3,7 @@ description: Attention with Linear Biases (ALiBi) layer.
 std_args: []
 variants:
   numpy:
-    eager: ml_switcheroo_compiler.backends.numpy.eager.nn._np_alibi
+    eager: ml_switcheroo_compiler.backends.numpy.eager.nn_ops._np_alibi
     supported: true
   cupy: {}
   dask: {}

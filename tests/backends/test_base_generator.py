@@ -2,15 +2,28 @@
 
 from __future__ import annotations
 
-import importlib
 import typing
 
-from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, ClassBasedGenerator, EmitUtilsMixin, FormatterProxyMixin, PythonStringGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_str, ensure_tensor_dict, ensure_tensor_list
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph
+
+from ml_switcheroo_compiler.backends.base_generator import (
+    BaseGenerator,
+    ClassBasedGenerator,
+    CodeGeneratorVisitor,
+    EmitUtilsMixin,
+    FormatterProxyMixin,
+    PythonStringGenerator,
+)
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from tests.testing_utils import (
+    EagerBoundCallable,
+    coerce_str,
+    require_callable,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from unittest.mock import MagicMock
 
 
 class DummyFormatter:
@@ -18,26 +31,26 @@ class DummyFormatter:
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.var_names = ensure_tensor_dict({})
-        self.code = ensure_tensor_list([])
+        self.var_names: dict[str, BackendArg] = {}
+        self.code: list[str] = []
         self.header = ""
         self.indent_level = 0
 
-    def get_indent(self) -> EagerValue:
+    def get_indent(self) -> str:
         """Test function get_indent.
 
         Returns:
-            EagerValue: Computed output value from `get_indent`.
+            str: Computed output value from `get_indent`.
         """
         return "  " * self.indent_level
 
-    def add_line(self, line: EagerValue) -> None:
+    def add_line(self, line: str) -> None:
         """Test function add_line.
 
         Args:
             line: Test parameter `line`.
         """
-        ensure_callable(self.code.append)(ensure_callable(self.get_indent)() + line)
+        self.code.append(self.get_indent() + line)
 
     def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
         """Test function assign_var_name.
@@ -67,7 +80,7 @@ class DummyGenerator(BaseGenerator):
 def test_formatter_proxy_mixin() -> None:
     """Test function test_formatter_proxy_mixin."""
     proxy = FormatterProxyMixin()
-    ensure_mutable(proxy).formatter = ensure_eager_tensor(DummyFormatter())
+    pytest.MonkeyPatch().setattr(proxy, "formatter", DummyFormatter(), raising=False)
     proxy.var_names = {"a": "b"}
     assert proxy.var_names == {"a": "b"}
     proxy.header = "head"
@@ -84,15 +97,15 @@ class DummyEmitUtils(EmitUtilsMixin):
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.code = ensure_tensor_list([])
+        self.code: list[str] = []
 
-    def add_line(self, line: EagerValue) -> None:
+    def add_line(self, line: str) -> None:
         """Test function add_line.
 
         Args:
-            line: Test parameter `line`.
+            line (str): Test parameter `line`.
         """
-        ensure_callable(self.code.append)(line)
+        self.code.append(line)
 
 
 def test_emit_utils_mixin() -> None:
@@ -113,14 +126,15 @@ def test_emit_utils_mixin() -> None:
     eu._emit_body_return([])
     assert eu.code == ["return None"]
 
-    ensure_mutable(eu).graph = ensure_eager_tensor(IRGraph())
-    ensure_mutable(eu).formatter = ensure_eager_tensor(DummyFormatter())
-    ensure_mutable(ensure_eager_tensor(eu).graph).outputs = ensure_eager_tensor(["out1"])
+    graph = IRGraph()
+    pytest.MonkeyPatch().setattr(eu, "graph", graph, raising=False)
+    pytest.MonkeyPatch().setattr(eu, "formatter", DummyFormatter(), raising=False)
+    pytest.MonkeyPatch().setattr(graph, "outputs", ["out1"], raising=False)
     eu.code = []
     eu._emit_body_return([])
     assert eu.code == ["return out1"]
 
-    ensure_mutable(ensure_eager_tensor(eu).graph).outputs = ensure_eager_tensor(["out1", "out2"])
+    pytest.MonkeyPatch().setattr(graph, "outputs", ["out1", "out2"], raising=False)
     eu.code = []
     eu._emit_body_return([])
     assert eu.code == ["return (out1, out2)"]
@@ -140,37 +154,37 @@ def test_base_generator_methods() -> None:
 
     # kwargs mapping substitution
     # op_type in ops_map
-    def get_ops_map(kwargs: EagerValue) -> EagerValue:
+    def get_ops_map(kwargs: BackendArg) -> BackendArg:
         """Test function get_ops_map.
 
         Args:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `get_ops_map`.
+            BackendArg: Computed output value from `get_ops_map`.
         """
         return {"TestOp": "test_prefix.testop({0}, {1}, kw={kw})"}
 
-    ensure_mutable(gen).get_ops_map = ensure_eager_tensor(get_ops_map)
-    res = ensure_callable(gen.generic_visit)(IRNode("id", "TestOp"), ["a", "b"], kw=42)
+    pytest.MonkeyPatch().setattr(gen, "get_ops_map", get_ops_map, raising=False)
+    res = gen.generic_visit(IRNode("id", "TestOp"), ["a", "b"], kw=42)
     assert res == "test_prefix.testop(a, b, kw=42)"
 
     # kwargs replacement where kwargs left over
-    def get_ops_map2(kwargs: EagerValue) -> EagerValue:
+    def get_ops_map2(kwargs: BackendArg) -> BackendArg:
         """Test function get_ops_map2.
 
         Args:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `get_ops_map2`.
+            BackendArg: Computed output value from `get_ops_map2`.
         """
         return {"TestOp2": "test_prefix.testop({0}, {1}, kw={kw})"}
 
-    ensure_mutable(gen).get_ops_map = ensure_eager_tensor(get_ops_map2)
-    res2 = ensure_callable(gen.generic_visit)(IRNode("id", "TestOp2"), ["a", "b"], kw=42, unrelated="{not_fmt}")
+    pytest.MonkeyPatch().setattr(gen, "get_ops_map", get_ops_map2, raising=False)
+    res2 = gen.generic_visit(IRNode("id", "TestOp2"), ["a", "b"], kw=42, unrelated="{not_fmt}")
     # unrelated should be cleaned up by regex
-    assert "test_prefix.testop" in ensure_str(res2)
+    assert "test_prefix.testop" in coerce_str(res2)
 
     gen.code = []
     gen._emit_input_assignment("v1", IRNode("i", "Input"), "args", 0)
@@ -203,11 +217,11 @@ def test_python_string_generator() -> None:
     assert "import dummy" in code
 
     gen2 = DummyPyGen(IRGraph())
-    ensure_mutable(gen2)._import_header = ensure_eager_tensor(["import a", "import b"])
+    pytest.MonkeyPatch().setattr(gen2, "_import_header", ["import a", "import b"], raising=False)
     assert "import a\nimport b" in gen2.generate()
 
     gen3 = DummyPyGen(IRGraph())
-    ensure_mutable(gen3)._import_header = ensure_eager_tensor(42)  # something else to test branch
+    pytest.MonkeyPatch().setattr(gen3, "_import_header", 42, raising=False)  # something else to test branch
     gen3.generate()
 
 
@@ -230,226 +244,252 @@ def test_class_based_generator() -> None:
     assert gen._emit_init_body() is False
 
 
-def _test_code_generator_visitor_missing_lines_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestCodeGeneratorVisitorMissingLinesState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_code_generator_visitor_missing_lines` split helpers."""
+
+    BaseGenerator: type[BaseGenerator]
+    CodeGeneratorVisitor: type[CodeGeneratorVisitor]
+    IRGraph: type[IRGraph]
+    IRNode: type[IRNode]
+    MockGenerator: type[BaseGenerator]
+    gen: BaseGenerator
+    node: IRNode
+    visitor: CodeGeneratorVisitor
+
+
+def _test_code_generator_visitor_missing_lines_part_1(_state: _TestCodeGeneratorVisitorMissingLinesState) -> None:
     """Execute part 1 of test_code_generator_visitor_missing_lines.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestCodeGeneratorVisitorMissingLinesState): Shared test state dictionary.
     """
-    CodeGeneratorVisitor = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.base_generator")).CodeGeneratorVisitor)
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph as _IRGraphCls
+    from ml_switcheroo_ir import IRNode as _IRNodeCls
 
-    _state.update(ensure_tensor_dict({"CodeGeneratorVisitor": CodeGeneratorVisitor, "IRGraph": IRGraph, "IRNode": IRNode}))
+    from ml_switcheroo_compiler.backends.base_generator import CodeGeneratorVisitor as _VisitorCls
+
+    _state.update({"CodeGeneratorVisitor": _VisitorCls, "IRGraph": _IRGraphCls, "IRNode": _IRNodeCls})
 
 
-def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_code_generator_visitor_missing_lines_part_2(_state: _TestCodeGeneratorVisitorMissingLinesState) -> None:
     """Execute part 2 of test_code_generator_visitor_missing_lines.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestCodeGeneratorVisitorMissingLinesState): Shared test state dictionary.
     """
-    IRGraph, IRNode = _state["IRGraph"], _state["IRNode"]
+    IRGraphCls, IRNodeCls = _state["IRGraph"], _state["IRNode"]
 
-    class MockGenerator:
+    class MockGenerator(BaseGenerator):
         """Test class MockGenerator."""
 
-        def __init__(self) -> None:
-            """Test function __init__."""
-            self.code = ensure_tensor_list([])
-            self.graph = IRGraph()
-            ensure_mutable(self.graph).inputs = ensure_eager_tensor([IRNode("in1", "Input", "in1")])
-            ensure_mutable(self.graph).outputs = ensure_eager_tensor([IRNode("out1", "Output", "out1")])
-            self.sorted_nodes = self.graph.inputs + self.graph.outputs
-            self.var_names = ensure_tensor_dict({})
+        def __init__(self, graph: IRGraph | None = None) -> None:
+            """Test function __init__.
 
-        def assign_var_name(self, id: EagerValue, prefix: EagerValue = "") -> EagerValue:
+            Args:
+                graph (IRGraph | None): Optional computation graph.
+            """
+            from tests.testing_utils import MockGraphStub
+
+            super().__init__(MockGraphStub() if graph is not None else MockGraphStub())
+            in_node = IRNodeCls("in1", "Input", "in1")
+            out_node = IRNodeCls("out1", "Output", "out1")
+            pytest.MonkeyPatch().setattr(self.graph, "inputs", [in_node], raising=False)
+            pytest.MonkeyPatch().setattr(self.graph, "outputs", [out_node], raising=False)
+            self.sorted_nodes = [in_node, out_node]
+            self.var_names = {}
+
+        def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
             """Test function assign_var_name.
 
             Args:
-                id: Test parameter `id`.
-                prefix: Test parameter `prefix`.
+                node_id (str): Test parameter `node_id`.
+                prefix (str): Test parameter `prefix`.
 
             Returns:
-                EagerValue: Computed output value from `assign_var_name`.
+                str: Computed output value from `assign_var_name`.
             """
-            return ensure_eager_tensor("var_") + ensure_eager_tensor(id)
+            return "var_" + node_id
 
-        def generic_visit(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
             """Test function generic_visit.
 
             Args:
-                node: Test parameter `node`.
-                inputs: Test parameter `inputs`.
-                kwargs: Test parameter `kwargs`.
+                node (IRNode): Test parameter `node`.
+                input_vars (list[str]): Test parameter `input_vars`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `generic_visit`.
+                str: Computed output value from `generic_visit`.
             """
-            return f"generic({ensure_eager_tensor(node).op_type})"
+            return f"generic({node.op_type})"
 
-        def _emit_input_assignment(self, var: EagerValue, node: EagerValue, prefix: EagerValue, i: EagerValue) -> None:
+        def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
             """Test function _emit_input_assignment.
 
             Args:
-                var: Test parameter `var`.
-                node: Test parameter `node`.
-                prefix: Test parameter `prefix`.
-                i: Test parameter `i`.
+                var_name (str): Test parameter `var_name`.
+                node (IRNode): Test parameter `node`.
+                input_prefix (str): Test parameter `input_prefix`.
+                input_idx (int): Test parameter `input_idx`.
             """
-            ensure_callable(self.code.append)(f"{var} = {prefix}[{i}]")
+            self.code.append(f"{var_name} = {input_prefix}[{input_idx}]")
 
-        def _emit_output_assignment(self, node: EagerValue, inputs: EagerValue, var: EagerValue) -> None:
+        def _emit_output_assignment(self, node: IRNode, input_vars: list[str], returns: str) -> None:
             """Test function _emit_output_assignment.
 
             Args:
-                node: Test parameter `node`.
-                inputs: Test parameter `inputs`.
-                var: Test parameter `var`.
+                node (IRNode): Test parameter `node`.
+                input_vars (list[str]): Test parameter `input_vars`.
+                returns (str): Test parameter `returns`.
             """
-            ensure_callable(self.code.append)(f"ret {var}")
+            self.code.append(f"ret {returns}")
 
-        def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
+        def get_ops_map(self, kwargs: dict[str, BackendArg] | None = None) -> dict[str, str]:
             """Test function get_ops_map.
 
             Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
+                kwargs (dict[str, BackendArg] | None): Test parameter `kwargs`.
 
             Returns:
                 dict[str, str]: Computed output value from `get_ops_map`.
             """
             return {}
 
-        def _emit_body_return(self, returns: EagerValue) -> None:
+        def _emit_body_return(self, returns: list[str]) -> None:
             """Test function _emit_body_return.
 
             Args:
-                returns: Test parameter `returns`.
+                returns (list[str]): Test parameter `returns`.
             """
             pass
 
-        def add_line(self, line_str: EagerValue) -> None:
+        def add_line(self, line: str) -> None:
             """Test function add_line.
 
             Args:
-                line_str: Test parameter `line_str`.
+                line (str): Test parameter `line`.
             """
             pass
 
-        def _emit_constant_assignment(self, var: EagerValue, cst: EagerValue) -> None:
+        def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
             """Test function _emit_constant_assignment.
 
             Args:
-                var: Test parameter `var`.
-                cst: Test parameter `cst`.
+                var_name (str): Test parameter `var_name`.
+                val_repr (str): Test parameter `val_repr`.
             """
             pass
 
-    _state.update(ensure_tensor_dict({"MockGenerator": MockGenerator}))
-    _state.update(ensure_tensor_dict({"IRGraph": IRGraph, "IRNode": IRNode}))
+    _state.update({"MockGenerator": MockGenerator})
+    _state.update({"IRGraph": IRGraphCls, "IRNode": IRNodeCls})
 
 
-def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_code_generator_visitor_missing_lines_part_3(_state: _TestCodeGeneratorVisitorMissingLinesState) -> None:
     """Execute part 3 of test_code_generator_visitor_missing_lines.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestCodeGeneratorVisitorMissingLinesState): Shared test state dictionary.
     """
-    CodeGeneratorVisitor, IRNode, MockGenerator = _state["CodeGeneratorVisitor"], _state["IRNode"], _state["MockGenerator"]
-    gen = MockGenerator()
-    visitor = CodeGeneratorVisitor(gen)
+    VisitorCls, IRGraphCls, IRNodeCls, MockGenerator = (
+        _state["CodeGeneratorVisitor"],
+        _state["IRGraph"],
+        _state["IRNode"],
+        _state["MockGenerator"],
+    )
+    gen = MockGenerator(IRGraphCls())
+    visitor = VisitorCls(gen)
     visitor.generate_body("args")
     assert "var_in1 = args[0]" in gen.code
 
     # Test visit method routing
-    node = IRNode("node1", "TestOp")
+    node = IRNodeCls("node1", "TestOp")
 
     class MockSpecificVisitor:
         """Test class MockSpecificVisitor."""
 
-        def visit_TestOp(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def visit_TestOp(self, node: BackendArg, inputs: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function visit_TestOp.
 
             Args:
-                node: Test parameter `node`.
-                inputs: Test parameter `inputs`.
-                kwargs: Test parameter `kwargs`.
+                node (BackendArg): Test parameter `node`.
+                inputs (BackendArg): Test parameter `inputs`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `visit_TestOp`.
+                BackendArg: Computed output value from `visit_TestOp`.
             """
             return "visited_TestOp"
 
-    ensure_mutable(gen).visitors = ensure_eager_tensor([MockSpecificVisitor()])
+    pytest.MonkeyPatch().setattr(gen, "visitors", [MockSpecificVisitor()], raising=False)
 
     # Test visit method routing
-    node = IRNode("node1", "TestOp")
+    node = IRNodeCls("node1", "TestOp")
 
     class MockSpecificVisitor2:
         """Test class MockSpecificVisitor2."""
 
-        def visit_TestOp(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def visit_TestOp(self, node: BackendArg, inputs: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function visit_TestOp.
 
             Args:
-                node: Test parameter `node`.
-                inputs: Test parameter `inputs`.
-                kwargs: Test parameter `kwargs`.
+                node (BackendArg): Test parameter `node`.
+                inputs (BackendArg): Test parameter `inputs`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `visit_TestOp`.
+                BackendArg: Computed output value from `visit_TestOp`.
             """
             return "visited_TestOp"
 
-    ensure_mutable(gen).visitors = ensure_eager_tensor([MockSpecificVisitor2()])
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    pytest.MonkeyPatch().setattr(gen, "visitors", [MockSpecificVisitor2()], raising=False)
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator as _BaseGenCls
 
-    res = ensure_callable(BaseGenerator.visit)(gen, node, [])
+    res = _BaseGenCls.visit(gen, node, [])
     assert res == "visited_TestOp"
-    _state.update(ensure_tensor_dict({"BaseGenerator": BaseGenerator, "MockSpecificVisitor2": MockSpecificVisitor2, "gen": gen, "node": node}))
-    _state.update(ensure_tensor_dict({"res": res, "visitor": visitor}))
-    _state.update(ensure_tensor_dict({"CodeGeneratorVisitor": CodeGeneratorVisitor, "IRNode": IRNode, "MockGenerator": MockGenerator}))
+    _state.update({"BaseGenerator": _BaseGenCls, "gen": gen, "node": node})
+    _state.update({"visitor": visitor})
+    _state.update({"CodeGeneratorVisitor": VisitorCls, "IRNode": IRNodeCls, "MockGenerator": MockGenerator})
 
 
-def _test_code_generator_visitor_missing_lines_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_code_generator_visitor_missing_lines_part_4(_state: _TestCodeGeneratorVisitorMissingLinesState) -> None:
     """Execute part 4 of test_code_generator_visitor_missing_lines.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestCodeGeneratorVisitorMissingLinesState): Shared test state dictionary.
     """
-    BaseGenerator, IRNode, gen, node = _state["BaseGenerator"], _state["IRNode"], _state["gen"], _state["node"]
+    BaseGenCls, IRNodeCls, gen, node = _state["BaseGenerator"], _state["IRNode"], _state["gen"], _state["node"]
     visitor = _state["visitor"]
 
     class MockSpecificVisitor2:
         """Test class MockSpecificVisitor2."""
 
-        def visit_OtherOp(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def visit_OtherOp(self, node: BackendArg, inputs: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function visit_OtherOp.
 
             Args:
-                node: Test parameter `node`.
-                inputs: Test parameter `inputs`.
-                kwargs: Test parameter `kwargs`.
+                node (BackendArg): Test parameter `node`.
+                inputs (BackendArg): Test parameter `inputs`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `visit_OtherOp`.
+                BackendArg: Computed output value from `visit_OtherOp`.
             """
             return "visited_OtherOp"
 
-    ensure_mutable(gen).visitors = ensure_eager_tensor([MockSpecificVisitor2()])
-    res2 = BaseGenerator.visit(gen, node, [])
+    pytest.MonkeyPatch().setattr(gen, "visitors", [MockSpecificVisitor2()], raising=False)
+    res2 = BaseGenCls.visit(gen, node, [])
     assert "generic" in res2
 
     # Test fallback
 
-    node2 = IRNode("node2", "UnknownOp")
+    node2 = IRNodeCls("node2", "UnknownOp")
+    assert isinstance(visitor.generator, BaseGenCls)
     res2 = visitor.generator.generic_visit(node2, [])
-    _state.update(ensure_tensor_dict({"MockSpecificVisitor2": MockSpecificVisitor2, "node2": node2, "res2": res2}))
 
 
 def test_code_generator_visitor_missing_lines() -> None:
     """Test function test_code_generator_visitor_missing_lines."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestCodeGeneratorVisitorMissingLinesState = {}
     _test_code_generator_visitor_missing_lines_part_1(_state)
     _test_code_generator_visitor_missing_lines_part_2(_state)
     _test_code_generator_visitor_missing_lines_part_3(_state)
@@ -459,8 +499,9 @@ def test_code_generator_visitor_missing_lines() -> None:
 
 def test_base_generator_maps() -> None:
     """Test function test_base_generator_maps."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class MinimalGen(BaseGenerator):
         """Test class MinimalGen."""
@@ -473,7 +514,7 @@ def test_base_generator_maps() -> None:
             """
             return "m"
 
-        def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
+        def get_ops_map(self, *args: BackendArg, **kwargs: BackendArg) -> dict[str, str]:
             """Test function get_ops_map.
 
             Args:
@@ -489,13 +530,14 @@ def test_base_generator_maps() -> None:
 
     gen = MinimalGen(IRGraph())
     ops = gen.get_ops_map({})
-    assert ensure_eager_tensor(ops)["Add"] == "m.add"
+    assert ops["Add"] == "m.add"
 
 
 def test_class_based_generator_full() -> None:
     """Test function test_class_based_generator_full."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class MyClassGen(ClassBasedGenerator):
         """Test class MyClassGen."""
@@ -547,7 +589,7 @@ def test_class_based_generator_full() -> None:
     class MyClassGenNoBase(ClassBasedGenerator):
         """Test class MyClassGenNoBase."""
 
-        _base_class_name = ensure_str(None)
+        _base_class_name = coerce_str(None)
 
         def _generate_body(self, input_prefix: str = "args") -> None:
             """Test function _generate_body.
@@ -589,51 +631,67 @@ def test_class_based_generator_full() -> None:
 
 def test_ir_graph_walker() -> None:
     """Test function test_ir_graph_walker."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    class TrackedGenerator(BaseGenerator):
+        """Generator subclass tracking walk invocation."""
+
+        called: str | None = None
 
     class DummyVisitor:
         """Test class DummyVisitor."""
 
-        def __init__(self, g: EagerValue) -> None:
+        def __init__(self, g: TrackedGenerator) -> None:
             """Test function __init__.
 
             Args:
-                g: Test parameter `g`.
+                g (TrackedGenerator): Test parameter `g`.
             """
             self.g = g
 
-        def generate_body(self, p: EagerValue) -> None:
+        def generate_body(self, p: str = "args") -> None:
             """Test function generate_body.
 
             Args:
-                p: Test parameter `p`.
+                p (str): Test parameter `p`.
             """
-            ensure_mutable(self.g).called = ensure_eager_tensor(p)
+            self.g.called = p
 
-    gen = BaseGenerator(IRGraph())
-    ensure_mutable(gen).called = ensure_eager_tensor(None)
+    gen = TrackedGenerator(IRGraph())
     import sys
 
     try:
-        ensure_mutable(sys.modules["ml_switcheroo_compiler.backends.base_generator"]).CodeGeneratorVisitor = ensure_eager_tensor(DummyVisitor)
+        pytest.MonkeyPatch().setattr(
+            sys.modules["ml_switcheroo_compiler.backends.base_generator"],
+            "CodeGeneratorVisitor",
+            DummyVisitor,
+            raising=False,
+        )
         import ml_switcheroo_compiler.backends.base_generator as bg
 
-        ensure_mutable(bg).CodeGeneratorVisitor = ensure_eager_tensor(DummyVisitor)
+        pytest.MonkeyPatch().setattr(bg, "CodeGeneratorVisitor", DummyVisitor, raising=False)
         walker = bg.IRGraphWalker(gen)
         walker.walk("args")
-        assert ensure_eager_tensor(ensure_eager_tensor(gen).called) == "args"
+        assert gen.called == "args"
         assert walker.generator is gen
     finally:
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
-        ensure_mutable(sys.modules["ml_switcheroo_compiler.backends.base_generator"]).CodeGeneratorVisitor = ensure_eager_tensor(CodeGeneratorVisitor)
+        pytest.MonkeyPatch().setattr(
+            sys.modules["ml_switcheroo_compiler.backends.base_generator"],
+            "CodeGeneratorVisitor",
+            CodeGeneratorVisitor,
+            raising=False,
+        )
 
 
 def test_ast_walker_missing_lines() -> None:
     """Test function test_ast_walker_missing_lines."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = BaseGenerator(IRGraph())
     # patch out the visitor call to prevent error
@@ -643,7 +701,7 @@ def test_ast_walker_missing_lines() -> None:
     class DummyVisitor:
         """Test class DummyVisitor."""
 
-        def __init__(self, g: EagerValue) -> None:
+        def __init__(self, g: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -651,7 +709,7 @@ def test_ast_walker_missing_lines() -> None:
             """
             self.g = g
 
-        def generate_body(self, p: EagerValue) -> None:
+        def generate_body(self, p: BackendArg) -> None:
             """Test function generate_body.
 
             Args:
@@ -662,21 +720,32 @@ def test_ast_walker_missing_lines() -> None:
     import sys
 
     try:
-        ensure_mutable(sys.modules["ml_switcheroo_compiler.backends.base_generator"]).CodeGeneratorVisitor = ensure_eager_tensor(DummyVisitor)
+        pytest.MonkeyPatch().setattr(
+            sys.modules["ml_switcheroo_compiler.backends.base_generator"],
+            "CodeGeneratorVisitor",
+            DummyVisitor,
+            raising=False,
+        )
         import ml_switcheroo_compiler.backends.base_generator as bg
 
-        ensure_mutable(bg).CodeGeneratorVisitor = ensure_eager_tensor(DummyVisitor)
+        pytest.MonkeyPatch().setattr(bg, "CodeGeneratorVisitor", DummyVisitor, raising=False)
         walker = bg.IRGraphWalker(gen)
         walker.walk("args")
         assert walker.generator is gen
     finally:
-        ensure_mutable(sys.modules["ml_switcheroo_compiler.backends.base_generator"]).CodeGeneratorVisitor = ensure_eager_tensor(CodeGeneratorVisitor)
+        pytest.MonkeyPatch().setattr(
+            sys.modules["ml_switcheroo_compiler.backends.base_generator"],
+            "CodeGeneratorVisitor",
+            CodeGeneratorVisitor,
+            raising=False,
+        )
 
 
 def test_class_based_generator_has_base_no_params() -> None:
     """Test function test_class_based_generator_has_base_no_params."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class Gen3(ClassBasedGenerator):
         """Test class Gen3."""
@@ -723,8 +792,9 @@ def test_class_based_generator_has_base_no_params() -> None:
 
 def test_class_based_generator_has_base_no_params_not_python() -> None:
     """Test function test_class_based_generator_has_base_no_params_not_python."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class Gen4(ClassBasedGenerator):
         """Test class Gen4."""
@@ -770,12 +840,14 @@ def test_class_based_generator_has_base_no_params_not_python() -> None:
 
 def test_ast_walker_proper() -> None:
     """Test function test_ast_walker_proper."""
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, IRGraphWalker
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRNode
 
-    g = IRGraph()
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, IRGraphWalker
+    from tests.testing_utils import MockGraphStub
+
+    g = MockGraphStub()
     n = IRNode("in", "Input")
-    ensure_mutable(g).inputs = ensure_eager_tensor([n])
+    pytest.MonkeyPatch().setattr(g, "inputs", [n], raising=False)
     g.outputs = []
 
     class MyGen(BaseGenerator):
@@ -789,7 +861,7 @@ def test_ast_walker_proper() -> None:
             """
             return "numpy"
 
-        def _emit_input_assignment(self, v: EagerValue, n: EagerValue, p: EagerValue, i: EagerValue) -> None:
+        def _emit_input_assignment(self, v: BackendArg, n: BackendArg, p: BackendArg, i: BackendArg) -> None:
             """Test function _emit_input_assignment.
 
             Args:
@@ -800,7 +872,7 @@ def test_ast_walker_proper() -> None:
             """
             pass
 
-        def _emit_output_assignment(self, n: EagerValue, i: EagerValue, v: EagerValue) -> None:
+        def _emit_output_assignment(self, n: BackendArg, i: BackendArg, v: BackendArg) -> None:
             """Test function _emit_output_assignment.
 
             Args:
@@ -810,7 +882,7 @@ def test_ast_walker_proper() -> None:
             """
             pass
 
-        def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
+        def get_ops_map(self, *args: BackendArg, **kwargs: BackendArg) -> dict[str, str]:
             """Test function get_ops_map.
 
             Args:
@@ -825,13 +897,14 @@ def test_ast_walker_proper() -> None:
     gen = MyGen(g)
     w = IRGraphWalker(gen)
     w.walk("args")
-    assert gen is not None
+    assert gen.get_fallback_prefix() == "numpy" and gen.get_ops_map() == {}
 
 
 def test_class_based_generator_has_base_no_params_not_python_2() -> None:
     """Test function test_class_based_generator_has_base_no_params_not_python_2."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class Gen4(ClassBasedGenerator):
         """Test class Gen4."""
@@ -877,8 +950,9 @@ def test_class_based_generator_has_base_no_params_not_python_2() -> None:
 
 def test_class_based_generator_has_base_no_params_is_python() -> None:
     """Test function test_class_based_generator_has_base_no_params_is_python."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class Gen5(ClassBasedGenerator):
         """Test class Gen5."""
@@ -925,20 +999,20 @@ def test_class_based_generator_has_base_no_params_is_python() -> None:
 
 def test_class_based_generator_has_base_no_params_hit_457() -> None:
     """Test function test_class_based_generator_has_base_no_params_hit_457."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class Gen6(ClassBasedGenerator):
         """Test class Gen6."""
 
-        def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+        def __init__(self, graph: IRGraph) -> None:
             """Test function __init__.
 
             Args:
-                args: Test parameter `args`.
-                kwargs: Test parameter `kwargs`.
+                graph (IRGraph): Test parameter `graph`.
             """
-            ensure_callable(super().__init__)(*args, **kwargs)
+            super().__init__(graph)
             self._base_class_name = "BaseClass"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
@@ -974,19 +1048,20 @@ def test_class_based_generator_has_base_no_params_hit_457() -> None:
             return "python"
 
     gen = Gen6(IRGraph())
-    gen.generate()
-    assert gen is not None
+    code = gen.generate()
+    assert "class " in code and "BaseClass" in code and "super().__init__()" in code
 
 
 def test_graph_walker_lines() -> None:
     """Test function test_graph_walker_lines."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, IRGraphWalker
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class DummyVisitor:
         """Test class DummyVisitor."""
 
-        def __init__(self, g: EagerValue) -> None:
+        def __init__(self, g: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -994,7 +1069,7 @@ def test_graph_walker_lines() -> None:
             """
             self.g = g
 
-        def generate_body(self, p: EagerValue) -> None:
+        def generate_body(self, p: BackendArg) -> None:
             """Test function generate_body.
 
             Args:
@@ -1004,21 +1079,22 @@ def test_graph_walker_lines() -> None:
 
     import ml_switcheroo_compiler.backends.base_generator as bg
 
-    old = ensure_eager_tensor(ensure_eager_tensor(bg).CodeGeneratorVisitor)
-    ensure_mutable(bg).CodeGeneratorVisitor = ensure_eager_tensor(DummyVisitor)
+    old = bg.CodeGeneratorVisitor
+    pytest.MonkeyPatch().setattr(bg, "CodeGeneratorVisitor", DummyVisitor, raising=False)
     try:
         gen = BaseGenerator(IRGraph())
         w = IRGraphWalker(gen)
         w.walk()
     finally:
-        ensure_mutable(bg).CodeGeneratorVisitor = ensure_eager_tensor(old)
-    assert ensure_eager_tensor(bg).CodeGeneratorVisitor is old
+        pytest.MonkeyPatch().setattr(bg, "CodeGeneratorVisitor", old, raising=False)
+    assert bg.CodeGeneratorVisitor is old
 
 
 def test_base_generator_coverage_extras() -> None:
     """Test function test_base_generator_coverage_extras."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     class CovGen(BaseGenerator):
         """Test class CovGen."""
@@ -1039,7 +1115,7 @@ def test_base_generator_coverage_extras() -> None:
 
     # Hit line 304-312 by forcing _format_operation with no format string
     node = IRNode(id="n1", op_type="UnknownCovOp", inputs=[])
-    ensure_mutable(gen).ops_map = ensure_eager_tensor({})
+    pytest.MonkeyPatch().setattr(gen, "ops_map", {}, raising=False)
     res = gen.generic_visit(node, ["in1"], **{})
     assert "unknowncovop" in res
 
@@ -1048,8 +1124,9 @@ def test_get_ops_map_fallbacks_coverage() -> None:
     """Test function test_get_ops_map_fallbacks_coverage."""
     import unittest.mock as mock
 
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class MyGen(BaseGenerator):
         """Test class MyGen."""
@@ -1067,18 +1144,18 @@ def test_get_ops_map_fallbacks_coverage() -> None:
     with mock.patch("ml_switcheroo_compiler.ops.registry.backend_mapping_registry") as mock_reg:
         mock_reg.operations.keys.return_value = ["Dct", "Idct", "Mdct", "InverseMdct", "Frame", "OverlapAndAdd"]
 
-        def mock_get(prefix: EagerValue, name: EagerValue) -> EagerValue:
+        def mock_get(prefix: str, name: str) -> str | None:
             """Test function mock_get.
 
             Args:
-                prefix: Test parameter `prefix`.
-                name: Test parameter `name`.
+                prefix (str): Test parameter `prefix`.
+                name (str): Test parameter `name`.
 
             Returns:
-                EagerValue: Computed output value from `mock_get`.
+                str | None: Computed output value from `mock_get`.
             """
             if prefix == "test_prefix":
-                return ensure_eager_tensor("mapped_") + ensure_eager_tensor(name)
+                return "mapped_" + name
             return None
 
         mock_reg.get_generator_mapping.side_effect = mock_get
@@ -1095,8 +1172,9 @@ def test_get_ops_map_fallbacks_coverage() -> None:
 
 def test_base_generator_get_fallback_prefix() -> None:
     """Test function test_base_generator_get_fallback_prefix."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     assert BaseGenerator(IRGraph()).get_fallback_prefix() == "np"
 
@@ -1104,33 +1182,33 @@ def test_base_generator_get_fallback_prefix() -> None:
 def test_base_generator_compile_aot() -> None:
     """Test function test_base_generator_compile_aot."""
     import pytest
+    from ml_switcheroo_ir import IRGraph
 
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     class CustomGen(BaseGenerator):
         """Test class CustomGen."""
 
-        def _compile_aot_impl(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def _compile_aot_impl(self, graph: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function _compile_aot_impl.
 
             Args:
-                graph: Test parameter `graph`.
-                kwargs: Test parameter `kwargs`.
+                graph (BackendArg): Test parameter `graph`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `_compile_aot_impl`.
+                BackendArg: Computed output value from `_compile_aot_impl`.
             """
             return "compiled_artifact"
 
     g = IRGraph()
     # Call as classmethod
     res_cls = CustomGen.compile_aot(g)
-    assert ensure_eager_tensor(res_cls) == ensure_eager_tensor("compiled_artifact")
+    assert res_cls.callable_fn == "compiled_artifact"
 
     # Call on instance with graph=None falling back to self.graph
     inst = CustomGen(g)
-    assert ensure_eager_tensor(inst.compile_aot(None)) == ensure_eager_tensor("compiled_artifact")
+    assert inst.compile_aot(None).callable_fn == "compiled_artifact"
 
     # Base implementation raises NotImplementedError
     base_inst = BaseGenerator(g)
@@ -1138,31 +1216,43 @@ def test_base_generator_compile_aot() -> None:
         base_inst.compile_aot(g)
 
 
-def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestBaseGeneratorVisitAndVisitOpnodeState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_base_generator_visit_and_visit_opnode` split helpers."""
+
+    BaseGenerator: type[BaseGenerator]
+    IRGraph: type[IRGraph]
+    IRNode: type[IRNode]
+    MagicMock: type[MagicMock]
+    bg: BaseGenerator
+    g: LogicalGraph
+    patch: EagerBoundCallable
+
+
+def _test_base_generator_visit_and_visit_opnode_part_1(_state: _TestBaseGeneratorVisitAndVisitOpnodeState) -> None:
     """Execute part 1 of test_base_generator_visit_and_visit_opnode.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestBaseGeneratorVisitAndVisitOpnodeState): Shared test state dictionary.
     """
     from unittest.mock import MagicMock, patch
 
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    from ml_switcheroo_ir import IRGraph as _IRGraphCls
+    from ml_switcheroo_ir import IRNode as _IRNodeCls
 
-    IRNode = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.base_generator")).IRNode)
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator as _BaseGenCls
 
-    g = IRGraph()
-    bg = BaseGenerator(g)
+    g = _IRGraphCls()
+    bg = _BaseGenCls(g)
 
     # 1. target_api call string path with kwarg translations (e.g. Argmin in cupy: dim -> axis)
-    cupy_bg = BaseGenerator(g)
-    ensure_mutable(cupy_bg).backend_name = ensure_eager_tensor("cupy")
-    argmin_node = IRNode(
+    cupy_bg = _BaseGenCls(g)
+    cupy_bg.backend_name = "cupy"
+    argmin_node = _IRNodeCls(
         id="n1",
         op_type="Argmin",
         attributes={"dim": 0, "keepdim": True, "_internal_attr": "hidden"},
     )
-    argmin_res = ensure_callable(cupy_bg.visit_OpNode)(argmin_node, ["x"])
+    argmin_res = cupy_bg.visit_OpNode(argmin_node, ["x"])
     assert "cupy.argmin" in argmin_res
     assert "x" in argmin_res
     assert "axis=0" in argmin_res
@@ -1170,157 +1260,152 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
     assert "_internal_attr" not in argmin_res
 
     # 2. ast_template substitution path (e.g. Atan2 in pytorch)
-    torch_bg = BaseGenerator(g)
-    ensure_mutable(torch_bg).backend_name = ensure_eager_tensor("pytorch")
-    atan2_node = IRNode(id="n2", op_type="Atan2", attributes={"out_var": "out_val"})
-    atan2_res = ensure_callable(torch_bg.visit_OpNode)(atan2_node, ["in_x", "in_y"])
+    torch_bg = _BaseGenCls(g)
+    torch_bg.backend_name = "pytorch"
+    atan2_node = _IRNodeCls(id="n2", op_type="Atan2", attributes={"out_var": "out_val"})
+    atan2_res = torch_bg.visit_OpNode(atan2_node, ["in_x", "in_y"])
     assert "out_val = torch.atan2(in_x, in_y)" in atan2_res
 
     # ast_template with default out variable name from node.id
-    atan2_node_default_out = IRNode(id="atan2_id", op_type="Atan2")
-    atan2_res_default = ensure_callable(torch_bg.visit_OpNode)(atan2_node_default_out, ["in_x", "in_y"])
+    atan2_node_default_out = _IRNodeCls(id="atan2_id", op_type="Atan2")
+    atan2_res_default = torch_bg.visit_OpNode(atan2_node_default_out, ["in_x", "in_y"])
     assert "tensor_0 = torch.atan2(in_x, in_y)" in atan2_res_default
-    _state.update(ensure_tensor_dict({"BaseGenerator": BaseGenerator, "IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock}))
-    _state.update(ensure_tensor_dict({"argmin_node": argmin_node, "argmin_res": argmin_res, "atan2_node": atan2_node, "atan2_node_default_out": atan2_node_default_out}))
-    _state.update(ensure_tensor_dict({"atan2_res": atan2_res, "atan2_res_default": atan2_res_default, "bg": bg, "cupy_bg": cupy_bg}))
-    _state.update(ensure_tensor_dict({"g": g, "patch": patch, "torch_bg": torch_bg}))
+    _state.update({"BaseGenerator": _BaseGenCls, "IRGraph": _IRGraphCls, "IRNode": _IRNodeCls, "MagicMock": MagicMock})
+    _state.update({"bg": bg})
+    _state.update({"g": g, "patch": require_callable(patch)})
 
 
-def _test_base_generator_visit_and_visit_opnode_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_base_generator_visit_and_visit_opnode_part_2(_state: _TestBaseGeneratorVisitAndVisitOpnodeState) -> None:
     """Execute part 2 of test_base_generator_visit_and_visit_opnode.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestBaseGeneratorVisitAndVisitOpnodeState): Shared test state dictionary.
     """
-    BaseGenerator, IRNode, MagicMock, bg = _state["BaseGenerator"], _state["IRNode"], _state["MagicMock"], _state["bg"]
+    BaseGenCls, IRNodeCls, MagicMockCls, bg = (
+        _state["BaseGenerator"],
+        _state["IRNode"],
+        _state["MagicMock"],
+        _state["bg"],
+    )
     g, patch = _state["g"], _state["patch"]
-    mock_op = MagicMock()
-    ensure_mutable(mock_op).ast_template = ensure_eager_tensor(None)
-    ensure_mutable(mock_op).kwarg_map = ensure_eager_tensor({"drop_me": None})
-    ensure_mutable(mock_op).target_api = ensure_eager_tensor("np.dropped")
-    mock_schema = MagicMock()
-    ensure_mutable(mock_schema).operations = ensure_eager_tensor({"DroppedOp": mock_op})
+    mock_op = MagicMockCls()
+    pytest.MonkeyPatch().setattr(mock_op, "ast_template", None, raising=False)
+    pytest.MonkeyPatch().setattr(mock_op, "kwarg_map", {"drop_me": None}, raising=False)
+    pytest.MonkeyPatch().setattr(mock_op, "target_api", "np.dropped", raising=False)
+    mock_schema = MagicMockCls()
+    pytest.MonkeyPatch().setattr(mock_schema, "operations", {"DroppedOp": mock_op}, raising=False)
 
     with patch(
         "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
         return_value=mock_schema,
     ):
-        drop_node = IRNode(id="n_drop", op_type="DroppedOp", attributes={"drop_me": 123})
+        drop_node = IRNodeCls(id="n_drop", op_type="DroppedOp", attributes={"drop_me": 123})
         drop_res = bg.visit_OpNode(drop_node, ["in_val"])
         assert drop_res == "np.dropped(in_val)"
 
     # 4. Exception in load_backend_mappings falling back to generic_visit
-    bad_bg = BaseGenerator(g)
-    with ensure_callable(patch)(
+    bad_bg = BaseGenCls(g)
+    with patch(
         "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
-        side_effect=ensure_callable(RuntimeError)("disk error"),
+        side_effect=RuntimeError("disk error"),
     ):
-        unknown_node = IRNode(id="n3", op_type="Add")
+        unknown_node = IRNodeCls(id="n3", op_type="Add")
         fallback_res = bad_bg.visit_OpNode(unknown_node, ["arg1", "arg2"])
         assert "np.add(arg1, arg2)" in fallback_res
 
     # 5. Target op not in schema operations falling back to generic_visit
-    unmapped_node = IRNode(id="n4", op_type="CustomOpNotInSchema")
+    unmapped_node = IRNodeCls(id="n4", op_type="CustomOpNotInSchema")
     unmapped_res = bg.visit_OpNode(unmapped_node, ["arg0"])
     assert "customopnotinschema" in unmapped_res.lower()
-    _state.update(ensure_tensor_dict({"bad_bg": bad_bg, "drop_node": drop_node, "drop_res": drop_res, "fallback_res": fallback_res}))
-    _state.update(ensure_tensor_dict({"mock_op": mock_op, "mock_schema": mock_schema, "unknown_node": unknown_node, "unmapped_node": unmapped_node}))
-    _state.update(ensure_tensor_dict({"unmapped_res": unmapped_res}))
-    _state.update(ensure_tensor_dict({"BaseGenerator": BaseGenerator, "IRNode": IRNode, "MagicMock": MagicMock}))
-    _state.update(ensure_tensor_dict({"bg": bg, "g": g, "patch": patch}))
+    _state.update({"BaseGenerator": BaseGenCls, "IRNode": IRNodeCls, "MagicMock": MagicMockCls})
+    _state.update({"bg": bg, "g": g, "patch": require_callable(patch)})
 
 
-def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_base_generator_visit_and_visit_opnode_part_3(_state: _TestBaseGeneratorVisitAndVisitOpnodeState) -> None:
     """Execute part 3 of test_base_generator_visit_and_visit_opnode.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestBaseGeneratorVisitAndVisitOpnodeState): Shared test state dictionary.
     """
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator as _BaseGeneratorCls
 
-    BaseGenerator, IRNode, bg, g = _state["BaseGenerator"], _state["IRNode"], _state["bg"], _state["g"]
+    BaseGenCls, IRNodeCls, bg, g = _state["BaseGenerator"], _state["IRNode"], _state["bg"], _state["g"]
 
     class CustomVisitor:
         """Test class CustomVisitor."""
 
-        def visit_VisitorOp(self, node: EagerTensorProtocol, input_vars: list[str], **kwargs: EagerValue) -> str:
+        def visit_VisitorOp(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
             """Test function visit_VisitorOp.
 
             Args:
-                node: Test parameter `node`.
-                input_vars: Test parameter `input_vars`.
-                kwargs: Test parameter `kwargs`.
+                node (IRNode): Test parameter `node`.
+                input_vars (list[str]): Test parameter `input_vars`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
                 str: Computed output value from `visit_VisitorOp`.
             """
             return f"visitor_handled({', '.join(input_vars)})"
 
-    ensure_mutable(bg).visitors = ensure_eager_tensor([CustomVisitor()])
-    v_node = IRNode(id="n5", op_type="VisitorOp")
+    pytest.MonkeyPatch().setattr(bg, "visitors", [CustomVisitor()], raising=False)
+    v_node = IRNodeCls(id="n5", op_type="VisitorOp")
     assert bg.visit(v_node, ["v1", "v2"]) == "visitor_handled(v1, v2)"
 
     class CustomGenerator(_BaseGeneratorCls):
         """Test class CustomGenerator."""
 
-        def visit_SubclassOp(self, node: EagerTensorProtocol, input_vars: list[str], **kwargs: EagerValue) -> str:
+        def visit_SubclassOp(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
             """Test function visit_SubclassOp.
 
             Args:
-                node: Test parameter `node`.
-                input_vars: Test parameter `input_vars`.
-                kwargs: Test parameter `kwargs`.
+                node (IRNode): Test parameter `node`.
+                input_vars (list[str]): Test parameter `input_vars`.
+                **kwargs (BackendArg): Test parameter `kwargs`.
 
             Returns:
                 str: Computed output value from `visit_SubclassOp`.
             """
             return f"subclass_handled({', '.join(input_vars)})"
 
-    cg = ensure_callable(CustomGenerator)(g)
-    ensure_mutable(cg).visitors = ensure_eager_tensor([])
-    s_node = IRNode(id="n6", op_type="SubclassOp")
+    cg = CustomGenerator(g)
+    pytest.MonkeyPatch().setattr(cg, "visitors", [], raising=False)
+    s_node = IRNodeCls(id="n6", op_type="SubclassOp")
     assert cg.visit(s_node, ["s1"]) == "subclass_handled(s1)"
 
     # 8. visit dispatch: generic_visit fallback and visit_OpNode dispatch
-    bg_clean = BaseGenerator(g)
-    ensure_mutable(bg_clean).visitors = ensure_eager_tensor([])
-    fallback_node = IRNode(id="n_fallback", op_type="NonexistentOpFallback")
+    bg_clean = BaseGenCls(g)
+    pytest.MonkeyPatch().setattr(bg_clean, "visitors", [], raising=False)
+    fallback_node = IRNodeCls(id="n_fallback", op_type="NonexistentOpFallback")
     assert bg_clean.visit(fallback_node, ["x"]) == "np.nonexistentopfallback(x)"
-    _state.update(ensure_tensor_dict({"CustomGenerator": CustomGenerator, "CustomVisitor": CustomVisitor, "bg_clean": bg_clean, "cg": cg}))
-    _state.update(ensure_tensor_dict({"fallback_node": fallback_node, "s_node": s_node, "v_node": v_node}))
-    _state.update(ensure_tensor_dict({"BaseGenerator": BaseGenerator, "IRNode": IRNode, "bg": bg}))
-    _state.update(ensure_tensor_dict({"g": g}))
+    _state.update({"BaseGenerator": BaseGenCls, "IRNode": IRNodeCls, "bg": bg})
+    _state.update({"g": g})
 
 
-def _test_base_generator_visit_and_visit_opnode_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_base_generator_visit_and_visit_opnode_part_4(_state: _TestBaseGeneratorVisitAndVisitOpnodeState) -> None:
     """Execute part 4 of test_base_generator_visit_and_visit_opnode.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestBaseGeneratorVisitAndVisitOpnodeState): Shared test state dictionary.
     """
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator as _BaseGeneratorCls
 
-    BaseGenerator, IRNode, g = _state["BaseGenerator"], _state["IRNode"], _state["g"]
+    BaseGenCls, IRNodeCls, g = _state["BaseGenerator"], _state["IRNode"], _state["g"]
 
     class NoOpNodeGenerator(_BaseGeneratorCls):
         """Test class NoOpNodeGenerator."""
 
         pass
 
-    saved_opnode = BaseGenerator.visit_OpNode
-    del ensure_mutable(BaseGenerator).visit_OpNode
-    try:
-        nog = ensure_callable(NoOpNodeGenerator)(g)
-        g_node = IRNode(id="n7", op_type="GenericOp")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.delattr(BaseGenCls, "visit_OpNode")
+        nog = NoOpNodeGenerator(g)
+        g_node = IRNodeCls(id="n7", op_type="GenericOp")
         assert nog.visit(g_node, ["g1"]) == "np.genericop(g1)"
-    finally:
-        ensure_mutable(BaseGenerator).visit_OpNode = ensure_eager_tensor(saved_opnode)
-    _state.update(ensure_tensor_dict({"NoOpNodeGenerator": NoOpNodeGenerator, "saved_opnode": saved_opnode}))
 
 
 def test_base_generator_visit_and_visit_opnode() -> None:
     """Test visit_OpNode declarative mapping, ast_template, target_api, and visit dispatch."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestBaseGeneratorVisitAndVisitOpnodeState = {}
     _test_base_generator_visit_and_visit_opnode_part_1(_state)
     _test_base_generator_visit_and_visit_opnode_part_2(_state)
     _test_base_generator_visit_and_visit_opnode_part_3(_state)

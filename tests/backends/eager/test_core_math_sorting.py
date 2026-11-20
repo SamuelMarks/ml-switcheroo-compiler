@@ -6,24 +6,23 @@ import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager.core_math_ops.math_sort import (
-    _argsort,
-    _lexsort,
-    _searchsorted,
-    _sortcomplex,
-)
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_sorting import (
     _argpartition,
+    _argsort,
+    _lexsort,
     _median,
     _np_partition,
     _percentile,
     _quantile,
+    _searchsorted,
+    _sortcomplex,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from tests.testing_utils import ensure_eager_tensor, ensure_mod
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_math_sort_coverage() -> None:
@@ -33,10 +32,10 @@ def test_math_sort_coverage() -> None:
         None
     """
 
-    class SortBackend:
+    class SortBackend(MockTestStub):
         """Mock backend with sort operations."""
 
-        def argsort(self, a: EagerValue, axis: int = -1) -> str:
+        def argsort(self, a: BackendArg, axis: int = -1) -> str:
             """Mock argsort.
 
             Args:
@@ -48,7 +47,7 @@ def test_math_sort_coverage() -> None:
             """
             return f"argsort_{axis}"
 
-        def lexsort(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def lexsort(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock lexsort.
 
             Args:
@@ -60,7 +59,7 @@ def test_math_sort_coverage() -> None:
             """
             return "lexsort_val"
 
-        def searchsorted(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def searchsorted(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock searchsorted.
 
             Args:
@@ -72,7 +71,7 @@ def test_math_sort_coverage() -> None:
             """
             return "searchsorted_val"
 
-        def sort_complex(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def sort_complex(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock sort_complex.
 
             Args:
@@ -85,10 +84,10 @@ def test_math_sort_coverage() -> None:
             return "sort_complex_val"
 
     sb = SortBackend()
-    assert _argsort(ensure_mod(sb), [3, 1, 2], axis=1) == "argsort_1"
-    assert _lexsort(ensure_mod(sb), ([1, 2], [3, 4])) == "lexsort_val"
-    assert _searchsorted(ensure_mod(sb), [1, 2, 3], 2) == "searchsorted_val"
-    assert _sortcomplex(ensure_mod(sb), [1 + 2j, 1 - 2j]) == "sort_complex_val"
+    assert _argsort(sb, [3, 1, 2], axis=1) == "argsort_1"
+    assert _lexsort(sb, ([1, 2], [3, 4])) == "lexsort_val"
+    assert _searchsorted(sb, [1, 2, 3], 2) == "searchsorted_val"
+    assert _sortcomplex(sb, [1 + 2j, 1 - 2j]) == "sort_complex_val"
 
     # Registry
     assert global_eager_registry.get("Argsort") is not None
@@ -106,10 +105,10 @@ def test_math_sorting_coverage() -> None:
 
     # _argpartition
     # Case A: backend has argsort
-    class ArgpartBackend:
+    class ArgpartBackend(MockTestStub):
         """Backend with argsort."""
 
-        def argsort(self, a: EagerValue, axis: int = -1) -> str:
+        def argsort(self, a: BackendArg, axis: int = -1) -> str:
             """Mock argsort.
 
             Args:
@@ -121,21 +120,21 @@ def test_math_sorting_coverage() -> None:
             """
             return f"argpartition_{axis}"
 
-    assert _argpartition(ensure_mod(ArgpartBackend()), [3, 1, 2], kth=1, axis=0) == "argpartition_0"
+    assert _argpartition(ArgpartBackend(), [3, 1, 2], kth=1, axis=0) == "argpartition_0"
 
     # Case B: backend lacks argsort -> returns a directly
-    class EmptyBackend:
+    class EmptyBackend(MockTestStub):
         """Empty backend."""
 
         pass
 
-    assert _argpartition(ensure_mod(EmptyBackend()), "original_a", kth=1) == "original_a"
+    assert _argpartition(EmptyBackend(), "original_a", kth=1) == "original_a"
 
     # _median, _percentile, _quantile
-    class StatBackend:
+    class StatBackend(MockTestStub):
         """Backend with median, percentile, quantile."""
 
-        def median(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def median(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock median.
 
             Args:
@@ -147,7 +146,7 @@ def test_math_sorting_coverage() -> None:
             """
             return "median_val"
 
-        def percentile(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def percentile(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock percentile.
 
             Args:
@@ -159,7 +158,7 @@ def test_math_sorting_coverage() -> None:
             """
             return "percentile_val"
 
-        def quantile(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def quantile(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock quantile.
 
             Args:
@@ -172,16 +171,16 @@ def test_math_sorting_coverage() -> None:
             return "quantile_val"
 
     st = StatBackend()
-    assert _median(ensure_mod(st), [1, 2, 3]) == "median_val"
-    assert _percentile(ensure_mod(st), [1, 2, 3], 50) == "percentile_val"
-    assert _quantile(ensure_mod(st), [1, 2, 3], 0.5) == "quantile_val"
+    assert _median(st, [1, 2, 3]) == "median_val"
+    assert _percentile(st, [1, 2, 3], 50) == "percentile_val"
+    assert _quantile(st, [1, 2, 3], 0.5) == "quantile_val"
 
     # _np_partition
     # Case A: backend has partition
-    class PartitionBackend:
+    class PartitionBackend(MockTestStub):
         """Backend with partition."""
 
-        def partition(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def partition(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock partition.
 
             Args:
@@ -193,11 +192,11 @@ def test_math_sorting_coverage() -> None:
             """
             return "partition_val"
 
-    assert _np_partition(ensure_mod(PartitionBackend()), [3, 1, 2], 1) == "partition_val"
+    assert _np_partition(PartitionBackend(), [3, 1, 2], 1) == "partition_val"
 
     # Case B: backend lacks partition -> fallback to np.partition
-    part_res = _np_partition(ensure_mod(EmptyBackend()), np.array([3, 1, 2]), 1)
-    assert ensure_eager_tensor(part_res)[1] == 2
+    part_res = _np_partition(EmptyBackend(), np.array([3, 1, 2]), 1)
+    assert ensure_ndarray(part_res)[1] == 2
 
     # Registry
     assert global_eager_registry.get("Argpartition") is not None

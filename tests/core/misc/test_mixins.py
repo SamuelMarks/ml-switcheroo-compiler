@@ -4,21 +4,22 @@ from __future__ import annotations
 
 import typing
 
-import pytest
-
 from ml_switcheroo_compiler.core.mixins import TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
-    """Test class DummyTensor."""
+class DummyTensor(Tensor):
+    """Test ``Tensor`` subclass intercepting ``_get_op`` calls."""
 
-    def _get_op(self, name: EagerValue) -> OpDef:
+    def __init__(self) -> None:
+        """Initialize ``DummyTensor`` with empty default ``TensorConfig``."""
+        super().__init__(None, TensorConfig())
+
+    def _get_op(self, name: BackendArg) -> OpDef:
         """Test function _get_op.
 
         Args:
@@ -33,12 +34,12 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
 
             op_name = str(name)
 
-            def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> Tensor:
+            def __call__(self, *args: BackendArg, **kwargs: BackendArg) -> Tensor:
                 """Return Tensor wrapping (name, args) tuple.
 
                 Args:
-                    *args (EagerValue): Positional arguments forwarded to `__call__`.
-                    **kwargs (EagerValue): Keyword arguments forwarded to `__call__`.
+                    *args (BackendArg): Positional arguments forwarded to `__call__`.
+                    **kwargs (BackendArg): Keyword arguments forwarded to `__call__`.
 
                 Returns:
                     Tensor: Computed output value from `__call__`.
@@ -50,56 +51,59 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
 
 def test_mixins() -> None:
     """Test function test_mixins."""
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_operand_list
+
     t = DummyTensor()
 
-    assert ensure_eager_tensor((t + 1).data)[0] == ensure_eager_tensor("Add")
-    assert ensure_eager_tensor((1 + t).data)[0] == ensure_eager_tensor("Add")
-    assert ensure_eager_tensor((t - 1).data)[0] == ensure_eager_tensor("Subtract")
-    assert ensure_eager_tensor((1 - t).data)[0] == ensure_eager_tensor("Subtract")
-    assert ensure_eager_tensor((t * 1).data)[0] == ensure_eager_tensor("Multiply")
-    assert ensure_eager_tensor((1 * t).data)[0] == ensure_eager_tensor("Multiply")
-    assert ensure_eager_tensor((t / 1).data)[0] == ensure_eager_tensor("TrueDivide")
-    assert ensure_eager_tensor((1 / t).data)[0] == ensure_eager_tensor("TrueDivide")
-    assert ensure_eager_tensor((t**1).data)[0] == ensure_eager_tensor("Power")
-    assert ensure_eager_tensor((1**t).data)[0] == ensure_eager_tensor("Power")
-    assert ensure_eager_tensor((t // 1).data)[0] == ensure_eager_tensor("FloorDivide")
-    assert ensure_eager_tensor((1 // t).data)[0] == ensure_eager_tensor("FloorDivide")
-    assert ensure_eager_tensor((t % 1).data)[0] == ensure_eager_tensor("Mod")
-    assert ensure_eager_tensor((1 % t).data)[0] == ensure_eager_tensor("Mod")
+    assert coerce_operand_list((t + 1).data)[0] == "Add"
+    assert coerce_operand_list((1 + t).data)[0] == "Add"
+    assert coerce_operand_list((t - 1).data)[0] == "Subtract"
+    assert coerce_operand_list((1 - t).data)[0] == "Subtract"
+    assert coerce_operand_list((t * 1).data)[0] == "Multiply"
+    assert coerce_operand_list((1 * t).data)[0] == "Multiply"
+    assert coerce_operand_list((t / 1).data)[0] == "TrueDivide"
+    assert coerce_operand_list((1 / t).data)[0] == "TrueDivide"
+    assert coerce_operand_list((t**1).data)[0] == "Power"
+    assert coerce_operand_list((1**t).data)[0] == "Power"
+    assert coerce_operand_list((t // 1).data)[0] == "FloorDivide"
+    assert coerce_operand_list((1 // t).data)[0] == "FloorDivide"
+    assert coerce_operand_list((t % 1).data)[0] == "Mod"
+    assert coerce_operand_list((1 % t).data)[0] == "Mod"
 
-    assert ensure_eager_tensor((t & 1).data)[0] == ensure_eager_tensor("BitwiseAnd")
-    assert ensure_eager_tensor((1 & t).data)[0] == ensure_eager_tensor("BitwiseAnd")
-    assert ensure_eager_tensor((t | 1).data)[0] == ensure_eager_tensor("BitwiseOr")
-    assert ensure_eager_tensor((1 | t).data)[0] == ensure_eager_tensor("BitwiseOr")
-    assert ensure_eager_tensor((t ^ 1).data)[0] == ensure_eager_tensor("BitwiseXor")
-    assert ensure_eager_tensor((1 ^ t).data)[0] == ensure_eager_tensor("BitwiseXor")
-    assert ensure_eager_tensor((t << 1).data)[0] == ensure_eager_tensor("LeftShift")
-    assert ensure_eager_tensor((1 << t).data)[0] == ensure_eager_tensor("LeftShift")
-    assert ensure_eager_tensor((t >> 1).data)[0] == ensure_eager_tensor("RightShift")
-    assert ensure_eager_tensor((1 >> t).data)[0] == ensure_eager_tensor("RightShift")
+    assert coerce_operand_list((t & 1).data)[0] == "BitwiseAnd"
+    assert coerce_operand_list((1 & t).data)[0] == "BitwiseAnd"
+    assert coerce_operand_list((t | 1).data)[0] == "BitwiseOr"
+    assert coerce_operand_list((1 | t).data)[0] == "BitwiseOr"
+    assert coerce_operand_list((t ^ 1).data)[0] == "BitwiseXor"
+    assert coerce_operand_list((1 ^ t).data)[0] == "BitwiseXor"
+    assert coerce_operand_list((t << 1).data)[0] == "LeftShift"
+    assert coerce_operand_list((1 << t).data)[0] == "LeftShift"
+    assert coerce_operand_list((t >> 1).data)[0] == "RightShift"
+    assert coerce_operand_list((1 >> t).data)[0] == "RightShift"
 
-    assert ensure_eager_tensor((-t).data)[0] == ensure_eager_tensor("Negative")
-    assert ensure_eager_tensor((+t).data)[0] == ensure_eager_tensor("Positive")
-    assert ensure_eager_tensor(abs(t).data)[0] == ensure_eager_tensor("Abs")
-    assert ensure_eager_tensor((~t).data)[0] == ensure_eager_tensor("BitwiseNot")
+    assert coerce_operand_list((-t).data)[0] == "Negative"
+    assert coerce_operand_list((+t).data)[0] == "Positive"
+    assert coerce_operand_list(abs(t).data)[0] == "Abs"
+    assert coerce_operand_list((~t).data)[0] == "BitwiseNot"
 
-    assert ensure_eager_tensor((t < 1).data)[0] == "Less"
-    assert ensure_eager_tensor((t > 1).data)[0] == "Greater"
-    assert ensure_eager_tensor((t <= 1).data)[0] == "LessEqual"
-    assert ensure_eager_tensor((t >= 1).data)[0] == "GreaterEqual"
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(t) == ensure_eager_tensor(1)).data)[0] == ensure_eager_tensor("Equal")
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(t) != ensure_eager_tensor(1)).data)[0] == ensure_eager_tensor("NotEqual")
+    assert coerce_operand_list((t < 1).data)[0] == "Less"
+    assert coerce_operand_list((t > 1).data)[0] == "Greater"
+    assert coerce_operand_list((t <= 1).data)[0] == "LessEqual"
+    assert coerce_operand_list((t >= 1).data)[0] == "GreaterEqual"
+    assert coerce_operand_list((t == 1).data)[0] == "Equal"
+    assert coerce_operand_list((t != 1).data)[0] == "NotEqual"
 
     assert hash(t) == id(t)
 
 
 def test_mixins_real_op() -> None:
-    """Test function test_mixins_real_op."""
+    """Verify ``TensorArithmeticMixin._get_op`` dispatches real registered operations."""
+    import numpy as np
 
-    class DummyTensorRealOp(TensorArithmeticMixin):
-        """Test class DummyTensorRealOp."""
+    from ml_switcheroo_compiler.core.config import ConfigContext
 
-        pass
-
-    with pytest.raises(Exception, match=r".*"):
-        DummyTensorRealOp() + 1
+    _ = (TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
+    with ConfigContext(eager_mode=True):
+        t = Tensor(np.array([2, 4], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
+        out = t + 3
+        assert np.asarray(out).tolist() == [5, 7]

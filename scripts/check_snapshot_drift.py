@@ -232,11 +232,18 @@ def check_directory_drift(
     if not os.path.exists(old_dir) or not os.path.exists(new_dir):
         return results, breaking_issues
 
-    if os.path.abspath(old_dir) == os.path.abspath(new_dir) and os.path.abspath(old_dir) == os.path.abspath(_resolve_default_snapshot_dir()):
+    if os.path.abspath(old_dir) == os.path.abspath(new_dir) and os.path.abspath(old_dir) == os.path.abspath(
+        _resolve_default_snapshot_dir()
+    ):
         engine = SnapshotGroundingEngine(snapshot_dir=None)
         for backend_name, target in sorted(engine.config.targets.items()):
             has_fw_py = os.path.exists(os.path.join(engine.frameworks_dir, f"{target.framework}.py"))
-            if target.status == "available" and engine.get_snapshot_path(backend_name) is None and not has_fw_py and not engine.get_valid_endpoints(backend_name):
+            if (
+                target.status == "available"
+                and engine.get_snapshot_path(backend_name) is None
+                and not has_fw_py
+                and not engine.get_valid_endpoints(backend_name)
+            ):
                 breaking_issues.append(f"{backend_name}: missing snapshot matching '{target.snapshot_glob}'")
         return results, breaking_issues
 
@@ -303,7 +310,9 @@ def _resolve_target_path(raw_target: str | None, fallback: str) -> str:
         str: Resolved target path.
     """
     target: str = raw_target if raw_target is not None else fallback
-    if os.path.basename(os.path.normpath(target)) == "ml-ecosystem-snapshots" and (not os.path.isdir(target) or not any(f.endswith((".json", ".json.gz")) for f in os.listdir(target))):
+    if os.path.basename(os.path.normpath(target)) == "ml-ecosystem-snapshots" and (
+        not os.path.isdir(target) or not any(f.endswith((".json", ".json.gz")) for f in os.listdir(target))
+    ):
         return str(_resolve_default_snapshot_dir())
     if os.path.isdir(target) and os.path.isdir(os.path.join(target, "snapshots")):
         return os.path.join(target, "snapshots")

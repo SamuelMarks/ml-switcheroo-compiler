@@ -6,13 +6,26 @@ import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
-from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.backends.numpy.eager.distributed import (
+    TCPDistributedContext,
+    _np_all_gather,
+    _np_all_reduce,
+    _np_all_to_all,
+    _np_axis_index,
+    _np_broadcast,
+    _np_reduce,
+    _np_reduce_scatter,
+    _np_shard_tensor,
+    set_np_distributed_context,
+)
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_axis_index() -> None:
@@ -21,7 +34,7 @@ def test_axis_index() -> None:
     Returns:
         None
     """
-    res = _np_axis_index(ensure_eager_tensor(np))
+    res = _np_axis_index(np)
     assert res == 0
 
 
@@ -42,40 +55,40 @@ def test_np_distributed_context() -> None:
                 MockListener.return_value = mock_listener_instance
                 set_np_distributed_context(world_size=2, rank=0)
                 t = np.array([1, 2])
-                _np_all_reduce(ensure_eager_tensor(np), t)
-                _np_all_gather(ensure_eager_tensor(np), t)
-                _np_broadcast(ensure_eager_tensor(np), t)
-                _np_reduce_scatter(ensure_eager_tensor(np), t)
-                _np_reduce(ensure_eager_tensor(np), t)
-                _np_shard_tensor(ensure_eager_tensor(np), t)
-                _np_reduce_scatter(ensure_eager_tensor(np), t, "prod")
-                _np_reduce_scatter(ensure_eager_tensor(np), t, "max")
-                _np_reduce_scatter(ensure_eager_tensor(np), t, "min")
-                _np_reduce_scatter(ensure_eager_tensor(np), t, "unknown")
-                _np_reduce(ensure_eager_tensor(np), t, 0, "prod")
-                _np_reduce(ensure_eager_tensor(np), t, 0, "max")
-                _np_reduce(ensure_eager_tensor(np), t, 0, "min")
-                _np_reduce(ensure_eager_tensor(np), t, 0, "unknown")
-                _np_all_reduce(ensure_eager_tensor(np), t, "prod")
-                _np_all_reduce(ensure_eager_tensor(np), t, "max")
-                _np_all_reduce(ensure_eager_tensor(np), t, "min")
-                _np_all_reduce(ensure_eager_tensor(np), t, "unknown")
-                _np_all_to_all(ensure_eager_tensor(np), t)
+                _np_all_reduce(np, t)
+                _np_all_gather(np, t)
+                _np_broadcast(np, t)
+                _np_reduce_scatter(np, t)
+                _np_reduce(np, t)
+                _np_shard_tensor(np, t)
+                _np_reduce_scatter(np, t, "prod")
+                _np_reduce_scatter(np, t, "max")
+                _np_reduce_scatter(np, t, "min")
+                _np_reduce_scatter(np, t, "unknown")
+                _np_reduce(np, t, 0, "prod")
+                _np_reduce(np, t, 0, "max")
+                _np_reduce(np, t, 0, "min")
+                _np_reduce(np, t, 0, "unknown")
+                _np_all_reduce(np, t, "prod")
+                _np_all_reduce(np, t, "max")
+                _np_all_reduce(np, t, "min")
+                _np_all_reduce(np, t, "unknown")
+                _np_all_to_all(np, t)
                 dist_mod._tcp_dist_ctx.all_reduce_ring(t, op_type="prod")
                 dist_mod._tcp_dist_ctx.all_reduce_ring(t, op_type="max")
                 dist_mod._tcp_dist_ctx.all_reduce_ring(t, op_type="min")
                 dist_mod._tcp_dist_ctx.shutdown()
     set_np_distributed_context(world_size=1, rank=0)
     t = np.array([1, 2])
-    _np_all_reduce(ensure_eager_tensor(np), t)
-    _np_all_gather(ensure_eager_tensor(np), t)
-    _np_reduce_scatter(ensure_eager_tensor(np), t)
-    assert ensure_callable(np.array_equal)(ensure_callable(_np_all_to_all)(np, t), t)
-    assert ensure_callable(np.array_equal)(ensure_callable(_np_reduce)(np, t), t)
-    assert ensure_callable(np.array_equal)(ensure_callable(_np_shard_tensor)(np, t), t)
-    assert ensure_callable(np.array_equal)(ensure_callable(_np_broadcast)(np, t), t)
+    _np_all_reduce(np, t)
+    _np_all_gather(np, t)
+    _np_reduce_scatter(np, t)
+    assert np.array_equal(ensure_ndarray(_np_all_to_all(np, t)), t)
+    assert np.array_equal(ensure_ndarray(_np_reduce(np, t)), t)
+    assert np.array_equal(ensure_ndarray(_np_shard_tensor(np, t)), t)
+    assert np.array_equal(ensure_ndarray(_np_broadcast(np, t)), t)
     assert np.array_equal(dist_mod._tcp_dist_ctx.all_reduce_ring(t), t)
-    assert ensure_callable(np.array_equal)(ensure_callable(dist_mod._tcp_dist_ctx.all_gather_tensors)(t)[0], t)
+    assert np.array_equal(ensure_ndarray(dist_mod._tcp_dist_ctx.all_gather_tensors(t)[0]), t)
 
 
 def test_distributed_initialize_timeout() -> None:
@@ -102,12 +115,12 @@ def test_distributed_shutdown_no_conn() -> None:
     ctx = TCPDistributedContext()
     ctx.world_size = 2
     ctx.rank = 1
-    ensure_mutable(ctx).conn = ensure_eager_tensor(None)
+    pytest.MonkeyPatch().setattr(ctx, "conn", None, raising=False)
     ctx.shutdown()
     ctx2 = TCPDistributedContext()
     ctx2.world_size = 2
     ctx2.rank = 0
-    ensure_mutable(ctx2).connections = ensure_eager_tensor([])
+    pytest.MonkeyPatch().setattr(ctx2, "connections", [], raising=False)
     ctx2.listener = None
     ctx2.shutdown()
     assert ctx2.rank == 0
@@ -117,7 +130,7 @@ def test_ipc_timeout() -> None:
     """Test function test_ipc_timeout."""
     from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data_worker
 
-    def mock_target(rank: EagerValue, data: EagerValue) -> None:
+    def mock_target(rank: BackendArg, data: BackendArg) -> None:
         """Test function mock_target.
 
         Args:
@@ -127,7 +140,7 @@ def test_ipc_timeout() -> None:
         pass
 
     _out = _exchange_ipc_data_worker(1, 2, np.array([1]), 0.001, 0.001)
-    assert len(ensure_eager_tensor(_out)) == 2
+    assert len(_out) == 2
 
 
 def test_ipc_worker_retry_then_success() -> None:
@@ -143,12 +156,15 @@ def test_ipc_worker_retry_then_success() -> None:
 
         calls: int = 0
 
-        def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+        def __init__(self, *args: BackendArg, **kwargs: BackendArg) -> None:
             """Test function __init__.
 
             Args:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
+
+            Raises:
+                ConnectionRefusedError: When raised during `__init__` (fail first time).
             """
             self.calls = MockClient.calls
             MockClient.calls = self.calls + 1
@@ -156,15 +172,15 @@ def test_ipc_worker_retry_then_success() -> None:
                 raise ConnectionRefusedError("fail first time")
             self.mock = MagicMock()
 
-        def __enter__(self) -> EagerValue:
+        def __enter__(self) -> BackendArg:
             """Test function __enter__.
 
             Returns:
-                EagerValue: Computed output value from `__enter__`.
+                BackendArg: Computed output value from `__enter__`.
             """
             return self.mock
 
-        def __exit__(self, *args: EagerValue) -> None:
+        def __exit__(self, *args: BackendArg) -> None:
             """Test function __exit__.
 
             Args:
@@ -206,20 +222,31 @@ def test_np_ops_coverage() -> None:
     """Test function test_np_ops_coverage."""
     dmod._tcp_dist_ctx.world_size = 2
     dmod._tcp_dist_ctx.rank = 0
-    ensure_mutable(dmod._tcp_dist_ctx).all_reduce_ring = ensure_eager_tensor(lambda t, op, bm: ensure_callable(np.array)([5.0]) if op == "sum" else ensure_callable(np.array)([3.0]))
-    ensure_mutable(dmod._tcp_dist_ctx).all_gather_tensors = ensure_eager_tensor(lambda t: [t, np.array([3.0])])
+    pytest.MonkeyPatch().setattr(
+        dmod._tcp_dist_ctx,
+        "all_reduce_ring",
+        lambda t, op, bm: np.array([5.0]) if op == "sum" else np.array([3.0]),
+        raising=False,
+    )
+    pytest.MonkeyPatch().setattr(
+        dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])], raising=False
+    )
     t = np.array([2.0])
-    assert ensure_eager_tensor(ensure_eager_tensor(_np_all_reduce(ensure_eager_tensor(np), t, op_type="sum")).item)() == 5.0
-    ensure_mutable(dmod._tcp_dist_ctx).all_gather_tensors = ensure_eager_tensor(lambda t: [t, np.array([3.0])])
-    assert ensure_eager_tensor(ensure_eager_tensor(_np_reduce(ensure_eager_tensor(np), t, op_type="sum")).item)() == 5.0
-    assert ensure_eager_tensor(ensure_eager_tensor(_np_all_reduce(ensure_eager_tensor(np), t, op_type="max")).item)() == 3.0
-    res = _np_all_gather(ensure_eager_tensor(np), t, axis=0)
-    assert ensure_callable(np.array_equal)(res, [2.0, 3.0])
+    assert ensure_ndarray(_np_all_reduce(np, t, op_type="sum")).item() == 5.0
+    pytest.MonkeyPatch().setattr(
+        dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])], raising=False
+    )
+    assert ensure_ndarray(_np_reduce(np, t, op_type="sum")).item() == 5.0
+    assert ensure_ndarray(_np_all_reduce(np, t, op_type="max")).item() == 3.0
+    res = _np_all_gather(np, t, axis=0)
+    assert np.array_equal(ensure_ndarray(res), [2.0, 3.0])
     t_rs = np.array([1.0, 2.0])
-    ensure_mutable(dmod._tcp_dist_ctx).all_gather_tensors = ensure_eager_tensor(lambda t: [t, np.array([3.0, 4.0])])
-    assert ensure_eager_tensor(ensure_eager_tensor(_np_reduce_scatter(ensure_eager_tensor(np), t_rs, op_type="sum")).item)() == 4.0
-    a2a = _np_all_to_all(ensure_eager_tensor(np), t_rs)
-    assert ensure_callable(len)(a2a) == 2
+    pytest.MonkeyPatch().setattr(
+        dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0, 4.0])], raising=False
+    )
+    assert ensure_ndarray(_np_reduce_scatter(np, t_rs, op_type="sum")).item() == 4.0
+    a2a = _np_all_to_all(np, t_rs)
+    assert len(coerce_operand_list(a2a)) == 2
 
 
 def test_tcp_dist_ctx_connection_refused() -> None:

@@ -1,12 +1,18 @@
 # ruff: noqa: E402
-"""Implementation of generator operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.mlx.generator`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.mlx.generator`."""
 
 from __future__ import annotations
 
+from types import ModuleType
+
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, require_callable
+from ml_switcheroo_compiler.backends.protocols import (
+    EagerBackendAdapter,
+    StaticEagerBackendAdapter,
+    adapt_backend_module,
+)
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
@@ -45,7 +51,9 @@ _MLX_ISTFT_TMPL = """def mlx_istft(matrix, config):
     return out
 """
 
-_MLX_MEL_FILTERBANK_TMPL = """def mlx_mel_filterbank(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):
+_MLX_MEL_FILTERBANK_TMPL = """def mlx_mel_filterbank(
+    num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz
+):
     import mlx.core as mx
     def hz_to_mel(hz): return 2595.0 * mx.log10(1.0 + hz / 700.0)
     def mel_to_hz(mel): return 700.0 * (10.0 ** (mel / 2595.0) - 1.0)
@@ -66,7 +74,10 @@ _MLX_MEL_FILTERBANK_TMPL = """def mlx_mel_filterbank(num_mel_bins, num_spectrogr
 
 _MLX_MFCC_TMPL = """def mlx_mfcc(spectrogram, config):
     import mlx.core as mx
-    mel_weights = mlx_mel_filterbank(config.num_mel_bins, spectrogram.shape[-1], config.sample_rate, config.lower_edge_hertz, config.upper_edge_hertz)
+    mel_weights = mlx_mel_filterbank(
+        config.num_mel_bins, spectrogram.shape[-1], config.sample_rate,
+        config.lower_edge_hertz, config.upper_edge_hertz,
+    )
     mel_spectrogram = mx.matmul(spectrogram, mel_weights)
     log_mel = mx.log(mel_spectrogram + 1e-6)
     N = config.num_mel_bins
@@ -79,7 +90,7 @@ _MLX_MFCC_TMPL = """def mlx_mfcc(spectrogram, config):
     return mx.matmul(log_mel, dct_mat.T)
 """
 
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_ir import IRGraph
 
 _MLX_POWER_ITERATION_TMPL = """def mlx_power_iteration(w, num_iters, u=None):
     import mlx.core as mx
@@ -126,34 +137,34 @@ class MLXCodeGenerator(ClassBasedGenerator):
         )
 
     @classmethod
-    def save_gguf(cls, file: str, arrays: EagerValue, metadata: EagerValue = None) -> None:
+    def save_gguf(cls, file: str, arrays: BackendArg, metadata: BackendArg = None) -> None:
         """Save a dictionary of arrays to GGUF format.
 
         Args:
             file (str): Input `file` argument (file).
-            arrays (dict): Input `arrays` argument (arrays).
-            metadata (Optional[dict]): Optional metadata dictionary.
+            arrays (BackendArg): Input `arrays` argument (arrays).
+            metadata (BackendArg): Optional metadata dictionary.
         """
         import mlx.core as mx
 
-        save_fn = get_backend_member(mx, "save_gguf", None)
+        save_fn = adapt_backend_module(mx).get_symbol("save_gguf", None)
         if save_fn is not None:
             try:
-                ensure_callable(save_fn)(file, arrays, metadata or {})
+                require_callable(save_fn)(file, arrays, metadata or {})
             except TypeError:
-                ensure_callable(save_fn)(file, arrays)
+                require_callable(save_fn)(file, arrays)
 
     @classmethod
-    def set_default_stream(cls, stream: EagerValue) -> None:
+    def set_default_stream(cls, stream: BackendArg) -> None:
         """Set the default stream.
 
         Args:
-            stream (EagerValue): Input `stream` argument (stream).
+            stream (BackendArg): Input `stream` argument (stream).
         """
         import mlx.core as mx
 
-        if has_backend_member(mx, "set_default_stream"):
-            ensure_mod(mx).set_default_stream(stream)
+        if adapt_backend_module(mx).has_symbol("set_default_stream"):
+            require_callable(mx.set_default_stream)(stream)
 
     @classmethod
     def set_memory_limit(cls, limit: int) -> None:
@@ -164,7 +175,9 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if has_backend_member(mx, "metal") and has_backend_member(mx.metal, "set_memory_limit"):
+        if adapt_backend_module(mx).has_symbol("metal") and adapt_backend_module(mx.metal).has_symbol(
+            "set_memory_limit"
+        ):
             mx.metal.set_memory_limit(limit)
 
     @classmethod
@@ -176,7 +189,9 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if has_backend_member(mx, "metal") and has_backend_member(mx.metal, "set_wired_limit"):
+        if adapt_backend_module(mx).has_symbol("metal") and adapt_backend_module(mx.metal).has_symbol(
+            "set_wired_limit"
+        ):
             mx.metal.set_wired_limit(limit)
 
     def generate(self) -> str:
@@ -225,7 +240,9 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return res
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
+    def load(
+        cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"
+    ) -> BackendArg:
         """Load.
 
         Args:
@@ -240,106 +257,121 @@ class MLXCodeGenerator(ClassBasedGenerator):
         import mlx.core as mx
 
         # Note: MLX load does not use allow_pickle, fix_imports, or encoding
-        return ensure_eager_tensor(mx.load(filepath))
+        return mx.load(filepath)
 
     @classmethod
-    def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: BackendArg, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
             file (str): Input `file` argument (file).
-            arr (EagerValue): Input `arr` argument (arr).
+            arr (BackendArg): Input `arr` argument (arr).
             allow_pickle (bool): Input `allow_pickle` argument (allow pickle).
             fix_imports (bool): Input `fix_imports` argument (fix imports).
         """
         import mlx.core as mx
 
-        ensure_mod(mx).save(file, arr)
+        require_callable(mx.save)(file, arr)
 
     @classmethod
-    def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Savez.
 
         Args:
             file (str): Input `file` argument (file).
-            *args (EagerValue): Positional args.
-            **kwds (EagerValue): Keyword args.
+            *args (BackendArg): Positional args.
+            **kwds (BackendArg): Keyword args.
         """
         import mlx.core as mx
 
-        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, BackendArg] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
-        ensure_mod(mx).save_safetensors(file, data)
+        require_callable(mx.save_safetensors)(file, data)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
+    def savez_compressed(cls: type, file: str, *args: BackendArg, **kwds: BackendArg) -> None:
         """Savez compressed.
 
         Args:
             file (str): Input `file` argument (file).
-            *args (EagerValue): Positional args.
-            **kwds (EagerValue): Keyword args.
+            *args (BackendArg): Positional args.
+            **kwds (BackendArg): Keyword args.
         """
         import mlx.core as mx
 
-        data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, BackendArg] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         # MLX doesn't have a specific compressed method, safetensors is efficient
-        ensure_mod(mx).save_safetensors(file, data)
+        require_callable(mx.save_safetensors)(file, data)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into an ahead-of-time (AOT) callable using mx.compile.
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (EagerValue): Optional compiler arguments (e.g. 'shapeless').
+            **kwargs (BackendArg): Optional compiler arguments (e.g. 'shapeless').
 
         Returns:
-            EagerValue: Compiled execution callable.
+            BackendArg: Compiled execution callable.
+
+        Raises:
+            ValueError: When raised during `_compile_aot_impl` (Generated MLX module is missing CompiledModel).
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
         try:
             import mlx.core as mx
 
-            scope: dict[str, EagerValue] = {}
-            exec(self.generate(), scope)
+            from ml_switcheroo_compiler.backends._module_loader import load_generated_code
+
+            scope = load_generated_code(self.generate())
             model_cls = scope.get("CompiledModel")
             if model_cls is None or not callable(model_cls):
                 raise ValueError("Generated MLX module is missing CompiledModel.")
 
-            model_instance = model_cls()
+            model_instance = require_callable(model_cls)()
             shapeless = bool(kwargs.get("shapeless", False))
-            compiled_fn = ensure_callable(ensure_mod(mx).compile(model_instance, shapeless=shapeless))
+            compiled_fn = require_callable(mx.compile)(model_instance, shapeless=shapeless)
 
-            def aot_mlx_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
+            def aot_mlx_runner(*w_args: BackendArg, **w_kwargs: BackendArg) -> BackendArg:
                 """Execute AOT compiled MLX graph function.
 
                 Args:
-                    *w_args (EagerValue): Input tensors.
-                    **w_kwargs (EagerValue): Keyword arguments.
+                    *w_args (BackendArg): Input tensors.
+                    **w_kwargs (BackendArg): Keyword arguments.
 
                 Returns:
-                    EagerValue: Computed outputs.
+                    BackendArg: Computed outputs.
                 """
-                mlx_args = [ensure_mod(mx).array(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return ensure_eager_tensor(compiled_fn(*mlx_args, **w_kwargs))
+                arr_fn = require_callable(mx.array)
+                mlx_args = [arr_fn(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return require_callable(compiled_fn)(*mlx_args, **w_kwargs)
 
             return aot_mlx_runner
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-            def fallback_forward(*fn_args: EagerValue) -> EagerValue:
+            def fallback_forward(*fn_args: BackendArg) -> BackendArg:
                 """Execute interpreter graph evaluation fallback.
 
                 Args:
-                    *fn_args (EagerValue): Positional input arguments.
+                    *fn_args (BackendArg): Positional input arguments.
 
                 Returns:
-                    EagerValue: Evaluated output tensors.
+                    BackendArg: Evaluated output tensors.
                 """
                 input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
-                inputs: dict[str, EagerValue] = {}
+                inputs: dict[str, BackendArg] = {}
                 for i, inp_node in enumerate(input_nodes):
                     if i < len(fn_args):
                         arg_val = fn_args[i]
@@ -349,59 +381,59 @@ class MLXCodeGenerator(ClassBasedGenerator):
                     if len(graph.outputs) == 1:
                         return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return ensure_eager_tensor(evaluated)
+                return evaluated
 
             return fallback_forward
 
     @classmethod
-    def zeros(cls, shape: tuple[int, ...]) -> EagerValue:
+    def zeros(cls, shape: tuple[int, ...]) -> BackendArg:
         """Create a zero-filled MLX array.
 
         Args:
             shape (tuple[int, ...]): Target shape.
 
         Returns:
-            EagerValue: Zero-filled array.
+            BackendArg: Zero-filled array.
         """
         from .types import zeros as _zeros
 
         return _zeros(cls, shape)
 
     @classmethod
-    def array(cls, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+    def array(cls, data: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
         """Create an MLX array from data.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (EagerValue | None): Optional data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg | None): Optional data type.
 
         Returns:
-            EagerValue: MLX array.
+            BackendArg: MLX array.
         """
         from .types import array as _array
 
         return _array(cls, data, dtype=dtype)
 
     @classmethod
-    def asarray(cls, data: EagerValue) -> EagerValue:
+    def asarray(cls, data: BackendArg) -> BackendArg:
         """Convert data to an MLX array.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
-            EagerValue: MLX array.
+            BackendArg: MLX array.
         """
         from .types import asarray as _asarray
 
         return _asarray(cls, data)
 
     @classmethod
-    def item(cls, data: EagerValue) -> float:
+    def item(cls, data: BackendArg) -> float:
         """Extract scalar item from an MLX array.
 
         Args:
-            data (EagerValue): Target array.
+            data (BackendArg): Target array.
 
         Returns:
             float: Extracted scalar.
@@ -411,20 +443,87 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return _item(cls, data)
 
     @classmethod
-    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def execute_op(cls, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute operation eagerly on MLX backend.
 
         Args:
             op_type (str): Operation type.
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Evaluated MLX array.
+            BackendArg: Evaluated MLX array.
         """
         from .eager import execute_op as _execute_op
 
         return _execute_op(cls, op_type, *args, **kwargs)
+
+    @classmethod
+    def get_module(cls) -> ModuleType:
+        """Return the underlying ``mlx.core`` runtime module.
+
+        Returns:
+            ModuleType: Imported ``mlx.core`` module.
+        """
+        import importlib
+
+        return importlib.import_module("mlx.core")
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for MLX (`mlx.core`).
+
+        Returns:
+            EagerBackendAdapter: Concrete MLX eager backend adapter.
+        """
+        import mlx.core as mx
+
+        from ml_switcheroo_compiler.backends.adapter_bindings import read_static_attr
+
+        return StaticEagerBackendAdapter(
+            backend_name="mlx",
+            ops={
+                "abs": mx.abs,
+                "add": mx.add,
+                "subtract": mx.subtract,
+                "multiply": mx.multiply,
+                "divide": mx.divide,
+                "sin": mx.sin,
+                "cos": mx.cos,
+                "tanh": mx.tanh,
+                "exp": mx.exp,
+                "log": mx.log,
+                "sqrt": mx.sqrt,
+                "matmul": mx.matmul,
+                "sum": mx.sum,
+                "mean": mx.mean,
+                "reshape": mx.reshape,
+                "transpose": mx.transpose,
+                "asarray": mx.array,
+                "array": mx.array,
+                "zeros": mx.zeros,
+                "ones": mx.ones,
+            },
+            dtypes={
+                "float16": read_static_attr(mx, "float16")[1],
+                "float32": read_static_attr(mx, "float32")[1],
+                "bfloat16": read_static_attr(mx, "bfloat16")[1],
+                "int8": read_static_attr(mx, "int8")[1],
+                "int16": read_static_attr(mx, "int16")[1],
+                "int32": read_static_attr(mx, "int32")[1],
+                "int64": read_static_attr(mx, "int64")[1],
+                "uint8": read_static_attr(mx, "uint8")[1],
+                "bool": read_static_attr(mx, "bool_")[1],
+                "bool_": read_static_attr(mx, "bool_")[1],
+                "complex64": read_static_attr(mx, "complex64")[1],
+            },
+            submodules={
+                "linalg": mx.linalg,
+                "fft": mx.fft,
+                "random": mx.random,
+            },
+            module=mx,
+        )
 
 
 MLXGenerator = MLXCodeGenerator

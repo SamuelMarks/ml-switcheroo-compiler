@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import ensure_int
+from ml_switcheroo_compiler.backends.registry import coerce_int
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -14,14 +14,14 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class _IndexableSizeProtocol(typing.Protocol):
     """Protocol for indexable size sequences."""
 
-    def __getitem__(self, index: int) -> TensorOrScalar:
+    def __getitem__(self, index: int) -> OpValue:
         """Retrieve dimension size at `index`.
 
         Args:
             index (int): Spatial dimension index.
 
         Returns:
-            TensorOrScalar: Spatial dimension size.
+            OpValue: Spatial dimension size.
         """
         ...
 
@@ -30,7 +30,7 @@ class _IndexableSizeProtocol(typing.Protocol):
 class CTCLoss(OpDef):
     """Connectionist Temporal Classification Loss."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the CTCLoss output.
 
         Args:
@@ -38,11 +38,12 @@ class CTCLoss(OpDef):
             **kwargs: Keyword arguments, optionally containing 'log_probs'.
 
         Returns:
-            The inferred shape tuple (typically containing the batch size), or an empty tuple if it cannot be determined.
+            The inferred shape tuple (typically containing the batch size), or an empty tuple if it cannot be
+            determined.
         """
         log_probs = args[0] if len(args) > 0 else kwargs.get("log_probs")
         if isinstance(log_probs, ShapeProtocol):
-            return (log_probs.shape[1],) if len(log_probs.shape) >= MATRIX_RANK else ()
+            return (extract_shape(log_probs)[1],) if len(extract_shape(log_probs)) >= MATRIX_RANK else ()
         return ()
 
 
@@ -50,7 +51,7 @@ class CTCLoss(OpDef):
 class FractionalMaxPool2D(OpDef):
     """Fractional max pooling 2D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the FractionalMaxPool2D output.
 
         Args:
@@ -63,8 +64,8 @@ class FractionalMaxPool2D(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
+            s = list(extract_shape(operand))
+            s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -73,7 +74,7 @@ class FractionalMaxPool2D(OpDef):
 class AdaptiveAvgPool2D(OpDef):
     """Adaptive average pooling 2D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the AdaptiveAvgPool2D output.
 
         Args:
@@ -86,8 +87,8 @@ class AdaptiveAvgPool2D(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
+            s = list(extract_shape(operand))
+            s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -96,7 +97,7 @@ class AdaptiveAvgPool2D(OpDef):
 class AdaptiveMaxPool2D(OpDef):
     """Adaptive max pooling 2D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the AdaptiveMaxPool2D output.
 
         Args:
@@ -109,8 +110,8 @@ class AdaptiveMaxPool2D(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
+            s = list(extract_shape(operand))
+            s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -119,7 +120,7 @@ class AdaptiveMaxPool2D(OpDef):
 class Unfold(OpDef):
     """Unfold (Im2Col) operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the Unfold output.
 
         Args:
@@ -136,7 +137,7 @@ class Unfold(OpDef):
 class Fold(OpDef):
     """Fold (Col2Im) operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the Fold output.
 
         Args:
@@ -153,7 +154,7 @@ class Fold(OpDef):
 class FractionalMaxPool3D(OpDef):
     """Fractional max pooling 3D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the FractionalMaxPool3D output.
 
         Args:
@@ -166,8 +167,8 @@ class FractionalMaxPool3D(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
+            s = list(extract_shape(operand))
+            s[-3], s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1]), coerce_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -176,7 +177,7 @@ class FractionalMaxPool3D(OpDef):
 class AdaptiveAvgPool3D(OpDef):
     """Adaptive average pooling 3D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the AdaptiveAvgPool3D output.
 
         Args:
@@ -189,8 +190,8 @@ class AdaptiveAvgPool3D(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
+            s = list(extract_shape(operand))
+            s[-3], s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1]), coerce_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -199,7 +200,7 @@ class AdaptiveAvgPool3D(OpDef):
 class AdaptiveMaxPool3D(OpDef):
     """Adaptive max pooling 3D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the AdaptiveMaxPool3D output.
 
         Args:
@@ -212,8 +213,8 @@ class AdaptiveMaxPool3D(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
+            s = list(extract_shape(operand))
+            s[-3], s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1]), coerce_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -222,7 +223,7 @@ class AdaptiveMaxPool3D(OpDef):
 class MaxUnpool1D(OpDef):
     """Max unpooling 1D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the MaxUnpool1D output.
 
         Args:
@@ -236,7 +237,7 @@ class MaxUnpool1D(OpDef):
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
         if isinstance(output_size, _IndexableSizeProtocol):
             s = list(extract_shape(operand))
-            s[-1] = ensure_int(output_size[0])
+            s[-1] = coerce_int(output_size[0])
             return tuple(s)
         return ()
 
@@ -245,7 +246,7 @@ class MaxUnpool1D(OpDef):
 class MaxUnpool2D(OpDef):
     """Max unpooling 2D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the MaxUnpool2D output.
 
         Args:
@@ -259,7 +260,7 @@ class MaxUnpool2D(OpDef):
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
         if isinstance(output_size, _IndexableSizeProtocol):
             s = list(extract_shape(operand))
-            s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1])
+            s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1])
             return tuple(s)
         return ()
 
@@ -268,7 +269,7 @@ class MaxUnpool2D(OpDef):
 class MaxUnpool3D(OpDef):
     """Max unpooling 3D."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the MaxUnpool3D output.
 
         Args:
@@ -282,7 +283,7 @@ class MaxUnpool3D(OpDef):
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
         if isinstance(output_size, _IndexableSizeProtocol):
             s = list(extract_shape(operand))
-            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
+            s[-3], s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1]), coerce_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -291,7 +292,7 @@ class MaxUnpool3D(OpDef):
 class AdaptiveMaxPool3D_Indices(OpDef):
     """Adaptive max pooling 3D indices."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the AdaptiveMaxPool3D indices output.
 
         Args:
@@ -304,8 +305,8 @@ class AdaptiveMaxPool3D_Indices(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
+            s = list(extract_shape(operand))
+            s[-3], s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1]), coerce_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -314,7 +315,7 @@ class AdaptiveMaxPool3D_Indices(OpDef):
 class FractionalMaxPool3D_Indices(OpDef):
     """Fractional max pooling 3D indices."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the FractionalMaxPool3D indices output.
 
         Args:
@@ -327,8 +328,8 @@ class FractionalMaxPool3D_Indices(OpDef):
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
         if isinstance(operand, ShapeProtocol) and isinstance(output_size, _IndexableSizeProtocol):
-            s = list(operand.shape)
-            s[-3], s[-2], s[-1] = ensure_int(output_size[0]), ensure_int(output_size[1]), ensure_int(output_size[2])
+            s = list(extract_shape(operand))
+            s[-3], s[-2], s[-1] = coerce_int(output_size[0]), coerce_int(output_size[1]), coerce_int(output_size[2])
             return tuple(s)
         return ()
 
@@ -337,7 +338,7 @@ class FractionalMaxPool3D_Indices(OpDef):
 class MaxPoolWithIndices(OpDef):
     """Max pooling with indices."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the MaxPoolWithIndices output.
 
         Args:
@@ -354,7 +355,7 @@ class MaxPoolWithIndices(OpDef):
 class MaxPoolWithIndices_Indices(OpDef):
     """Max pooling with indices (indices part)."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the shape of the MaxPoolWithIndices indices output.
 
         Args:

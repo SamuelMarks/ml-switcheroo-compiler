@@ -6,17 +6,23 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.core.config import config, disable_compile, enable_compile, enable_op_determinism, enable_tensor_float_32_execution, tensor_float_32_execution_enabled
-from tests.testing_utils import ensure_eager_tensor, ensure_module_type
+from ml_switcheroo_compiler.core.config import (
+    config,
+    disable_compile,
+    enable_compile,
+    enable_op_determinism,
+    enable_tensor_float_32_execution,
+    tensor_float_32_execution_enabled,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_config_extras() -> None:
     """Test function test_config_extras."""
     config.seed = 42
-    assert ensure_eager_tensor(config.seed) == 42
+    assert config.seed == 42
 
     config.op_determinism = False
     enable_op_determinism()
@@ -34,18 +40,20 @@ def test_config_extras() -> None:
     # Trigger the tracing check by mocking
     import sys
 
+    from tests.testing_utils import MockTestStub
+
     class MockTracingState:
         """Test class MockTracingState."""
 
         is_tracing = True
 
-    class MockStateMod:
+    class MockStateMod(MockTestStub):
         """Test class MockStateMod."""
 
         global_tracing_state = MockTracingState()
 
     orig_state = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    sys.modules["ml_switcheroo_compiler.tracing.state"] = ensure_module_type(MockStateMod())
+    sys.modules["ml_switcheroo_compiler.tracing.state"] = MockStateMod()
     config.eager_mode = True  # Even if true, is_tracing forces false
     assert not bool(config.eager_mode)
 
@@ -82,15 +90,15 @@ def test_config_more_props() -> None:
     config.layout_map = "layout"
     assert config.layout_map == "layout"
 
-    config.jax_enable_x64 = True
-    assert config.jax_enable_x64 is True
-    config.jax_enable_x64 = False
+    config.enable_x64 = False
+    assert config.enable_x64 is False
+    config.enable_x64 = True
 
     c2 = config.clone()
     assert c2.execution.backend == "mlx"
 
 
-def test_config_clear_cache(monkeypatch: EagerTensorProtocol) -> None:
+def test_config_clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_config_clear_cache.
 
     Args:
@@ -116,9 +124,9 @@ def test_eager_mode_stream_context() -> None:
     """Test function test_eager_mode_stream_context."""
     from ml_switcheroo_compiler.core.config import EagerMode, StreamContext
 
-    with ensure_eager_tensor(EagerMode()):
+    with EagerMode():
         assert config.eager_mode is True
-    with ensure_eager_tensor(StreamContext("test")):
+    with StreamContext("test"):
         assert config.current_stream == "test"
 
 
@@ -126,8 +134,8 @@ def test_config_context_env() -> None:
     """Test function test_config_context_env."""
     from ml_switcheroo_compiler.core.config import ConfigContext
 
-    with ConfigContext(jax_enable_x64=False):
-        assert config.jax_enable_x64 is False
+    with ConfigContext(enable_x64=False):
+        assert config.enable_x64 is False
 
 
 def test_config_eager_mode_branch() -> None:
@@ -135,19 +143,20 @@ def test_config_eager_mode_branch() -> None:
     import sys
 
     from ml_switcheroo_compiler.core.config import config
+    from tests.testing_utils import MockTestStub
 
     class FakeTracingState:
         """Test class FakeTracingState."""
 
         is_tracing = False
 
-    class FakeMod:
+    class FakeMod(MockTestStub):
         """Test class FakeMod."""
 
         global_tracing_state = FakeTracingState()
 
     old = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    sys.modules["ml_switcheroo_compiler.tracing.state"] = ensure_module_type(FakeMod())
+    sys.modules["ml_switcheroo_compiler.tracing.state"] = FakeMod()
 
     config.eager_mode = True
     assert config.eager_mode is True

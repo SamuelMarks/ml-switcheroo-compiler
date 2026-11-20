@@ -1,20 +1,26 @@
-"""Implementation of math nn operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_nn`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_math_ops.math_nn`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_eager_tensor,
-    ensure_shape,
+    BackendArg,
+    BackendArrayProtocol,
+    coerce_array,
+    coerce_float,
+    coerce_numeric,
+    coerce_shape,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
 @global_eager_registry.register("ActivityRegularization")
-def _activity_regularization(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _activity_regularization(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, x: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager activity regularization operation on the active backend array.
 
     Args:
@@ -23,13 +29,15 @@ def _activity_regularization(backend_module: BackendModuleProtocol, x: EagerValu
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return x
 
 
 @global_eager_registry.register("LayerNorm")
-def _layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _layer_norm(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate LayerNorm.
 
     Args:
@@ -38,21 +46,23 @@ def _layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: Normalized output.
+        BackendArg: Normalized output.
     """
     del kwargs
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    gamma = ensure_eager_tensor(args[1]) if len(args) > 1 else 1.0
-    beta = ensure_eager_tensor(args[2]) if len(args) > 2 else 0.0
-    mean = mod.mean(x, axis=-1, keepdims=True)
-    var = mod.var(x, axis=-1, keepdims=True)
-    norm = (x - mean) / mod.sqrt(var + 1e-5)
+    x = coerce_array(mod, args[0])
+    gamma = coerce_numeric(args[1]) if len(args) > 1 else 1.0
+    beta = coerce_numeric(args[2]) if len(args) > 2 else 0.0
+    mean = adapt_backend_module(mod).require_symbol("mean")(x, axis=-1, keepdims=True)
+    var = adapt_backend_module(mod).require_symbol("var")(x, axis=-1, keepdims=True)
+    norm = (x - mean) / adapt_backend_module(mod).require_symbol("sqrt")(var + 1e-5)
     return norm * gamma + beta
 
 
 @global_eager_registry.register("BatchNorm")
-def _batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _batch_norm(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate BatchNorm.
 
     Args:
@@ -61,26 +71,28 @@ def _batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: Normalized output.
+        BackendArg: Normalized output.
     """
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    gamma = ensure_eager_tensor(args[1] if len(args) > 1 else kwargs.get("gamma", 1.0))
-    beta = ensure_eager_tensor(args[2] if len(args) > 2 else kwargs.get("beta", 0.0))
-    eps = ensure_eager_tensor(kwargs.get("eps", 1e-5))
+    x = coerce_array(mod, args[0])
+    gamma = coerce_numeric(args[1]) if len(args) > 1 else coerce_numeric(kwargs.get("gamma", 1.0))
+    beta = coerce_numeric(args[2]) if len(args) > 2 else coerce_numeric(kwargs.get("beta", 0.0))
+    eps = coerce_float(kwargs.get("eps", 1e-5))
     if len(args) > 4:
-        mean = ensure_eager_tensor(args[3])
-        var = ensure_eager_tensor(args[4])
+        mean = coerce_numeric(args[3])
+        var = coerce_numeric(args[4])
     else:
-        axes = tuple(i for i in range(x.ndim) if i != 1) if get_backend_member(x, "ndim", 0) > 1 else (0,)
-        mean = mod.mean(x, axis=axes, keepdims=True)
-        var = mod.var(x, axis=axes, keepdims=True)
-    norm = (x - mean) / mod.sqrt(var + eps)
+        axes = tuple(i for i in range(x.ndim) if i != 1) if x.ndim > 1 else (0,)
+        mean = adapt_backend_module(mod).require_symbol("mean")(x, axis=axes, keepdims=True)
+        var = adapt_backend_module(mod).require_symbol("var")(x, axis=axes, keepdims=True)
+    norm = (x - mean) / adapt_backend_module(mod).require_symbol("sqrt")(var + eps)
     return norm * gamma + beta
 
 
 @global_eager_registry.register("RMSNorm")
-def _rms_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _rms_norm(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate RMSNorm.
 
     Args:
@@ -89,18 +101,22 @@ def _rms_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: Normalized output.
+        BackendArg: Normalized output.
     """
     del kwargs
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    gamma = ensure_eager_tensor(args[1]) if len(args) > 1 else 1.0
-    rms = mod.sqrt(mod.mean(x**2, axis=-1, keepdims=True) + 1e-5)
+    x = coerce_array(mod, args[0])
+    gamma = coerce_numeric(args[1]) if len(args) > 1 else 1.0
+    rms = adapt_backend_module(mod).require_symbol("sqrt")(
+        adapt_backend_module(mod).require_symbol("mean")(x**2, axis=-1, keepdims=True) + 1e-5
+    )
     return (x / rms) * gamma
 
 
 @global_eager_registry.register("MSELoss")
-def _mse_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _mse_loss(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate Mean Squared Error loss.
 
     Args:
@@ -109,17 +125,19 @@ def _mse_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: MSE loss value.
+        BackendArg: MSE loss value.
     """
     del kwargs
     mod = backend_module
-    pred = ensure_eager_tensor(args[0])
-    tgt = ensure_eager_tensor(args[1])
-    return mod.mean((pred - tgt) ** 2)
+    pred = coerce_array(mod, args[0])
+    tgt = coerce_numeric(args[1])
+    return adapt_backend_module(mod).require_symbol("mean")((pred - tgt) ** 2)
 
 
 @global_eager_registry.register("BCELoss")
-def _bce_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _bce_loss(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate Binary Cross Entropy loss.
 
     Args:
@@ -128,19 +146,28 @@ def _bce_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: BCE loss value.
+        BackendArg: BCE loss value.
     """
     del kwargs
     mod = backend_module
-    pred = ensure_eager_tensor(args[0])
-    tgt = ensure_eager_tensor(args[1])
+    pred = coerce_array(mod, args[0])
+    tgt = coerce_numeric(args[1])
     eps = 1e-7
-    pred_c = mod.clip(pred, eps, 1.0 - eps) if has_backend_member(mod, "clip") else pred
-    return -mod.mean(tgt * mod.log(pred_c) + (1.0 - tgt) * mod.log(1.0 - pred_c))
+    pred_c = (
+        adapt_backend_module(mod).require_symbol("clip")(pred, eps, 1.0 - eps)
+        if adapt_backend_module(mod).has_symbol("clip")
+        else pred
+    )
+    return -adapt_backend_module(mod).require_symbol("mean")(
+        tgt * adapt_backend_module(mod).require_symbol("log")(pred_c)
+        + (1.0 - tgt) * adapt_backend_module(mod).require_symbol("log")(1.0 - pred_c)
+    )
 
 
 @global_eager_registry.register("HuberLoss")
-def _huber_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _huber_loss(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate Huber loss.
 
     Args:
@@ -149,20 +176,22 @@ def _huber_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: Huber loss value.
+        BackendArg: Huber loss value.
     """
     del kwargs
     mod = backend_module
-    pred = ensure_eager_tensor(args[0])
-    tgt = ensure_eager_tensor(args[1])
-    diff = mod.abs(pred - tgt)
+    pred = coerce_array(mod, args[0])
+    tgt = coerce_numeric(args[1])
+    diff = adapt_backend_module(mod).require_symbol("abs")(pred - tgt)
     cond = diff < 1.0
-    loss = mod.where(cond, 0.5 * (diff**2), diff - 0.5)
-    return mod.mean(loss)
+    loss = adapt_backend_module(mod).require_symbol("where")(cond, 0.5 * (diff**2), diff - 0.5)
+    return adapt_backend_module(mod).require_symbol("mean")(loss)
 
 
 @global_eager_registry.register("KLDivergenceLoss")
-def _kl_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _kl_loss(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate Kullback-Leibler divergence loss.
 
     Args:
@@ -171,19 +200,27 @@ def _kl_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: KL divergence loss value.
+        BackendArg: KL divergence loss value.
     """
     del kwargs
     mod = backend_module
-    pred = ensure_eager_tensor(args[0])
-    tgt = ensure_eager_tensor(args[1])
+    pred = coerce_numeric(args[0])
+    tgt = coerce_numeric(args[1])
     eps = 1e-7
-    return mod.mean(tgt * (mod.log(tgt + eps) - mod.log(pred + eps)))
+    return adapt_backend_module(mod).require_symbol("mean")(
+        tgt
+        * (
+            adapt_backend_module(mod).require_symbol("log")(tgt + eps)
+            - adapt_backend_module(mod).require_symbol("log")(pred + eps)
+        )
+    )
 
 
 @global_eager_registry.register("GELU")
 @global_eager_registry.register("Gelu")
-def _gelu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _gelu(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate GELU activation.
 
     Args:
@@ -192,19 +229,25 @@ def _gelu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: GELU activation output.
+        BackendArg: GELU activation output.
     """
     del kwargs
     import math
 
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    return 0.5 * x * (1.0 + mod.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x**3))))
+    x = coerce_numeric(args[0])
+    return (
+        0.5
+        * x
+        * (1.0 + adapt_backend_module(mod).require_symbol("tanh")(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x**3))))
+    )
 
 
 @global_eager_registry.register("SiLU")
 @global_eager_registry.register("Silu")
-def _silu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _silu(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate SiLU activation.
 
     Args:
@@ -213,18 +256,20 @@ def _silu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: SiLU activation output.
+        BackendArg: SiLU activation output.
     """
     del kwargs
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    sig = 1.0 / (1.0 + mod.exp(-x))
+    x = coerce_numeric(args[0])
+    sig = 1.0 / (1.0 + adapt_backend_module(mod).require_symbol("exp")(-x))
     return x * sig
 
 
 @global_eager_registry.register("ELU")
 @global_eager_registry.register("Elu")
-def _elu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _elu(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate ELU activation.
 
     Args:
@@ -233,18 +278,22 @@ def _elu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: ELU activation output.
+        BackendArg: ELU activation output.
     """
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    alpha = ensure_eager_tensor(kwargs.get("alpha", 1.0))
+    x = coerce_numeric(args[0])
+    alpha = coerce_float(kwargs.get("alpha", 1.0))
     cond = x > 0
-    return mod.where(cond, x, alpha * (mod.exp(x) - 1.0))
+    return adapt_backend_module(mod).require_symbol("where")(
+        cond, x, alpha * (adapt_backend_module(mod).require_symbol("exp")(x) - 1.0)
+    )
 
 
 @global_eager_registry.register("LeakyReLU")
 @global_eager_registry.register("LeakyRelu")
-def _leaky_relu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _leaky_relu(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate LeakyReLU activation.
 
     Args:
@@ -253,26 +302,31 @@ def _leaky_relu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Optional keyword arguments.
 
     Returns:
-        EagerValue: LeakyReLU activation output.
+        BackendArg: LeakyReLU activation output.
     """
     mod = backend_module
-    x = ensure_eager_tensor(args[0])
-    alpha = ensure_eager_tensor(kwargs.get("negative_slope", 0.01))
+    x = coerce_numeric(args[0])
+    alpha = coerce_float(kwargs.get("negative_slope", 0.01))
     cond = x > 0
-    return mod.where(cond, x, alpha * x)
+    return adapt_backend_module(mod).require_symbol("where")(cond, x, alpha * x)
 
 
-def _adaptive_pool_1d(backend_module: BackendModuleProtocol, operand: EagerValue, in_w: int, out_w: int) -> EagerValue:
+def _adaptive_pool_1d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArrayProtocol,
+    in_w: int,
+    out_w: int,
+) -> BackendArg:
     """Compute 1D adaptive average pooling over the last axis.
 
     Args:
-        backend_module (EagerValue): Backend execution module.
-        operand (EagerValue): Input tensor.
+        backend_module (BackendModuleProtocol | types.ModuleType | None): Backend execution module.
+        operand (BackendArrayProtocol): Input tensor.
         in_w (int): Input spatial width.
         out_w (int): Target output spatial width.
 
     Returns:
-        EagerValue: Pooled 1D tensor.
+        BackendArg: Pooled 1D tensor.
     """
     import math
 
@@ -281,26 +335,26 @@ def _adaptive_pool_1d(backend_module: BackendModuleProtocol, operand: EagerValue
     for j in range(out_w):
         start = math.floor(j * in_w / out_w)
         end = math.ceil((j + 1) * in_w / out_w)
-        bins.append(mod.mean(ensure_eager_tensor(operand)[..., start:end], axis=-1))
-    return mod.stack(bins, axis=-1)
+        bins.append(adapt_backend_module(mod).require_symbol("mean")(operand[..., start:end], axis=-1))
+    return adapt_backend_module(mod).require_symbol("stack")(bins, axis=-1)
 
 
 def _adaptive_pool_2d(
-    backend_module: BackendModuleProtocol,
-    operand: EagerValue,
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArrayProtocol,
     in_spatial: tuple[int, int],
     out_spatial: list[int],
-) -> EagerValue:
+) -> BackendArg:
     """Compute 2D adaptive average pooling over the last two axes.
 
     Args:
-        backend_module (EagerValue): Backend execution module.
-        operand (EagerValue): Input tensor.
+        backend_module (BackendModuleProtocol | types.ModuleType | None): Backend execution module.
+        operand (BackendArrayProtocol): Input tensor.
         in_spatial (tuple[int, int]): Input (height, width).
         out_spatial (list[int]): Target output [height, width].
 
     Returns:
-        EagerValue: Pooled 2D tensor.
+        BackendArg: Pooled 2D tensor.
     """
     import math
 
@@ -315,27 +369,31 @@ def _adaptive_pool_2d(
         for j in range(o_w):
             w_start = math.floor(j * i_w / o_w)
             w_end = math.ceil((j + 1) * i_w / o_w)
-            cols.append(mod.mean(ensure_eager_tensor(operand)[..., h_start:h_end, w_start:w_end], axis=(-2, -1)))
-        rows.append(mod.stack(cols, axis=-1))
-    return mod.stack(rows, axis=-2)
+            cols.append(
+                adapt_backend_module(mod).require_symbol("mean")(
+                    operand[..., h_start:h_end, w_start:w_end], axis=(-2, -1)
+                )
+            )
+        rows.append(adapt_backend_module(mod).require_symbol("stack")(cols, axis=-1))
+    return adapt_backend_module(mod).require_symbol("stack")(rows, axis=-2)
 
 
 def _adaptive_pool_3d(
-    backend_module: BackendModuleProtocol,
-    operand: EagerValue,
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArrayProtocol,
     in_spatial: tuple[int, int, int],
     out_spatial: list[int],
-) -> EagerValue:
+) -> BackendArg:
     """Compute 3D adaptive average pooling over the last three axes.
 
     Args:
-        backend_module (EagerValue): Backend execution module.
-        operand (EagerValue): Input tensor.
+        backend_module (BackendModuleProtocol | types.ModuleType | None): Backend execution module.
+        operand (BackendArrayProtocol): Input tensor.
         in_spatial (tuple[int, int, int]): Input (depth, height, width).
         out_spatial (list[int]): Target output [depth, height, width].
 
     Returns:
-        EagerValue: Pooled 3D tensor.
+        BackendArg: Pooled 3D tensor.
     """
     import math
 
@@ -354,13 +412,23 @@ def _adaptive_pool_3d(
             for j in range(o_w):
                 w_start = math.floor(j * i_w / o_w)
                 w_end = math.ceil((j + 1) * i_w / o_w)
-                cols.append(mod.mean(ensure_eager_tensor(operand)[..., d_start:d_end, h_start:h_end, w_start:w_end], axis=(-3, -2, -1)))
-            rows.append(mod.stack(cols, axis=-1))
-        depths.append(mod.stack(rows, axis=-2))
-    return mod.stack(depths, axis=-3)
+                cols.append(
+                    adapt_backend_module(mod).require_symbol("mean")(
+                        operand[..., d_start:d_end, h_start:h_end, w_start:w_end],
+                        axis=(-3, -2, -1),
+                    )
+                )
+            rows.append(adapt_backend_module(mod).require_symbol("stack")(cols, axis=-1))
+        depths.append(adapt_backend_module(mod).require_symbol("stack")(rows, axis=-2))
+    return adapt_backend_module(mod).require_symbol("stack")(depths, axis=-3)
 
 
-def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _global_adaptive_pool(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArg,
+    output_size: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Evaluate _global_adaptive_pool operation rigorously over spatial dimensions.
 
     Args:
@@ -370,17 +438,17 @@ def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerV
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Computed `EagerValue` output.
+        BackendArg: Computed `BackendArg` output.
     """
     del kwargs
-    if not has_backend_member(operand, "shape"):
+    if not isinstance(operand, BackendArrayProtocol):
         return operand
 
-    out_spatial = [output_size] if isinstance(output_size, int) else list(ensure_shape(output_size))
+    out_spatial = [output_size] if isinstance(output_size, int) else list(coerce_shape(output_size))
     spatial_dims = len(out_spatial)
-    in_shape = ensure_eager_tensor(operand).shape
+    in_shape = operand.shape
     if len(in_shape) < spatial_dims:
-        _typed_ret_2: EagerValue = operand
+        _typed_ret_2: BackendArg = operand
         return _typed_ret_2
     in_spatial = in_shape[-spatial_dims:]
 
@@ -390,12 +458,17 @@ def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerV
         return _adaptive_pool_2d(backend_module, operand, (in_spatial[0], in_spatial[1]), out_spatial)
     if spatial_dims == 3:
         return _adaptive_pool_3d(backend_module, operand, (in_spatial[0], in_spatial[1], in_spatial[2]), out_spatial)
-    _typed_ret_1: EagerValue = operand
+    _typed_ret_1: BackendArg = operand
     return _typed_ret_1
 
 
 @global_eager_registry.register("AdaptiveAvgPool2D")
-def _adaptive_avg_pool2d(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_avg_pool2d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArg,
+    output_size: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager adaptive avg pool2d operation on the active backend array.
 
     Args:
@@ -405,13 +478,18 @@ def _adaptive_avg_pool2d(backend_module: BackendModuleProtocol, operand: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveAvgPool3D")
-def _adaptive_avg_pool3d(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_avg_pool3d(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    operand: BackendArg,
+    output_size: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager adaptive avg pool3d operation on the active backend array.
 
     Args:
@@ -421,13 +499,15 @@ def _adaptive_avg_pool3d(backend_module: BackendModuleProtocol, operand: EagerVa
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AlphaDropout")
-def _alpha_dropout(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _alpha_dropout(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, x: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager alpha dropout operation on the active backend array.
 
     Args:
@@ -436,13 +516,15 @@ def _alpha_dropout(backend_module: BackendModuleProtocol, x: EagerValue, **kwarg
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return x
 
 
 @global_eager_registry.register("FractionalAvgPool")
-def _np_fractionalavgpool(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_fractionalavgpool(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager np fractionalavgpool operation on the active backend array.
 
     Args:
@@ -451,9 +533,11 @@ def _np_fractionalavgpool(backend_module: BackendModuleProtocol, *args: EagerVal
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    func = get_backend_member(backend_module, "fractionalavgpool", get_backend_member(backend_module, "fractionalavgpool", None))
+    func = adapt_backend_module(backend_module).get_symbol(
+        "fractionalavgpool", adapt_backend_module(backend_module).get_symbol("fractionalavgpool", None)
+    )
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
     return args[0]

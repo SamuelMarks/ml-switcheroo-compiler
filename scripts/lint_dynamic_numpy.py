@@ -23,10 +23,23 @@ def _is_prohibited_dynamic_numpy_call(node: ast.AST) -> str | None:
     if not isinstance(node, ast.Call) or not node.args:
         return None
     first_arg = node.args[0]
-    is_registry_np = isinstance(first_arg, ast.Constant) and first_arg.value == "numpy" and ((isinstance(node.func, ast.Name) and node.func.id == "get_backend") or (isinstance(node.func, ast.Attribute) and node.func.attr == "get" and "BackendRegistry" in ast.unparse(node.func.value)))
+    is_registry_np = (
+        isinstance(first_arg, ast.Constant)
+        and first_arg.value == "numpy"
+        and (
+            (isinstance(node.func, ast.Name) and node.func.id == "get_backend")
+            or (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "get"
+                and "BackendRegistry" in ast.unparse(node.func.value)
+            )
+        )
+    )
     if is_registry_np:
         return "BackendRegistry.get('numpy')"
-    is_dynamic_import = (isinstance(node.func, ast.Attribute) and node.func.attr == "import_module") or (isinstance(node.func, ast.Name) and node.func.id in ("import_module", "__import__"))
+    is_dynamic_import = (isinstance(node.func, ast.Attribute) and node.func.attr == "import_module") or (
+        isinstance(node.func, ast.Name) and node.func.id in ("import_module", "__import__")
+    )
     if not is_dynamic_import:
         return None
     if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
@@ -56,13 +69,16 @@ def check_for_prohibited_numpy_imports(directory: str) -> list[str]:
             try:
                 with open(file_path, encoding="utf-8") as f:
                     tree: ast.AST = ast.parse(f.read(), filename=file_path)
-            except Exception:
+            except (OSError, SyntaxError, UnicodeDecodeError, ValueError, TypeError):
                 continue
 
             for node in ast.walk(tree):
                 mod_val = _is_prohibited_dynamic_numpy_call(node)
                 if mod_val is not None and isinstance(node, (ast.stmt, ast.expr)):
-                    violations.append(f"{file_path}:{node.lineno}: Prohibited dynamic numpy import '{mod_val}' outside ml-switcheroo-compiler numpy/scipy module.")
+                    violations.append(
+                        f"{file_path}:{node.lineno}: Prohibited dynamic numpy import '{mod_val}' outside "
+                        "ml-switcheroo-compiler numpy/scipy module."
+                    )
     return violations
 
 

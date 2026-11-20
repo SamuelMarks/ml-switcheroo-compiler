@@ -21,10 +21,10 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     upsample_bilinear,
     upsample_nearest,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTensorStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_upsample_coverage() -> None:
@@ -77,7 +77,9 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         class DummyBackend:
             """Dummy backend for upsample testing."""
 
-            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+            def execute_op(
+                self, op: str, *args: BackendArg, **kwargs: BackendArg
+            ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Execute op return dummy array.
 
                 Args:
@@ -86,34 +88,34 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `execute_op`.
+                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `execute_op`.
                 """
                 return np.zeros((1, 1, 4, 4), dtype=np.float32)
 
-            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+            def array(self, x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Convert array.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `array`.
+                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `array`.
                 """
                 return np.asarray(x)
 
         mock_backend.return_value = DummyBackend()
 
         ps_out = pixel_shuffle(t_2d, 2)
-        assert ensure_eager_tensor(ps_out).shape == (1, 1, 4, 4)
+        assert extract_test_shape(ps_out) == (1, 1, 4, 4)
 
         un_out = upsample_nearest(t_1d, size=(4,))
-        assert ensure_eager_tensor(un_out).shape == (1, 1, 4, 4)
+        assert extract_test_shape(un_out) == (1, 1, 4, 4)
 
         ub_out = upsample_bilinear(t_1d, size=(4,))
-        assert ensure_eager_tensor(ub_out).shape == (1, 1, 4, 4)
+        assert extract_test_shape(ub_out) == (1, 1, 4, 4)
 
         uc_out = upsample_bicubic(t_1d, size=(4,))
-        assert ensure_eager_tensor(uc_out).shape == (1, 1, 4, 4)
+        assert extract_test_shape(uc_out) == (1, 1, 4, 4)
 
     # 2. Non-eager (tracing) mode with mocked _emit_shape_node
     config.eager_mode = False
@@ -147,12 +149,15 @@ def test_upsample_brute() -> None:
     with pytest.raises(ValueError):
         _resolve_scale_factor(t_2d, (2.0,), 2)
 
-    class DummyTensorDynamic:
+    class DummyTensorDynamic(MockTensorStub):
         """Dummy tensor with dynamic shape."""
 
-        shape = (1, 1, 1)
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = (1, 1, 1)
 
-    ensure_callable(_resolve_scale_factor)(ensure_callable(DummyTensorDynamic)(), 2.0, 2)
+    _resolve_scale_factor(DummyTensorDynamic(), 2.0, 2)
 
     _upsample_resolve_size(t_2d, 8, None)
     _upsample_resolve_size(t_2d, (8, 8), None)
@@ -176,7 +181,9 @@ def test_upsample_brute() -> None:
         class DummyBackend1D:
             """Dummy backend for 1D upsampling."""
 
-            def execute_op(self, op: str, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+            def execute_op(
+                self, op: str, *args: BackendArg, **kwargs: BackendArg
+            ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Execute op return dummy array.
 
                 Args:
@@ -185,18 +192,18 @@ def test_upsample_brute() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `execute_op`.
+                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `execute_op`.
                 """
                 return np.zeros((2, 3, 8), dtype=np.float32)
 
-            def array(self, x: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+            def array(self, x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
                 """Convert array.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `array`.
+                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `array`.
                 """
                 return np.asarray(x)
 

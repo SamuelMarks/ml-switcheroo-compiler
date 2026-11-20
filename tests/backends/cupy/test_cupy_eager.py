@@ -10,10 +10,10 @@ import pytest
 
 from ml_switcheroo_compiler.backends.cupy.eager import _verify_gpu_residency, execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, has_backend_member
+from tests.testing_utils import MockTestStub, adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_cupy_verify_gpu_residency() -> None:
@@ -22,7 +22,7 @@ def test_cupy_verify_gpu_residency() -> None:
     class MockNdarray:
         """Test class MockNdarray."""
 
-        def __init__(self, data: EagerValue = None) -> None:
+        def __init__(self, data: BackendArg = None) -> None:
             """Test function __init__.
 
             Args:
@@ -30,10 +30,10 @@ def test_cupy_verify_gpu_residency() -> None:
             """
             self.data = data
 
-    class DataWithDevice:
+    class DataWithDevice(MockTestStub):
         """Test class DataWithDevice."""
 
-        def __init__(self, device: EagerValue = None) -> None:
+        def __init__(self, device: BackendArg = None) -> None:
             """Test function __init__.
 
             Args:
@@ -41,36 +41,36 @@ def test_cupy_verify_gpu_residency() -> None:
             """
             self.device = device
 
-    class DataNoDevice:
+    class DataNoDevice(MockTestStub):
         """Test class DataNoDevice."""
 
         pass
 
     # Mock cupy array resident on GPU when cp is None
-    mock_array = ensure_callable(MockNdarray)(ensure_callable(DataWithDevice)("cuda:0"))
+    mock_array = MockNdarray(DataWithDevice("cuda:0"))
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-        ensure_callable(_verify_gpu_residency)(mock_array)
+        _verify_gpu_residency(mock_array)
 
     # Valid device memory with cp not None
     mock_cp = MagicMock()
     mock_cp.ndarray = MockNdarray
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-        ensure_callable(_verify_gpu_residency)(mock_array)
+        _verify_gpu_residency(mock_array)
 
         # res has data but data has no device attribute
-        ensure_callable(_verify_gpu_residency)(ensure_callable(MockNdarray)(ensure_callable(DataNoDevice)()))
+        _verify_gpu_residency(MockNdarray(DataNoDevice()))
 
         # res has data = None
-        ensure_callable(_verify_gpu_residency)(ensure_callable(MockNdarray)(None))
+        _verify_gpu_residency(MockNdarray(None))
 
         # res is not an array
         _verify_gpu_residency(42)
 
     # Mock array with missing device (device is None)
-    bad_array = ensure_callable(MockNdarray)(ensure_callable(DataWithDevice)(None))
+    bad_array = MockNdarray(DataWithDevice(None))
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
         with pytest.raises(RuntimeError, match="CuPy array is not residing on GPU device memory"):
-            ensure_callable(_verify_gpu_residency)(bad_array)
+            _verify_gpu_residency(bad_array)
 
 
 def test_cupy_eager_dispatch_native() -> None:
@@ -81,24 +81,32 @@ def test_cupy_eager_dispatch_native() -> None:
 
     with patch.dict(sys.modules, {"cupy": mock_cp}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-            res = ensure_callable(execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
+            res = execute_op(None, "Add", [1.0, 2.0], [3.0, 4.0])
             assert res == mock_cp.add.return_value
             mock_cp.add.assert_called_once()
 
             # Non-list arg (e.g. scalar int) and asarray exception handling
             mock_cp.asarray.side_effect = RuntimeError("asarray failure")
-            res_scalar = ensure_callable(execute_op)(None, "Add", [1.0, 2.0], 5)
+            res_scalar = execute_op(None, "Add", [1.0, 2.0], 5)
             assert res_scalar == mock_cp.add.return_value
             mock_cp.asarray.side_effect = None
 
             # Ensure silent CPU NumPy fallback is prevented: unmapped op raises BackendNotSupportedError
             with pytest.raises(BackendNotSupportedError):
-                ensure_callable(execute_op)(None, "CompletelyUnsupportedOp123")
+                execute_op(None, "CompletelyUnsupportedOp123")
 
-            # Dispatch raises BackendNotSupportedError
-            with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("dispatch failed")):
+            # Dispatch raises BackendNotSupportedError and global_eager_registry has no polyfill
+            from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+            with (
+                patch(
+                    "ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op",
+                    side_effect=BackendNotSupportedError("dispatch failed"),
+                ),
+                patch.object(global_eager_registry, "get", return_value=None),
+            ):
                 with pytest.raises(BackendNotSupportedError, match="Operation 'Add' is not implemented"):
-                    ensure_callable(execute_op)(None, "Add", [1.0])
+                    execute_op(None, "Add", [1.0])
 
 
 def test_cupy_eager_unavailable() -> None:
@@ -106,7 +114,7 @@ def test_cupy_eager_unavailable() -> None:
     with patch.dict(sys.modules, {"cupy": None}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
             with pytest.raises(BackendNotSupportedError, match="CuPy is not installed"):
-                ensure_callable(execute_op)(None, "Add", 1, 2)
+                execute_op(None, "Add", 1, 2)
 
 
 def test_cupy_eager_reductions_and_kwarg_mapping() -> None:
@@ -117,7 +125,7 @@ def test_cupy_eager_reductions_and_kwarg_mapping() -> None:
 
     with patch.dict(sys.modules, {"cupy": mock_cp}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-            ensure_callable(execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
+            execute_op(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
             mock_cp.sum.assert_called_once()
             _, kwargs = mock_cp.sum.call_args
             assert "axis" in kwargs and kwargs["axis"] == 0
@@ -128,14 +136,14 @@ def test_cupy_eager_fallback_mock_mod() -> None:
     """Test CuPy eager fallback when target_name is present on current module (line 69)."""
     import ml_switcheroo_compiler.backends.cupy.eager as cupy_eager
 
-    ensure_mutable(cupy_eager).add = ensure_eager_tensor(lambda a, b: 42)
+    pytest.MonkeyPatch().setattr(cupy_eager, "add", lambda a, b: 42, raising=False)
     try:
         with patch.dict(sys.modules, {"cupy": None}):
             with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-                res = ensure_callable(execute_op)(None, "Add", 1, 2)
+                res = execute_op(None, "Add", 1, 2)
                 assert res == 42
     finally:
-        del ensure_mutable(cupy_eager).add
+        pytest.MonkeyPatch().delattr(cupy_eager, "add")
 
 
 def test_cupy_eager_registry_fallback() -> None:
@@ -144,18 +152,14 @@ def test_cupy_eager_registry_fallback() -> None:
 
     mock_func = MagicMock(return_value="registered_res")
     with patch.object(global_eager_registry, "get", return_value=mock_func):
-        res = ensure_callable(execute_op)(None, "CustomRegisteredOp", 10)
+        res = execute_op(None, "CustomRegisteredOp", 10)
         assert res == "registered_res"
         mock_func.assert_called_once()
 
 
 def test_cupy_eager_remaining_branches() -> None:
     """Test lines 63, 86, 167, and 207 in cupy eager.py."""
-    from ml_switcheroo_compiler.backends.cupy.eager import (
-        _attach_vision_ops,
-        cupy_conv2d,
-        cupy_resize_bilinear,
-    )
+    from ml_switcheroo_compiler.backends.cupy.eager import _attach_vision_ops, cupy_conv2d, cupy_resize_bilinear
 
     mock_cp = MagicMock()
 
@@ -191,14 +195,16 @@ def test_cupy_eager_remaining_branches() -> None:
         assert res_resize == "copied_img"
 
     # 4. Line 207: _attach_vision_ops when attributes are missing
-    class EmptyBackendMod:
+    class EmptyBackendMod(MockTestStub):
         """Test class EmptyBackendMod."""
 
         pass
 
     empty_mod = EmptyBackendMod()
-    ensure_callable(_attach_vision_ops)(empty_mod)
-    assert has_backend_member(empty_mod, "conv2d")
-    assert has_backend_member(empty_mod, "maxpool2d")
-    assert has_backend_member(empty_mod, "avgpool2d")
-    assert has_backend_member(empty_mod, "resize_bilinear")
+    wrapped_mod = _attach_vision_ops(empty_mod)
+    assert wrapped_mod is not None
+    assert adapt_backend_module(wrapped_mod).has_symbol("conv2d")
+    assert adapt_backend_module(wrapped_mod).has_symbol("maxpool2d")
+    assert adapt_backend_module(wrapped_mod).has_symbol("avgpool2d")
+    assert adapt_backend_module(wrapped_mod).has_symbol("resize_bilinear")
+    assert not adapt_backend_module(wrapped_mod).has_symbol("missing_cupy_attr")

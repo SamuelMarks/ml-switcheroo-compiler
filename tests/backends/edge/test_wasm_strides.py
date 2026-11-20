@@ -6,16 +6,12 @@ import typing
 from unittest.mock import patch
 
 import pytest
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 @pytest.fixture(autouse=True)
@@ -31,15 +27,38 @@ def global_wasm_mock() -> Iterator[None]:
 
     saved_registry = copy.deepcopy(OPS_REGISTRY)
 
-    ops_to_mock = ["UnknownOp", "Conv2D", "MaxPool2D", "BatchNorm", "LayerNorm", "AvgPool2D", "Add", "Constant", "DotGeneral", "Transpose", "MatMul", "ReduceSum", "ReduceMax", "Tanh", "BroadcastTo", "DummyOp", "Dummy", "Exp", "Input"]
+    ops_to_mock = [
+        "UnknownOp",
+        "Conv2D",
+        "MaxPool2D",
+        "BatchNorm",
+        "LayerNorm",
+        "AvgPool2D",
+        "Add",
+        "Constant",
+        "DotGeneral",
+        "Transpose",
+        "MatMul",
+        "ReduceSum",
+        "ReduceMax",
+        "Tanh",
+        "BroadcastTo",
+        "DummyOp",
+        "Dummy",
+        "Exp",
+        "Input",
+    ]
     for op in ops_to_mock:
-        if op not in OPS_REGISTRY:
-            OPS_REGISTRY[op] = {"variants": {}}
-        if "variants" not in OPS_REGISTRY[op]:
-            OPS_REGISTRY[op]["variants"] = {}
-        ensure_eager_tensor(OPS_REGISTRY[op]["variants"])["edge_wasm_simd"] = {"template": "mock_template_" + op}
+        op_entry = OPS_REGISTRY.setdefault(op, {"variants": {}})
+        variants = op_entry.get("variants")
+        if not isinstance(variants, dict):
+            variants = {}
+            op_entry["variants"] = variants
+        variants["edge_wasm_simd"] = {"template": "mock_template_" + op}
 
-    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template"
+    ) as mock_get_wasm_template:
         mock_bodies = {
             "mock_template_Add": "wasm_f32x4_add(a, b); wasm_v128_load",
             "mock_template_Constant": "wasm_f32x4_splat(a);",
@@ -51,16 +70,16 @@ def global_wasm_mock() -> Iterator[None]:
             "mock_template_UnknownOp": "Unimplemented UnknownOp",
         }
 
-        def mock_template_resolver(template_name: EagerValue) -> EagerValue:
+        def mock_template_resolver(template_name: str) -> dict[str, str]:
             """Test function mock_template_resolver.
 
             Args:
                 template_name: Test parameter `template_name`.
 
             Returns:
-                EagerValue: Computed output value from `mock_template_resolver`.
+                dict[str, str]: Computed output value from `mock_template_resolver`.
             """
-            return {"body": ensure_callable(mock_bodies.get)(template_name, ensure_eager_tensor("// ") + ensure_eager_tensor(template_name))}
+            return {"body": mock_bodies.get(template_name, "// " + template_name)}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 

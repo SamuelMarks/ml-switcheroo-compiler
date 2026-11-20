@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: Tensor) -> TensorOrScalar:
+def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: Tensor) -> OpValue:
     """Scaled Dot-Product Attention.
 
     Args:
@@ -31,7 +31,7 @@ def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: 
             (v.data if type(v).__name__ == "Tensor" else v),
             (scale_factor.data if type(scale_factor).__name__ == "Tensor" else scale_factor),
         )
-        return Tensor(data, TensorConfig(extract_shape(data, q.shape), q.dtype, q.device))
+        return Tensor(data, TensorConfig(extract_shape(data, extract_shape(q)), q.dtype, q.device))
     return _emit_shape_node("ScaledDotProductAttention", [q, k, v, scale_factor], {}, q.shape, q.dtype)
 
 
@@ -41,18 +41,25 @@ class ScaledDotProductAttention(OpDef):
 
     op_name = "ScaledDotProductAttention"
 
-    def infer_shape(self, q: EagerTensorProtocol, k: EagerTensorProtocol, v: EagerTensorProtocol, scale_factor: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        q: OpValue,
+        k: OpValue,
+        v: OpValue,
+        scale_factor: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape.
 
         Args:
-            q (EagerTensorProtocol): Input `q` argument (q).
-            k (EagerTensorProtocol): Input `k` argument (k).
-            v (EagerTensorProtocol): Input `v` argument (v).
-            scale_factor (EagerTensorProtocol): The scale factor parameter.
-            **kwargs (TensorOrScalar): Keyword args.
+            q (OpValue): Input `q` argument (q).
+            k (OpValue): Input `k` argument (k).
+            v (OpValue): Input `v` argument (v).
+            scale_factor (OpValue): The scale factor parameter.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_1: TensorOrScalar = extract_shape(q)
+        _typed_ret_1: OpValue = extract_shape(q)
         return _typed_ret_1

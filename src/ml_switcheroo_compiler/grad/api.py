@@ -3,21 +3,20 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.errors import AutodiffError
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     TypedVariadicCallable,
     VariadicCallableProtocol,
-    invoke_callable,
+    is_variadic_callable,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.interpreter.evaluator import InterpreterValue
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import VJPRuleCallable, register_vjp
@@ -25,43 +24,47 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import VJPRul
 from .custom_vjp_ops import custom_vjp
 from .options import GradOptions
 from .utils import (
-    GradValue,
+    DifferentiableFn,
+    PrimalAuxValue,
+    PrimalTree,
     _check_scalar,
     _compute_grad_and_value,
-    _ensure_grad_tensor,
     _find_wrt_tensors,
     _get_inputs_dict,
     _IdDataProtocol,
+    as_primal_tree,
 )
 
 
+@typing.runtime_checkable
 class _ExecuteGraphBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `execute_graph(graph, inputs_dict)`."""
 
-    def execute_graph(self, graph: LogicalGraph, inputs_dict: dict[str, GradValue]) -> dict[str, GradValue]:
+    def execute_graph(self, graph: LogicalGraph, inputs_dict: dict[str, InterpreterValue]) -> Mapping[str, OpValue]:
         """Execute a computation graph with concrete inputs.
 
         Args:
             graph (LogicalGraph): Target graph.
-            inputs_dict (dict[str, GradValue]): Concrete input mapping.
+            inputs_dict (dict[str, InterpreterValue]): Concrete input mapping.
 
         Returns:
-            dict[str, GradValue]: Output mapping.
+            Mapping[str, OpValue]: Output mapping.
         """
         ...
 
 
+@typing.runtime_checkable
 class _CompileGraphBackendProtocol(typing.Protocol):
     """Protocol for backends implementing `compile_graph(graph)`."""
 
-    def compile_graph(self, graph: LogicalGraph) -> TypedVariadicCallable[dict[str, GradValue]]:
+    def compile_graph(self, graph: LogicalGraph) -> TypedVariadicCallable[Mapping[str, OpValue]]:
         """Compile a computation graph into a callable.
 
         Args:
             graph (LogicalGraph): Target graph.
 
         Returns:
-            TypedVariadicCallable[dict[str, GradValue]]: Compiled graph callable.
+            TypedVariadicCallable[Mapping[str, OpValue]]: Compiled graph callable.
         """
         ...
 
@@ -70,47 +73,175 @@ class _CompileGraphBackendProtocol(typing.Protocol):
 class _AddableProtocol(typing.Protocol):
     """Protocol for operands supporting addition (`__add__`)."""
 
-    def __add__(self, other: GradValue) -> GradValue:
+    def __add__(self, other: OpValue) -> OpValue:
         """Add `other` to `self`.
 
         Args:
-            other (GradValue): Right-hand operand.
+            other (OpValue): Right-hand operand.
 
         Returns:
-            GradValue: Sum result.
+            OpValue: Sum result.
         """
         ...
 
 
-def _is_execute_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_ExecuteGraphBackendProtocol]:
+@typing.runtime_checkable
+class _MulFloatProtocol(typing.Protocol):
+    """Protocol for tangent operands supporting scalar float multiplication."""
+
+    def __mul__(self, other: float) -> OpValue:
+        """Multiply tangent by ``other``.
+
+        Args:
+            other (float): Scalar step size.
+
+        Returns:
+            OpValue: Scaled tangent value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DivFloatProtocol(typing.Protocol):
+    """Protocol for difference values supporting scalar float division."""
+
+    def __truediv__(self, other: float) -> OpValue:
+        """Divide difference by ``other``.
+
+        Args:
+            other (float): Scalar step size.
+
+        Returns:
+            OpValue: Finite-difference directional derivative.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _SubDivProtocol(typing.Protocol):
+    """Protocol for primal outputs supporting subtraction into a divisible difference."""
+
+    def __sub__(self, other: OpValue) -> OpValue | _DivFloatProtocol:
+        """Subtract ``other`` from ``self``.
+
+        Args:
+            other (OpValue): Base primal output.
+
+        Returns:
+            OpValue | _DivFloatProtocol: Difference value.
+        """
+        ...
+
+
+def _as_mul_float(val: PrimalTree | OpValue | _MulFloatProtocol) -> _MulFloatProtocol:
+    """Verify and narrow ``val`` to ``_MulFloatProtocol``.
+
+    Args:
+        val (PrimalTree | OpValue | _MulFloatProtocol): Candidate tangent value.
+
+    Returns:
+        _MulFloatProtocol: Verified multipliable operand.
+    """
+    assert isinstance(val, _MulFloatProtocol)
+    return val
+
+
+def _as_sub_div(val: OpValue | _SubDivProtocol) -> _SubDivProtocol:
+    """Verify and narrow ``val`` to ``_SubDivProtocol``.
+
+    Args:
+        val (OpValue | _SubDivProtocol): Candidate primal output.
+
+    Returns:
+        _SubDivProtocol: Verified subtractable output.
+
+    Raises:
+        TypeError: If ``val`` does not support subtraction.
+    """
+    if not isinstance(val, _SubDivProtocol):
+        raise TypeError(f"Output of type {type(val).__name__} does not support subtraction")
+    return val
+
+
+def _as_div_float(val: OpValue | _DivFloatProtocol) -> _DivFloatProtocol:
+    """Verify and narrow ``val`` to ``_DivFloatProtocol``.
+
+    Args:
+        val (OpValue | _DivFloatProtocol): Candidate difference value.
+
+    Returns:
+        _DivFloatProtocol: Verified divisible difference.
+    """
+    assert isinstance(val, _DivFloatProtocol)
+    return val
+
+
+def _perturb_operand(
+    primal: _AddableProtocol,
+    tangent: PrimalTree | OpValue | _MulFloatProtocol,
+    eps: float,
+) -> OpValue:
+    """Compute ``primal + tangent * eps`` via runtime-checked arithmetic protocols.
+
+    Args:
+        primal (_AddableProtocol): Primal operand.
+        tangent (PrimalTree | OpValue | _MulFloatProtocol): Tangent operand.
+        eps (float): Perturbation step size.
+
+    Returns:
+        OpValue: Perturbed primal value.
+    """
+    return primal + (_as_mul_float(tangent) * eps)
+
+
+def _finite_diff_quotient(
+    out_eps: OpValue | _SubDivProtocol,
+    primal_out: OpValue,
+    eps: float,
+) -> PrimalTree:
+    """Compute ``(out_eps - primal_out) / eps`` via runtime-checked arithmetic protocols.
+
+    Args:
+        out_eps (OpValue | _SubDivProtocol): Perturbed function output.
+        primal_out (OpValue): Unperturbed primal output.
+        eps (float): Perturbation step size.
+
+    Returns:
+        PrimalTree: Directional derivative estimate.
+    """
+    diff = _as_sub_div(out_eps) - primal_out
+    return as_primal_tree(_as_div_float(diff) / eps)
+
+
+def _is_execute_graph_backend(val: OpValue) -> typing.TypeGuard[_ExecuteGraphBackendProtocol]:
     """Check whether `val` exposes `execute_graph`.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
         bool: True if `val` has `execute_graph`.
     """
-    return has_backend_member(val, "execute_graph")
+    return isinstance(val, _ExecuteGraphBackendProtocol)
 
 
-def _is_compile_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
+def _is_compile_graph_backend(val: OpValue) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
     """Check whether `val` exposes `compile_graph`.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
         bool: True if `val` has `compile_graph`.
     """
-    return has_backend_member(val, "compile_graph")
+    return isinstance(val, _CompileGraphBackendProtocol)
 
 
-def _is_addable_operand(val: TensorOrScalar) -> typing.TypeGuard[_AddableProtocol]:
+def _is_addable_operand(val: OpValue) -> typing.TypeGuard[_AddableProtocol]:
     """Check whether `val` exposes `__add__`.
 
     Args:
-        val (TensorOrScalar): Candidate operand.
+        val (OpValue): Candidate operand.
 
     Returns:
         bool: True if `val` supports addition.
@@ -118,64 +249,26 @@ def _is_addable_operand(val: TensorOrScalar) -> typing.TypeGuard[_AddableProtoco
     return isinstance(val, _AddableProtocol)
 
 
-def _has_id_data_attr(val: TensorOrScalar) -> typing.TypeGuard[_IdDataProtocol]:
+def _has_id_data_attr(val: OpValue) -> typing.TypeGuard[_IdDataProtocol]:
     """Check whether `val` exposes `id`.
 
     Args:
-        val (TensorOrScalar): Candidate proxy data.
+        val (OpValue): Candidate proxy data.
 
     Returns:
         bool: True if `val` has `id`.
     """
-    return has_backend_member(val, "id")
-
-
-class _MutableGradTargetProtocol(typing.Protocol):
-    """Protocol for tensor objects supporting `.grad` assignment."""
-
-    grad: GradValue
-
-
-class _MutableOpTypeDecoratorProtocol(typing.Protocol):
-    """Protocol for decorator callables supporting `.op_type` assignment."""
-
-    op_type: str
-
-
-def _is_mutable_grad_target(val: GradValue) -> typing.TypeGuard[_MutableGradTargetProtocol]:
-    """Type guard narrowing `val` to `_MutableGradTargetProtocol`.
-
-    Args:
-        val (GradValue): Target tensor object.
-
-    Returns:
-        bool: Always True for runtime tensor instances.
-    """
-    return val is not None
-
-
-def _is_mutable_op_type_decorator(
-    val: Callable[[VJPRuleCallable], VJPRuleCallable],
-) -> typing.TypeGuard[_MutableOpTypeDecoratorProtocol]:
-    """Type guard narrowing `val` to `_MutableOpTypeDecoratorProtocol`.
-
-    Args:
-        val (Callable[[VJPRuleCallable], VJPRuleCallable]): Decorator function.
-
-    Returns:
-        bool: Always True for function objects.
-    """
-    return callable(val)
+    return isinstance(val, _IdDataProtocol)
 
 
 @register_util("backward")
-def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
+def backward(tensor: Tensor | PrimalTree | OpValue, *args: OpValue, **kwargs: OpValue) -> None:
     """Trigger reverse-mode automatic differentiation from a scalar traced `tensor`.
 
     Args:
-        tensor (GradValue): Scalar output `Tensor` to differentiate.
-        *args (GradValue): Optional additional arguments.
-        **kwargs (GradValue): Optional additional keyword arguments.
+        tensor (Tensor | PrimalTree | OpValue): Scalar output `Tensor` to differentiate.
+        *args (OpValue): Optional additional arguments.
+        **kwargs (OpValue): Optional additional keyword arguments.
 
     Raises:
         TracingError: When tracing is not active or `tensor` is not a traced `Tensor`.
@@ -183,7 +276,11 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     _ = (args, kwargs)
     from ml_switcheroo_compiler.core.errors import TracingError
 
-    if not isinstance(tensor, Tensor) or not global_tracing_state.is_tracing or global_tracing_state.active_graph is None:
+    if (
+        not isinstance(tensor, Tensor)
+        or not global_tracing_state.is_tracing
+        or global_tracing_state.active_graph is None
+    ):
         raise TracingError("Cannot execute backward(): tracing is not active or target is not a traced Tensor.")
 
     _check_scalar(tensor)
@@ -191,7 +288,7 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     graph = global_tracing_state.active_graph
     wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
 
-    raw_data: TensorOrScalar = tensor.data
+    raw_data: OpValue = tensor.data
     loss_id = str(raw_data.id) if _has_id_data_attr(raw_data) and raw_data.id is not None else str(tensor.data)
 
     if not wrt_ids:
@@ -203,7 +300,8 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     grad_graph = graph_grad(graph, wrt_ids, loss_id)
     inputs_dict = _get_inputs_dict(graph)
 
-    backend: TensorOrScalar = get_active_backend()
+    backend: OpValue = get_active_backend()
+    outputs_dict: Mapping[str, OpValue]
     if _is_execute_graph_backend(backend):
         outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
     elif _is_compile_graph_backend(backend):
@@ -212,7 +310,7 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     else:
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        eval_inputs: dict[str, EvalValue] = dict(inputs_dict)
+        eval_inputs: dict[str, InterpreterValue] = dict(inputs_dict)
         outputs_dict = evaluate_graph(grad_graph, eval_inputs)
 
     for i in range(len(wrt_ids)):
@@ -220,7 +318,7 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
         if grad_node_id in outputs_dict:
             grad_val = outputs_dict[grad_node_id]
             t = wrt_tensors[i]
-            assert _is_mutable_grad_target(t)
+            assert isinstance(t, Tensor)
             t.grad = grad_val
 
 
@@ -233,72 +331,69 @@ def RegisterGradient(op_type: str) -> Callable[[VJPRuleCallable], VJPRuleCallabl
     Returns:
         Callable[[VJPRuleCallable], VJPRuleCallable]: Decorator registering the VJP rule function.
     """
-    dec = register_vjp(op_type)
-    if _is_mutable_op_type_decorator(dec):
-        dec.op_type = op_type
-    return dec
+    return register_vjp(op_type)
 
 
-def overwrite_with_gradient(tensor: GradValue, gradient: GradValue) -> GradValue:
+def overwrite_with_gradient(tensor: PrimalTree, gradient: PrimalTree) -> PrimalTree:
     """Return `tensor` in the forward pass while replacing its backward gradient with `gradient`.
 
     Args:
-        tensor (GradValue): Input primal tensor.
-        gradient (GradValue): Replacement gradient value used during the backward pass.
+        tensor (PrimalTree): Input primal tensor.
+        gradient (PrimalTree): Replacement gradient value used during the backward pass.
 
     Returns:
-        GradValue: Primal tensor with overridden backward gradient rule.
+        PrimalTree: Primal tensor with overridden backward gradient rule.
     """
 
     @custom_vjp
-    def _overwrite(t: GradValue, g: GradValue) -> GradValue:
+    def _overwrite(t: PrimalTree, g: PrimalTree) -> PrimalTree:
         """Identity forward operation with custom VJP override.
 
         Args:
-            t (GradValue): Primal tensor.
-            g (GradValue): Replacement gradient tensor.
+            t (PrimalTree): Primal tensor.
+            g (PrimalTree): Replacement gradient tensor.
 
         Returns:
-            GradValue: Unmodified primal tensor `t`.
+            PrimalTree: Unmodified primal tensor `t`.
         """
         _ = g
         return t
 
-    def _overwrite_fwd(t: GradValue, g: GradValue) -> GradValue:
+    def _overwrite_fwd(t: PrimalTree, g: PrimalTree) -> tuple[PrimalTree, PrimalTree]:
         """Forward pass saving `g` as the residual for backward propagation.
 
         Args:
-            t (GradValue): Primal tensor.
-            g (GradValue): Replacement gradient tensor.
+            t (PrimalTree): Primal tensor.
+            g (PrimalTree): Replacement gradient tensor.
 
         Returns:
-            GradValue: Tuple of `(t, g)`.
+            tuple[PrimalTree, PrimalTree]: Tuple of `(t, g)`.
         """
         return t, g
 
-    def _overwrite_bwd(g: GradValue, g_in: GradValue) -> GradValue:
+    def _overwrite_bwd(g: PrimalTree, g_in: PrimalTree) -> tuple[PrimalTree, None]:
         """Backward pass returning the stored `g` in place of `g_in`.
 
         Args:
-            g (GradValue): Stored replacement gradient.
-            g_in (GradValue): Incoming upstream cotangent.
+            g (PrimalTree): Stored replacement gradient.
+            g_in (PrimalTree): Incoming upstream cotangent.
 
         Returns:
-            GradValue: Tuple of `(g, None)`.
+            tuple[PrimalTree, None]: Tuple of `(g, None)`.
         """
         _ = g_in
-        return g, None
+        return (gradient if g is None else g), None
 
     _overwrite.defvjp(_overwrite_fwd, _overwrite_bwd)
     return _overwrite(tensor, gradient)
 
 
-def ir_grad(fun: GradValue, options: GradOptions | GradValue = None) -> VariadicCallableProtocol:
+def ir_grad(fun: DifferentiableFn, options: GradOptions | None = None) -> VariadicCallableProtocol:
     """Wrap `fun` to compute its symbolic IR gradient with respect to specified arguments.
 
     Args:
-        fun (GradValue): Differentiable function to wrap.
-        options (GradOptions | GradValue): Optional `GradOptions` configuration.
+        fun (DifferentiableFn): Differentiable function to wrap.
+        options (GradOptions | None): Optional `GradOptions` configuration.
 
     Returns:
         VariadicCallableProtocol: Callable computing the gradient of `fun`.
@@ -306,17 +401,17 @@ def ir_grad(fun: GradValue, options: GradOptions | GradValue = None) -> Variadic
     opts = options if isinstance(options, GradOptions) else GradOptions()
 
     def wrapped(
-        *args: GradValue,
-        **kwargs: GradValue,
-    ) -> GradValue:
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> PrimalTree:
         """Compute gradient of `fun` at `*args`.
 
         Args:
-            *args (GradValue): Positional primal arguments.
-            **kwargs (GradValue): Unused keyword arguments.
+            *args (OpValue): Positional primal arguments.
+            **kwargs (OpValue): Unused keyword arguments.
 
         Returns:
-            GradValue: Evaluated gradient tensor(s).
+            PrimalTree: Evaluated gradient tensor(s).
         """
         _ = kwargs
         _, grads = _compute_grad_and_value(fun, opts, args)
@@ -326,13 +421,13 @@ def ir_grad(fun: GradValue, options: GradOptions | GradValue = None) -> Variadic
 
 
 def grad(
-    fun: GradValue,
+    fun: DifferentiableFn,
     options: GradOptions | None = None,
 ) -> VariadicCallableProtocol:
     """Create a function that evaluates the gradient of `fun`.
 
     Args:
-        fun (GradValue): Function to differentiate.
+        fun (DifferentiableFn): Function to differentiate.
         options (GradOptions | None): Optional differentiation options (`argnums`, `has_aux`).
 
     Returns:
@@ -341,17 +436,18 @@ def grad(
     options = options or GradOptions()
 
     def wrapped(
-        *args: GradValue,
-        **kwargs: GradValue,
-    ) -> GradValue:
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> PrimalTree | tuple[PrimalTree, OpValue]:
         """Evaluate the gradient of `fun` at `*args`.
 
         Args:
-            *args (GradValue): Positional primal arguments.
-            **kwargs (GradValue): Unused keyword arguments.
+            *args (OpValue): Positional primal arguments.
+            **kwargs (OpValue): Unused keyword arguments.
 
         Returns:
-            GradValue: Gradient tensor(s), or `(grads, aux)` when `options.has_aux` is True.
+            PrimalTree | tuple[PrimalTree, OpValue]: Gradient tensor(s), or `(grads, aux)` when
+                `options.has_aux` is True.
         """
         _ = kwargs
         val, grads = _compute_grad_and_value(fun, options, args)
@@ -363,14 +459,14 @@ def grad(
 
 
 def value_and_grad(
-    fun: GradValue,
-    options: GradOptions | GradValue = None,
+    fun: DifferentiableFn,
+    options: GradOptions | None = None,
 ) -> VariadicCallableProtocol:
     """Create a function that evaluates both the primal value and gradient of `fun`.
 
     Args:
-        fun (GradValue): Function to differentiate.
-        options (GradOptions | GradValue): Optional `GradOptions` configuration.
+        fun (DifferentiableFn): Function to differentiate.
+        options (GradOptions | None): Optional `GradOptions` configuration.
 
     Returns:
         VariadicCallableProtocol: Callable returning `(value, grads)`.
@@ -378,17 +474,17 @@ def value_and_grad(
     opts = options if isinstance(options, GradOptions) else GradOptions()
 
     def wrapped(
-        *args: GradValue,
-        **kwargs: GradValue,
-    ) -> GradValue:
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> tuple[OpValue, PrimalTree]:
         """Evaluate both primal value and gradient of `fun` at `*args`.
 
         Args:
-            *args (GradValue): Positional primal arguments.
-            **kwargs (GradValue): Unused keyword arguments.
+            *args (OpValue): Positional primal arguments.
+            **kwargs (OpValue): Unused keyword arguments.
 
         Returns:
-            GradValue: Tuple of `(value, grads)`.
+            tuple[OpValue, PrimalTree]: Tuple of `(value, grads)`.
         """
         _ = kwargs
         val, grads = _compute_grad_and_value(fun, opts, args)
@@ -399,74 +495,79 @@ def value_and_grad(
     return wrapped
 
 
-def hook_gradient(tensor: GradValue, hook: GradValue) -> GradValue:
+def hook_gradient(tensor: PrimalTree, hook: DifferentiableFn) -> PrimalTree:
     """Attach a custom backward gradient transformation `hook` to `tensor`.
 
     Args:
-        tensor (GradValue): Input tensor.
-        hook (GradValue): Callable invoked on the upstream gradient during backprop.
+        tensor (PrimalTree): Input tensor.
+        hook (DifferentiableFn): Callable invoked on the upstream gradient during backprop.
 
     Returns:
-        GradValue: Tensor with the backward gradient hook attached.
+        PrimalTree: Tensor with the backward gradient hook attached.
     """
 
     @custom_vjp
-    def _hook_op(t: GradValue) -> GradValue:
+    def _hook_op(t: PrimalTree) -> PrimalTree:
         """Identity forward operation with custom gradient hook.
 
         Args:
-            t (GradValue): Input tensor.
+            t (PrimalTree): Input tensor.
 
         Returns:
-            GradValue: Unchanged input tensor `t`.
+            PrimalTree: Unchanged input tensor `t`.
         """
         return t
 
-    def _hook_fwd(t: GradValue) -> GradValue:
+    def _hook_fwd(t: PrimalTree) -> tuple[PrimalTree, PrimalTree]:
         """Forward pass for gradient hook.
 
         Args:
-            t (GradValue): Input tensor.
+            t (PrimalTree): Input tensor.
 
         Returns:
-            GradValue: Tuple of `(t, t)`.
+            tuple[PrimalTree, PrimalTree]: Tuple of `(t, t)`.
         """
         return t, t
 
-    def _hook_bwd(res: GradValue, g_in: GradValue) -> GradValue:
+    def _hook_bwd(res: PrimalTree, g_in: PrimalTree) -> tuple[PrimalTree]:
         """Backward pass invoking `hook(g_in)`.
 
         Args:
-            res (GradValue): Saved primal residual.
-            g_in (GradValue): Incoming upstream gradient.
+            res (PrimalTree): Saved primal residual.
+            g_in (PrimalTree): Incoming upstream gradient.
 
         Returns:
-            GradValue: 1-tuple containing the hooked gradient.
+            tuple[PrimalTree]: 1-tuple containing the hooked gradient.
         """
         _ = res
-        out_g = invoke_callable(hook, g_in)
+        _callable_fn_1: OpValue = hook
+        assert is_variadic_callable(_callable_fn_1)
+        out_g = _callable_fn_1(g_in)
         if out_g is None:
-            out_g = g_in
-        return (out_g,)
+            return (g_in,)
+        return (as_primal_tree(out_g),)
 
     _hook_op.defvjp(_hook_fwd, _hook_bwd)
     return _hook_op(tensor)
 
 
 def jvp(
-    fun: GradValue,
-    primals: Sequence[GradValue],
-    tangents: Sequence[GradValue],
-) -> tuple[GradValue, GradValue]:
+    fun: DifferentiableFn,
+    primals: Sequence[PrimalTree],
+    tangents: Sequence[PrimalTree],
+) -> tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], PrimalTree]:
     """Compute a Jacobian-vector product (forward-mode directional derivative).
 
     Args:
-        fun (GradValue): Function to differentiate.
-        primals (Sequence[GradValue]): Primal point inputs.
-        tangents (Sequence[GradValue]): Tangent vectors corresponding to `primals`.
+        fun (DifferentiableFn): Function to differentiate.
+        primals (Sequence[PrimalTree]): Primal point inputs.
+        tangents (Sequence[PrimalTree]): Tangent vectors corresponding to `primals`.
 
     Returns:
-        tuple[GradValue, GradValue]: Tuple of `(primal_out, tangent_out)`.
+        tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], PrimalTree]: Tuple of `(primal_out, tangent_out)`.
+
+    Raises:
+        AutodiffError: If symbolic or finite-difference differentiation fails in `jvp`.
     """
     from .jvp_vjp import jvp as _symbolic_jvp
 
@@ -474,32 +575,34 @@ def jvp(
     tangents_tuple = tuple(tangents)
     if all(isinstance(p, (Tensor, int, float)) for p in primals_tuple):
         try:
-            sym_res = _symbolic_jvp(fun, primals_tuple, tangents_tuple)
-            if isinstance(sym_res, tuple) and len(sym_res) == 2:
-                return sym_res[0], sym_res[1]
+            sym_primal, sym_tangent = _symbolic_jvp(fun, primals_tuple, tangents_tuple)
+            return sym_primal, sym_tangent
         except AutodiffError:
             raise
         except (TypeError, ValueError, RuntimeError):
             pass
-
-    primal_out = invoke_callable(fun, *primals_tuple)
+    _callable_fn_2: OpValue = fun
+    assert is_variadic_callable(_callable_fn_2)
+    primal_out_raw = _callable_fn_2(*primals_tuple)
+    primal_out = as_primal_tree(primal_out_raw)
 
     eps = 1e-5
-    perturbed: list[GradValue] = []
+    perturbed: list[OpValue] = []
     for p, t in zip(primals_tuple, tangents_tuple):
-        raw_p: TensorOrScalar = p
+        raw_p: OpValue = p
         if _is_addable_operand(raw_p):
             try:
-                perturbed.append(_ensure_grad_tensor(p) + _ensure_grad_tensor(t) * eps)
+                perturbed.append(_perturb_operand(raw_p, t, eps))
             except (TypeError, ValueError, RuntimeError, ArithmeticError) as exc:
                 msg = f"Failed to perturb primal operand during JVP evaluation: {exc}"
                 raise AutodiffError(msg) from exc
         else:
             perturbed.append(p)
-
-    out_eps = invoke_callable(fun, *perturbed)
+    _callable_fn_3: OpValue = fun
+    assert is_variadic_callable(_callable_fn_3)
+    out_eps = _callable_fn_3(*perturbed)
     try:
-        tangent_out: GradValue = (_ensure_grad_tensor(out_eps) - _ensure_grad_tensor(primal_out)) / eps
+        tangent_out: PrimalTree = _finite_diff_quotient(out_eps, primal_out_raw, eps)
     except (TypeError, ValueError, RuntimeError, ArithmeticError) as exc:
         msg = f"Failed to compute directional derivative tangent in JVP: {exc}"
         raise AutodiffError(msg) from exc
@@ -541,25 +644,25 @@ def hvp_graph(
 
 
 def hvp(
-    fun: GradValue,
-    primals: Sequence[GradValue] | GradValue,
-    tangents: Sequence[GradValue] | GradValue,
+    fun: DifferentiableFn,
+    primals: Sequence[PrimalTree] | PrimalTree,
+    tangents: Sequence[PrimalTree] | PrimalTree,
     has_aux: bool = False,
     mode: str = "forward-over-reverse",
     projected_tangents: Tensor | Sequence[Tensor] | None = None,
-) -> tuple[GradValue, GradValue]:
+) -> tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], PrimalTree]:
     """Compute a Hessian-vector product via symbolic graph transformation.
 
     Args:
-        fun (GradValue): Function to evaluate Hessian-vector product on.
-        primals (Sequence[GradValue] | GradValue): Primal evaluation inputs.
-        tangents (Sequence[GradValue] | GradValue): Tangent direction vectors.
+        fun (DifferentiableFn): Function to evaluate Hessian-vector product on.
+        primals (Sequence[PrimalTree] | PrimalTree): Primal evaluation inputs.
+        tangents (Sequence[PrimalTree] | PrimalTree): Tangent direction vectors.
         has_aux (bool): Whether `fun` returns auxiliary outputs.
         mode (str): Evaluation mode (`'forward-over-reverse'` or `'reverse-over-forward'`).
         projected_tangents (Tensor | Sequence[Tensor] | None): Projected cotangents for non-scalar outputs.
 
     Returns:
-        tuple[GradValue, GradValue]: Tuple of `(fun(*primals), hvp_result)`.
+        tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], PrimalTree]: Tuple of `(fun(*primals), hvp_result)`.
     """
     from .jvp_vjp import hvp as _jvp_vjp_hvp
 
@@ -607,27 +710,26 @@ def nth_order_grad_graph(
 
 
 def nth_order_grad(
-    fun: GradValue,
+    fun: DifferentiableFn,
     n: int = 1,
     options: GradOptions | None = None,
-) -> TypedVariadicCallable[GradValue]:
+) -> VariadicCallableProtocol:
     """Return an N-th order gradient function via repeated symbolic differentiation.
 
     Args:
-        fun (GradValue): Function to differentiate.
+        fun (DifferentiableFn): Function to differentiate.
         n (int): Order of the derivative (`n >= 1`).
         options (GradOptions | None): Optional differentiation options.
 
     Returns:
-        TypedVariadicCallable[GradValue]: The N-th order derivative function.
+        VariadicCallableProtocol: The N-th order derivative function.
 
     Raises:
         ValueError: If `n < 1`.
     """
     if n < 1:
         raise ValueError(f"Derivative order n must be >= 1, got {n}")
-    curr_fn: GradValue = fun
-    res_fn: TypedVariadicCallable[GradValue] = grad(curr_fn, options=options)
+    res_fn: VariadicCallableProtocol = grad(fun, options=options)
     for _ in range(n - 1):
         res_fn = grad(res_fn, options=options)
     return res_fn

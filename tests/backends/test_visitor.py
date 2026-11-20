@@ -2,140 +2,146 @@
 
 from __future__ import annotations
 
-import typing
+import pytest
+from ml_switcheroo_ir import AttributeValue, IRNode
 
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.generator_mixins import GeneratorLifecycleMixin
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, ensure_tensor_list
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from tests.testing_utils import MockNodeStub
 
 
-class DummyGenerator:
+class DummyGenerator(GeneratorLifecycleMixin):
     """Test class DummyGenerator."""
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.sorted_nodes = ensure_tensor_list([])
-        self.var_names = {"in1": "var_in1"}
-        self.input_idx = 0
-        self._output_returns = ensure_tensor_list([])
-        self.lines = ensure_tensor_list([])
+        self.sorted_nodes: list[IRNode] = []
+        self.var_names: dict[str, str] = {"in1": "var_in1"}
+        self.input_idx: int = 0
+        self._output_returns: list[str] | None = []
+        self.lines: list[str] = []
 
-    def _emit_body_return(self, returns: EagerValue) -> None:
+    def _emit_body_return(self, returns: list[str]) -> None:
         """Test function _emit_body_return.
 
         Args:
-            returns: Test parameter `returns`.
+            returns (list[str]): Test parameter `returns`.
         """
-        ensure_callable(self.lines.append)(f"return {returns}")
+        self.lines.append(f"return {returns}")
 
-    def emit_constant(self, node: EagerValue) -> EagerValue:
+    def emit_constant(self, node: IRNode) -> str:
         """Test function emit_constant.
 
         Args:
-            node: Test parameter `node`.
+            node (IRNode): Test parameter `node`.
 
         Returns:
-            EagerValue: Computed output value from `emit_constant`.
+            str: Computed output value from `emit_constant`.
         """
+        del node
         return "42.0"
 
-    def assign_var_name(self, id: EagerValue, prefix: EagerValue = "tensor") -> EagerValue:
+    def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
         """Test function assign_var_name.
 
         Args:
-            id: Test parameter `id`.
-            prefix: Test parameter `prefix`.
+            node_id (str): Test parameter `node_id`.
+            prefix (str): Test parameter `prefix`.
 
         Returns:
-            EagerValue: Computed output value from `assign_var_name`.
+            str: Computed output value from `assign_var_name`.
         """
+        del node_id
         return f"{prefix}_1"
 
-    def _emit_constant_assignment(self, var: EagerValue, val: EagerValue) -> None:
+    def _emit_constant_assignment(self, var: str, val: str) -> None:
         """Test function _emit_constant_assignment.
 
         Args:
-            var: Test parameter `var`.
-            val: Test parameter `val`.
+            var (str): Test parameter `var`.
+            val (str): Test parameter `val`.
         """
-        ensure_callable(self.lines.append)(f"{var} = {val}")
+        self.lines.append(f"{var} = {val}")
 
-    def _emit_input_assignment(self, var: EagerValue, node: EagerValue, pref: EagerValue, idx: EagerValue) -> None:
+    def _emit_input_assignment(self, var: str, node: IRNode, pref: str, idx: int) -> None:
         """Test function _emit_input_assignment.
 
         Args:
-            var: Test parameter `var`.
-            node: Test parameter `node`.
-            pref: Test parameter `pref`.
-            idx: Test parameter `idx`.
+            var (str): Test parameter `var`.
+            node (IRNode): Test parameter `node`.
+            pref (str): Test parameter `pref`.
+            idx (int): Test parameter `idx`.
         """
-        ensure_callable(self.lines.append)(f"{var} = {pref}[{idx}]")
+        del node
+        self.lines.append(f"{var} = {pref}[{idx}]")
 
-    def _emit_output_assignment(self, node: EagerValue, invars: EagerValue, returns: EagerValue) -> None:
+    def _emit_output_assignment(self, node: IRNode, invars: list[str], returns: str) -> None:
         """Test function _emit_output_assignment.
 
         Args:
-            node: Test parameter `node`.
-            invars: Test parameter `invars`.
-            returns: Test parameter `returns`.
+            node (IRNode): Test parameter `node`.
+            invars (list[str]): Test parameter `invars`.
+            returns (str): Test parameter `returns`.
         """
-        ensure_callable(self._output_returns.append)(returns)
+        del node, invars
+        assert self._output_returns is not None
+        self._output_returns.append(returns)
 
-    def visit(self, node: EagerValue, invars: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def visit(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Test function visit.
 
         Args:
-            node: Test parameter `node`.
-            invars: Test parameter `invars`.
-            kwargs: Test parameter `kwargs`.
+            node (IRNode): Test parameter `node`.
+            input_vars (list[str]): Test parameter `input_vars`.
+            **kwargs (BackendArg): Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `visit`.
+            str: Computed output value from `visit`.
         """
+        del node, input_vars, kwargs
         return "visited"
 
-    def add_line(self, line: EagerValue) -> None:
+    def add_line(self, line: str) -> None:
         """Test function add_line.
 
         Args:
-            line: Test parameter `line`.
+            line (str): Test parameter `line`.
         """
-        ensure_callable(self.lines.append)(line)
+        self.lines.append(line)
 
 
-class DummyNode:
+class DummyNode(MockNodeStub):
     """Test class DummyNode."""
 
-    def __init__(self, op_type: EagerValue, id: EagerValue, inputs: EagerValue = None) -> None:
+    def __init__(self, op_type: str, id: str, inputs: list[str] | None = None) -> None:
         """Test function __init__.
 
         Args:
-            op_type: Test parameter `op_type`.
-            id: Test parameter `id`.
-            inputs: Test parameter `inputs`.
+            op_type (str): Test parameter `op_type`.
+            id (str): Test parameter `id`.
+            inputs (list[str] | None): Test parameter `inputs`.
         """
         self.op_type = op_type
         self.id = id
         self.inputs = inputs or []
-        self.attributes = ensure_tensor_dict({})
+        self.attributes: dict[str, AttributeValue] = {}
         self.shape_metadata = ()
 
 
 def test_visitor() -> None:
     """Test function test_visitor."""
     gen = DummyGenerator()
-    vis = ensure_callable(CodeGeneratorVisitor)(gen)
+    vis = CodeGeneratorVisitor(gen)
 
     n_const = DummyNode("Constant", "c1")
     n_in = DummyNode("Input", "i1")
     n_out = DummyNode("Output", "o1", inputs=["in1"])
     n_op = DummyNode("Op", "op1", inputs=["in1"])
-    ensure_mutable(n_op).attributes = ensure_eager_tensor({"stream_id": 1, "async_check": True})
-    ensure_mutable(n_op).shape_metadata = ensure_eager_tensor((1,))
+    pytest.MonkeyPatch().setattr(n_op, "attributes", {"stream_id": 1, "async_check": True}, raising=False)
+    pytest.MonkeyPatch().setattr(n_op, "shape_metadata", (1,), raising=False)
 
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([n_const, n_in, n_op, n_out])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [n_const, n_in, n_op, n_out], raising=False)
 
     vis.generate_body("args")
 
@@ -148,10 +154,10 @@ def test_visitor() -> None:
 def test_visitor_compute_node_branches() -> None:
     """Test function test_visitor_compute_node_branches."""
     gen = DummyGenerator()
-    vis = ensure_callable(CodeGeneratorVisitor)(gen)
+    vis = CodeGeneratorVisitor(gen)
 
     n_op = DummyNode("Op", "op2")
     n_op.attributes = {}
     n_op.shape_metadata = ()
-    ensure_callable(vis.handle_compute_node)(n_op)
+    vis.handle_compute_node(n_op)
     assert "tensor_1 = visited" in gen.lines

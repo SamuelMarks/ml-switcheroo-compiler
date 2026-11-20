@@ -1,73 +1,86 @@
-"""Tests for test_frontend_random."""
+"""Behavioral tests for `rand`, `randn`, `randint`, and `manual_seed` in eager and IR tracing modes."""
 
 from __future__ import annotations
 
-import typing
-from unittest.mock import patch
+from ml_switcheroo_compiler.backends.eager.random_ops import seed_rng
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.ops.creation.api_random import manual_seed, rand, randint, randn
+from ml_switcheroo_compiler.tracing.tracer import TracerTape
+from tests.testing_utils import MockTestStub, ensure_tensor
 
-from ml_switcheroo_compiler.ops.creation.frontend_random import manual_seed, rand, randint, randn
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable, get_backend_member, has_backend_member
 
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+def test_random_creation_eager_execution() -> None:
+    """Verify `rand`, `randn`, `randint`, and `manual_seed` execute eagerly on the NumPy backend."""
+    with ConfigContext(backend="numpy", eager_mode=True):
+        assert manual_seed(1234) == 1234
+
+        class _ManualSeedBackend(MockTestStub):
+            """Backend stub exposing `manual_seed`."""
+
+            last_seed: int = -1
+
+            def manual_seed(self, val: int) -> None:
+                """Record applied seed value.
+
+                Args:
+                    val (int): Applied seed.
+                """
+                self.last_seed = val
+
+        class _NoRandomMethodSubmod:
+            """Random submodule lacking `.seed`."""
+
+        class _NoSeedBackend(MockTestStub):
+            """Backend stub with `.random` lacking `.seed` and no `manual_seed`."""
+
+            random = _NoRandomMethodSubmod()
+
+        ms_be = _ManualSeedBackend()
+        assert seed_rng(ms_be, 77) == 77
+        assert ms_be.last_seed == 77
+        assert seed_rng(_NoSeedBackend(), 88) == 88
+
+        r_def = ensure_tensor(rand(2, 3))
+        assert r_def.shape == (2, 3)
+
+        r_f64 = ensure_tensor(rand(2, 3, dtype=DType.Float64, device=Device("cpu")))
+        assert r_f64.shape == (2, 3)
+        assert r_f64.dtype == DType.Float64
+
+        rn_def = ensure_tensor(randn(2, 3))
+        assert rn_def.shape == (2, 3)
+
+        rn_f64 = ensure_tensor(randn(2, 3, dtype=DType.Float64, device=Device("cpu")))
+        assert rn_f64.shape == (2, 3)
+        assert rn_f64.dtype == DType.Float64
+
+        ri_def = ensure_tensor(randint(0, 10, (2, 3)))
+        assert ri_def.shape == (2, 3)
+
+        ri_i32 = ensure_tensor(randint(0, 10, [2, 3], dtype=DType.Int32, device=Device("cpu")))
+        assert ri_i32.shape == (2, 3)
+        assert ri_i32.dtype == DType.Int32
 
 
-def test_frontend_random() -> None:
-    """Test function test_frontend_random."""
-    import ml_switcheroo_compiler.backends.registry as reg
-    from ml_switcheroo_compiler.core.config import config
+def test_random_creation_symbolic_tracing_emission() -> None:
+    """Verify `rand`, `randn`, `randint`, and `manual_seed` emit canonical IR nodes during tracing."""
+    with ConfigContext(eager_mode=False):
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("random_creation_trace")
+        try:
+            r_sym = ensure_tensor(rand(3, 4))
+            rn_sym = ensure_tensor(randn(3, 4))
+            ri_sym = ensure_tensor(randint(0, 5, (2, 2)))
+            seed_out = manual_seed(99)
+        finally:
+            tape.stop_tracing()
 
-    config.eager_mode = True
+    assert r_sym.shape == (3, 4)
+    assert rn_sym.shape == (3, 4)
+    assert ri_sym.shape == (2, 2)
+    assert seed_out == 99
 
-    class DummyBackend:
-        """Test class DummyBackend."""
-
-        def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op.
-
-            Args:
-                op: Test parameter `op`.
-                a: Test parameter `a`.
-                k: Test parameter `k`.
-
-            Returns:
-                EagerValue: Computed output value from `execute_op`.
-            """
-            return op
-
-    orig_reg_backend = get_backend_member(reg, "_ACTIVE_BACKEND", None)
-    has_reg_backend = has_backend_member(reg, "_ACTIVE_BACKEND")
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
-    import ml_switcheroo_compiler.ops.creation.frontend_random as rand_mod
-
-    orig_rand_backend = ensure_eager_tensor(ensure_eager_tensor(rand_mod).get_active_backend)
-    ensure_mutable(rand_mod).get_active_backend = ensure_eager_tensor(lambda: DummyBackend())
-
-    from ml_switcheroo_compiler.core.config import config
-
-    config.eager_mode = True
-    assert ensure_eager_tensor(ensure_eager_tensor(rand(1)).data) == "Rand"
-    assert ensure_eager_tensor(ensure_eager_tensor(randn(1)).data) == "Randn"
-    assert ensure_eager_tensor(ensure_eager_tensor(randint(0, 10, (1,))).data) == "Randint"
-
-    manual_seed(42)
-
-    config.eager_mode = False
-
-    with patch.object(rand_mod, "_emit_creation_node", return_value="emitted"):
-        assert rand(1) == "emitted"
-        assert randn(1) == "emitted"
-        assert randint(0, 10, (1,)) == "emitted"
-
-    with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
-        with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph") as graph:
-            graph.nodes = {}
-            with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.add_node"):
-                manual_seed(42)
-
-    config.eager_mode = True
-    if has_reg_backend:
-        ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(orig_reg_backend)
-    else:
-        del ensure_mutable(reg)._ACTIVE_BACKEND
-    ensure_mutable(rand_mod).get_active_backend = ensure_eager_tensor(orig_rand_backend)
+    op_types = {node.op_type for node in traced_graph.nodes.values()}
+    assert {"Rand", "Randn", "Randint", "ManualSeed"} <= op_types

@@ -6,10 +6,15 @@ from collections.abc import Callable  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_callable, ensure_eager_tensor, ensure_float, ensure_opt_str, ensure_str
+from ml_switcheroo_compiler.backends.registry import (
+    coerce_float,
+    coerce_opt_str,
+    coerce_shape,
+    coerce_str,
+)
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -20,20 +25,20 @@ class ExtractPatchesOptions(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    strides: int | tuple[int, int] | list[int] | TensorOrScalar | None = None
-    dilation_rate: int | tuple[int, int] | list[int] | TensorOrScalar | None = None
-    padding: str | TensorOrScalar = "valid"
-    data_format: str | TensorOrScalar | None = None
+    strides: int | tuple[int, int] | list[int] | OpValue | None = None
+    dilation_rate: int | tuple[int, int] | list[int] | OpValue | None = None
+    padding: str | OpValue = "valid"
+    data_format: str | OpValue | None = None
 
-    def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
+    def __init__(self, *args: OpValue, **kwargs: OpValue) -> None:
         """Initialize ExtractPatchesOptions from positional or keyword arguments.
 
         Args:
-            *args (TensorOrScalar): Positional field values.
-            **kwargs (TensorOrScalar): Keyword field values.
+            *args (OpValue): Positional field values.
+            **kwargs (OpValue): Keyword field values.
         """
         field_names = ("strides", "dilation_rate", "padding", "data_format")
-        merged: dict[str, TensorOrScalar] = {**dict(zip(field_names, args)), **kwargs}
+        merged: dict[str, OpValue] = {**dict(zip(field_names, args)), **kwargs}
         super().__init__(
             strides=merged.get("strides"),
             dilation_rate=merged.get("dilation_rate"),
@@ -47,16 +52,16 @@ def crop_and_resize(
     boxes: Tensor,
     box_indices: Tensor,
     crop_size: tuple[int, int],
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
         images (Tensor): Input `images` argument (images).
         boxes (Tensor): Input `boxes` argument (boxes).
         box_indices (Tensor): Input `box_indices` argument (box indices).
-        crop_size (tuple): Input `crop_size` argument (crop size).
-        **kwargs (TensorOrScalar): Keyword args.
+        crop_size (tuple[int, int]): Input `crop_size` argument (crop size).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -91,15 +96,15 @@ def _extract_bounding_boxes_eager(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj: TensorOrScalar,
-) -> TensorOrScalar:
+    config_obj: OpValue,
+) -> OpValue:
     """Compute the extract bounding boxes eager tensor operation.
 
     Args:
         images (Tensor): Input `images` argument (images).
         boxes (Tensor): Input `boxes` argument (boxes).
         box_indices (Tensor): Input `box_indices` argument (box indices).
-        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
+        config_obj (OpValue): Input `config_obj` argument (config obj).
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -121,17 +126,17 @@ def extract_bounding_boxes(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj: TensorOrScalar = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    config_obj: OpValue = None,
+    **kwargs: OpValue,
+) -> OpValue:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
         images (Tensor): Input `images` argument (images).
         boxes (Tensor): Input `boxes` argument (boxes).
         box_indices (Tensor): Input `box_indices` argument (box indices).
-        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
-        **kwargs (TensorOrScalar): Keyword args.
+        config_obj (OpValue): Input `config_obj` argument (config obj).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -139,10 +144,18 @@ def extract_bounding_boxes(
     if config_obj is None:
         from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
-        crop_size = kwargs.get("crop_size", (0, 0))
-        if isinstance(crop_size, int):
-            crop_size = (crop_size, crop_size)
-        config_obj = ensure_eager_tensor(ensure_callable(BBoxConfig)(crop_size=crop_size, interpolation=ensure_str(kwargs.get("interpolation", "bilinear")), extrapolation_value=ensure_float(kwargs.get("extrapolation_value", 0.0)), data_format=ensure_opt_str(kwargs.get("data_format", None))))
+        raw_crop = kwargs.get("crop_size", (0, 0))
+        if isinstance(raw_crop, int):
+            crop_pair: tuple[int, int] = (raw_crop, raw_crop)
+        else:
+            cs_dims = coerce_shape(raw_crop)
+            crop_pair = (cs_dims[0], cs_dims[1]) if len(cs_dims) >= 2 else (0, 0)
+        config_obj = BBoxConfig(
+            crop_size=crop_pair,
+            interpolation=coerce_str(kwargs.get("interpolation", "bilinear")),
+            extrapolation_value=coerce_float(kwargs.get("extrapolation_value", 0.0)),
+            data_format=coerce_opt_str(kwargs.get("data_format", None)),
+        )
 
     if config.eager_mode:
         return _extract_bounding_boxes_eager(images, boxes, box_indices, config_obj)
@@ -164,7 +177,7 @@ def crop(
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> TensorOrScalar:
+) -> OpValue:
     """Crops an image to a specified bounding box.
 
     Args:
@@ -213,7 +226,7 @@ def pad_to_bounding_box(
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> TensorOrScalar:
+) -> OpValue:
     """Pad an image with zeros to the specified height and width.
 
     Args:
@@ -261,7 +274,7 @@ def draw_bounding_boxes(
     boxes: Tensor,
     colors: Tensor | None = None,
     texts: list[str] | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Draw bounding boxes on a batch of images.
 
     Args:
@@ -296,7 +309,7 @@ def crop_images(
     images: Tensor,
     cropping: tuple[int, int, int, int],
     data_format: str | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Crops images.
 
     Args:
@@ -343,14 +356,14 @@ def extract_patches(
     images: Tensor,
     size: int | tuple[int, int] | list[int],
     options: ExtractPatchesOptions | None = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Extract patches from images.
 
     Args:
         images (Tensor): Input images.
         size (int | tuple[int, int] | list[int]): Patch size.
-        options (ExtractPatchesOptions): Options.
+        options (ExtractPatchesOptions | None): Options.
         **kwargs: Extra arguments.
 
     Returns:
@@ -394,13 +407,13 @@ def pad_images(
     padding: tuple[int, int, int, int],
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Pad images.
 
     Args:
         images (Tensor): Input images.
         padding (tuple[int, int, int, int]): Padding.
-        target_shape (tuple[int, int]): Target shape.
+        target_shape (tuple[int | None, int | None]): Target shape.
         data_format (str | None): Data format.
 
     Returns:
@@ -448,18 +461,18 @@ class ExtractBoundingBoxes(OpDef):
 
     op_name = "ExtractBoundingBoxes"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-        *args (EagerTensorProtocol): Positional args.
-        **kwargs (EagerTensorProtocol): Keyword args.
+        inputs (OpValue): Input `inputs` argument (inputs).
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_1: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_1: OpValue = extract_shape(inputs)
         return _typed_ret_1
 
 
@@ -469,18 +482,18 @@ class Iou(OpDef):
 
     op_name = "Iou"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_2: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_2: OpValue = extract_shape(inputs)
         return _typed_ret_2
 
 
@@ -490,16 +503,32 @@ class Nms(OpDef):
 
     op_name = "Nms"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_3: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_3: OpValue = extract_shape(inputs)
         return _typed_ret_3
+
+
+__all__ = [
+    "ExtractBoundingBoxes",
+    "ExtractPatchesOptions",
+    "Iou",
+    "Nms",
+    "crop",
+    "crop_and_resize",
+    "crop_images",
+    "draw_bounding_boxes",
+    "extract_bounding_boxes",
+    "extract_patches",
+    "pad_images",
+    "pad_to_bounding_box",
+]

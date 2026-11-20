@@ -5,10 +5,11 @@ from __future__ import annotations
 import os
 import struct
 import tempfile
+import types
 import typing
 
 import pytest
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.onnx import (
     ONNXCodeGenerator,
@@ -24,13 +25,12 @@ from ml_switcheroo_compiler.backends.edge.onnx import (
     serialize_type_proto,
     serialize_value_info,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from ml_switcheroo_compiler.ir.core import ensure_attrs
+from tests.testing_utils import EagerBoundCallable, require_callable
 
 if typing.TYPE_CHECKING:
     import onnx
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 onnx = pytest.importorskip("onnx")
 
@@ -124,7 +124,7 @@ def test_pure_python_onnx_binary_export_and_checker() -> None:
     g.nodes = NodeDict({"X": in_x, "W": in_w, "B": cst_b, "matmul_out": matmul_node, "Y": add_node})
     g.inputs = ["X", "W"]
     g.outputs = ["Y"]
-    ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in_x, in_w, cst_b, matmul_node, add_node])
+    g.sorted_nodes = [in_x, in_w, cst_b, matmul_node, add_node]
 
     gen = ONNXCodeGenerator(g)
     binary_data = gen.serialize_model_to_bytes()
@@ -162,7 +162,7 @@ def test_onnx_binary_dynamic_axes() -> None:
     g.nodes = NodeDict({"X": in_x, "Y": relu_node})
     g.inputs = ["X"]
     g.outputs = ["Y"]
-    ensure_mutable(g).sorted_nodes = ensure_eager_tensor([in_x, relu_node])
+    g.sorted_nodes = [in_x, relu_node]
 
     gen = ONNXCodeGenerator(g)
     dynamic_axes = {"X": {0: "batch_size"}, "Y": {0: "batch_size"}}
@@ -193,7 +193,7 @@ def test_onnx_binary_control_flow_subgraphs() -> None:
     then_g.nodes = NodeDict({"X": t_in, "then_out": t_add})
     then_g.inputs = ["X"]
     then_g.outputs = ["then_out"]
-    ensure_mutable(then_g).sorted_nodes = ensure_eager_tensor([t_in, t_add])
+    then_g.sorted_nodes = [t_in, t_add]
 
     # Else subgraph: Sub(X, X) -> else_out
     else_g = IRGraph(name="else_g")
@@ -202,7 +202,7 @@ def test_onnx_binary_control_flow_subgraphs() -> None:
     else_g.nodes = NodeDict({"X": e_in, "else_out": e_sub})
     else_g.inputs = ["X"]
     else_g.outputs = ["else_out"]
-    ensure_mutable(else_g).sorted_nodes = ensure_eager_tensor([e_in, e_sub])
+    else_g.sorted_nodes = [e_in, e_sub]
 
     if_node = LogicalNode(
         id="Y",
@@ -215,7 +215,7 @@ def test_onnx_binary_control_flow_subgraphs() -> None:
     main_g.nodes = NodeDict({"cond": cond_node, "X": in_x, "Y": if_node})
     main_g.inputs = ["cond", "X"]
     main_g.outputs = ["Y"]
-    ensure_mutable(main_g).sorted_nodes = ensure_eager_tensor([cond_node, in_x, if_node])
+    main_g.sorted_nodes = [cond_node, in_x, if_node]
 
     gen = ONNXCodeGenerator(main_g)
     binary_data = gen.serialize_model_to_bytes()
@@ -245,7 +245,7 @@ def test_onnx_binary_loop_subgraph() -> None:
     body_g.nodes = NodeDict({"iter": b_iter, "cond_in": b_cond, "v_in": b_v, "v_out": b_add})
     body_g.inputs = ["iter", "cond_in", "v_in"]
     body_g.outputs = ["cond_in", "v_out"]
-    ensure_mutable(body_g).sorted_nodes = ensure_eager_tensor([b_iter, b_cond, b_v, b_add])
+    body_g.sorted_nodes = [b_iter, b_cond, b_v, b_add]
 
     loop_node = LogicalNode(
         id="loop_res",
@@ -258,7 +258,7 @@ def test_onnx_binary_loop_subgraph() -> None:
     main_g.nodes = NodeDict({"trip_count": trip_count, "cond": cond_node, "v": init_v, "loop_res": loop_node})
     main_g.inputs = ["trip_count", "cond", "v"]
     main_g.outputs = ["loop_res"]
-    ensure_mutable(main_g).sorted_nodes = ensure_eager_tensor([trip_count, cond_node, init_v, loop_node])
+    main_g.sorted_nodes = [trip_count, cond_node, init_v, loop_node]
 
     gen = ONNXCodeGenerator(main_g)
     binary_data = gen.serialize_model_to_bytes()
@@ -266,7 +266,23 @@ def test_onnx_binary_loop_subgraph() -> None:
     assert len(binary_data) > 0
 
 
-def _test_onnx_additional_edges_and_validation_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestOnnxAdditionalEdgesAndValidationState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_onnx_additional_edges_and_validation` split helpers."""
+
+    f1: bytes
+    f2: bytes
+    f7: bytes
+    in_a: LogicalNode
+    out_b: LogicalNode
+    pytest: types.ModuleType
+    simple_g: LogicalGraph
+    sub_f2: bytes
+    sub_wt0: bytes
+    sub_wt2: bytes
+    validate_onnx_model_bytes: EagerBoundCallable
+
+
+def _test_onnx_additional_edges_and_validation_part_1(_state: _TestOnnxAdditionalEdgesAndValidationState) -> None:
     """Execute part 1 of test_onnx_additional_edges_and_validation.
 
     Args:
@@ -307,7 +323,8 @@ def _test_onnx_additional_edges_and_validation_part_1(_state: dict[str, EagerTen
     # - field 1 (ir_version = 8)
     # - field 2 (producer_name = "test")
     # - field 7 (graph = b"dummy_graph")
-    # - field 8 (opset import): subfield 2 (opset_version = 17), subfield with wt 0, subfield with wt 2, subfield with other wt (break)
+    # - field 8 (opset import): subfield 2 (opset_version = 17), subfield with wt 0, subfield with wt 2, subfield with
+    # other wt (break)
     # - field 99 with wire type 0 (varint)
     # - field 100 with wire type 2 (length-delimited)
     # - field 101 with wire type 5 (32-bit fixed)
@@ -320,23 +337,27 @@ def _test_onnx_additional_edges_and_validation_part_1(_state: dict[str, EagerTen
     sub_f2 = encode_tag(2, 0) + encode_varint(17)
     sub_wt0 = encode_tag(3, 0) + encode_varint(99)
     sub_wt2 = encode_length_delimited(4, b"meta")
-    _state.update(ensure_tensor_dict({"add_node": add_node, "bad_order_node": bad_order_node, "decode_varint": decode_varint, "f1": f1}))
-    _state.update(ensure_tensor_dict({"f2": f2, "f7": f7, "in_node": in_node, "off": off}))
-    _state.update(ensure_tensor_dict({"off_trunc": off_trunc, "pytest": pytest, "sub_f2": sub_f2, "sub_wt0": sub_wt0}))
-    _state.update(ensure_tensor_dict({"sub_wt2": sub_wt2, "val": val, "val_trunc": val_trunc, "validate_onnx_model_bytes": validate_onnx_model_bytes}))
-    _state.update(ensure_tensor_dict({"validate_topological_sort": validate_topological_sort}))
+    _state.update({"f1": f1})
+    _state.update({"f2": f2, "f7": f7})
+    _state.update({"pytest": pytest, "sub_f2": sub_f2, "sub_wt0": sub_wt0})
+    _state.update({"sub_wt2": sub_wt2, "validate_onnx_model_bytes": require_callable(validate_onnx_model_bytes)})
 
 
-def _test_onnx_additional_edges_and_validation_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_onnx_additional_edges_and_validation_part_2(_state: _TestOnnxAdditionalEdgesAndValidationState) -> None:
     """Execute part 2 of test_onnx_additional_edges_and_validation.
 
     Args:
         _state: Shared test state dictionary.
     """
     f1, f2, f7, pytest = _state["f1"], _state["f2"], _state["f7"], _state["pytest"]
-    sub_f2, sub_wt0, sub_wt2, validate_onnx_model_bytes = _state["sub_f2"], _state["sub_wt0"], _state["sub_wt2"], _state["validate_onnx_model_bytes"]
+    sub_f2, sub_wt0, sub_wt2, validate_onnx_model_bytes = (
+        _state["sub_f2"],
+        _state["sub_wt0"],
+        _state["sub_wt2"],
+        _state["validate_onnx_model_bytes"],
+    )
     sub_other_wt = encode_tag(5, 5) + b"\x00\x00\x00\x00"  # wire type 5 inside opset import triggers else break
-    f8 = ensure_callable(encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
+    f8 = encode_length_delimited(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
 
     # Top-level wire types
     f_wt0 = encode_tag(99, 0) + encode_varint(123)
@@ -366,26 +387,24 @@ def _test_onnx_additional_edges_and_validation_part_2(_state: dict[str, EagerTen
     out_b = LogicalNode(id="b", op_type="Identity", inputs=["a"], shape_metadata=(1,))
     simple_g.nodes = NodeDict({"a": in_a, "b": out_b})
     simple_g.inputs = ["a"]
-    _state.update(ensure_tensor_dict({"bad_payload": bad_payload, "f8": f8, "f_wt0": f_wt0, "f_wt1": f_wt1}))
-    _state.update(ensure_tensor_dict({"f_wt2": f_wt2, "f_wt5": f_wt5, "in_a": in_a, "meta": meta}))
-    _state.update(ensure_tensor_dict({"missing_graph_payload": missing_graph_payload, "out_b": out_b, "payload": payload, "simple_g": simple_g}))
-    _state.update(ensure_tensor_dict({"sub_other_wt": sub_other_wt}))
-    _state.update(ensure_tensor_dict({"f1": f1, "f2": f2, "f7": f7}))
-    _state.update(ensure_tensor_dict({"pytest": pytest, "sub_f2": sub_f2, "sub_wt0": sub_wt0}))
-    _state.update(ensure_tensor_dict({"sub_wt2": sub_wt2, "validate_onnx_model_bytes": validate_onnx_model_bytes}))
+    _state.update({"in_a": in_a})
+    _state.update({"out_b": out_b, "simple_g": simple_g})
+    _state.update({"f1": f1, "f2": f2, "f7": f7})
+    _state.update({"pytest": pytest, "sub_f2": sub_f2, "sub_wt0": sub_wt0})
+    _state.update({"sub_wt2": sub_wt2, "validate_onnx_model_bytes": require_callable(validate_onnx_model_bytes)})
 
 
-def _test_onnx_additional_edges_and_validation_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_onnx_additional_edges_and_validation_part_3(_state: _TestOnnxAdditionalEdgesAndValidationState) -> None:
     """Execute part 3 of test_onnx_additional_edges_and_validation.
 
     Args:
         _state: Shared test state dictionary.
     """
-    in_a, out_b, pytest, simple_g = _state["in_a"], _state["out_b"], _state["pytest"], _state["simple_g"]
-    ensure_mutable(simple_g).outputs = ensure_eager_tensor(["b"])
-    ensure_mutable(simple_g).sorted_nodes = ensure_eager_tensor([in_a, out_b])
+    in_a, out_b, simple_g = _state["in_a"], _state["out_b"], _state["simple_g"]
+    pytest.MonkeyPatch().setattr(simple_g, "outputs", ["b"], raising=False)
+    pytest.MonkeyPatch().setattr(simple_g, "sorted_nodes", [in_a, out_b], raising=False)
 
-    gen = ensure_callable(ONNXCodeGenerator)(simple_g)
+    gen = ONNXCodeGenerator(simple_g)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 10"):
         gen.serialize_model_to_bytes(opset_version=10)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 25"):
@@ -405,12 +424,11 @@ def _test_onnx_additional_edges_and_validation_part_3(_state: dict[str, EagerTen
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
-    _state.update(ensure_tensor_dict({"f": f, "gen": gen, "tmp_path": tmp_path}))
 
 
 def test_onnx_additional_edges_and_validation() -> None:
     """Test topological sort Input node handling, decode_varint edge cases, and protobuf wire types."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestOnnxAdditionalEdgesAndValidationState = {}
     _test_onnx_additional_edges_and_validation_part_1(_state)
     _test_onnx_additional_edges_and_validation_part_2(_state)
     _test_onnx_additional_edges_and_validation_part_3(_state)

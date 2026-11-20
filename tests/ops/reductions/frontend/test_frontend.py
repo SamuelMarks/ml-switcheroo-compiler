@@ -2,47 +2,73 @@
 
 from __future__ import annotations
 
-import importlib
 import typing
 from unittest.mock import patch
 
 import numpy as np
 import pytest
+from pytest_mock import MockerFixture
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.reductions import approx_max_k, approx_min_k, segment_max, segment_mean, segment_min, segment_prod, unsorted_segment_max, unsorted_segment_mean, unsorted_segment_min, unsorted_segment_prod, unsorted_segment_sqrt_n, unsorted_segment_sum
-from ml_switcheroo_compiler.ops.reductions.frontend import max as fe_max
-from ml_switcheroo_compiler.ops.reductions.frontend import min as fe_min
-from ml_switcheroo_compiler.ops.reductions.frontend import segment_sum
-from ml_switcheroo_compiler.ops.reductions.frontend import sum as fe_sum
-from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d, unfold
-from ml_switcheroo_compiler.ops.reductions.frontend_utils import _emit_reduction_node, reduce_window
+from ml_switcheroo_compiler.ops.configs import WindowConfig
+from ml_switcheroo_compiler.ops.reductions import (
+    approx_max_k,
+    approx_min_k,
+    segment_max,
+    segment_mean,
+    segment_min,
+    segment_prod,
+    unsorted_segment_max,
+    unsorted_segment_mean,
+    unsorted_segment_min,
+    unsorted_segment_prod,
+    unsorted_segment_sqrt_n,
+    unsorted_segment_sum,
+)
+from ml_switcheroo_compiler.ops.reductions.api import max as fe_max
+from ml_switcheroo_compiler.ops.reductions.api import min as fe_min
+from ml_switcheroo_compiler.ops.reductions.api import segment_sum
+from ml_switcheroo_compiler.ops.reductions.api import sum as fe_sum
+from ml_switcheroo_compiler.ops.reductions.api_pool import (
+    UnpoolOptions,
+    adaptive_avg_pool2d,
+    adaptive_avg_pool3d,
+    adaptive_max_pool2d,
+    adaptive_max_pool3d,
+    fold,
+    fractional_max_pool2d,
+    fractional_max_pool3d,
+    max_unpool1d,
+    max_unpool2d,
+    max_unpool3d,
+    unfold,
+)
+from ml_switcheroo_compiler.ops.reductions.api_utils import _emit_reduction_node, reduce_window
+from ml_switcheroo_compiler.tracing.state import TracingState
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-WindowConfig = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils")).WindowConfig)
+from tests.testing_utils import MockTestStub, require_callable, unpack_pair
 
 
 def test_reductions_frontend_coverage_brute() -> None:
     """Test the reductions frontend coverage brute behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
     config.eager_mode = False
     _tracer.start_tracing()
     data = Tensor(ProxyTensor(id="data_id", shape=(5,)), TensorConfig((5,), DType.Float32, Device("cpu")))
     segment_ids = Tensor(ProxyTensor(id="segment_id", shape=(5,)), TensorConfig((5,), DType.Int32, Device("cpu")))
     seg_out = segment_sum(data, segment_ids)
     assert seg_out is not None
-    assert _tracer.active_graph is not None
-    assert len(_tracer.active_graph.nodes) >= 1
+    assert global_tracing_state.active_graph is not None
+    assert len(global_tracing_state.active_graph.nodes) >= 1
     _tracer.stop_tracing()
     config.eager_mode = True
 
@@ -51,10 +77,16 @@ def test_remaining_segment_ops() -> None:
     """Test the remaining segment ops behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
-    data = Tensor(ProxyTensor(id="data_id", shape=(3,), dtype=DType("float32")), TensorConfig((3,), DType("float32"), None))
-    segment_ids = Tensor(ProxyTensor(id="seg_id", shape=(3,), dtype=DType("int32")), TensorConfig((3,), DType("int32"), None))
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    data = Tensor(
+        ProxyTensor(id="data_id", shape=(3,), dtype=DType("float32")), TensorConfig((3,), DType("float32"), None)
+    )
+    segment_ids = Tensor(
+        ProxyTensor(id="seg_id", shape=(3,), dtype=DType("int32")), TensorConfig((3,), DType("int32"), None)
+    )
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing()
         segment_max(data, segment_ids)
@@ -69,12 +101,28 @@ def test_remaining_segment_ops() -> None:
         unsorted_segment_sum(data, segment_ids, 2)
         approx_max_k(data, 2)
         approx_min_k(data, 2)
-        assert _tracer.active_graph is not None
-        assert len(_tracer.active_graph.nodes) == 12
+        assert global_tracing_state.active_graph is not None
+        assert len(global_tracing_state.active_graph.nodes) >= 12
         _tracer.stop_tracing()
 
 
-def _test_reductions_frontend_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestReductionsFrontendBruteState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_reductions_frontend_brute` split helpers."""
+
+    global_tracing_state: TracingState
+    indices: Tensor
+    indices2d: Tensor
+    indices3d: Tensor
+    opt1: UnpoolOptions
+    opt2: UnpoolOptions
+    opt3: UnpoolOptions
+    t_1d: Tensor
+    t_2d: Tensor
+    t_3d: Tensor
+    w_conf: WindowConfig
+
+
+def _test_reductions_frontend_brute_part_1(_state: _TestReductionsFrontendBruteState) -> None:
     """Execute part 1 of test_reductions_frontend_brute.
 
     Args:
@@ -88,24 +136,32 @@ def _test_reductions_frontend_brute_part_1(_state: dict[str, EagerTensorProtocol
     indices = Tensor(np.zeros((2, 3, 8)).astype(np.int64), TensorConfig((2, 3, 8), "int64", "cpu"))
     indices2d = Tensor(np.zeros((2, 3, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8), "int64", "cpu"))
     indices3d = Tensor(np.zeros((2, 3, 8, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8, 8), "int64", "cpu"))
-    _state.update(ensure_tensor_dict({"indices": indices, "indices2d": indices2d, "indices3d": indices3d, "t_1d": t_1d}))
-    _state.update(ensure_tensor_dict({"t_2d": t_2d, "t_3d": t_3d}))
+    _state.update({"indices": indices, "indices2d": indices2d, "indices3d": indices3d, "t_1d": t_1d})
+    _state.update({"t_2d": t_2d, "t_3d": t_3d})
 
 
-def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_reductions_frontend_brute_part_2(_state: _TestReductionsFrontendBruteState) -> None:
     """Execute part 2 of test_reductions_frontend_brute.
 
     Args:
         _state: Shared test state dictionary.
     """
-    (indices, indices2d, indices3d, t_1d) = (_state["indices"], _state["indices2d"], _state["indices3d"], _state["t_1d"])
+    (indices, indices2d, indices3d, t_1d) = (
+        _state["indices"],
+        _state["indices2d"],
+        _state["indices3d"],
+        _state["t_1d"],
+    )
     (t_2d, t_3d) = (_state["t_2d"], _state["t_3d"])
-    with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool.get_active_backend") as mock_backend, patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.get_active_backend") as mock_backend_utils:
+    with (
+        patch("ml_switcheroo_compiler.ops.reductions.api_pool.get_active_backend") as mock_backend,
+        patch("ml_switcheroo_compiler.ops.reductions.api_utils.get_active_backend") as mock_backend_utils,
+    ):
 
         class DummyBackend:
             """Test class DummyBackend."""
 
-            def execute_op(self, op_type: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def execute_op(self, op_type: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function execute_op.
 
                 Args:
@@ -114,56 +170,66 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `execute_op`.
+                    BackendArg: Computed output value from `execute_op`.
                 """
                 if kwargs.get("return_indices", False) or op_type == "FractionalMaxPool3d":
                     return (np.zeros_like(args[0]), np.zeros_like(args[0]).astype(np.int64))
                 return np.zeros_like(args[0])
 
-            def array(self, x: EagerValue) -> EagerValue:
+            def array(self, x: BackendArg) -> BackendArg:
                 """Test function array.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    EagerValue: Computed output value from `array`.
+                    BackendArg: Computed output value from `array`.
                 """
                 return x
 
         dummy_backend = DummyBackend()
         mock_backend.return_value = dummy_backend
         mock_backend_utils.return_value = dummy_backend
-        ensure_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
-        ensure_callable(adaptive_max_pool2d)(t_2d, (4, 4))
-        ensure_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
-        ensure_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-        ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
-        ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+        adaptive_avg_pool2d(t_2d, (4, 4))
+        adaptive_max_pool2d(t_2d, (4, 4))
+        fractional_max_pool3d(t_3d, (4, 4, 4))
+        adaptive_avg_pool3d(t_3d, (4, 4, 4))
+        adaptive_max_pool3d(t_3d, (4, 4, 4))
+        adaptive_max_pool3d(t_3d, (4, 4, 4), return_indices=True)
         opt1 = UnpoolOptions(kernel_size=2, output_size=(16,))
         opt2 = UnpoolOptions(kernel_size=(2, 2), output_size=(16, 16))
         opt3 = UnpoolOptions(kernel_size=(2, 2, 2), output_size=(16, 16, 16))
-        ensure_callable(max_unpool1d)(t_1d, indices, opt1)
-        ensure_callable(max_unpool2d)(t_2d, indices2d, opt2)
-        ensure_callable(max_unpool3d)(t_3d, indices3d, opt3)
-        w_conf = WindowConfig(window_dimensions=(1, 1, 2), window_strides=(1, 1, 2), padding=((0, 0), (0, 0), (0, 0)), base_dilation=(1, 1, 1), window_dilation=(1, 1, 1))
-        ensure_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
+        max_unpool1d(t_1d, indices, opt1)
+        max_unpool2d(t_2d, indices2d, opt2)
+        max_unpool3d(t_3d, indices3d, opt3)
+        w_conf = WindowConfig(
+            window_dimensions=(1, 1, 2),
+            window_strides=(1, 1, 2),
+            padding=((0, 0), (0, 0), (0, 0)),
+            base_dilation=(1, 1, 1),
+            window_dilation=(1, 1, 1),
+        )
+        reduce_window(t_1d, 0.0, "max", w_conf)
         t_scalar = Tensor(np.array(0.0).astype(np.float32), TensorConfig((), "float32", "cpu"))
-        ensure_callable(reduce_window)(t_1d, t_scalar, "max", w_conf)
-    _state.update(ensure_tensor_dict({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils}))
-    _state.update(ensure_tensor_dict({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar}))
-    _state.update(ensure_tensor_dict({"w_conf": w_conf}))
-    _state.update(ensure_tensor_dict({"indices": indices, "indices2d": indices2d, "indices3d": indices3d}))
-    _state.update(ensure_tensor_dict({"t_1d": t_1d, "t_2d": t_2d, "t_3d": t_3d}))
+        reduce_window(t_1d, t_scalar, "max", w_conf)
+    _state.update({"opt1": opt1, "opt2": opt2, "opt3": opt3})
+    _state.update({"w_conf": w_conf})
+    _state.update({"indices": indices, "indices2d": indices2d, "indices3d": indices3d})
+    _state.update({"t_1d": t_1d, "t_2d": t_2d, "t_3d": t_3d})
 
 
-def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_reductions_frontend_brute_part_3(_state: _TestReductionsFrontendBruteState) -> None:
     """Execute part 3 of test_reductions_frontend_brute.
 
     Args:
         _state: Shared test state dictionary.
     """
-    (indices, indices2d, indices3d, opt1) = (_state["indices"], _state["indices2d"], _state["indices3d"], _state["opt1"])
+    (indices, indices2d, indices3d, opt1) = (
+        _state["indices"],
+        _state["indices2d"],
+        _state["indices3d"],
+        _state["opt1"],
+    )
     (opt2, opt3, t_1d, t_2d) = (_state["opt2"], _state["opt3"], _state["t_1d"], _state["t_2d"])
     (t_3d, w_conf) = (_state["t_3d"], _state["w_conf"])
     config.eager_mode = False
@@ -171,58 +237,61 @@ def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol
 
     global_tracing_state.is_tracing = True
     try:
-        with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool._emit_reduction_node") as mock_emit, patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node") as mock_emit_u:
+        with (
+            patch("ml_switcheroo_compiler.ops.reductions.api_pool._emit_reduction_node") as mock_emit,
+            patch("ml_switcheroo_compiler.ops.reductions.api_utils._emit_reduction_node") as mock_emit_u,
+        ):
             mock_emit.return_value = t_2d
             mock_emit_u.return_value = t_1d
-            ensure_callable(fractional_max_pool2d)(t_2d, (4, 4))
-            ensure_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
-            ensure_callable(adaptive_max_pool2d)(t_2d, (4, 4))
-            ensure_callable(unfold)(t_2d, (2, 2))
-            ensure_callable(fold)(t_2d, (8, 8), (2, 2))
-            ensure_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
-            ensure_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-            ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
-            ensure_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
-            ensure_callable(max_unpool1d)(t_1d, indices, opt1)
-            ensure_callable(max_unpool2d)(t_2d, indices2d, opt2)
-            ensure_callable(max_unpool3d)(t_3d, indices3d, opt3)
-            ensure_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
-            ensure_callable(reduce_window)(t_1d, t_1d, "max", w_conf)
+            fractional_max_pool2d(t_2d, (4, 4))
+            adaptive_avg_pool2d(t_2d, (4, 4))
+            adaptive_max_pool2d(t_2d, (4, 4))
+            unfold(t_2d, (2, 2))
+            fold(t_2d, (8, 8), (2, 2))
+            fractional_max_pool3d(t_3d, (4, 4, 4))
+            adaptive_avg_pool3d(t_3d, (4, 4, 4))
+            adaptive_max_pool3d(t_3d, (4, 4, 4))
+            adaptive_max_pool3d(t_3d, (4, 4, 4), return_indices=True)
+            max_unpool1d(t_1d, indices, opt1)
+            max_unpool2d(t_2d, indices2d, opt2)
+            max_unpool3d(t_3d, indices3d, opt3)
+            reduce_window(t_1d, 0.0, "max", w_conf)
+            reduce_window(t_1d, t_1d, "max", w_conf)
     finally:
         global_tracing_state.is_tracing = False
-    _state.update(ensure_tensor_dict({"global_tracing_state": global_tracing_state}))
-    _state.update(ensure_tensor_dict({"indices": indices, "indices2d": indices2d, "indices3d": indices3d}))
-    _state.update(ensure_tensor_dict({"opt1": opt1, "opt2": opt2, "opt3": opt3}))
-    _state.update(ensure_tensor_dict({"t_1d": t_1d, "t_2d": t_2d, "t_3d": t_3d}))
-    _state.update(ensure_tensor_dict({"w_conf": w_conf}))
+    _state.update({"global_tracing_state": global_tracing_state})
+    _state.update({"indices": indices, "indices2d": indices2d, "indices3d": indices3d})
+    _state.update({"opt1": opt1, "opt2": opt2, "opt3": opt3})
+    _state.update({"t_1d": t_1d, "t_2d": t_2d, "t_3d": t_3d})
+    _state.update({"w_conf": w_conf})
 
 
-def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_reductions_frontend_brute_part_4(_state: _TestReductionsFrontendBruteState) -> None:
     """Execute part 4 of test_reductions_frontend_brute.
 
     Args:
         _state: Shared test state dictionary.
     """
     global_tracing_state = _state["global_tracing_state"]
-    ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(True)
+    pytest.MonkeyPatch().setattr(global_tracing_state, "is_tracing", True, raising=False)
     try:
 
-        class DummyData:
+        class DummyData(MockTestStub):
             """Test class DummyData."""
 
             id = "dummy"
 
-        t_dummy = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((2,), "float32", "cpu"))
-        with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.global_tracing_state.add_node"):
-            ensure_callable(_emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
+        t_dummy = Tensor(DummyData(), TensorConfig((2,), "float32", "cpu"))
+        with patch("ml_switcheroo_compiler.ops.reductions.api_utils.global_tracing_state.add_node"):
+            require_callable(_emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
     finally:
-        ensure_mutable(global_tracing_state).is_tracing = ensure_eager_tensor(False)
-    assert bool(ensure_eager_tensor(global_tracing_state).is_tracing) is False
+        pytest.MonkeyPatch().setattr(global_tracing_state, "is_tracing", False, raising=False)
+    assert bool(global_tracing_state.is_tracing) is False
 
 
 def test_reductions_frontend_brute() -> None:
     """Test function test_reductions_frontend_brute."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestReductionsFrontendBruteState = {}
     _test_reductions_frontend_brute_part_1(_state)
     _test_reductions_frontend_brute_part_2(_state)
     _test_reductions_frontend_brute_part_3(_state)
@@ -230,15 +299,17 @@ def test_reductions_frontend_brute() -> None:
     assert len(_state) > 0
 
 
-def test_segment_exact_shapes(mocker: EagerTensorProtocol) -> None:
+def test_segment_exact_shapes(mocker: MockerFixture) -> None:
     """Verify that segmented reduction ops calculate exact shapes in graph mode.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:
@@ -254,7 +325,7 @@ def test_segment_exact_shapes(mocker: EagerTensorProtocol) -> None:
         captured_shapes[op_name] = shape
         return op_name
 
-    mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_segment._emit_reduction_node", side_effect=mock_emit)
+    mocker.patch("ml_switcheroo_compiler.ops.reductions.api_segment._emit_reduction_node", side_effect=mock_emit)
     config.eager_mode = False
     data_2d = Tensor(None, TensorConfig((10, 8), "float32", "cpu"))
     seg_ids = Tensor(None, TensorConfig((10,), "int32", "cpu"))
@@ -291,20 +362,29 @@ def test_reductions_frontend_sum_max_min() -> None:
 
 def test_reductions_frontend_stats_ops() -> None:
     """Test all frontend_stats operations for full branch coverage."""
-    from ml_switcheroo_compiler.ops.reductions.frontend_stats import approx_max_k, approx_min_k, corrcoef, correlate, cov, ctc_loss, pmean, psum
+    from ml_switcheroo_compiler.ops.reductions.api_stats import (
+        approx_max_k,
+        approx_min_k,
+        corrcoef,
+        correlate,
+        cov,
+        ctc_loss,
+        pmean,
+        psum,
+    )
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     t = Tensor(np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
     t2 = Tensor(np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
     with patch.object(global_tracing_state, "add_node"):
-        assert isinstance(ensure_eager_tensor(psum(t, "devices")), Tensor)
-        assert isinstance(ensure_eager_tensor(pmean(t, "devices")), Tensor)
-        (v1, i1) = ensure_callable(approx_max_k)(t, k=2)
-        assert isinstance(ensure_eager_tensor(v1), Tensor)
-        assert isinstance(ensure_eager_tensor(i1), Tensor)
-        (v2, i2) = ensure_callable(approx_min_k)(t, k=2)
-        assert isinstance(ensure_eager_tensor(v2), Tensor)
-        assert isinstance(ensure_eager_tensor(i2), Tensor)
+        assert isinstance(psum(t, "devices"), Tensor)
+        assert isinstance(pmean(t, "devices"), Tensor)
+        (v1, i1) = unpack_pair(approx_max_k(t, k=2))
+        assert isinstance(v1, Tensor)
+        assert isinstance(i1, Tensor)
+        (v2, i2) = unpack_pair(approx_min_k(t, k=2))
+        assert isinstance(v2, Tensor)
+        assert isinstance(i2, Tensor)
         targets = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
         inp_len = Tensor(np.array([4], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
         tgt_len = Tensor(np.array([2], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))

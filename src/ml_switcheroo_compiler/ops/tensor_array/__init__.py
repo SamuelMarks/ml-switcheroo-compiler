@@ -5,8 +5,7 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import ensure_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -25,7 +24,7 @@ class _ElementShapeProtocol(typing.Protocol):
 class _SizeAttrProtocol(typing.Protocol):
     """Protocol for TensorArray handles exposing `size`."""
 
-    size: int | TensorOrScalar
+    size: int | OpValue
 
 
 @register_op("TensorArrayRead")
@@ -92,23 +91,26 @@ class TensorArrayStack(OpDef):
         self,
         handle: Tensor | TensorArray,
         **kwargs: Tensor | int | float | str | bool | None,
-    ) -> tuple[int, ...]:
-        """Infer shape.
+    ) -> tuple[int | None, ...]:
+        """Infer stacked output shape from a TensorArray handle.
 
         Args:
-            handle (Tensor | TensorArray): Input `handle` argument (handle).
-            **kwargs (Tensor | int | float | str | bool | None): Keyword args.
+            handle (Tensor | TensorArray): TensorArray handle or symbolic tensor.
+            **kwargs (Tensor | int | float | str | bool | None): Unused keyword attributes.
 
         Returns:
-            tuple[int, ...]: Computed `tuple[int, ...]` output.
+            tuple[int | None, ...]: Inferred stacked tensor shape with leading array size.
         """
+        del kwargs
         raw_h: Tensor | TensorArray | _ElementShapeProtocol | _SizeAttrProtocol = handle
-        raw_elem = raw_h.element_shape if isinstance(raw_h, _ElementShapeProtocol) and raw_h.element_shape is not None else ()
-        elem_shape = tuple(raw_elem)
+        raw_elem = (
+            raw_h.element_shape if isinstance(raw_h, _ElementShapeProtocol) and raw_h.element_shape is not None else ()
+        )
+        elem_shape: tuple[int | None, ...] = tuple(raw_elem)
         size = raw_h.size if isinstance(raw_h, _SizeAttrProtocol) else None
         if isinstance(size, int):
             return (size,) + elem_shape
-        return ensure_shape((None,) + elem_shape)
+        return (None,) + elem_shape
 
 
 __all__ = [

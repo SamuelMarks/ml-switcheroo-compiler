@@ -4,19 +4,20 @@ from __future__ import annotations
 
 import os
 import typing
+from pathlib import Path
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_attr_val
+from ml_switcheroo_compiler.ir.core import ensure_attr_val
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def test_onnx_control_flow(tmp_path: EagerTensorProtocol) -> None:
+def test_onnx_control_flow(tmp_path: Path) -> None:
     """Test function test_onnx_control_flow.
 
     Args:
@@ -102,7 +103,7 @@ def test_stablehlo_fallback() -> None:
     assert "custom_call" in text or "SomeRandomOp" in text
 
 
-def test_onnx_dynamic_axes(tmp_path: EagerTensorProtocol) -> None:
+def test_onnx_dynamic_axes(tmp_path: Path) -> None:
     """Test function test_onnx_dynamic_axes.
 
     Args:

@@ -7,11 +7,11 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import ensure_int, ensure_shape, get_active_backend
+from ml_switcheroo_compiler.backends.registry import coerce_int, coerce_shape, get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_device,
     extract_dtype,
@@ -25,11 +25,11 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class _TolistProtocol(typing.Protocol):
     """Protocol for array buffers exposing `.tolist()`."""
 
-    def tolist(self) -> TensorOrScalar:
+    def tolist(self) -> OpValue:
         """Convert buffer to Python list or scalar.
 
         Returns:
-            TensorOrScalar: Python list or scalar.
+            OpValue: Python list or scalar.
         """
         ...
 
@@ -38,11 +38,11 @@ class _TolistProtocol(typing.Protocol):
 class _ItemProtocol(typing.Protocol):
     """Protocol for scalar buffers exposing `.item()`."""
 
-    def item(self) -> TensorOrScalar:
+    def item(self) -> OpValue:
         """Extract scalar item.
 
         Returns:
-            TensorOrScalar: Scalar item.
+            OpValue: Scalar item.
         """
         ...
 
@@ -51,14 +51,14 @@ class _ItemProtocol(typing.Protocol):
 class _ReshapeProtocol(typing.Protocol):
     """Protocol for array buffers exposing `.reshape(shape)`."""
 
-    def reshape(self, shape: tuple[int, ...]) -> TensorOrScalar:
+    def reshape(self, shape: tuple[int, ...]) -> OpValue:
         """Reshape array to `shape`.
 
         Args:
             shape (tuple[int, ...]): Target shape.
 
         Returns:
-            TensorOrScalar: Reshaped array.
+            OpValue: Reshaped array.
         """
         ...
 
@@ -136,11 +136,11 @@ def _philox_round(v0: int, v1: int, k0: int) -> tuple[int, int]:
     return (hi ^ (k0 & 0xFFFFFFFF) ^ (v1 & 0xFFFFFFFF)) & 0xFFFFFFFF, lo
 
 
-def _flatten_seed_sequence(seq: Sequence[TensorOrScalar]) -> list[int]:
+def _flatten_seed_sequence(seq: Sequence[OpValue]) -> list[int]:
     """Flatten a 1D or 2D sequence of seed items into 32-bit integers.
 
     Args:
-        seq (Sequence[TensorOrScalar]): Input seed sequence.
+        seq (Sequence[OpValue]): Input seed sequence.
 
     Returns:
         list[int]: Flattened integer seed words.
@@ -156,11 +156,11 @@ def _flatten_seed_sequence(seq: Sequence[TensorOrScalar]) -> list[int]:
     return flat
 
 
-def _extract_seed_pair(seed: TensorOrScalar) -> tuple[int, int]:
+def _extract_seed_pair(seed: OpValue) -> tuple[int, int]:
     """Extract a deterministic 2-tuple of 32-bit unsigned integers from a seed input.
 
     Args:
-        seed (TensorOrScalar): Input seed tensor, sequence, integer, or string.
+        seed (OpValue): Input seed tensor, sequence, integer, or string.
 
     Returns:
         tuple[int, int]: Pair of 32-bit integer state words.
@@ -174,7 +174,7 @@ def _extract_seed_pair(seed: TensorOrScalar) -> tuple[int, int]:
         for ch in raw:
             h = ((h ^ ord(ch)) * 0x01000193) & 0xFFFFFFFF
         return h, (h ^ 0x9E3779B9) & 0xFFFFFFFF
-    raw_obj: TensorOrScalar | _TolistProtocol = raw
+    raw_obj: OpValue | _TolistProtocol = raw
     if isinstance(raw_obj, _TolistProtocol):
         raw = raw_obj.tolist()
     if isinstance(raw, (list, tuple)):
@@ -192,7 +192,7 @@ def stateless_random_uniform(
     minval: float = 0.0,
     maxval: float = 1.0,
     dtype: str | DType = "float32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a uniform distribution without maintaining state.
 
     Args:
@@ -203,7 +203,7 @@ def stateless_random_uniform(
         dtype (str | DType): The output data type.
 
     Returns:
-        TensorOrScalar: The generated uniform random tensor.
+        OpValue: The generated uniform random tensor.
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
@@ -222,7 +222,7 @@ def stateless_random_normal(
     mean: float = 0.0,
     stddev: float = 1.0,
     dtype: str | DType = "float32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a normal distribution without maintaining state.
 
     Args:
@@ -233,7 +233,7 @@ def stateless_random_normal(
         dtype (str | DType): The output data type.
 
     Returns:
-        TensorOrScalar: The generated normal random tensor.
+        OpValue: The generated normal random tensor.
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
@@ -252,7 +252,7 @@ def stateless_random_binomial(
     counts: float | Tensor,
     probabilities: float | Tensor,
     dtype: str | DType = "int32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a binomial distribution without maintaining state.
 
     Args:
@@ -263,7 +263,7 @@ def stateless_random_binomial(
         dtype (str | DType): The output data type.
 
     Returns:
-        TensorOrScalar: The generated binomial random tensor.
+        OpValue: The generated binomial random tensor.
     """
     from ml_switcheroo_compiler.random.distributions_discrete import binomial
 
@@ -277,7 +277,7 @@ def stateless_truncated_normal(
     mean: float = 0.0,
     stddev: float = 1.0,
     dtype: str | DType = "float32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a truncated normal distribution without maintaining state.
 
     Args:
@@ -288,7 +288,7 @@ def stateless_truncated_normal(
         dtype (str | DType): The output data type.
 
     Returns:
-        TensorOrScalar: The generated truncated normal tensor.
+        OpValue: The generated truncated normal tensor.
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
@@ -306,7 +306,7 @@ def stateless_categorical(
     num_samples: int,
     seed: Tensor,
     dtype: str | DType = "int32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random samples from a categorical distribution without maintaining state.
 
     Args:
@@ -316,13 +316,14 @@ def stateless_categorical(
         dtype (str | DType): The output integer data type.
 
     Returns:
-        TensorOrScalar: Sampled class indices of shape (batch_size, num_samples).
+        OpValue: Sampled class indices of shape (batch_size, num_samples).
     """
     from ml_switcheroo_compiler.ops import cast as op_cast
     from ml_switcheroo_compiler.random.distributions_discrete import categorical
 
     dtype_enum = DType(dtype)
-    batch_shape = logits.shape[:-1] if logits.shape else ()
+    logits_shape = extract_shape(logits)
+    batch_shape = logits_shape[:-1] if logits_shape else ()
     shape = tuple(batch_shape) + (num_samples,)
 
     res = categorical(seed, logits, axis=-1, shape=shape)
@@ -335,7 +336,7 @@ def stateless_gamma(
     seed: Tensor,
     alpha: Tensor,
     dtype: str | DType = "float32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a gamma distribution without maintaining state.
 
     Args:
@@ -345,7 +346,7 @@ def stateless_gamma(
         dtype (str | DType): The output data type.
 
     Returns:
-        TensorOrScalar: The generated gamma random tensor.
+        OpValue: The generated gamma random tensor.
     """
     from ml_switcheroo_compiler.random.continuous import gamma
 
@@ -359,7 +360,7 @@ def stateless_beta(
     alpha: Tensor,
     beta_param: Tensor,
     dtype: str | DType = "float32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a beta distribution without maintaining state.
 
     Args:
@@ -370,7 +371,7 @@ def stateless_beta(
         dtype (str | DType): The output data type.
 
     Returns:
-        TensorOrScalar: The generated beta random tensor.
+        OpValue: The generated beta random tensor.
     """
     from ml_switcheroo_compiler.random.continuous import beta
 
@@ -382,7 +383,7 @@ def stateless_shuffle(
     x: Tensor,
     seed: Tensor,
     axis: int = 0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Shuffle the input tensor randomly along a given axis without maintaining state.
 
     Args:
@@ -391,7 +392,7 @@ def stateless_shuffle(
         axis (int): The axis along which to shuffle.
 
     Returns:
-        TensorOrScalar: The shuffled tensor.
+        OpValue: The shuffled tensor.
     """
     from ml_switcheroo_compiler.random.transformations import shuffle
 
@@ -399,22 +400,22 @@ def stateless_shuffle(
 
 
 def stateless_parameterized_truncated_normal(
-    shape: TensorOrScalar,
-    seed: TensorOrScalar,
+    shape: OpValue,
+    seed: OpValue,
     config: RandomGenerationConfig | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a parameterized truncated normal distribution.
 
     Args:
-        shape (TensorOrScalar): Output tensor shape tuple.
-        seed (TensorOrScalar): Stateless PRNG seed tensor.
+        shape (OpValue): Output tensor shape tuple.
+        seed (OpValue): Stateless PRNG seed tensor.
         config (Optional[RandomGenerationConfig]): Distribution configuration.
 
     Returns:
-        TensorOrScalar: Sampled truncated normal tensor.
+        OpValue: Sampled truncated normal tensor.
     """
     cfg = config or RandomGenerationConfig()
-    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(ensure_shape(shape))
+    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(coerce_shape(shape))
     if core_config.eager_mode:
         k0, k1 = _extract_seed_pair(seed)
         num_elems = 1
@@ -429,8 +430,8 @@ def stateless_parameterized_truncated_normal(
             z = cfg.minvals + u * (cfg.maxvals - cfg.minvals)
             values.append(cfg.means + z * cfg.stddevs)
         backend = get_active_backend()
-        arr: TensorOrScalar = backend.array(values, dtype="float32")
-        raw_arr: TensorOrScalar | _ReshapeProtocol = arr
+        arr: OpValue = backend.array(values, dtype="float32")
+        raw_arr: OpValue | _ReshapeProtocol = arr
         if isinstance(raw_arr, _ReshapeProtocol) and shape_tuple:
             arr = raw_arr.reshape(shape_tuple)
         return Tensor(arr, TensorConfig(shape_tuple, "float32", "cpu"))
@@ -443,23 +444,23 @@ def stateless_parameterized_truncated_normal(
     )
 
 
-def index_shuffle(index: TensorOrScalar, seed: TensorOrScalar, max_index: TensorOrScalar) -> TensorOrScalar:
+def index_shuffle(index: OpValue, seed: OpValue, max_index: OpValue) -> OpValue:
     """Compute a stateless Feistel/Philox bijective permutation of `index` within `[0, max_index]`.
 
     Args:
-        index (TensorOrScalar): Input index scalar or tensor in `[0, max_index]`.
-        seed (TensorOrScalar): Stateless PRNG seed.
-        max_index (TensorOrScalar): Inclusive maximum index bound.
+        index (OpValue): Input index scalar or tensor in `[0, max_index]`.
+        seed (OpValue): Stateless PRNG seed.
+        max_index (OpValue): Inclusive maximum index bound.
 
     Returns:
-        TensorOrScalar: Deterministically permuted index in `[0, max_index]`.
+        OpValue: Deterministically permuted index in `[0, max_index]`.
     """
     if not core_config.eager_mode:
         idx_shape = extract_shape(index)
         return _emit_shape_node("IndexShuffle", [index, seed, max_index], {}, idx_shape, "int32")
 
     raw_max = extract_data(max_index)
-    raw_max_obj: TensorOrScalar | _ItemProtocol = raw_max
+    raw_max_obj: OpValue | _ItemProtocol = raw_max
     if isinstance(raw_max_obj, _ItemProtocol):
         raw_max = raw_max_obj.item()
     elif isinstance(raw_max, (list, tuple)) and raw_max:
@@ -488,25 +489,25 @@ def index_shuffle(index: TensorOrScalar, seed: TensorOrScalar, max_index: Tensor
         return _permute_scalar(index)
 
     raw_idx = extract_data(index)
-    raw_idx_obj: TensorOrScalar | _TolistProtocol = raw_idx
+    raw_idx_obj: OpValue | _TolistProtocol = raw_idx
     raw_list = raw_idx_obj.tolist() if isinstance(raw_idx_obj, _TolistProtocol) else raw_idx
     if not isinstance(raw_list, (list, tuple)):
         return index
-    permuted = [_permute_scalar(int(ensure_int(x))) for x in raw_list]
+    permuted = [_permute_scalar(int(coerce_int(x))) for x in raw_list]
     backend = get_active_backend()
     arr = backend.array(permuted, dtype="int32")
     return Tensor(arr, TensorConfig(extract_shape(index), extract_dtype(index, "int32"), extract_device(index, "cpu")))
 
 
-def stateless_fold_in(seed: TensorOrScalar, data: TensorOrScalar) -> TensorOrScalar:
+def stateless_fold_in(seed: OpValue, data: OpValue) -> OpValue:
     """Fold integer data into a stateless PRNG seed using Philox mixing.
 
     Args:
-        seed (TensorOrScalar): Input stateless seed tensor or value.
-        data (TensorOrScalar): Data value to mix into the seed.
+        seed (OpValue): Input stateless seed tensor or value.
+        data (OpValue): Data value to mix into the seed.
 
     Returns:
-        TensorOrScalar: New mixed stateless PRNG seed.
+        OpValue: New mixed stateless PRNG seed.
     """
     if not core_config.eager_mode:
         seed_shape = extract_shape(seed, (2,))
@@ -524,19 +525,19 @@ def stateless_fold_in(seed: TensorOrScalar, data: TensorOrScalar) -> TensorOrSca
     return [m0, m1]
 
 
-def stateless_split(seed: TensorOrScalar, num: TensorOrScalar = 2) -> TensorOrScalar:
+def stateless_split(seed: OpValue, num: OpValue = 2) -> OpValue:
     """Split a stateless PRNG seed into `num` independent seeds.
 
     Args:
-        seed (TensorOrScalar): Input stateless PRNG seed.
-        num (TensorOrScalar): Number of sub-seeds to generate.
+        seed (OpValue): Input stateless PRNG seed.
+        num (OpValue): Number of sub-seeds to generate.
 
     Returns:
-        TensorOrScalar: Tensor of shape `(num, 2)` containing split seeds.
+        OpValue: Tensor of shape `(num, 2)` containing split seeds.
     """
     if core_config.eager_mode:
         return get_active_backend().execute_op("StatelessSplit", seed, num=num)
-    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(ensure_int(num)), 2), "int64")
+    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(coerce_int(num)), 2), "int64")
 
 
 def stateless_poisson(
@@ -544,7 +545,7 @@ def stateless_poisson(
     seed: Tensor,
     lam: Tensor,
     dtype: str | DType = "int32",
-) -> TensorOrScalar:
+) -> OpValue:
     """Generate random values from a Poisson distribution without maintaining state.
 
     Args:
@@ -554,7 +555,7 @@ def stateless_poisson(
         dtype (str | DType): Output data type.
 
     Returns:
-        TensorOrScalar: Sampled Poisson tensor.
+        OpValue: Sampled Poisson tensor.
     """
     from ml_switcheroo_compiler.random.distributions_discrete import poisson
 

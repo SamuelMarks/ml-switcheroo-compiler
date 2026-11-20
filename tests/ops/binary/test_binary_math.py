@@ -6,11 +6,12 @@ import typing
 from unittest.mock import patch
 
 import pytest
+from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import MockTestStub, adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_binary_math_extra_coverage() -> None:
@@ -22,7 +23,7 @@ def test_binary_math_extra_coverage() -> None:
     class DummyBackend:
         """Test class DummyBackend."""
 
-        def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def execute_op(self, op: BackendArg, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -31,11 +32,11 @@ def test_binary_math_extra_coverage() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return op
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBackend(), raising=False)
     type("T", (), {"shape": (2, 2)})()
     type("T", (), {"shape": (2,)})()
     assert Clip().infer_shape() == ()
@@ -46,29 +47,60 @@ def test_binary_math_extra_coverage() -> None:
 
 def test_eager_eval_branches() -> None:
     """Test function test_eager_eval_branches."""
-    from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, Betainc, Diff, Digitize, Poly, Polyadd, Polyder, Polydiv, Polyfit, Polyint, Polymul, Polysub, Polyval, Roots
+    from ml_switcheroo_compiler.ops.binary.math import (
+        ArrayEquiv,
+        Betainc,
+        Diff,
+        Digitize,
+        Poly,
+        Polyadd,
+        Polyder,
+        Polydiv,
+        Polyfit,
+        Polyint,
+        Polymul,
+        Polysub,
+        Polyval,
+        Roots,
+    )
 
-    for cls in [Diff, Digitize, ArrayEquiv, Betainc, Polyadd, Polysub, Polymul, Polydiv, Polyval, Poly, Polyder, Polyfit, Polyint, Roots]:
-        assert ensure_eager_tensor(ensure_eager_tensor(cls()).op_name) is not None
+    ops_and_names: list[tuple[str, str]] = [
+        (Diff().op_name, Diff.__name__),
+        (Digitize().op_name, Digitize.__name__),
+        (ArrayEquiv().op_name, ArrayEquiv.__name__),
+        (Betainc().op_name, Betainc.__name__),
+        (Polyadd().op_name, Polyadd.__name__),
+        (Polysub().op_name, Polysub.__name__),
+        (Polymul().op_name, Polymul.__name__),
+        (Polydiv().op_name, Polydiv.__name__),
+        (Polyval().op_name, Polyval.__name__),
+        (Poly().op_name, Poly.__name__),
+        (Polyder().op_name, Polyder.__name__),
+        (Polyfit().op_name, Polyfit.__name__),
+        (Polyint().op_name, Polyint.__name__),
+        (Roots().op_name, Roots.__name__),
+    ]
+    for op_name, expected in ops_and_names:
+        assert str(op_name) == expected
 
 
 def test_binary_math_shapes_again() -> None:
     """Test function test_binary_math_shapes_again."""
     from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, Betainc, Clip, Diff, Digitize, clip
 
-    class DummyTensor:
+    class DummyTensor(MockTestStub):
         """Test class DummyTensor."""
 
         shape = (1,)
-        attributes = ensure_tensor_dict({})
+        attributes: dict[str, AttributeValue] = {}
         shape_metadata = (1,)
 
     assert Diff().infer_shape() == ()
-    assert ensure_callable(Digitize)().infer_shape(ensure_callable(DummyTensor)()) == (1,)
+    assert Digitize().infer_shape(DummyTensor()) == (1,)
     assert Digitize().infer_shape() == ()
     assert ArrayEquiv().infer_shape() == ()
-    assert ensure_callable(Betainc)().infer_shape(ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)(), ensure_callable(DummyTensor)()) == (1,)
-    assert ensure_callable(Clip)().infer_shape(ensure_callable(DummyTensor)()) == (1,)
+    assert Betainc().infer_shape(DummyTensor(), DummyTensor(), DummyTensor()) == (1,)
+    assert Clip().infer_shape(DummyTensor()) == (1,)
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -83,9 +115,9 @@ def test_binary_math_shapes_again() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -94,8 +126,13 @@ def test_binary_math_shapes_again() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
+    pytest.MonkeyPatch().setattr(
+        state.global_tracing_state,
+        "add_node",
+        adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("add_node"),
+        raising=False,
+    )
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):
         pass
         pass

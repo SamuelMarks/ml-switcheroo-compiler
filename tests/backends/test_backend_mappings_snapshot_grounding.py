@@ -20,13 +20,13 @@ from scripts.validate_backend_mappings import (
 )
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def _check_op_spec_grounding(
     backend_name: str,
     op_name: str,
-    spec: dict[str, EagerValue],
+    spec: dict[str, BackendArg],
     filepath: str,
     engine: SnapshotGroundingEngine,
 ) -> list[str]:
@@ -83,11 +83,11 @@ def _check_mapping_file_grounding(
         return []
 
     with open(filepath, encoding="utf-8") as f:
-        data: dict[str, EagerValue] | None = yaml.safe_load(f)
+        data: dict[str, BackendArg] | None = yaml.safe_load(f)
     if not isinstance(data, dict):
         return []
 
-    ops: EagerValue = data.get("operations", data)
+    ops: BackendArg = data.get("operations", data)
     if not isinstance(ops, dict):
         return []
 
@@ -101,7 +101,9 @@ def _check_mapping_file_grounding(
 def test_all_backend_mappings_snapshot_grounded() -> None:
     """Assert that declared backend mapping YAML files resolve against framework snapshots."""
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine()
-    base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends"))
+    base_dir: str = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends")
+    )
 
     mapping_files: list[str] = glob.glob(os.path.join(base_dir, "**", "mappings", "*.yaml"), recursive=True)
     assert len(mapping_files) > 100, f"Expected >100 mapping files, found {len(mapping_files)}"

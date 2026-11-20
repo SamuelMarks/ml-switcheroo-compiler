@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.core.dataset import Dataset
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import clone_logical_node
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
@@ -252,12 +254,16 @@ class IntegerQuantizationLoweringPass:
             if new_inputs != node.inputs:
                 modified = True
 
-            if node.op_type in lowering_map and ("calibration_min" in node.attributes or any(inp in fq_replacements for inp in node.inputs)):
+            if node.op_type in lowering_map and (
+                "calibration_min" in node.attributes or any(inp in fq_replacements for inp in node.inputs)
+            ):
                 new_attrs = dict(node.attributes)
                 new_attrs["dtype"] = self.config.target_dtype.value
                 new_attrs["q_scale"] = q_scale
                 new_attrs["q_zero_point"] = q_zp
-                new_node = clone_logical_node(node, op_type=str(lowering_map[node.op_type]), inputs=new_inputs, attributes=new_attrs)
+                new_node = clone_logical_node(
+                    node, op_type=str(lowering_map[node.op_type]), inputs=new_inputs, attributes=new_attrs
+                )
                 new_nodes[node_id] = new_node
                 modified = True
             else:

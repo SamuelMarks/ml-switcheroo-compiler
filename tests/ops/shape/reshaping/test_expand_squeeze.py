@@ -10,13 +10,13 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import atleast_1d, atleast_2d, atleast_3d, expand_dims, squeeze
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_obj
+from tests.testing_utils import coerce_shape, ensure_tensor, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
+def _t(data: BackendArg, shape: tuple[BackendArg, ...]) -> Tensor:
     """Helper to create test tensor.
 
     Args:
@@ -26,7 +26,7 @@ def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
     Returns:
         Tensor: Computed output value from `_t`.
     """
-    return ensure_tensor_obj(ensure_callable(Tensor)(data, ensure_callable(TensorConfig)(shape, "float32", "cpu")))
+    return ensure_tensor(Tensor(data, TensorConfig(coerce_shape(shape), "float32", "cpu")))
 
 
 def test_expand_dims_eager() -> None:
@@ -34,7 +34,7 @@ def test_expand_dims_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([1, 2, 3]), (3,))
     out = expand_dims(x, axis=0)
-    assert ensure_eager_tensor(out).shape == (1, 3)
+    assert extract_test_shape(out) == (1, 3)
 
 
 def test_expand_dims_tracing() -> None:
@@ -44,7 +44,7 @@ def test_expand_dims_tracing() -> None:
     try:
         x = _t(np.array([1, 2, 3]), (3,))
         out = expand_dims(x, axis=1)
-        assert ensure_eager_tensor(out).shape == (3, 1)
+        assert extract_test_shape(out) == (3, 1)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -55,7 +55,7 @@ def test_expand_dims_no_shape() -> None:
     global_tracing_state.start_tracing()
     try:
         out = expand_dims(5, axis=0)
-        assert str(ensure_eager_tensor(out).shape) == "('None',)"
+        assert str(extract_test_shape(out)) == "('None',)"
     finally:
         global_tracing_state.stop_tracing()
 
@@ -65,7 +65,7 @@ def test_squeeze_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([[1, 2, 3]]), (1, 3))
     out = squeeze(x, axis=0)
-    assert ensure_eager_tensor(out).shape == (3,)
+    assert extract_test_shape(out) == (3,)
 
 
 def test_squeeze_tracing() -> None:
@@ -75,7 +75,7 @@ def test_squeeze_tracing() -> None:
     try:
         x = _t(np.array([[1, 2, 3]]), (1, 3))
         out = squeeze(x, axis=0)
-        assert ensure_eager_tensor(out).shape == (3,)
+        assert extract_test_shape(out) == (3,)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -86,7 +86,7 @@ def test_squeeze_no_shape() -> None:
     global_tracing_state.start_tracing()
     try:
         out = squeeze(5, axis=0)
-        assert ensure_eager_tensor(out).shape == ()
+        assert extract_test_shape(out) == ()
     finally:
         global_tracing_state.stop_tracing()
 
@@ -98,7 +98,7 @@ def test_squeeze_all() -> None:
     try:
         x = _t(np.array([[[1]]]), (1, 1, 1))
         out = squeeze(x)
-        assert ensure_eager_tensor(out).shape == ()
+        assert extract_test_shape(out) == ()
     finally:
         global_tracing_state.stop_tracing()
 
@@ -108,7 +108,7 @@ def test_squeeze_eager_negative_axis() -> None:
     config.eager_mode = True
     x = _t(np.array([[1, 2, 3]]), (1, 3))
     out = squeeze(x, axis=-2)
-    assert ensure_eager_tensor(out).shape == (3,)
+    assert extract_test_shape(out) == (3,)
 
 
 def test_expand_dims_eager_negative_axis() -> None:
@@ -116,7 +116,7 @@ def test_expand_dims_eager_negative_axis() -> None:
     config.eager_mode = True
     x = _t(np.array([1, 2, 3]), (3,))
     out = expand_dims(x, axis=-1)
-    assert ensure_eager_tensor(out).shape == (3, 1)
+    assert extract_test_shape(out) == (3, 1)
 
 
 def test_atleast_1d_eager() -> None:
@@ -124,7 +124,7 @@ def test_atleast_1d_eager() -> None:
     config.eager_mode = True
     x = _t(np.array(5), ())
     out = atleast_1d(x)
-    assert ensure_eager_tensor(out).shape == (1,)
+    assert extract_test_shape(out) == (1,)
 
 
 def test_atleast_1d_tracing() -> None:
@@ -134,11 +134,11 @@ def test_atleast_1d_tracing() -> None:
     try:
         x = _t(np.array(5), ())
         out = atleast_1d(x)
-        assert ensure_eager_tensor(out).shape == (1,)
+        assert extract_test_shape(out) == (1,)
 
         x2 = _t(np.array([1]), (1,))
         out2 = atleast_1d(x2)
-        assert ensure_eager_tensor(out2).shape == (1,)
+        assert extract_test_shape(out2) == (1,)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -148,7 +148,7 @@ def test_atleast_2d_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([5]), (1,))
     out = atleast_2d(x)
-    assert ensure_eager_tensor(out).shape == (1, 1)
+    assert extract_test_shape(out) == (1, 1)
 
 
 def test_atleast_2d_tracing() -> None:
@@ -158,15 +158,15 @@ def test_atleast_2d_tracing() -> None:
     try:
         x = _t(np.array(5), ())
         out = atleast_2d(x)
-        assert ensure_eager_tensor(out).shape == (1, 1)
+        assert extract_test_shape(out) == (1, 1)
 
         x2 = _t(np.array([5]), (1,))
         out2 = atleast_2d(x2)
-        assert ensure_eager_tensor(out2).shape == (1, 1)
+        assert extract_test_shape(out2) == (1, 1)
 
         x3 = _t(np.array([[5]]), (1, 1))
         out3 = atleast_2d(x3)
-        assert ensure_eager_tensor(out3).shape == (1, 1)
+        assert extract_test_shape(out3) == (1, 1)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -176,7 +176,7 @@ def test_atleast_3d_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([[5]]), (1, 1))
     out = atleast_3d(x)
-    assert ensure_eager_tensor(out).shape == (1, 1, 1)
+    assert extract_test_shape(out) == (1, 1, 1)
 
 
 def test_atleast_3d_tracing() -> None:
@@ -186,18 +186,18 @@ def test_atleast_3d_tracing() -> None:
     try:
         x = _t(np.array(5), ())
         out = atleast_3d(x)
-        assert ensure_eager_tensor(out).shape == (1, 1, 1)
+        assert extract_test_shape(out) == (1, 1, 1)
 
         x1 = _t(np.array([5]), (1,))
         out1 = atleast_3d(x1)
-        assert ensure_eager_tensor(out1).shape == (1, 1, 1)
+        assert extract_test_shape(out1) == (1, 1, 1)
 
         x2 = _t(np.array([[5]]), (1, 1))
         out2 = atleast_3d(x2)
-        assert ensure_eager_tensor(out2).shape == (1, 1, 1)
+        assert extract_test_shape(out2) == (1, 1, 1)
 
         x3 = _t(np.array([[[5]]]), (1, 1, 1))
         out3 = atleast_3d(x3)
-        assert ensure_eager_tensor(out3).shape == (1, 1, 1)
+        assert extract_test_shape(out3) == (1, 1, 1)
     finally:
         global_tracing_state.stop_tracing()

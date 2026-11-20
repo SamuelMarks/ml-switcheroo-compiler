@@ -110,6 +110,9 @@ def register_jvp(op_name: str) -> Callable[[JVPRuleCallable], JVPRuleCallable]:
 
         Returns:
             JVPRuleCallable: Computed `JVPRuleCallable` output.
+
+        Raises:
+            ValueError: If input arguments, shapes, or configuration values in `decorator` are invalid.
         """
         if op_name in _JVP_REGISTRY:
             msg = f"JVP for operation '{op_name}' is already registered."

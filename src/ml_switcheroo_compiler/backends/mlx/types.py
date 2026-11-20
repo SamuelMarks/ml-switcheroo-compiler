@@ -1,4 +1,4 @@
-"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.mlx.types`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.mlx.types`."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+)
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
 mx: ModuleType | None
 try:
@@ -22,7 +24,7 @@ except ImportError:
     mx = None
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
+def zeros(cls: type | None, shape: tuple[int, ...]) -> BackendArg:
     """Execute zeros for compiler processing.
 
     Args:
@@ -30,12 +32,12 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         shape (tuple[int, ...]): Shape.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(ensure_callable(generic_zeros)(mx, shape))
+    return generic_zeros(mx, shape)
 
 
-def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+def array(cls: type | None, data: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
     """Execute array for compiler processing.
 
     Args:
@@ -44,14 +46,18 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         dtype: Dtype.
 
     Returns:
-        EagerValue: Computed `EagerValue` output.
+        BackendArg: Computed `BackendArg` output.
     """
     del cls
-    actual_dtype = get_backend_member(mx, dtype) if isinstance(dtype, str) and has_backend_member(mx, dtype) else dtype
-    return ensure_eager_tensor(ensure_callable(generic_array)(mx, data, actual_dtype))
+    actual_dtype = (
+        adapt_backend_module(mx).require_symbol(dtype)
+        if isinstance(dtype, str) and adapt_backend_module(mx).has_symbol(dtype)
+        else dtype
+    )
+    return generic_array(mx, data, actual_dtype)
 
 
-def asarray(cls: type, data: EagerValue) -> EagerValue:
+def asarray(cls: type | None, data: BackendArg) -> BackendArg:
     """Execute asarray for compiler processing.
 
     Args:
@@ -59,14 +65,14 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         data: Data.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    if has_backend_member(mx, "asarray"):
-        return ensure_eager_tensor(ensure_callable(generic_asarray)(mx, data))
-    return ensure_eager_tensor(ensure_callable(generic_array)(mx, data))
+    if adapt_backend_module(mx).has_symbol("asarray"):
+        return generic_asarray(mx, data)
+    return generic_array(mx, data)
 
 
-def item(cls: type, data: EagerValue) -> float:
+def item(cls: type | None, data: BackendArg) -> float:
     """Execute item for compiler processing.
 
     Args:
@@ -76,4 +82,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Computed `float` output.
     """
-    return ensure_float(ensure_callable(generic_item)(mx, data))
+    return generic_item(mx, data)

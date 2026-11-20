@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig
@@ -16,23 +16,27 @@ def perspective_transform(
     images: Tensor,
     start_points: Tensor,
     end_points: Tensor,
-    config_obj: TensorOrScalar = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    config_obj: OpValue = None,
+    **kwargs: OpValue,
+) -> OpValue:
     """Apply a perspective transformation to the image(s).
 
     Args:
         images (Tensor): Input `images` argument (images).
         start_points (Tensor): Input `start_points` argument (start points).
         end_points (Tensor): Input `end_points` argument (end points).
-        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
-        **kwargs (TensorOrScalar): Keyword args.
+        config_obj (OpValue): Input `config_obj` argument (config obj).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
-        config_obj = PerspectiveConfig(interpolation=kwargs.get("interpolation", "bilinear"), fill_value=kwargs.get("fill_value", 0.0), data_format=kwargs.get("data_format", None))
+        config_obj = PerspectiveConfig(
+            interpolation=kwargs.get("interpolation", "bilinear"),
+            fill_value=kwargs.get("fill_value", 0.0),
+            data_format=kwargs.get("data_format", None),
+        )
 
     if config.eager_mode:
         backend = get_active_backend()
@@ -56,22 +60,26 @@ def perspective_transform(
 def elastic_transform(
     images: Tensor,
     displacement: Tensor,
-    config_obj: TensorOrScalar = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    config_obj: OpValue = None,
+    **kwargs: OpValue,
+) -> OpValue:
     """Apply an elastic transformation to the image(s).
 
     Args:
         images (Tensor): Input `images` argument (images).
         displacement (Tensor): Input `displacement` argument (displacement).
-        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
-        **kwargs (TensorOrScalar): Keyword args.
+        config_obj (OpValue): Input `config_obj` argument (config obj).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
     """
     if config_obj is None:
-        config_obj = ElasticConfig(interpolation=kwargs.get("interpolation", "bilinear"), fill_value=kwargs.get("fill_value", 0.0), data_format=kwargs.get("data_format", None))
+        config_obj = ElasticConfig(
+            interpolation=kwargs.get("interpolation", "bilinear"),
+            fill_value=kwargs.get("fill_value", 0.0),
+            data_format=kwargs.get("data_format", None),
+        )
 
     if config.eager_mode:
         backend = get_active_backend()
@@ -91,7 +99,7 @@ def elastic_transform(
     )
 
 
-def flip_left_right(images: Tensor) -> TensorOrScalar:
+def flip_left_right(images: Tensor) -> OpValue:
     """Flips images horizontally.
 
     Args:
@@ -108,7 +116,7 @@ def flip_left_right(images: Tensor) -> TensorOrScalar:
     return get_op("FlipLeftRight")()(images, dtype=DType.Int32)
 
 
-def flip_up_down(images: Tensor) -> TensorOrScalar:
+def flip_up_down(images: Tensor) -> OpValue:
     """Flips images vertically.
 
     Args:
@@ -131,16 +139,25 @@ class ElasticTransform(OpDef):
 
     op_name = "ElasticTransform"
 
-    def infer_shape(self, images: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, images: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        images (EagerTensorProtocol): Input `images` argument (images).
-        *args (EagerTensorProtocol): Positional args.
-        **kwargs (EagerTensorProtocol): Keyword args.
+        images (OpValue): Input `images` argument (images).
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_1: TensorOrScalar = extract_shape(images)
+        _typed_ret_1: OpValue = extract_shape(images)
         return _typed_ret_1
+
+
+__all__ = [
+    "ElasticTransform",
+    "elastic_transform",
+    "flip_left_right",
+    "flip_up_down",
+    "perspective_transform",
+]

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
-from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
+from ml_switcheroo_compiler.transforms.passes.state_lifting import lift_state_pass
 
 
 def test_ad_state_lifting_integration() -> None:

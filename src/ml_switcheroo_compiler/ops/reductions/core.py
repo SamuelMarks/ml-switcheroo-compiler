@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol, extract_shape
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if typing.TYPE_CHECKING:
@@ -24,21 +24,21 @@ class ReductionOp(OpDef):
 
     def __call__(
         self,
-        *args: TensorOrScalar,
-        **kwargs: TensorOrScalar,
+        *args: OpValue,
+        **kwargs: OpValue,
     ) -> Tensor:
         """Universal dispatcher for the operation.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword arguments.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
-            Tensor: Resulting tensor or dispatched output.
+            Tensor: Resulting tensor output.
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-        return ensure_tensor(dispatch_op(self.op_type, *args, **kwargs))
+        return dispatch_op(self.op_type, *args, **kwargs)
 
     def infer_shape(
         self,
@@ -56,7 +56,7 @@ class ReductionOp(OpDef):
         """
         if not args or not isinstance(args[0], ShapeProtocol):
             return ()
-        in_shape = tuple(int(d) for d in args[0].shape)
+        in_shape = extract_shape(args[0])
         ndim = len(in_shape)
         if ndim == 0:
             return ()

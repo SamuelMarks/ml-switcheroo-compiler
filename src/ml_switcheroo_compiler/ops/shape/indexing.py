@@ -10,8 +10,8 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     DeviceHolderProtocol,
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_data,
     extract_device,
     extract_dtype,
@@ -40,7 +40,7 @@ class IndexSpec(pydantic.BaseModel):
     axis: int = 0
 
 
-def gather(input: Tensor, axis: int, index: Tensor) -> TensorOrScalar:
+def gather(input: Tensor, axis: int, index: Tensor) -> OpValue:
     """Gather values along an axis specified by axis using index tensor.
 
     Args:
@@ -71,7 +71,7 @@ def gather(input: Tensor, axis: int, index: Tensor) -> TensorOrScalar:
     )
 
 
-def gather_nd(input: Tensor, indices: Tensor) -> TensorOrScalar:
+def gather_nd(input: Tensor, indices: Tensor) -> OpValue:
     """Gather slices from input tensor using multi-dimensional indices.
 
     Args:
@@ -107,7 +107,7 @@ def gather_nd(input: Tensor, indices: Tensor) -> TensorOrScalar:
     )
 
 
-def take(input: Tensor, indices: Tensor, axis: int | None = None) -> TensorOrScalar:
+def take(input: Tensor, indices: Tensor, axis: int | None = None) -> OpValue:
     """Take elements from the input tensor at the specified flat indices.
 
     Args:
@@ -148,12 +148,12 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None) -> TensorOrSca
     )
 
 
-def take_along_axis(arr: TensorOrScalar, indices: TensorOrScalar, axis: int) -> TensorOrScalar:
+def take_along_axis(arr: OpValue, indices: OpValue, axis: int) -> OpValue:
     """Take values from the input array along a specified axis using 1D indices.
 
     Args:
-        arr (TensorOrScalar): The source array or tensor
-        indices (TensorOrScalar): The indices to take along the axis
+        arr (OpValue): The source array or tensor
+        indices (OpValue): The indices to take along the axis
         axis (int): The axis along which to take values
 
     Returns: Tensor: The selected values.
@@ -161,13 +161,21 @@ def take_along_axis(arr: TensorOrScalar, indices: TensorOrScalar, axis: int) -> 
     backend = get_active_backend()
     return backend.execute_op(
         "TakeAlongAxis",
-        ((extract_data(arr) if type(arr).__name__ == "Tensor" else arr) if isinstance(arr, DeviceHolderProtocol) else arr),
-        ((extract_data(indices) if type(indices).__name__ == "Tensor" else indices) if isinstance(indices, DeviceHolderProtocol) else indices),
+        (
+            (extract_data(arr) if type(arr).__name__ == "Tensor" else arr)
+            if isinstance(arr, DeviceHolderProtocol)
+            else arr
+        ),
+        (
+            (extract_data(indices) if type(indices).__name__ == "Tensor" else indices)
+            if isinstance(indices, DeviceHolderProtocol)
+            else indices
+        ),
         axis=axis,
     )
 
 
-def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> TensorOrScalar:
+def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> OpValue:
     """Find indices where elements should be inserted to maintain order.
 
     Args:
@@ -197,7 +205,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> TensorOrScalar:
     return _emit_shape_node("SearchSorted", inputs, attributes, v.shape, DType.Int32)
 
 
-def where(condition: Tensor, input: Tensor, other: Tensor) -> TensorOrScalar:
+def where(condition: Tensor, input: Tensor, other: Tensor) -> OpValue:
     """Select elements from input or other based on condition.
 
     Args:
@@ -225,8 +233,20 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> TensorOrScalar:
     i_shape = extract_shape(input)
     o_shape = extract_shape(other)
     try:
-        out_shape: tuple[int | str, ...] = tuple(d if isinstance(d, int) else str(d) for d in broadcast_shapes(c_shape, i_shape, o_shape))
-    except Exception:
+        out_shape: tuple[int | str, ...] = tuple(
+            d if isinstance(d, int) else str(d) for d in broadcast_shapes(c_shape, i_shape, o_shape)
+        )
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         out_shape = i_shape or c_shape
     return _emit_shape_node(
         "Where",
@@ -237,7 +257,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> TensorOrScalar:
     )
 
 
-def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> TensorOrScalar:
+def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> OpValue:
     """Select elements from on_true or on_false based on pred.
 
     Args:
@@ -251,7 +271,7 @@ def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> TensorOrScalar:
     return where(pred, on_true, on_false)
 
 
-def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> TensorOrScalar:
+def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> OpValue:
     """Apply boolean mask to tensor.
 
     Args:
@@ -287,7 +307,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
     )
 
 
-def invert_permutation(x: Tensor) -> TensorOrScalar:
+def invert_permutation(x: Tensor) -> OpValue:
     """Compute the inverse permutation of a tensor.
 
     Args:
@@ -320,12 +340,12 @@ class Extract(OpDef):
 
     op_name = "Extract"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -340,14 +360,14 @@ class DynamicPartition(OpDef):
 
     op_name = "DynamicPartition"
 
-    def infer_shape(self, data: TensorOrScalar, partitions: TensorOrScalar, num_partitions: int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, data: OpValue, partitions: OpValue, num_partitions: int, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the dynamic partition operation.
 
         Args:
-            data (EagerTensorProtocol): The tensor to be partitioned.
-            partitions (EagerTensorProtocol): A tensor containing partition indices.
+            data (OpValue): The tensor to be partitioned.
+            partitions (OpValue): A tensor containing partition indices.
             num_partitions (int): The total number of output partitions.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
             tuple[tuple[int | None, ...], ...]: A tuple of shapes, one per partition.
@@ -366,13 +386,13 @@ class DynamicStitch(OpDef):
 
     op_name = "DynamicStitch"
 
-    def infer_shape(self, indices: TensorOrScalar, data: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, indices: OpValue, data: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the dynamic stitch operation.
 
         Args:
-            indices (EagerTensorProtocol): The indices tensor.
-            data (EagerTensorProtocol): The data tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            indices (OpValue): The indices tensor.
+            data (OpValue): The data tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
             tuple[int | None, ...]: Inferred output shape.
@@ -381,7 +401,12 @@ class DynamicStitch(OpDef):
             return ()
         data_list = data if isinstance(data, (list, tuple)) else [data]
         indices_list = indices if isinstance(indices, (list, tuple)) else [indices]
-        if data_list and isinstance(data_list[0], ShapeProtocol) and indices_list and isinstance(indices_list[0], ShapeProtocol):
+        if (
+            data_list
+            and isinstance(data_list[0], ShapeProtocol)
+            and indices_list
+            and isinstance(indices_list[0], ShapeProtocol)
+        ):
             d_shape = extract_shape(data_list[0])
             idx_shape = extract_shape(indices_list[0])
             extra_shape = d_shape[len(idx_shape) :] if len(d_shape) >= len(idx_shape) else ()
@@ -395,18 +420,18 @@ class TensorScatterSub(OpDef):
 
     op_name = "TensorScatterSub"
 
-    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: OpValue, indices: OpValue, updates: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the tensor scatter sub operation.
 
         Args:
-            tensor (EagerTensorProtocol): The input tensor.
-            indices (EagerTensorProtocol): The indices tensor.
-            updates (EagerTensorProtocol): The updates tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            tensor (OpValue): The input tensor.
+            indices (OpValue): The indices tensor.
+            updates (OpValue): The updates tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_1: TensorOrScalar = extract_shape(tensor)
+        _typed_ret_1: OpValue = extract_shape(tensor)
         return _typed_ret_1
 
 
@@ -416,15 +441,17 @@ class ExtractVolumePatches(OpDef):
 
     op_name = "ExtractVolumePatches"
 
-    def infer_shape(self, input: TensorOrScalar, ksizes: list[int], strides: list[int], padding: str, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self, input: OpValue, ksizes: list[int], strides: list[int], padding: str, **kwargs: OpValue
+    ) -> OpValue:
         """Infers the output shape for the extract volume patches operation.
 
         Args:
-            input (EagerTensorProtocol): The input tensor of shape (batch, d, h, w, c).
+            input (OpValue): The input tensor of shape (batch, d, h, w, c).
             ksizes (list[int]): The size of the sliding window.
             strides (list[int]): How far the centers of two consecutive patches are in the input.
             padding (str): The type of padding algorithm to use.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred volume patches output shape.
@@ -458,13 +485,13 @@ class UnravelIndex(OpDef):
 
     op_name = "UnravelIndex"
 
-    def infer_shape(self, indices: TensorOrScalar, dims: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, indices: OpValue, dims: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the unravel index operation.
 
         Args:
-            indices (EagerTensorProtocol): The indices tensor.
-            dims (EagerTensorProtocol): The dimensions tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            indices (OpValue): The indices tensor.
+            dims (OpValue): The dimensions tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
             tuple[tuple[int, ...], ...]: Tuple of shapes matching indices.shape for each dimension.
@@ -484,15 +511,22 @@ class DynamicSliceInDim(OpDef):
 
     op_name = "DynamicSliceInDim"
 
-    def infer_shape(self, operand: TensorOrScalar, start_index: TensorOrScalar, slice_size: int, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        operand: OpValue,
+        start_index: OpValue,
+        slice_size: int,
+        axis: int = 0,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the dynamic slice in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): Input `operand` argument (operand).
-            start_index (EagerTensorProtocol): Input `start_index` argument (start index).
+            operand (OpValue): Input `operand` argument (operand).
+            start_index (OpValue): Input `start_index` argument (start index).
             slice_size (int): Input `slice_size` argument (slice size).
             axis (int): Input `axis` argument (axis).
-            **kwargs (TensorOrScalar): Keyword args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -509,20 +543,27 @@ class DynamicUpdateSliceInDim(OpDef):
 
     op_name = "DynamicUpdateSliceInDim"
 
-    def infer_shape(self, operand: TensorOrScalar, update: TensorOrScalar, start_index: TensorOrScalar, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        operand: OpValue,
+        update: OpValue,
+        start_index: OpValue,
+        axis: int = 0,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the dynamic update slice in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): Input `operand` argument (operand).
-            update (EagerTensorProtocol): Input `update` argument (update).
-            start_index (EagerTensorProtocol): Input `start_index` argument (start index).
+            operand (OpValue): Input `operand` argument (operand).
+            update (OpValue): Input `update` argument (update).
+            start_index (OpValue): Input `start_index` argument (start index).
             axis (int): Input `axis` argument (axis).
-            **kwargs (TensorOrScalar): Keyword args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_2: TensorOrScalar = extract_shape(operand)
+        _typed_ret_2: OpValue = extract_shape(operand)
         return _typed_ret_2
 
 
@@ -532,15 +573,22 @@ class DynamicIndexInDim(OpDef):
 
     op_name = "DynamicIndexInDim"
 
-    def infer_shape(self, operand: TensorOrScalar, index: TensorOrScalar, axis: int = 0, keepdims: bool = True, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        operand: OpValue,
+        index: OpValue,
+        axis: int = 0,
+        keepdims: bool = True,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the dynamic index in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): Input `operand` argument (operand).
-            index (EagerTensorProtocol): Input `index` argument (index).
+            operand (OpValue): Input `operand` argument (operand).
+            index (OpValue): Input `index` argument (index).
             axis (int): Input `axis` argument (axis).
             keepdims (bool): Input `keepdims` argument (keepdims).
-            **kwargs (TensorOrScalar): Keyword args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -560,20 +608,27 @@ class DynamicUpdateIndexInDim(OpDef):
 
     op_name = "DynamicUpdateIndexInDim"
 
-    def infer_shape(self, operand: TensorOrScalar, update: TensorOrScalar, index: TensorOrScalar, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        operand: OpValue,
+        update: OpValue,
+        index: OpValue,
+        axis: int = 0,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the dynamic update index in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): Input `operand` argument (operand).
-            update (EagerTensorProtocol): Input `update` argument (update).
-            index (EagerTensorProtocol): Input `index` argument (index).
+            operand (OpValue): Input `operand` argument (operand).
+            update (OpValue): Input `update` argument (update).
+            index (OpValue): Input `index` argument (index).
             axis (int): Input `axis` argument (axis).
-            **kwargs (TensorOrScalar): Keyword args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_3: TensorOrScalar = extract_shape(operand)
+        _typed_ret_3: OpValue = extract_shape(operand)
         return _typed_ret_3
 
 
@@ -585,16 +640,16 @@ class SliceInDim(OpDef):
 
     def infer_shape(
         self,
-        operand: TensorOrScalar,
+        operand: OpValue,
         spec: IndexSpec,
-        **kwargs: TensorOrScalar,
-    ) -> TensorOrScalar:
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the slice in axis operation.
 
         Args:
-            operand (EagerTensorProtocol): The input tensor.
+            operand (OpValue): The input tensor.
             spec (IndexSpec): The index specification.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The updated shape tuple.
         """
@@ -610,19 +665,26 @@ class ScatterApply(OpDef):
 
     op_name = "ScatterApply"
 
-    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, func: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        tensor: OpValue,
+        indices: OpValue,
+        updates: OpValue,
+        func: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the scatter apply operation.
 
         Args:
-            tensor (EagerTensorProtocol): The input tensor.
-            indices (EagerTensorProtocol): The indices tensor.
-            updates (EagerTensorProtocol): The updates tensor.
-            func (EagerTensorProtocol): The function to apply.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            tensor (OpValue): The input tensor.
+            indices (OpValue): The indices tensor.
+            updates (OpValue): The updates tensor.
+            func (OpValue): The function to apply.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_4: TensorOrScalar = extract_shape(tensor)
+        _typed_ret_4: OpValue = extract_shape(tensor)
         return _typed_ret_4
 
 
@@ -632,18 +694,18 @@ class ScatterMax(OpDef):
 
     op_name = "ScatterMax"
 
-    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: OpValue, indices: OpValue, updates: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the scatter max operation.
 
         Args:
-            tensor (EagerTensorProtocol): The input tensor.
-            indices (EagerTensorProtocol): The indices tensor.
-            updates (EagerTensorProtocol): The updates tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            tensor (OpValue): The input tensor.
+            indices (OpValue): The indices tensor.
+            updates (OpValue): The updates tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_5: TensorOrScalar = extract_shape(tensor)
+        _typed_ret_5: OpValue = extract_shape(tensor)
         return _typed_ret_5
 
 
@@ -653,18 +715,18 @@ class ScatterMin(OpDef):
 
     op_name = "ScatterMin"
 
-    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: OpValue, indices: OpValue, updates: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the scatter min operation.
 
         Args:
-            tensor (EagerTensorProtocol): The input tensor.
-            indices (EagerTensorProtocol): The indices tensor.
-            updates (EagerTensorProtocol): The updates tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            tensor (OpValue): The input tensor.
+            indices (OpValue): The indices tensor.
+            updates (OpValue): The updates tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_6: TensorOrScalar = extract_shape(tensor)
+        _typed_ret_6: OpValue = extract_shape(tensor)
         return _typed_ret_6
 
 
@@ -674,18 +736,18 @@ class ScatterMul(OpDef):
 
     op_name = "ScatterMul"
 
-    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: OpValue, indices: OpValue, updates: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the scatter mul operation.
 
         Args:
-            tensor (EagerTensorProtocol): The input tensor.
-            indices (EagerTensorProtocol): The indices tensor.
-            updates (EagerTensorProtocol): The updates tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            tensor (OpValue): The input tensor.
+            indices (OpValue): The indices tensor.
+            updates (OpValue): The updates tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
-        _typed_ret_7: TensorOrScalar = extract_shape(tensor)
+        _typed_ret_7: OpValue = extract_shape(tensor)
         return _typed_ret_7
 
 
@@ -695,22 +757,22 @@ class PutAlongAxis(OpDef):
 
     op_name = "PutAlongAxis"
 
-    def infer_shape(self, arr: TensorOrScalar, indices: TensorOrScalar, values: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, arr: OpValue, indices: OpValue, values: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the output shape for the put along axis operation.
 
         Args:
-            arr (EagerTensorProtocol): The input array or tensor.
-            indices (EagerTensorProtocol): The indices tensor.
-            values (EagerTensorProtocol): The values tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            arr (OpValue): The input array or tensor.
+            indices (OpValue): The indices tensor.
+            values (OpValue): The values tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input array or tensor.
         """
-        _typed_ret_8: TensorOrScalar = extract_shape(arr)
+        _typed_ret_8: OpValue = extract_shape(arr)
         return _typed_ret_8
 
 
-def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> TensorOrScalar:
+def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> OpValue:
     """Put values into array along axis at given indices.
 
     Args:

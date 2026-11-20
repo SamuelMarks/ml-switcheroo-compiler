@@ -1,66 +1,70 @@
-"""Tests for test_space_batch."""
+"""Behavioral tests for `space_to_batch` and `space_to_batch_nd` in eager and IR tracing modes."""
 
 from __future__ import annotations
 
-import typing
+from unittest.mock import MagicMock, patch
 
-# ruff: noqa: E501
-from ml_switcheroo_compiler.core.config import config
+import numpy as np
+
+import ml_switcheroo_compiler.ops.shape.space_batch as space_batch_mod
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.space_batch import space_to_batch, space_to_batch_nd
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.ops.shape.space_batch import SpaceToBatch, SpaceToBatchND, space_to_batch, space_to_batch_nd
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
+from tests.testing_utils import extract_test_shape
 
 
-class MockTensor:
-    """Test class MockTensor."""
-
-    def __init__(self, shape: EagerValue = ()) -> None:
-        """Test function __init__.
-
-        Args:
-            shape: Test parameter `shape`.
-        """
-        self.shape = shape
-        self.dtype = "float32"
-        self.device = "cpu"
-        self.data = [1, 2]
+def test_space_to_batch_op_infer_shape() -> None:
+    """Verify `SpaceToBatch` and `SpaceToBatchND` default `infer_shape` returns empty tuple when unshaped."""
+    assert SpaceToBatch().infer_shape(None, 2, [[0, 0], [0, 0]]) == ()
+    assert SpaceToBatchND().infer_shape(None, [2, 2], [[0, 0], [0, 0]]) == ()
 
 
-def test_space_to_batch_eager(mocker: EagerTensorProtocol) -> None:
-    """Test function test_space_to_batch_eager.
+def test_space_to_batch_eager_execution() -> None:
+    """Verify `space_to_batch` and `space_to_batch_nd` execute eagerly on shaped `Tensor` and raw list inputs."""
+    t_in = Tensor(np.zeros((1, 4, 4, 1), dtype=np.float32), TensorConfig((1, 4, 4, 1), DType.Float32, Device("cpu")))
+    raw_input = [[1, 2], [3, 4]]
 
-    Args:
-        mocker: Test parameter `mocker`.
-    """
-    t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
-    config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor(MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(space_to_batch(t, 2, [[0, 0]])).config).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(space_to_batch_nd(t, [2], [[0, 0]])).config).shape == (2, 3)
+    mock_backend = MagicMock()
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend),
+    ):
+        mock_backend.execute_op.return_value = np.zeros((4, 2, 2, 1), dtype=np.float32)
+        res1 = space_to_batch(t_in, 2, [[0, 0], [0, 0]])
+        assert extract_test_shape(res1) == (4, 2, 2, 1)
 
+        res_nd1 = space_to_batch_nd(t_in, [2, 2], [[0, 0], [0, 0]])
+        assert extract_test_shape(res_nd1) == (4, 2, 2, 1)
 
-def test_space_to_batch_tracing(mocker: EagerTensorProtocol) -> None:
-    """Test function test_space_to_batch_tracing.
+        mock_backend.execute_op.return_value = 42
+        res2 = space_batch_mod.space_to_batch(raw_input, 2, [[0, 0], [0, 0]])
+        assert isinstance(res2, Tensor)
+        assert res2.shape == ()
 
-    Args:
-        mocker: Test parameter `mocker`.
-    """
-    t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
-    config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="node")
-    mock_op = mocker.MagicMock()
-    mocker.patch("ml_switcheroo_compiler.ops.registry.get_op", return_value=mocker.MagicMock(return_value=mock_op))
-    assert space_to_batch(t, 2, [[0, 0]]) == "node"
-    assert space_to_batch_nd(t, [2], [[0, 0]]) == "node"
+        res_nd2 = space_batch_mod.space_to_batch_nd(raw_input, [2, 2], [[0, 0], [0, 0]])
+        assert isinstance(res_nd2, Tensor)
+        assert res_nd2.shape == ()
 
 
-def test_space_to_batch_infer_shape() -> None:
-    """Test function test_space_to_batch_infer_shape."""
-    from ml_switcheroo_compiler.ops.shape.space_batch import SpaceToBatch, SpaceToBatchND
+def test_space_to_batch_symbolic_tracing_ir_emission() -> None:
+    """Verify `space_to_batch` and `space_to_batch_nd` emit `SpaceToBatch` and `SpaceToBatchND` IR nodes."""
+    t_sym = Tensor(
+        ProxyTensor("sb_in", (1, 4, 4, 1), "float32"),
+        TensorConfig((1, 4, 4, 1), DType.Float32, Device("cpu")),
+    )
+    with ConfigContext(eager_mode=False):
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("space_batch_trace")
+        try:
+            out_sb = space_to_batch(t_sym, 2, [[0, 0], [0, 0]])
+            out_sb_nd = space_to_batch_nd(t_sym, [2, 2], [[0, 0], [0, 0]])
+        finally:
+            tape.stop_tracing()
 
-    assert ensure_callable(SpaceToBatch)().infer_shape(None, None, None) == ()
-    assert ensure_callable(SpaceToBatchND)().infer_shape(None, None, None) == ()
+    assert isinstance(out_sb, Tensor)
+    assert isinstance(out_sb_nd, Tensor)
+    op_types = {node.op_type for node in traced_graph.nodes.values()}
+    assert {"SpaceToBatch", "SpaceToBatchND"} <= op_types

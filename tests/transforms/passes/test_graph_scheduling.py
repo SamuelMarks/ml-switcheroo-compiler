@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.graph_scheduling import (
     DefaultCostModel,
     graph_scheduling_pass,
@@ -77,10 +76,18 @@ def test_graph_scheduling_pass() -> None:
     graph = IRGraph()
 
     # Insert in worst order: n2, n1, m2, m1
-    graph.nodes["n2"] = IRNode(id="n2", op_type="Add", inputs=["n1"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
-    graph.nodes["n1"] = IRNode(id="n1", op_type="MatMul", shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
-    graph.nodes["m2"] = IRNode(id="m2", op_type="Add", inputs=["m1"], shape_metadata=(1000,), attributes={"dtype": DType.Float32.value})
-    graph.nodes["m1"] = IRNode(id="m1", op_type="Add", shape_metadata=(1000,), attributes={"dtype": DType.Float32.value})
+    graph.nodes["n2"] = IRNode(
+        id="n2", op_type="Add", inputs=["n1"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value}
+    )
+    graph.nodes["n1"] = IRNode(
+        id="n1", op_type="MatMul", shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value}
+    )
+    graph.nodes["m2"] = IRNode(
+        id="m2", op_type="Add", inputs=["m1"], shape_metadata=(1000,), attributes={"dtype": DType.Float32.value}
+    )
+    graph.nodes["m1"] = IRNode(
+        id="m1", op_type="Add", shape_metadata=(1000,), attributes={"dtype": DType.Float32.value}
+    )
 
     graph_scheduling_pass(graph)
     assert len(graph.nodes) == 4
@@ -106,26 +113,43 @@ def test_graph_scheduling_interleave() -> None:
     graph.nodes["c1"] = IRNode(id="c1", op_type="MatMul", shape_metadata=(100, 100))
     graph.nodes["c2"] = IRNode(id="c2", op_type="MatMul", shape_metadata=(100, 100))
     graph_scheduling_pass(graph)
-    assert graph is not None
+    assert set(graph.nodes.keys()) == {"c1", "c2"}
 
 
 def test_graph_scheduling_missing_branches() -> None:
     """Test function test_graph_scheduling_missing_branches."""
     graph = IRGraph()
     # Node with non-existent input, tests 92->91 and 171->170
-    graph.nodes["n1"] = IRNode(id="n1", op_type="Add", inputs=["non_existent"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
+    graph.nodes["n1"] = IRNode(
+        id="n1",
+        op_type="Add",
+        inputs=["non_existent"],
+        shape_metadata=(100, 100),
+        attributes={"dtype": DType.Float32.value},
+    )
 
     # Node that is used multiple times, so remaining_uses != 1 (tests 105->104)
-    graph.nodes["n2"] = IRNode(id="n2", op_type="Add", inputs=["n1"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
-    graph.nodes["n3"] = IRNode(id="n3", op_type="Add", inputs=["n1"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
+    graph.nodes["n2"] = IRNode(
+        id="n2", op_type="Add", inputs=["n1"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value}
+    )
+    graph.nodes["n3"] = IRNode(
+        id="n3", op_type="Add", inputs=["n1"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value}
+    )
 
     # Test 176->174 (in_degree[consumer] == 0 is false)
     # This naturally happens when a consumer has multiple dependencies and we pop one of them.
     # We add a consumer that depends on both n2 and n3.
-    graph.nodes["n4"] = IRNode(id="n4", op_type="Add", inputs=["n2", "n3"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
+    graph.nodes["n4"] = IRNode(
+        id="n4",
+        op_type="Add",
+        inputs=["n2", "n3"],
+        shape_metadata=(100, 100),
+        attributes={"dtype": DType.Float32.value},
+    )
 
     graph_scheduling_pass(graph)
-    assert graph is not None
+    scheduled_ids = list(graph.nodes.keys())
+    assert scheduled_ids[0] == "n1" and scheduled_ids[-1] == "n4"
 
 
 def test_graph_scheduling_extra_coverage() -> None:
@@ -142,13 +166,15 @@ def test_graph_scheduling_extra_coverage() -> None:
     node.is_dynamic_shape = True
 
     cost = cm.get_memory_cost(node)
-    # The get_memory_cost calls _get_symbolic_memory_size, which should return the string of dtype_size if shape is empty
+    # The get_memory_cost calls _get_symbolic_memory_size, which should return the string of dtype_size if shape is
+    # empty
     assert cost == 4 or cost == "4"
 
 
 def test_graph_scheduling_pass_class() -> None:
     """Test function test_graph_scheduling_pass_class."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.graph_scheduling import GraphSchedulingPass
 
     scheduler = GraphSchedulingPass()
@@ -158,9 +184,15 @@ def test_graph_scheduling_pass_class() -> None:
     # in -> branch_large (1000) -> join
     #    -> branch_small (10)   -> join
     graph.nodes["in"] = IRNode(id="in", op_type="Input", shape_metadata=(10,), attributes={"dtype": "float32"})
-    graph.nodes["b_large"] = IRNode(id="b_large", op_type="MatMul", inputs=["in"], shape_metadata=(100, 100), attributes={"dtype": "float32"})
-    graph.nodes["b_small"] = IRNode(id="b_small", op_type="Add", inputs=["in"], shape_metadata=(10,), attributes={"dtype": "float32"})
-    graph.nodes["join"] = IRNode(id="join", op_type="Add", inputs=["b_large", "b_small"], shape_metadata=(10,), attributes={"dtype": "float32"})
+    graph.nodes["b_large"] = IRNode(
+        id="b_large", op_type="MatMul", inputs=["in"], shape_metadata=(100, 100), attributes={"dtype": "float32"}
+    )
+    graph.nodes["b_small"] = IRNode(
+        id="b_small", op_type="Add", inputs=["in"], shape_metadata=(10,), attributes={"dtype": "float32"}
+    )
+    graph.nodes["join"] = IRNode(
+        id="join", op_type="Add", inputs=["b_large", "b_small"], shape_metadata=(10,), attributes={"dtype": "float32"}
+    )
 
     schedule = scheduler.schedule(graph)
     assert len(schedule) == 4
@@ -176,7 +208,8 @@ def test_graph_scheduling_pass_class() -> None:
 
 def test_graph_scheduling_simulate_peak_memory_external_input() -> None:
     """Test simulate_peak_memory with an input not in graph.nodes."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.graph_scheduling import GraphSchedulingPass
 
     g = IRGraph()
@@ -189,7 +222,7 @@ def test_graph_scheduling_simulate_peak_memory_external_input() -> None:
 
 def test_graph_scheduling_stream_preservation_and_assignment() -> None:
     """Verify stream preservation and assignment across passes."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
 
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", stream="custom_stream_0")

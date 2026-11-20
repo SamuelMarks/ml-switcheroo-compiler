@@ -5,52 +5,14 @@ from __future__ import annotations
 import resource
 import sys
 import time
-import typing
+from collections.abc import Mapping
 
 import numpy as np
+from ml_switcheroo_ir import IRGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-from ml_switcheroo_compiler.ir.core import IRGraph
-
-
-def _is_eval_dict(
-    val: EagerValue,
-) -> typing.TypeGuard[dict[str, EvalValue]]:
-    """Type guard narrowing `val` to `dict[str, EvalValue]`.
-
-    Args:
-        val (EagerValue): Candidate inputs dictionary.
-
-    Returns:
-        bool: Always True for runtime input dicts.
-    """
-    return isinstance(val, dict) or val is not None
-
-
-def _as_eager_val(val: EagerValue | dict[str, EvalValue]) -> EagerValue:
-    """Narrow evaluated output to `EagerValue`.
-
-    Args:
-        val (EagerValue | dict[str, EvalValue]): Evaluated graph output.
-
-    Returns:
-        EagerValue: Narrowed EagerValue.
-    """
-
-    def _guard(cand: EagerValue | dict[str, EvalValue]) -> typing.TypeGuard[EagerValue]:
-        """Type guard narrowing `cand` to `EagerValue`.
-
-        Args:
-            cand (EagerValue | dict[str, EvalValue]): Candidate output.
-
-        Returns:
-            bool: True for runtime outputs.
-        """
-        return not isinstance(cand, type(Ellipsis))
-
-    assert _guard(val)
-    return val
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
+from ml_switcheroo_compiler.interpreter.evaluator import InterpreterValue
 
 
 def _get_process_memory_mb() -> float:
@@ -72,22 +34,23 @@ class NumpyProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on NumPy backend.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], np.ndarray]]): Named input arrays.
+            inputs:
+                Named input arrays.
             device (Optional[str]): Device identifier ('cpu').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and memory metrics.
+            ProfileMetricsDict: Latency and memory metrics.
         """
         del device
 
@@ -102,19 +65,19 @@ class NumpyProfiler:
 
         np_input_list: list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = list(np_inputs_dict.values())
 
-        def _execute_step() -> EagerValue:
+        eval_inputs: dict[str, InterpreterValue] = {k: v for k, v in np_inputs_dict.items()}
+
+        def _execute_step() -> InterpreterValue | dict[str, InterpreterValue]:
             """Execute a single evaluation step on NumPy backend.
 
             Returns:
-                EagerValue: Single or dictionary of output arrays.
+                InterpreterValue | dict[str, InterpreterValue]: Single or dictionary of output arrays.
             """
             if has_ops:
                 from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
                 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-                raw_inps: EagerValue = np_inputs_dict
-                assert _is_eval_dict(raw_inps)
-                return _as_eager_val(evaluate_graph(graph, raw_inps, backend=NumpyGenerator))
+                return evaluate_graph(graph, eval_inputs, backend=NumpyGenerator)
             if not np_input_list:
                 return np.zeros((1,), dtype=np.float32)
             accum = np.zeros_like(np_input_list[0])

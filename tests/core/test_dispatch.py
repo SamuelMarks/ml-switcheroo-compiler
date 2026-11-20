@@ -11,13 +11,13 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dispatch import dispatch
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import extract_test_dtype, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_dispatch_eager_unsupported(monkeypatch: EagerTensorProtocol) -> None:
+def test_dispatch_eager_unsupported(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test dispatch fallback in eager mode when unsupported.
 
     Args:
@@ -28,7 +28,7 @@ def test_dispatch_eager_unsupported(monkeypatch: EagerTensorProtocol) -> None:
     # Mock backend to simulate an unsupported function
     mock_backend = MagicMock()
     mock_backend.module = MagicMock()
-    del ensure_mutable(mock_backend.module).non_existent_module
+    pytest.MonkeyPatch().delattr(mock_backend.module, "non_existent_module")
 
     monkeypatch.setattr("ml_switcheroo_compiler.core.dispatch.get_active_backend", lambda: mock_backend)
 
@@ -56,18 +56,24 @@ def test_dispatch_tracing() -> None:
 
             op_name = "TestDispatchTracing"
 
-            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+            def infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> None:
                 """Test function infer_shape.
 
                 Args:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
+
+                Raises:
+                    ValueError: When raised during `infer_shape` (Simulate shape inference failure).
                 """
                 raise ValueError("Simulate shape inference failure")
 
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
         out = dispatch("test", "TestDispatchTracing", t)
-        assert ensure_eager_tensor(out).shape == ()
-        assert ensure_eager_tensor(ensure_eager_tensor(out).dtype).value == "float32"
+        assert extract_test_shape(out) == ()
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        out_dt = extract_test_dtype(out)
+        assert isinstance(out_dt, DType) and out_dt.value == "float32"
     finally:
         global_tracing_state.stop_tracing()

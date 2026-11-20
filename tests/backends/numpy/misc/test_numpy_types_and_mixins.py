@@ -8,10 +8,11 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.numpy import numpy_mixins as np_mixins
 from ml_switcheroo_compiler.backends.numpy import types as np_types
-from tests.testing_utils import ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class _MockBackendModule:
@@ -28,23 +29,23 @@ class _MockBackendModule:
         """
         return ("zeros", shape)
 
-    def array(self, data: EagerValue, dtype: EagerValue = None) -> tuple[str, EagerValue, EagerValue]:
+    def array(self, data: BackendArg, dtype: BackendArg = None) -> tuple[str, BackendArg, BackendArg]:
         """Mock array.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (EagerValue): Optional data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg): Optional data type.
 
         Returns:
             tuple[str, object, object]: Mock array descriptor.
         """
         return ("array", data, dtype)
 
-    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
         """Mock asarray.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
             tuple[str, object]: Mock asarray descriptor.
@@ -111,16 +112,16 @@ def test_backends_numpy_types_and_mixins() -> None:
         pass
 
     z = np_types.zeros(_DummyNumpyBackend, (2, 2))
-    assert ensure_eager_tensor(z).shape == (2, 2)
-    assert ensure_eager_tensor(ensure_eager_tensor(z).tolist)() == [[0.0, 0.0], [0.0, 0.0]]
+    assert extract_test_shape(z) == (2, 2)
+    assert ensure_ndarray(z).tolist() == [[0.0, 0.0], [0.0, 0.0]]
 
     arr = np_types.array(_DummyNumpyBackend, [1, 2], dtype=None)
-    assert ensure_eager_tensor(ensure_eager_tensor(arr).tolist)() == [1, 2]
+    assert ensure_ndarray(arr).tolist() == [1, 2]
 
     as_arr = np_types.asarray(_DummyNumpyBackend, [3.5, 4.5])
-    assert ensure_eager_tensor(ensure_eager_tensor(as_arr).tolist)() == [3.5, 4.5]
+    assert ensure_ndarray(as_arr).tolist() == [3.5, 4.5]
 
-    val = np_types.item(_DummyNumpyBackend, ensure_eager_tensor(as_arr)[0])
+    val = np_types.item(_DummyNumpyBackend, ensure_ndarray(as_arr)[0])
     assert val == 3.5
 
     # Test numpy_mixins visitors

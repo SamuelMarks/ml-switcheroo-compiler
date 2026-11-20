@@ -6,8 +6,8 @@ import ctypes
 import logging
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_int
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_int
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # NCCL Data types
@@ -32,11 +32,12 @@ class _NcclUniqueId(ctypes.Structure):
 _CArgT = typing.TypeVar("_CArgT")
 
 
+@typing.runtime_checkable
 class _CtypesFuncProtocol(typing.Protocol):
     """Protocol for ctypes C function objects."""
 
-    argtypes: EagerValue
-    restype: EagerValue
+    argtypes: BackendArg
+    restype: BackendArg
 
     def __call__(self, *args: _CArgT) -> int:
         """Invoke C function symbol.
@@ -50,30 +51,18 @@ class _CtypesFuncProtocol(typing.Protocol):
         ...
 
 
-def _get_c_fn(lib: EagerValue, name: str) -> _CtypesFuncProtocol:
+def _get_c_fn(lib: BackendArg, name: str) -> _CtypesFuncProtocol:
     """Retrieve a ctypes function symbol by name.
 
     Args:
-        lib (EagerValue): Loaded ctypes CDLL or mock library.
+        lib (BackendArg): Loaded ctypes CDLL or mock library.
         name (str): C function symbol name.
 
     Returns:
         _CtypesFuncProtocol: Typed ctypes callable.
     """
-    raw: EagerValue = get_backend_member(lib, name)
-
-    def _guard(val: EagerValue) -> typing.TypeGuard[_CtypesFuncProtocol]:
-        """Narrow value to `_CtypesFuncProtocol`.
-
-        Args:
-            val (EagerValue): Candidate function object.
-
-        Returns:
-            bool: Always True when non-None.
-        """
-        return val is not None
-
-    assert _guard(raw)
+    raw: BackendArg | _CtypesFuncProtocol = adapt_backend_module(lib).require_symbol(name)
+    assert isinstance(raw, _CtypesFuncProtocol)
     return raw
 
 
@@ -87,23 +76,25 @@ class NCCLDriver:
             lib_path (str | None): Custom path to libnccl.so or None for discovery.
         """
         self.nccl_lib: ctypes.CDLL | None = None
-        self._allocated_buffers: dict[int, EagerValue] = {}
+        self._allocated_buffers: dict[int, BackendArg] = {}
         self.cuda_rt: ctypes.CDLL | None = None
         for rt in ["libcudart.so.12", "libcudart.so.11", "libcudart.so", "nvcuda.dll", "libcuda.dylib"]:
             try:
                 self.cuda_rt = ctypes.CDLL(rt)
                 break
-            except (OSError, Exception):
+            except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
                 continue
 
-        paths: list[str] = [lib_path] if lib_path is not None else ["libnccl.so.2", "libnccl.so", "libnccl.dylib", "nccl.dll"]
+        paths: list[str] = (
+            [lib_path] if lib_path is not None else ["libnccl.so.2", "libnccl.so", "libnccl.dylib", "nccl.dll"]
+        )
         for p in paths:
             if not p:
                 continue
             try:
                 self.nccl_lib = ctypes.CDLL(p)
                 break
-            except (OSError, Exception):
+            except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
                 continue
 
     def is_available(self) -> bool:
@@ -123,7 +114,7 @@ class NCCLDriver:
         Returns:
             int: Memory address pointer value.
         """
-        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaMalloc"):
+        if self.cuda_rt is not None and adapt_backend_module(self.cuda_rt).has_symbol("cudaMalloc"):
             ptr = ctypes.c_void_p()
             fn = self.cuda_rt.cudaMalloc
             fn.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_size_t]
@@ -143,7 +134,11 @@ class NCCLDriver:
         Args:
             ptr (int): Pointer address to free.
         """
-        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaFree") and ptr not in self._allocated_buffers:
+        if (
+            self.cuda_rt is not None
+            and adapt_backend_module(self.cuda_rt).has_symbol("cudaFree")
+            and ptr not in self._allocated_buffers
+        ):
             try:
                 fn = self.cuda_rt.cudaFree
                 fn.argtypes = [ctypes.c_void_p]
@@ -154,18 +149,22 @@ class NCCLDriver:
         else:
             self._allocated_buffers.pop(ptr, None)
 
-    def copy_host_to_device(self, host_array: EagerValue, dev_ptr: int) -> None:
+    def copy_host_to_device(self, host_array: BackendArg, dev_ptr: int) -> None:
         """Transfer memory buffer from host NumPy array to accelerator device pointer.
 
         Args:
-            host_array (EagerValue): Source host NumPy array or buffer.
+            host_array (BackendArg): Source host NumPy array or buffer.
             dev_ptr (int): Destination accelerator device pointer address.
         """
-        raw_ct = get_backend_member(host_array, "ctypes", None)
-        raw_dp = get_backend_member(raw_ct, "data", None) if raw_ct is not None else None
-        buf_ptr: int | None = int(ensure_int(raw_dp)) if raw_dp is not None else None
-        nbytes = int(ensure_int(get_backend_member(host_array, "nbytes", 0)))
-        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaMemcpy") and dev_ptr not in self._allocated_buffers:
+        raw_ct = adapt_backend_module(host_array).get_symbol("ctypes", None)
+        raw_dp = adapt_backend_module(raw_ct).get_symbol("data", None) if raw_ct is not None else None
+        buf_ptr: int | None = int(coerce_int(raw_dp)) if raw_dp is not None else None
+        nbytes = int(coerce_int(adapt_backend_module(host_array).get_symbol("nbytes", 0)))
+        if (
+            self.cuda_rt is not None
+            and adapt_backend_module(self.cuda_rt).has_symbol("cudaMemcpy")
+            and dev_ptr not in self._allocated_buffers
+        ):
             try:
                 fn = self.cuda_rt.cudaMemcpy
                 fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
@@ -175,20 +174,24 @@ class NCCLDriver:
                 return
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        ensure_callable(get_backend_member(ctypes, "memmove"))(dev_ptr, buf_ptr, nbytes)
+        adapt_backend_module(ctypes).require_op("memmove")(dev_ptr, buf_ptr, nbytes)
 
-    def copy_device_to_host(self, dev_ptr: int, out_array: EagerValue) -> None:
+    def copy_device_to_host(self, dev_ptr: int, out_array: BackendArg) -> None:
         """Transfer memory buffer from accelerator device pointer to destination host NumPy array.
 
         Args:
             dev_ptr (int): Source accelerator device pointer address.
-            out_array (EagerValue): Destination host NumPy array or buffer.
+            out_array (BackendArg): Destination host NumPy array or buffer.
         """
-        raw_ct = get_backend_member(out_array, "ctypes", None)
-        raw_dp = get_backend_member(raw_ct, "data", None) if raw_ct is not None else None
-        buf_ptr: int | None = int(ensure_int(raw_dp)) if raw_dp is not None else None
-        nbytes = int(ensure_int(get_backend_member(out_array, "nbytes", 0)))
-        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaMemcpy") and dev_ptr not in self._allocated_buffers:
+        raw_ct = adapt_backend_module(out_array).get_symbol("ctypes", None)
+        raw_dp = adapt_backend_module(raw_ct).get_symbol("data", None) if raw_ct is not None else None
+        buf_ptr: int | None = int(coerce_int(raw_dp)) if raw_dp is not None else None
+        nbytes = int(coerce_int(adapt_backend_module(out_array).get_symbol("nbytes", 0)))
+        if (
+            self.cuda_rt is not None
+            and adapt_backend_module(self.cuda_rt).has_symbol("cudaMemcpy")
+            and dev_ptr not in self._allocated_buffers
+        ):
             try:
                 fn = self.cuda_rt.cudaMemcpy
                 fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
@@ -198,7 +201,7 @@ class NCCLDriver:
                 return
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        ensure_callable(get_backend_member(ctypes, "memmove"))(buf_ptr, dev_ptr, nbytes)
+        adapt_backend_module(ctypes).require_op("memmove")(buf_ptr, dev_ptr, nbytes)
 
     def _check_available(self) -> None:
         """Verify that NCCL hardware and shared library are available.
@@ -247,7 +250,7 @@ class NCCLDriver:
             ]
             fn.restype = ctypes.c_int
             return int(fn(sendbuff, recvbuff, count, datatype, op, comm or 0, stream or 0))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def all_gather(
@@ -285,7 +288,7 @@ class NCCLDriver:
             ]
             fn.restype = ctypes.c_int
             return int(fn(sendbuff, recvbuff, sendcount, datatype, comm or 0, stream or 0))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def broadcast(
@@ -326,7 +329,7 @@ class NCCLDriver:
             ]
             fn.restype = ctypes.c_int
             return int(fn(sendbuff, recvbuff, count, datatype, root, comm or 0, stream or 0))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def reduce_scatter(
@@ -367,7 +370,7 @@ class NCCLDriver:
             ]
             fn.restype = ctypes.c_int
             return int(fn(sendbuff, recvbuff, recvcount, datatype, op, comm or 0, stream or 0))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def all_to_all(
@@ -394,7 +397,7 @@ class NCCLDriver:
         """
         self._check_available()
         try:
-            if has_backend_member(self.nccl_lib, "ncclAllToAll"):
+            if adapt_backend_module(self.nccl_lib).has_symbol("ncclAllToAll"):
                 fn = _get_c_fn(self.nccl_lib, "ncclAllToAll")
                 fn.argtypes = [
                     ctypes.c_void_p,
@@ -407,7 +410,7 @@ class NCCLDriver:
                 fn.restype = ctypes.c_int
                 return int(fn(sendbuff, recvbuff, count, datatype, comm or 0, stream or 0))
             return 0
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def send(
@@ -445,7 +448,7 @@ class NCCLDriver:
             ]
             fn.restype = ctypes.c_int
             return int(fn(sendbuff, count, datatype, peer, comm or 0, stream or 0))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def recv(
@@ -483,7 +486,7 @@ class NCCLDriver:
             ]
             fn.restype = ctypes.c_int
             return int(fn(recvbuff, count, datatype, peer, comm or 0, stream or 0))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def get_unique_id(self) -> bytes:
@@ -547,7 +550,7 @@ class NCCLDriver:
             fn.argtypes = [ctypes.c_void_p]
             fn.restype = ctypes.c_int
             return int(fn(ctypes.c_void_p(comm)))
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def group_start(self) -> int:
@@ -561,7 +564,7 @@ class NCCLDriver:
             fn = _get_c_fn(self.nccl_lib, "ncclGroupStart")
             fn.restype = ctypes.c_int
             return int(fn())
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def group_end(self) -> int:
@@ -575,7 +578,7 @@ class NCCLDriver:
             fn = _get_c_fn(self.nccl_lib, "ncclGroupEnd")
             fn.restype = ctypes.c_int
             return int(fn())
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             return -1
 
     def stream_synchronize(self, stream: int | None = None) -> int:
@@ -589,12 +592,22 @@ class NCCLDriver:
         """
         if stream is None:
             return 0
-        if self.cuda_rt is not None and has_backend_member(self.cuda_rt, "cudaStreamSynchronize"):
+        if self.cuda_rt is not None and adapt_backend_module(self.cuda_rt).has_symbol("cudaStreamSynchronize"):
             try:
                 fn = self.cuda_rt.cudaStreamSynchronize
                 fn.argtypes = [ctypes.c_void_p]
                 fn.restype = ctypes.c_int
                 return int(fn(ctypes.c_void_p(stream)))
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 return -1
         return 0

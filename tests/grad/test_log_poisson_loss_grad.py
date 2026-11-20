@@ -5,18 +5,11 @@ from __future__ import annotations
 import typing
 
 import numpy as np
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills import (
-    _np_log_poisson_loss,
-    _stirling_gammaln,
-)
-from ml_switcheroo_compiler.ir.core import IRGraph
-from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
-    log_poisson_loss_jvp,
-    log_poisson_loss_vjp,
-)
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager.nn_ops.polyfills import _stirling_gammaln
+from ml_switcheroo_compiler.backends.numpy.eager.scipy_ndimage_kernels import _np_log_poisson_loss
+from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import log_poisson_loss_jvp, log_poisson_loss_vjp
 
 if typing.TYPE_CHECKING:
     pass
@@ -45,18 +38,18 @@ def test_log_poisson_loss_eager_modes() -> None:
     predictions = np.array([0.5, 1.0, 1.5], dtype=np.float32)
 
     # log_input=True: exp(pred) - targets * pred
-    loss_log = _np_log_poisson_loss(ensure_eager_tensor(np), targets, predictions, log_input=True)
+    loss_log = _np_log_poisson_loss(np, targets, predictions, log_input=True)
     expected_log = np.exp(predictions) - targets * predictions
-    ensure_callable(np.testing.assert_allclose)(loss_log, expected_log, rtol=1e-5)
+    np.testing.assert_allclose(loss_log, expected_log, rtol=1e-5)
 
     # log_input=False: pred - targets * log(pred)
-    loss_nonlog = _np_log_poisson_loss(ensure_eager_tensor(np), targets, predictions, log_input=False)
+    loss_nonlog = _np_log_poisson_loss(np, targets, predictions, log_input=False)
     expected_nonlog = predictions - targets * np.log(predictions)
-    ensure_callable(np.testing.assert_allclose)(loss_nonlog, expected_nonlog, rtol=1e-5)
+    np.testing.assert_allclose(loss_nonlog, expected_nonlog, rtol=1e-5)
 
     # compute_full_loss=True
-    loss_full = _np_log_poisson_loss(ensure_eager_tensor(np), targets, predictions, log_input=True, compute_full_loss=True)
-    assert ensure_callable(np.all)(ensure_eager_tensor(loss_full) >= ensure_eager_tensor(loss_log))
+    loss_full = _np_log_poisson_loss(np, targets, predictions, log_input=True, compute_full_loss=True)
+    assert np.all(loss_full >= loss_log)
 
 
 def test_log_poisson_loss_vjp_rule() -> None:
@@ -149,8 +142,8 @@ def test_log_poisson_loss_numerical_gradcheck() -> None:
         minus = log_input.copy()
         plus[i] += eps
         minus[i] -= eps
-        l_plus = ensure_callable(np.sum)(ensure_callable(_np_log_poisson_loss)(np, targets, plus, log_input=True))
-        l_minus = ensure_callable(np.sum)(ensure_callable(_np_log_poisson_loss)(np, targets, minus, log_input=True))
+        l_plus = np.sum(_np_log_poisson_loss(np, targets, plus, log_input=True))
+        l_minus = np.sum(_np_log_poisson_loss(np, targets, minus, log_input=True))
         numerical_grad[i] = (l_plus - l_minus) / (2.0 * eps)
 
     np.testing.assert_allclose(analytical_grad, numerical_grad, rtol=1e-4, atol=1e-4)

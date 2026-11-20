@@ -2,48 +2,48 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod, get_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, adapt_backend_module
 
 float32: str = "float32"
 
 
-def _resolve_dense_backend() -> BackendModuleProtocol:
+def _resolve_dense_backend() -> EagerBackendAdapter:
     """Resolve the underlying array buffer backend via the active backend registry.
 
     Returns:
-        BackendModuleProtocol: Registered host array backend module.
+        EagerBackendAdapter: Registered host array backend adapter.
     """
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
     active = get_active_backend()
-    if active.__name__ == "NumbaCodeGenerator":
-        return ensure_mod(BackendRegistry.get("pure_python").get_module())
-    return ensure_mod(active.get_module())
+    if active.__name__ in ("NumbaGenerator", "NumbaCodeGenerator"):
+        return adapt_backend_module(BackendRegistry.get("pure_python"), backend_name="pure_python")
+    return adapt_backend_module(active.get_module())
 
 
-def _make_nb_kernel(op_name: str) -> EagerValue:
+def _make_nb_kernel(op_name: str) -> BackendArg:
     """Create a lazy Numba kernel wrapper delegating to the dense backend.
 
     Args:
         op_name (str): Target operation name.
 
     Returns:
-        EagerValue: Lazy wrapper callable.
+        BackendArg: Lazy wrapper callable.
     """
 
-    def _kernel(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def _kernel(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Execute kernel on dense backend.
 
         Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (BackendArg): Positional arguments.
+            **kwargs (BackendArg): Keyword arguments.
 
         Returns:
-            EagerValue: Computed kernel result.
+            BackendArg: Computed kernel result.
         """
-        fn = ensure_callable(get_backend_member(_resolve_dense_backend(), op_name))
-        return ensure_eager_tensor(fn(*args, **kwargs))
+        fn = _resolve_dense_backend().require_op(op_name)
+        return fn(*args, **kwargs)
 
     return _kernel
 
@@ -137,74 +137,74 @@ var = _make_nb_kernel("var")
 where = _make_nb_kernel("where")
 
 
-def asarray(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
+def asarray(data: BackendArg, dtype: BackendArg = None) -> BackendArg:
     """Convert input sequence or buffer into a Numba-compatible array buffer.
 
     Args:
-        data (EagerValue): Input sequence, scalar, or array buffer.
-        dtype (EagerValue): Optional target datatype specifier.
+        data (BackendArg): Input sequence, scalar, or array buffer.
+        dtype (BackendArg): Optional target datatype specifier.
 
     Returns:
-        EagerValue: Contiguous array buffer compatible with Numba JIT kernels.
+        BackendArg: Contiguous array buffer compatible with Numba JIT kernels.
     """
     backend = _resolve_dense_backend()
     if dtype is not None:
-        return ensure_eager_tensor(backend.asarray(data, dtype=dtype))
-    return ensure_eager_tensor(backend.asarray(data))
+        return backend.require_op("asarray")(data, dtype=dtype)
+    return backend.asarray(data)
 
 
-def array(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
+def array(data: BackendArg, dtype: BackendArg = None) -> BackendArg:
     """Construct a new Numba-compatible array from input data.
 
     Args:
-        data (EagerValue): Input sequence or array buffer.
-        dtype (EagerValue): Optional target datatype specifier.
+        data (BackendArg): Input sequence or array buffer.
+        dtype (BackendArg): Optional target datatype specifier.
 
     Returns:
-        EagerValue: Newly allocated array buffer.
+        BackendArg: Newly allocated array buffer.
     """
     backend = _resolve_dense_backend()
     if dtype is not None:
-        return ensure_eager_tensor(backend.array(data, dtype=dtype))
-    return ensure_eager_tensor(backend.array(data))
+        return backend.require_op("array")(data, dtype=dtype)
+    return backend.require_op("array")(data)
 
 
-def zeros(shape: tuple[int, ...] | int, dtype: EagerValue = "float32") -> EagerValue:
+def zeros(shape: tuple[int, ...] | int, dtype: BackendArg = "float32") -> BackendArg:
     """Allocate a zero-initialized array buffer of the given shape.
 
     Args:
         shape (tuple[int, ...] | int): Target shape dimensions.
-        dtype (EagerValue): Target datatype. Defaults to 'float32'.
+        dtype (BackendArg): Target datatype. Defaults to 'float32'.
 
     Returns:
-        EagerValue: Zero-initialized array buffer.
+        BackendArg: Zero-initialized array buffer.
     """
     backend = _resolve_dense_backend()
-    return ensure_eager_tensor(backend.zeros(shape, dtype=dtype))
+    return backend.require_op("zeros")(shape, dtype=dtype)
 
 
-def zeros_like(arr: EagerValue) -> EagerValue:
+def zeros_like(arr: BackendArg) -> BackendArg:
     """Allocate a zero-initialized array matching the shape and dtype of arr.
 
     Args:
-        arr (EagerValue): Reference array buffer.
+        arr (BackendArg): Reference array buffer.
 
     Returns:
-        EagerValue: Zero-initialized array buffer.
+        BackendArg: Zero-initialized array buffer.
     """
     backend = _resolve_dense_backend()
-    return ensure_eager_tensor(backend.zeros_like(arr))
+    return backend.require_op("zeros_like")(arr)
 
 
-def add(a: EagerValue, b: EagerValue) -> EagerValue:
+def add(a: BackendArg, b: BackendArg) -> BackendArg:
     """Compute elementwise addition of two operands.
 
     Args:
-        a (EagerValue): First operand.
-        b (EagerValue): Second operand.
+        a (BackendArg): First operand.
+        b (BackendArg): Second operand.
 
     Returns:
-        EagerValue: Elementwise sum.
+        BackendArg: Elementwise sum.
     """
     backend = _resolve_dense_backend()
-    return ensure_eager_tensor(backend.add(a, b))
+    return backend.require_op("add")(a, b)

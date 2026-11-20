@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import NodeDict
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import _load_heuristics, loop_tiling_pass
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_load_heuristics() -> None:
@@ -40,9 +39,9 @@ def test_loop_tiling_pass_modifies_nodes() -> None:
 
     graph.nodes = NodeDict({"matmul": n1, "conv": n2, "other": n3})
     assert loop_tiling_pass(graph)
-    assert bool(ensure_eager_tensor(n1).attributes.get("tiling")) is True
-    assert bool(ensure_eager_tensor(n2).attributes.get("tiling")) is True
-    assert ensure_eager_tensor(n3).attributes.get("tiling") is None
+    assert bool(n1.attributes.get("tiling")) is True
+    assert bool(n2.attributes.get("tiling")) is True
+    assert n3.attributes.get("tiling") is None
 
     # Check shape splitting
     assert n1.shape_metadata == (16, 8, 16, 8)
@@ -52,7 +51,7 @@ def test_loop_tiling_pass_modifies_nodes() -> None:
     assert not loop_tiling_pass(graph)
 
 
-def test_load_heuristics_missing(monkeypatch: EagerTensorProtocol) -> None:
+def test_load_heuristics_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_load_heuristics_missing.
 
     Args:
@@ -77,12 +76,13 @@ def test_loop_tiling_pass_no_attributes() -> None:
     del n1.attributes
     graph.nodes = NodeDict({"matmul": n1})
     assert loop_tiling_pass(graph)
-    assert bool(ensure_eager_tensor(n1).attributes.get("tiling")) is True
+    assert bool(n1.attributes.get("tiling")) is True
 
 
 def test_loop_tiling_extra_coverage() -> None:
     """Test function test_loop_tiling_extra_coverage."""
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import _should_tile, loop_tiling_pass
 
     # Call _should_tile directly with invalid op_type to hit False
@@ -103,31 +103,50 @@ def test_loop_tiling_extra_coverage() -> None:
 
     import yaml
 
-    mock_yaml = {"profiles": {"default_wasm": {"tiling": {"matmul": {"threshold_M": 100, "threshold_N": 100, "threshold_K": 100, "TILE_M": 16, "TILE_N": 16, "TILE_K": 16}}}}}
+    mock_yaml = {
+        "profiles": {
+            "default_wasm": {
+                "tiling": {
+                    "matmul": {
+                        "threshold_M": 100,
+                        "threshold_N": 100,
+                        "threshold_K": 100,
+                        "TILE_M": 16,
+                        "TILE_N": 16,
+                        "TILE_K": 16,
+                    }
+                }
+            }
+        }
+    }
 
     with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=yaml.dump(mock_yaml))):
         loop_tiling_pass(graph)
 
-    assert ensure_eager_tensor(graph.nodes["n1"]).attributes.get("tiling") is None
-    assert ensure_eager_tensor(graph.nodes["n2"]).attributes.get("tiling") is None
+    assert graph.nodes["n1"].attributes.get("tiling") is None
+    assert graph.nodes["n2"].attributes.get("tiling") is None
 
     # Hit not op_config branch
-    mock_yaml2 = ensure_eager_tensor({"profiles": {"default_wasm": {"tiling": {"matmul": {}}}}})
+    mock_yaml2: dict[str, dict[str, dict[str, dict[str, dict[str, int]]]]] = {
+        "profiles": {"default_wasm": {"tiling": {"matmul": {}}}}
+    }
     with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=yaml.dump(mock_yaml2))):
         loop_tiling_pass(graph)
 
 
 def test_loop_tiling_missing_coverage_extra() -> None:
     """Test function test_loop_tiling_missing_coverage_extra."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import _should_tile, _split_shape
+    from tests.testing_utils import require_callable
 
     assert _split_shape("matmul", ("sym", "sym"), {}) == ("sym", "sym")
     assert _split_shape("matmul", ("sym", "sym"), {"TILE_M": 8, "TILE_N": 8}) == ("sym", "sym")
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {}) == (1, "sym", "sym", 3)
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {"TILE_H": 8, "TILE_W": 8}) == (1, "sym", "sym", 3)
     assert _split_shape("other_op", (1, 2), {}) == (1, 2)
-    assert bool(ensure_callable(_should_tile)("matmul", "not_tuple", {})) is False
+    assert bool(require_callable(_should_tile)("matmul", "not_tuple", {})) is False
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass
@@ -150,7 +169,10 @@ def test_loop_tiling_missing_coverage_extra() -> None:
     graph.nodes["n4"] = IRNode(id="n4", op_type="MatMul", inputs=[])
     graph.nodes["n4"].shape_metadata = (100, 100)
 
-    with patch("ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config", return_value={"matmul": {"threshold_M": 10, "TILE_M": 2, "TILE_N": 2}}):
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config",
+        return_value={"matmul": {"threshold_M": 10, "TILE_M": 2, "TILE_N": 2}},
+    ):
         loop_tiling_pass(graph)
 
     with patch("ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config", return_value={"matmul": {}}):
@@ -161,7 +183,8 @@ def test_loop_tiling_should_tile_but_shape_unchanged() -> None:
     """Test function test_loop_tiling_should_tile_but_shape_unchanged."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass
 
     graph = IRGraph()
@@ -169,15 +192,19 @@ def test_loop_tiling_should_tile_but_shape_unchanged() -> None:
     n.shape_metadata = (100, 100)
     graph.nodes["n1"] = n
 
-    with patch("ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config", return_value={"matmul": {"threshold_M": 10, "threshold_N": 10}}):
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config",
+        return_value={"matmul": {"threshold_M": 10, "threshold_N": 10}},
+    ):
         modified = loop_tiling_pass(graph)
         assert not modified
-        assert ensure_eager_tensor(n).attributes.get("tiling") is None
+        assert n.attributes.get("tiling") is None
 
 
 def test_loop_tiling_should_not_tile() -> None:
     """Test function test_loop_tiling_should_not_tile."""
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass
 
     graph = IRGraph()

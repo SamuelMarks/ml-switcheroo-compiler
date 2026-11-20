@@ -7,7 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.linalg.dot import Dot, DotGeneral, Inner, Outer, Pdot, Tensordot, _has_valid_shape
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTensorStub, MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -16,26 +16,26 @@ if typing.TYPE_CHECKING:
 def test_dot_infer_shapes() -> None:
     """Test function test_dot_infer_shapes."""
 
-    class MockTensor:
+    class MockTensor(MockTestStub):
         """Test class MockTensor."""
 
         shape = (2, 3)
 
     t = MockTensor()
     assert Dot().infer_shape(t, t) == (2, 3)
-    assert ensure_callable(Tensordot)().infer_shape(t, t) == ()
-    assert ensure_callable(Inner)().infer_shape(t, t) == ()
-    assert ensure_callable(Outer)().infer_shape(t, t) == ()
+    assert Tensordot().infer_shape(t, t) == ()
+    assert Inner().infer_shape(t, t) == ()
+    assert Outer().infer_shape(t, t) == ()
     dg = DotGeneral()
     assert dg.infer_shape(t, t, (((1,), (0,)), ((), ()))) == (2, 3)
     assert dg.infer_shape(lhs=t, rhs=t, dimension_numbers=(((1,), (0,)), ((), ()))) == ()
 
-    class BadTensor:
+    class BadTensor(MockTestStub):
         """Test class BadTensor."""
 
         pass
 
-    assert ensure_callable(dg.infer_shape)(ensure_callable(BadTensor)(), t, (((1,), (0,)), ((), ()))) == (2, 3)
+    assert dg.infer_shape(BadTensor(), t, (((1,), (0,)), ((), ()))) == (2, 3)
     assert dg._compute_out_shape((2, 3), (3, 4), (((1,), (0,)), ((), ()))) == (2, 4)
     assert dg._compute_out_shape((5, 2, 3), (5, 3, 4), (((2,), (1,)), ((0,), (0,)))) == (5, 2, 4)
 
@@ -43,28 +43,34 @@ def test_dot_infer_shapes() -> None:
 def test_dot_has_shape() -> None:
     """Test function test_dot_has_shape."""
 
-    class DummyShape:
+    class DummyShape(MockTensorStub):
         """Test class DummyShape."""
 
-        shape = (1,)
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = (1,)
 
-    assert ensure_callable(_has_valid_shape)(ensure_callable(DummyShape)())
+    assert _has_valid_shape(DummyShape())
 
-    class DummyNoShape:
+    class DummyNoShape(MockTensorStub):
         """Test class DummyNoShape."""
 
         pass
 
-    assert not ensure_callable(_has_valid_shape)(ensure_callable(DummyNoShape)())
+    assert not _has_valid_shape(DummyNoShape())
 
 
 def test_pdot_infer_shape() -> None:
     """Test function test_pdot_infer_shape."""
 
-    class DummyShape:
+    class DummyShape(MockTensorStub):
         """Test class DummyShape."""
 
-        shape = (1, 2)
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = (1, 2)
 
     assert Pdot().infer_shape(DummyShape(), DummyShape(), None) == (1, 2)
 

@@ -1,13 +1,12 @@
-"""Tests for numpy eager math logical ops."""
+"""Behavioral unit tests for math logical."""
 
 from __future__ import annotations
-
-import typing
 
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
+from ml_switcheroo_compiler.backends.eager.reference_math import math_logical as logical_module
+from ml_switcheroo_compiler.backends.eager.reference_math.math_logical import (
     _np_assert,
     _np_greater,
     _np_greater_equal,
@@ -20,10 +19,9 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
     _np_not_equal,
     _np_where,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
-
-if typing.TYPE_CHECKING:
-    pass
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import require_callable
 
 
 def test_not_equal() -> None:
@@ -32,7 +30,7 @@ def test_not_equal() -> None:
     Returns:
         None
     """
-    assert _np_not_equal(ensure_eager_tensor(np), 1, 2)
+    assert _np_not_equal(np, 1, 2)
 
 
 def test_greater() -> None:
@@ -41,7 +39,7 @@ def test_greater() -> None:
     Returns:
         None
     """
-    assert _np_greater(ensure_eager_tensor(np), 2, 1)
+    assert _np_greater(np, 2, 1)
 
 
 def test_greater_equal() -> None:
@@ -50,7 +48,7 @@ def test_greater_equal() -> None:
     Returns:
         None
     """
-    assert _np_greater_equal(ensure_eager_tensor(np), 2, 2)
+    assert _np_greater_equal(np, 2, 2)
 
 
 def test_less() -> None:
@@ -59,7 +57,7 @@ def test_less() -> None:
     Returns:
         None
     """
-    assert _np_less(ensure_eager_tensor(np), 1, 2)
+    assert _np_less(np, 1, 2)
 
 
 def test_less_equal() -> None:
@@ -68,7 +66,7 @@ def test_less_equal() -> None:
     Returns:
         None
     """
-    assert _np_less_equal(ensure_eager_tensor(np), 2, 2)
+    assert _np_less_equal(np, 2, 2)
 
 
 def test_logical_and() -> None:
@@ -77,7 +75,7 @@ def test_logical_and() -> None:
     Returns:
         None
     """
-    assert _np_logical_and(ensure_eager_tensor(np), True, True)
+    assert _np_logical_and(np, True, True)
 
 
 def test_logical_or() -> None:
@@ -86,7 +84,7 @@ def test_logical_or() -> None:
     Returns:
         None
     """
-    assert _np_logical_or(ensure_eager_tensor(np), True, False)
+    assert _np_logical_or(np, True, False)
 
 
 def test_logical_not() -> None:
@@ -95,7 +93,7 @@ def test_logical_not() -> None:
     Returns:
         None
     """
-    assert _np_logical_not(ensure_eager_tensor(np), False)
+    assert _np_logical_not(np, False)
 
 
 def test_logical_xor() -> None:
@@ -104,7 +102,7 @@ def test_logical_xor() -> None:
     Returns:
         None
     """
-    assert _np_logical_xor(ensure_eager_tensor(np), True, False)
+    assert _np_logical_xor(np, True, False)
 
 
 def test_where() -> None:
@@ -113,8 +111,8 @@ def test_where() -> None:
     Returns:
         None
     """
-    res = _np_where(ensure_eager_tensor(np), np.array([True, False]), 1, 0)
-    assert ensure_callable(np.array_equal)(res, [1, 0])
+    res = _np_where(np, np.array([True, False]), 1, 0)
+    assert np.array_equal(ensure_ndarray(res), [1, 0])
 
 
 def test_assert() -> None:
@@ -123,6 +121,89 @@ def test_assert() -> None:
     Returns:
         None
     """
-    _np_assert(ensure_eager_tensor(np), True)
+    _np_assert(np, True)
     with pytest.raises(AssertionError, match="Assertion failed."):
-        _np_assert(ensure_eager_tensor(np), False)
+        _np_assert(np, False)
+
+
+def test_math_logical_ops() -> None:
+    """Test logical comparison and assert operations directly and through eager registry.
+
+    Returns:
+        None
+    """
+    a = np.array([1, 2, 3])
+    b = np.array([1, 3, 2])
+
+    assert np.array_equal(ensure_ndarray(logical_module._np_not_equal(np, a, b)), a != b)
+    assert np.array_equal(require_callable(numpy_eager_registry.get)("NotEqual")(np, a, b), a != b)
+
+    assert np.array_equal(ensure_ndarray(logical_module._np_greater(np, a, b)), a > b)
+    assert np.array_equal(require_callable(numpy_eager_registry.get)("Greater")(np, a, b), a > b)
+
+    assert np.array_equal(ensure_ndarray(logical_module._np_greater_equal(np, a, b)), a >= b)
+    assert np.array_equal(require_callable(numpy_eager_registry.get)("GreaterEqual")(np, a, b), a >= b)
+
+    assert np.array_equal(ensure_ndarray(logical_module._np_less(np, a, b)), a < b)
+    assert np.array_equal(require_callable(numpy_eager_registry.get)("Less")(np, a, b), a < b)
+
+    assert np.array_equal(ensure_ndarray(logical_module._np_less_equal(np, a, b)), a <= b)
+    assert np.array_equal(require_callable(numpy_eager_registry.get)("LessEqual")(np, a, b), a <= b)
+
+    bool_a = np.array([True, True, False])
+    bool_b = np.array([True, False, False])
+
+    assert np.array_equal(
+        ensure_ndarray(logical_module._np_logical_and(np, bool_a, bool_b)),
+        np.logical_and(bool_a, bool_b),
+    )
+    assert np.array_equal(
+        require_callable(numpy_eager_registry.get)("LogicalAnd")(np, bool_a, bool_b),
+        np.logical_and(bool_a, bool_b),
+    )
+
+    assert np.array_equal(
+        ensure_ndarray(logical_module._np_logical_or(np, bool_a, bool_b)),
+        np.logical_or(bool_a, bool_b),
+    )
+    assert np.array_equal(
+        require_callable(numpy_eager_registry.get)("LogicalOr")(np, bool_a, bool_b),
+        np.logical_or(bool_a, bool_b),
+    )
+
+    assert np.array_equal(ensure_ndarray(logical_module._np_logical_not(np, bool_a)), np.logical_not(bool_a))
+    assert np.array_equal(require_callable(numpy_eager_registry.get)("LogicalNot")(np, bool_a), np.logical_not(bool_a))
+
+    assert np.array_equal(
+        ensure_ndarray(logical_module._np_logical_xor(np, bool_a, bool_b)),
+        np.logical_xor(bool_a, bool_b),
+    )
+    assert np.array_equal(
+        require_callable(numpy_eager_registry.get)("LogicalXor")(np, bool_a, bool_b),
+        np.logical_xor(bool_a, bool_b),
+    )
+
+    cond = np.array([True, False, True])
+    x_val = np.array([10, 20, 30])
+    y_val = np.array([1, 2, 3])
+    assert np.array_equal(
+        ensure_ndarray(logical_module._np_where(np, cond, x_val, y_val)), np.where(cond, x_val, y_val)
+    )
+    assert np.array_equal(
+        require_callable(numpy_eager_registry.get)("Where")(np, cond, x_val, y_val),
+        np.where(cond, x_val, y_val),
+    )
+
+    # Assert passing
+    assert logical_module._np_assert(np, np.array([True, True])) == 0
+    assert require_callable(numpy_eager_registry.get)("Assert")(np, np.array([True, True])) == 0
+
+    # Assert failing with custom data
+    with pytest.raises(AssertionError) as exc_info:
+        logical_module._np_assert(np, np.array([True, False]), data=["Custom msg"])
+    assert "Custom msg" in str(exc_info.value)
+
+    # Assert failing with default data
+    with pytest.raises(AssertionError) as exc_info2:
+        require_callable(numpy_eager_registry.get)("Assert")(np, np.array([False]))
+    assert "Assertion failed." in str(exc_info2.value)

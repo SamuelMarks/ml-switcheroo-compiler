@@ -2,19 +2,33 @@
 
 from __future__ import annotations
 
+import types
 import typing
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import ensure_tensor_dict
+from tests.testing_utils import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
-def _test_quantized_ops_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestQuantizedOpsEagerState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_quantized_ops_eager` split helpers."""
+
+    input_2d: Tensor
+    np: types.ModuleType
+    q_ops: types.ModuleType
+    qoc_math: EagerTensorProtocol
+    scales: Tensor
+    w_2d_quant: Tensor
+    w_quant: Tensor
+    zeros: Tensor
+
+
+def _test_quantized_ops_eager_sub_1(_state: _TestQuantizedOpsEagerState) -> None:
     """Execute sub-part 1 of test_quantized_ops_eager.
 
     Args:
@@ -49,15 +63,18 @@ def _test_quantized_ops_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> N
     scales = Tensor(np.array([[0.5, 0.5]]), TensorConfig((1, 2), "float32", "cpu"))
     zeros = Tensor(np.array([[1.0, 1.0]]), TensorConfig((1, 2), "float32", "cpu"))
 
-    # W_float = (W_quant - zeros) * scales = ([[2, 4]] - [[1, 1]]) * [[0.5, 0.5]] = [[1, 3]] * [[0.5, 0.5]] = [[0.5, 1.5]]
-    qoc_math = q_ops.QuantizedOpsConfig(weight=w_quant, scales=scales, zeros=zeros, biases=None, indices=None, q_config=None)
-    _state.update(ensure_tensor_dict({"patch": patch, "qc": qc, "qoc": qoc, "qoc_math": qoc_math}))
-    _state.update(ensure_tensor_dict({"qp": qp, "scales": scales, "t": t, "w_quant": w_quant}))
-    _state.update(ensure_tensor_dict({"zeros": zeros}))
-    _state.update(ensure_tensor_dict({"np": np, "q_ops": q_ops}))
+    # W_float = (W_quant - zeros) * scales = ([[2, 4]] - [[1, 1]]) * [[0.5, 0.5]] = [[1, 3]] * [[0.5, 0.5]] = [[0.5,
+    # 1.5]]
+    qoc_math = q_ops.QuantizedOpsConfig(
+        weight=w_quant, scales=scales, zeros=zeros, biases=None, indices=None, q_config=None
+    )
+    _state.update({"qoc_math": qoc_math})
+    _state.update({"scales": scales, "w_quant": w_quant})
+    _state.update({"zeros": zeros})
+    _state.update({"np": np, "q_ops": q_ops})
 
 
-def _test_quantized_ops_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_quantized_ops_eager_sub_2(_state: _TestQuantizedOpsEagerState) -> None:
     """Execute sub-part 2 of test_quantized_ops_eager.
 
     Args:
@@ -80,7 +97,9 @@ def _test_quantized_ops_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
     assert np.allclose(deq_res.data, [[0.5, 1.5]])
 
     # Coverage for zeros=None, biases=None in eager mode
-    qoc_none = q_ops.QuantizedOpsConfig(weight=w_quant, scales=scales, zeros=None, biases=None, indices=None, q_config=None)
+    qoc_none = q_ops.QuantizedOpsConfig(
+        weight=w_quant, scales=scales, zeros=None, biases=None, indices=None, q_config=None
+    )
     embed_none = q_ops.quantized_embedding(indices, qoc_none)
     assert embed_none is not None
     lin_none = q_ops.quantized_linear(inp, qoc_none)
@@ -92,28 +111,35 @@ def _test_quantized_ops_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
     input_2d_val = np.ones((1, 3, 3, 1), dtype=np.float32)
     input_2d = Tensor(input_2d_val, TensorConfig((1, 3, 3, 1), DType.Float32, Device("cpu")))
 
-    w_2d_quant = Tensor(np.array([[[[2.0]], [[2.0]]], [[[2.0]], [[2.0]]]]), TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu")))
-    _state.update(ensure_tensor_dict({"deq_none": deq_none, "deq_res": deq_res, "embed_none": embed_none, "embed_res": embed_res}))
-    _state.update(ensure_tensor_dict({"indices": indices, "inp": inp, "input_2d": input_2d, "input_2d_val": input_2d_val}))
-    _state.update(ensure_tensor_dict({"lin_none": lin_none, "lin_res": lin_res, "qoc_none": qoc_none, "w_2d_quant": w_2d_quant}))
-    _state.update(ensure_tensor_dict({"np": np, "q_ops": q_ops, "qoc_math": qoc_math}))
-    _state.update(ensure_tensor_dict({"scales": scales, "w_quant": w_quant, "zeros": zeros}))
+    w_2d_quant = Tensor(
+        np.array([[[[2.0]], [[2.0]]], [[[2.0]], [[2.0]]]]), TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu"))
+    )
+    _state.update({"input_2d": input_2d})
+    _state.update({"w_2d_quant": w_2d_quant})
+    _state.update({"np": np, "q_ops": q_ops, "qoc_math": qoc_math})
+    _state.update({"scales": scales, "w_quant": w_quant, "zeros": zeros})
 
 
-def _test_quantized_ops_eager_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_quantized_ops_eager_sub_3(_state: _TestQuantizedOpsEagerState) -> None:
     """Execute sub-part 3 of test_quantized_ops_eager.
 
     Args:
         _state: Shared test state dictionary.
     """
     input_2d, np, q_ops, w_2d_quant = _state["input_2d"], _state["np"], _state["q_ops"], _state["w_2d_quant"]
-    scales_2d = Tensor(np.ones((2, 2, 1, 1), dtype=np.float32) * 0.5, TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu")))
-    zeros_2d = Tensor(np.ones((2, 2, 1, 1), dtype=np.float32) * 1.0, TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu")))
+    scales_2d = Tensor(
+        np.ones((2, 2, 1, 1), dtype=np.float32) * 0.5, TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu"))
+    )
+    zeros_2d = Tensor(
+        np.ones((2, 2, 1, 1), dtype=np.float32) * 1.0, TensorConfig((2, 2, 1, 1), DType.Float32, Device("cpu"))
+    )
 
     # dequantized weight will be ones * 0.5
     # Convolution of a 3x3 input of ones with 2x2 kernel of 0.5s results in a 2x2 output of:
     # 0.5 * 1.0 * 4 = 2.0 per output patch (under VALID padding)
-    qoc_conv = q_ops.QuantizedOpsConfig(weight=w_2d_quant, scales=scales_2d, biases=zeros_2d, indices=None, q_config=None)
+    qoc_conv = q_ops.QuantizedOpsConfig(
+        weight=w_2d_quant, scales=scales_2d, biases=zeros_2d, indices=None, q_config=None
+    )
 
     conv_res = q_ops.quantized_conv(input_2d, qoc_conv, stride=1, padding="VALID")
     assert np.allclose(conv_res.data, [[[[2.0]], [[2.0]]], [[[2.0]], [[2.0]]]])
@@ -123,18 +149,19 @@ def _test_quantized_ops_eager_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
     scale_q_chan = Tensor(np.array([0.1, 0.2]), TensorConfig((2,), DType.Float32, Device("cpu")))
     zero_point_q_chan = Tensor(np.array([0.0, 0.0]), TensorConfig((2,), DType.Int32, Device("cpu")))
 
-    fq_chan_res = q_ops.fake_quantize_per_channel_affine(input_q_chan, scale_q_chan, zero_point_q_chan, axis=2, quant_min=-128, quant_max=127)
+    fq_chan_res = q_ops.fake_quantize_per_channel_affine(
+        input_q_chan, scale_q_chan, zero_point_q_chan, axis=2, quant_min=-128, quant_max=127
+    )
     assert fq_chan_res is not None
 
     # Test fake_quantize_per_tensor_affine
     input_q_tens = Tensor(np.array([0.1, -0.1, 0.8, -0.8]), TensorConfig((4,), DType.Float32, Device("cpu")))
-    fq_tens_res = q_ops.fake_quantize_per_tensor_affine(input_q_tens, scale=0.1, zero_point=0, quant_min=-128, quant_max=127)
+    fq_tens_res = q_ops.fake_quantize_per_tensor_affine(
+        input_q_tens, scale=0.1, zero_point=0, quant_min=-128, quant_max=127
+    )
     assert fq_tens_res is not None
-    _state.update(ensure_tensor_dict({"conv_res": conv_res, "fq_chan_res": fq_chan_res, "fq_tens_res": fq_tens_res, "input_q_chan": input_q_chan}))
-    _state.update(ensure_tensor_dict({"input_q_tens": input_q_tens, "qoc_conv": qoc_conv, "scale_q_chan": scale_q_chan, "scales_2d": scales_2d}))
-    _state.update(ensure_tensor_dict({"zero_point_q_chan": zero_point_q_chan, "zeros_2d": zeros_2d}))
-    _state.update(ensure_tensor_dict({"input_2d": input_2d, "np": np, "q_ops": q_ops}))
-    _state.update(ensure_tensor_dict({"w_2d_quant": w_2d_quant}))
+    _state.update({"input_2d": input_2d, "np": np, "q_ops": q_ops})
+    _state.update({"w_2d_quant": w_2d_quant})
 
 
 def test_quantized_ops_eager() -> None:
@@ -147,8 +174,8 @@ def test_quantized_ops_eager() -> None:
     config.eager_mode = True
 
     try:
-        _state: dict[str, EagerTensorProtocol] = {}
-        _state.update(ensure_tensor_dict({"np": np, "orig": orig, "q_ops": q_ops}))
+        _state: _TestQuantizedOpsEagerState = {}
+        _state.update({"np": np, "q_ops": q_ops})
         for _sub_fn in (
             _test_quantized_ops_eager_sub_1,
             _test_quantized_ops_eager_sub_2,

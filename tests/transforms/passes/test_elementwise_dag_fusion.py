@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _get_scalar_expression_snippet,
     fuse_elementwise_clusters,
     operator_fusion_pass,
 )
-from tests.testing_utils import ensure_str
+from tests.testing_utils import coerce_str
 
 
 def test_elementwise_cluster_fusion_chain() -> None:
@@ -36,7 +37,7 @@ def test_elementwise_cluster_fusion_chain() -> None:
     assert fused.inputs == ["in_a", "in_b"]
     fused_ops = fused.attributes["fused_ops"]
     assert isinstance(fused_ops, list)
-    scalar_expr = ensure_str(fused.attributes["scalar_expr"])
+    scalar_expr = coerce_str(fused.attributes["scalar_expr"])
     assert "Add" in fused_ops
     assert "Mul" in fused_ops
     assert "Relu" in fused_ops

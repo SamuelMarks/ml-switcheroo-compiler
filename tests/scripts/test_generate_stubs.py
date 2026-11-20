@@ -11,14 +11,15 @@ import typing
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from pytest import CaptureFixture
 
 import scripts.generate_stubs as gs
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_module_type, ensure_mutable, get_backend_member
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_clean_type_annotation() -> None:
@@ -60,8 +61,10 @@ def test_generate_stubs_from_snapshot_exhaustive(tmp_path: Path) -> None:
     Args:
         tmp_path (Path): Pytest temporary path fixture.
     """
+    from ml_switcheroo_compiler.core.shape import IRAttrValue
+
     out_file = tmp_path / "snapshot_stubs.pyi"
-    snap_data = {
+    snap_data: dict[str, IRAttrValue] = {
         "categories": {
             "math": [
                 {
@@ -103,7 +106,7 @@ def test_generate_stubs_from_snapshot_exhaustive(tmp_path: Path) -> None:
             "invalid_category": "not_a_list",
         }
     }
-    count = ensure_callable(gs._generate_stubs_from_snapshot)(snap_data, "numpy", ensure_callable(str)(out_file))
+    count = gs._generate_stubs_from_snapshot(snap_data, "numpy", str(out_file))
     assert count >= 3
     content = out_file.read_text(encoding="utf-8")
     assert "def f_full(x: Tensor, y: Tensor = ..., *args: Tensor, kw1: Tensor, **kwargs: Tensor) -> int: ..." in content
@@ -127,11 +130,11 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
     # 2. Fake module with inspectable functions and signature failure
     fake_mod = types.ModuleType("fake_fw")
-    ensure_mutable(fake_mod)._priv = ensure_eager_tensor(1)
-    ensure_mutable(fake_mod).Tensor = ensure_eager_tensor(2)
-    ensure_mutable(fake_mod).non_callable = ensure_eager_tensor(42)
+    pytest.MonkeyPatch().setattr(fake_mod, "_priv", 1, raising=False)
+    pytest.MonkeyPatch().setattr(fake_mod, "Tensor", 2, raising=False)
+    pytest.MonkeyPatch().setattr(fake_mod, "non_callable", 42, raising=False)
 
-    def f_normal(x: EagerValue, y: EagerValue = 10) -> None:
+    def f_normal(x: BackendArg, y: BackendArg = 10) -> None:
         """Test function f_normal.
 
         Args:
@@ -140,7 +143,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         """
         pass
 
-    def f_varargs(*args: EagerValue, **kwargs: EagerValue) -> None:
+    def f_varargs(*args: BackendArg, **kwargs: BackendArg) -> None:
         """Test function f_varargs.
 
         Args:
@@ -149,7 +152,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         """
         pass
 
-    def f_kwonly(*, k1: EagerValue, k2: EagerValue = 20) -> None:
+    def f_kwonly(*, k1: BackendArg, k2: BackendArg = 20) -> None:
         """Test function f_kwonly.
 
         Args:
@@ -158,7 +161,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         """
         pass
 
-    def f_varpos_kw(*args: EagerValue, k1: EagerValue) -> None:
+    def f_varpos_kw(*args: BackendArg, k1: BackendArg) -> None:
         """Test function f_varpos_kw.
 
         Args:
@@ -177,15 +180,15 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
             pass
 
     bad_obj = BadSig()
-    ensure_mutable(fake_mod).f_normal = ensure_eager_tensor(f_normal)
-    ensure_mutable(fake_mod).f_varargs = ensure_eager_tensor(f_varargs)
-    ensure_mutable(fake_mod).f_kwonly = ensure_eager_tensor(f_kwonly)
-    ensure_mutable(fake_mod).f_varpos_kw = ensure_eager_tensor(f_varpos_kw)
-    ensure_mutable(fake_mod).bad_sig = ensure_eager_tensor(bad_obj)
+    pytest.MonkeyPatch().setattr(fake_mod, "f_normal", f_normal, raising=False)
+    pytest.MonkeyPatch().setattr(fake_mod, "f_varargs", f_varargs, raising=False)
+    pytest.MonkeyPatch().setattr(fake_mod, "f_kwonly", f_kwonly, raising=False)
+    pytest.MonkeyPatch().setattr(fake_mod, "f_varpos_kw", f_varpos_kw, raising=False)
+    pytest.MonkeyPatch().setattr(fake_mod, "bad_sig", bad_obj, raising=False)
 
     real_sig = inspect.signature
 
-    def smart_sig(obj: TypedVariadicCallable[EagerValue]) -> inspect.Signature:
+    def smart_sig(obj: TypedVariadicCallable[BackendArg]) -> inspect.Signature:
         """Test function smart_sig.
 
         Args:
@@ -193,8 +196,11 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
         Returns:
             inspect.Signature: Computed output value from `smart_sig`.
+
+        Raises:
+            ValueError: When raised during `smart_sig` (Signature failed).
         """
-        if get_backend_member(obj, "fail_sig", False):
+        if adapt_backend_module(obj).get_symbol("fail_sig", False):
             raise ValueError("Signature failed")
         return real_sig(obj)
 
@@ -202,7 +208,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
     real_import = importlib.import_module
 
-    def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> types.ModuleType:
+    def mock_import(name: str, *args: BackendArg, **kwargs: BackendArg) -> types.ModuleType:
         """Test function mock_import.
 
         Args:
@@ -215,10 +221,10 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         """
         if name == "fake_fw":
             return fake_mod
-        return ensure_module_type(ensure_callable(real_import)(name, *args, **kwargs))
+        return real_import(name)
 
     with patch("inspect.signature", side_effect=smart_sig):
-        with patch("scripts.generate_stubs.importlib.import_module", side_effect=mock_import):
+        with patch("importlib.import_module", side_effect=mock_import):
             count_live = gs._generate_stubs_from_live_module("fake_fw", "dummy", str(out_file))
             assert count_live >= 5
 
@@ -398,13 +404,15 @@ def test_main_and_runpy(capsys: CaptureFixture[str]) -> None:
 
 def test_format_params_via_ecosystem() -> None:
     """Verify format_params_via_ecosystem formatting with defaults and types."""
-    params = [
+    from ml_switcheroo_compiler.core.shape import IRAttrValue
+
+    params: list[dict[str, IRAttrValue] | IRAttrValue] = [
         {"name": "x", "kind": "POSITIONAL_OR_KEYWORD", "annotation": "Tensor"},
         {"name": "dim", "kind": "KEYWORD_ONLY", "annotation": "int", "default": 0},
         "invalid",
         {"name": ""},
     ]
-    res = ensure_callable(gs.format_params_via_ecosystem)(params, has_varargs=True)
+    res = gs.format_params_via_ecosystem(params, has_varargs=True)
     assert "x: Tensor" in res
     assert "dim: int = 0" in res
 

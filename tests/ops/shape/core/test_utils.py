@@ -4,20 +4,21 @@ from __future__ import annotations
 
 import typing
 
-# ruff: noqa: E501
+from pytest_mock import MockerFixture
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -29,7 +30,7 @@ class MockTensor:
         self.data = [1, 2]
 
 
-def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
+def test_emit_shape_node(mocker: MockerFixture) -> None:
     """Test function test_emit_shape_node.
 
     Args:
@@ -43,16 +44,16 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     _emit_shape_node("Op", [t], {}, (2, 3), DType.Float32)
 
-    class FakeDtype1:
+    class FakeDtype1(MockTestStub):
         """Test class FakeDtype1."""
 
         def __init__(self) -> None:
             """Test function __init__."""
             self.value = "int32"
 
-    ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype1)())
+    _emit_shape_node("Op", [t], {}, (2, 3), FakeDtype1())
 
-    class FakeDtype2:
+    class FakeDtype2(MockTestStub):
         """Test class FakeDtype2."""
 
         def __init__(self) -> None:
@@ -67,14 +68,14 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """
             return "int64"
 
-    ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype2)())
+    _emit_shape_node("Op", [t], {}, (2, 3), FakeDtype2())
 
-    class FakeDtype3:
+    class FakeDtype3(MockTestStub):
         """Test class FakeDtype3."""
 
         pass
 
-    ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(FakeDtype3)())
+    _emit_shape_node("Op", [t], {}, (2, 3), FakeDtype3())
 
     class FakeNumpyDtype:
         """Test class FakeNumpyDtype."""
@@ -85,15 +86,15 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
 
     FakeNumpyDtype.__name__ = "dtype"
 
-    class dtype:
+    class dtype(MockTestStub):
         """Test class dtype."""
 
         def __init__(self) -> None:
             """Test function __init__."""
             self.name = "float64"
 
-    res = ensure_callable(_emit_shape_node)("Op", [t], {}, (2, 3), ensure_callable(dtype)())
-    assert res is not None
+    res = _emit_shape_node("Op", [t], {}, (2, 3), dtype())
+    assert tuple(res.shape) == (2, 3)
 
 
 def test_compute_reduction_shape() -> None:

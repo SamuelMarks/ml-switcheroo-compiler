@@ -6,10 +6,9 @@ import os
 import subprocess
 import tempfile
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 
 def test_cpp_compile_and_execute() -> None:

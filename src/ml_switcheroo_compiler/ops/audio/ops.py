@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int
-from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.backends.registry import coerce_int
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -13,22 +13,22 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class _ValueAttrProtocol(typing.Protocol):
     """Protocol for scalar wrapper objects exposing a `value` attribute."""
 
-    value: TensorOrScalar
+    value: OpValue
 
 
-def _extract_window_length(args: tuple[TensorOrScalar, ...], kwargs: dict[str, TensorOrScalar]) -> TensorOrScalar:
+def _extract_window_length(args: tuple[OpValue, ...], kwargs: dict[str, OpValue]) -> OpValue:
     """Extract window length from `args` or `kwargs`.
 
     Args:
-        args (tuple[TensorOrScalar, ...]): Positional arguments.
-        kwargs (dict[str, TensorOrScalar]): Keyword arguments.
+        args (tuple[OpValue, ...]): Positional arguments.
+        kwargs (dict[str, OpValue]): Keyword arguments.
 
     Returns:
-        TensorOrScalar: Window length.
+        OpValue: Window length.
     """
     window_length = kwargs.get("window_length", 256)
     if len(args) > 0:
-        first: TensorOrScalar | _ValueAttrProtocol = args[0]
+        first: OpValue | _ValueAttrProtocol = args[0]
         val = first.value if isinstance(first, _ValueAttrProtocol) else args[0]
         if isinstance(val, int):
             window_length = val
@@ -39,7 +39,7 @@ def _extract_window_length(args: tuple[TensorOrScalar, ...], kwargs: dict[str, T
 class Stft(OpDef):
     """Short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the STFT output.
 
         Args:
@@ -50,15 +50,15 @@ class Stft(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and isinstance(args[0], ShapeProtocol):
-            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
+            shape: list[int | OpValue] = list(extract_shape(args[0]))
             if len(shape) > 0:
-                signal_length = int(ensure_int(shape[-1]))
-                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
-                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
-                fft_length = kwargs.get("fft_length", kwargs.get("fft_size", frame_length))
+                signal_length = int(coerce_int(shape[-1]))
+                frame_length = int(coerce_int(kwargs.get("frame_length", 256)))
+                frame_step = int(coerce_int(kwargs.get("frame_step", 128)))
+                fft_length = int(coerce_int(kwargs.get("fft_length", kwargs.get("fft_size", frame_length))))
 
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
-                fft_bins = ensure_eager_tensor(fft_length) // 2 + 1
+                fft_bins = fft_length // 2 + 1
                 shape[-1] = num_frames
                 shape.append(fft_bins)
             return tuple(shape)
@@ -69,7 +69,7 @@ class Stft(OpDef):
 class MelSpectrogram(OpDef):
     """Mel spectrogram computation operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the mel spectrogram output.
 
         Args:
@@ -80,11 +80,11 @@ class MelSpectrogram(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and isinstance(args[0], ShapeProtocol):
-            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
+            shape: list[int | OpValue] = list(extract_shape(args[0]))
             if len(shape) > 0:
-                signal_length = int(ensure_int(shape[-1]))
-                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
-                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
+                signal_length = int(coerce_int(shape[-1]))
+                frame_length = int(coerce_int(kwargs.get("frame_length", 256)))
+                frame_step = int(coerce_int(kwargs.get("frame_step", 128)))
                 num_mel_bins = kwargs.get("num_mel_bins", 128)
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
                 shape[-1] = num_frames
@@ -97,7 +97,7 @@ class MelSpectrogram(OpDef):
 class Istft(OpDef):
     """Inverse short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the inverse STFT output.
 
         Args:
@@ -108,11 +108,11 @@ class Istft(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and isinstance(args[0], ShapeProtocol):
-            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
+            shape: list[int | OpValue] = list(extract_shape(args[0]))
             if len(shape) >= 2:
-                num_frames = int(ensure_int(shape[-2]))
-                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
-                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
+                num_frames = int(coerce_int(shape[-2]))
+                frame_length = int(coerce_int(kwargs.get("frame_length", 256)))
+                frame_step = int(coerce_int(kwargs.get("frame_step", 128)))
                 signal_length = (num_frames - 1) * frame_step + frame_length
                 shape = shape[:-2]
                 shape.append(signal_length)
@@ -124,7 +124,7 @@ class Istft(OpDef):
 class MelFilterbank(OpDef):
     """Mel filterbank generation operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the mel filterbank matrix.
 
         Args:
@@ -134,9 +134,9 @@ class MelFilterbank(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        fft_length = kwargs.get("fft_length", kwargs.get("fft_size", 256))
-        num_mel_bins = kwargs.get("num_mel_bins", 128)
-        fft_bins = ensure_eager_tensor(fft_length) // 2 + 1
+        fft_length = int(coerce_int(kwargs.get("fft_length", kwargs.get("fft_size", 256))))
+        num_mel_bins = int(coerce_int(kwargs.get("num_mel_bins", 128)))
+        fft_bins = fft_length // 2 + 1
         return (fft_bins, num_mel_bins)
 
 
@@ -144,7 +144,7 @@ class MelFilterbank(OpDef):
 class Mfcc(OpDef):
     """Mel-frequency cepstral coefficients (MFCC) extraction operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the MFCC output.
 
         Args:
@@ -155,11 +155,11 @@ class Mfcc(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and isinstance(args[0], ShapeProtocol):
-            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
+            shape: list[int | OpValue] = list(extract_shape(args[0]))
             if len(shape) > 0:
-                signal_length = int(ensure_int(shape[-1]))
-                frame_length = int(ensure_int(kwargs.get("frame_length", 256)))
-                frame_step = int(ensure_int(kwargs.get("frame_step", 128)))
+                signal_length = int(coerce_int(shape[-1]))
+                frame_length = int(coerce_int(kwargs.get("frame_length", 256)))
+                frame_step = int(coerce_int(kwargs.get("frame_step", 128)))
                 num_mfccs = kwargs.get("num_mfccs", 13)
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
                 shape[-1] = num_frames
@@ -172,7 +172,7 @@ class Mfcc(OpDef):
 class MfccsFromLogMelSpectrograms(OpDef):
     """Operator to compute MFCCs directly from log mel spectrograms."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the resulting MFCC output.
 
         Args:
@@ -183,7 +183,7 @@ class MfccsFromLogMelSpectrograms(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and isinstance(args[0], ShapeProtocol):
-            shape: list[int | TensorOrScalar] = list(extract_shape(args[0]))
+            shape: list[int | OpValue] = list(extract_shape(args[0]))
             if len(shape) > 0:
                 num_mfccs = kwargs.get("num_mfccs", 13)
                 shape[-1] = num_mfccs
@@ -195,7 +195,7 @@ class MfccsFromLogMelSpectrograms(OpDef):
 class HannWindow(OpDef):
     """Hann window function generation operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the generated Hann window.
 
         Args:
@@ -212,7 +212,7 @@ class HannWindow(OpDef):
 class HammingWindow(OpDef):
     """Hamming window function generation operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the generated Hamming window.
 
         Args:
@@ -229,7 +229,7 @@ class HammingWindow(OpDef):
 class KaiserWindow(OpDef):
     """Kaiser window function generation operator."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the generated Kaiser window.
 
         Args:
@@ -248,7 +248,7 @@ class Dct(OpDef):
 
     op_name = "Dct"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the DCT output based on the input signal.
 
         Args:
@@ -258,7 +258,7 @@ class Dct(OpDef):
         Returns:
             The output shape of the transformed signal.
         """
-        return a.shape
+        return extract_shape(a)
 
 
 @register_op("Idct")
@@ -267,7 +267,7 @@ class Idct(OpDef):
 
     op_name = "Idct"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the IDCT output based on the input transformed signal.
 
         Args:
@@ -277,7 +277,7 @@ class Idct(OpDef):
         Returns:
             The output shape of the inverse transformed signal.
         """
-        return a.shape
+        return extract_shape(a)
 
 
 @register_op("Mdct")
@@ -286,7 +286,7 @@ class Mdct(OpDef):
 
     op_name = "Mdct"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the MDCT output based on the input signal.
 
         Args:
@@ -302,8 +302,8 @@ class Mdct(OpDef):
         if not shape:
             return ()
 
-        frame_length = int(ensure_int(kwargs.get("frame_length", 512)))
-        frame_step = int(ensure_int(kwargs.get("frame_step", 256)))
+        frame_length = int(coerce_int(kwargs.get("frame_length", 512)))
+        frame_step = int(coerce_int(kwargs.get("frame_step", 256)))
         pad_end = bool(kwargs.get("pad_end", False))
 
         # If the input represents a pre-framed block (last dim is frame_length)
@@ -333,7 +333,7 @@ class InverseMdct(OpDef):
 
     op_name = "InverseMdct"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the IMDCT output based on the input transformed signal.
 
         Args:
@@ -349,8 +349,8 @@ class InverseMdct(OpDef):
         if not shape:
             return ()
 
-        fl = int(ensure_int(kwargs.get("frame_length", 512)))
-        fs = int(ensure_int(kwargs.get("frame_step", 256)))
+        fl = int(coerce_int(kwargs.get("frame_length", 512)))
+        fs = int(coerce_int(kwargs.get("frame_step", 256)))
         last = shape[-1]
 
         if last != fl // 2:
@@ -373,7 +373,7 @@ class Frame(OpDef):
 
     op_name = "Frame"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the framed output tensor.
 
         Args:
@@ -389,8 +389,8 @@ class Frame(OpDef):
         if not shape:
             return ()
 
-        frame_length = int(ensure_int(kwargs.get("frame_length", 1)))
-        frame_step = int(ensure_int(kwargs.get("frame_step", 1)))
+        frame_length = int(coerce_int(kwargs.get("frame_length", 1)))
+        frame_step = int(coerce_int(kwargs.get("frame_step", 1)))
         pad_end = bool(kwargs.get("pad_end", False))
 
         signal_length = shape[-1]
@@ -410,7 +410,7 @@ class OverlapAndAdd(OpDef):
 
     op_name = "OverlapAndAdd"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, **kwargs: OpValue) -> OpValue:
         """Infers the shape of the reconstructed signal output.
 
         Args:
@@ -420,11 +420,11 @@ class OverlapAndAdd(OpDef):
         Returns:
             The output shape of the reconstructed signal.
         """
-        shape = list(a.shape)
+        shape = list(extract_shape(a))
         frame_step = kwargs.get("frame_step", 1)
         if len(shape) >= 2:
             num_frames = shape[-2]
             frame_length = shape[-1]
             shape.pop()
-            shape[-1] = (int(num_frames) - 1) * int(ensure_int(frame_step)) + int(frame_length)
+            shape[-1] = (int(num_frames) - 1) * int(coerce_int(frame_step)) + int(frame_length)
         return tuple(shape)

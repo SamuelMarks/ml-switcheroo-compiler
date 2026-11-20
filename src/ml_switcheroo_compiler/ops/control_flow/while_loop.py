@@ -6,28 +6,45 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 State = typing.TypeVar("State")
 
 
+@typing.overload
 def while_loop(
-    cond_fn: Callable[[State], bool | Tensor],
+    cond_fn: Callable[[Tensor], OpValue],
+    body_fn: Callable[[Tensor], Tensor],
+    init_val: Tensor,
+) -> Tensor: ...
+
+
+@typing.overload
+def while_loop(
+    cond_fn: Callable[[State], OpValue],
     body_fn: Callable[[State], State],
     init_val: State,
-) -> State:
-    """Repeatedly apply body_fn to state while cond_fn evaluates to True.
+) -> State | Tensor: ...
+
+
+def while_loop(
+    cond_fn: Callable[[State], OpValue],
+    body_fn: Callable[[State], State],
+    init_val: State,
+) -> State | Tensor:
+    """Repeatedly apply ``body_fn`` to state while ``cond_fn`` evaluates to True.
 
     Dispatches to eager loop evaluation when eager mode is enabled, or records a
-    Loop / WhileLoop control flow node into the active tracing IR graph.
+    ``Loop`` control flow node into the active tracing IR graph.
 
     Args:
-        cond_fn (Callable[[State], Union[bool, Tensor]]): Predicate callable determining whether to continue iterating.
+        cond_fn (Callable[[State], OpValue]): Predicate callable determining whether to continue iterating.
         body_fn (Callable[[State], State]): Transition callable mapping current state to next state.
-        init_val (State): Initial state value, tuple of values, or Tensor.
+        init_val (State): Initial state value, tuple of values, or ``Tensor``.
 
     Returns:
-        State: Final accumulated state value after loop termination.
+        State | Tensor: Final accumulated state value or traced ``Tensor``.
     """
     import ml_switcheroo_compiler.ops.control_flow as cf
 

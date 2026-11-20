@@ -5,11 +5,13 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_cuda_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
+def test_cuda_load_yaml_dict_string(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_cuda_load_yaml_dict_string.
 
     Args:
@@ -17,28 +19,29 @@ def test_cuda_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
     """
     import os
 
-    from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
 
-    def mock_isdir(path: EagerValue) -> EagerValue:
+    from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
+
+    def mock_isdir(path: BackendArg) -> BackendArg:
         """Test function mock_isdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_isdir`.
+            BackendArg: Computed output value from `mock_isdir`.
         """
         return True
 
-    def mock_listdir(path: EagerValue) -> EagerValue:
+    def mock_listdir(path: BackendArg) -> BackendArg:
         """Test function mock_listdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_listdir`.
+            BackendArg: Computed output value from `mock_listdir`.
         """
         return ["test.yaml"]
 
@@ -57,7 +60,7 @@ def test_cuda_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
             assert gen.config.templates["op2"] == ["not", "string", "or", "dict_with_body"]
 
 
-def test_cuda_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
+def test_cuda_load_fallback_yaml(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_cuda_load_fallback_yaml.
 
     Args:
@@ -65,28 +68,29 @@ def test_cuda_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
     """
     import os
 
-    from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
 
-    def mock_isdir(path: EagerValue) -> EagerValue:
+    from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
+
+    def mock_isdir(path: BackendArg) -> BackendArg:
         """Test function mock_isdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_isdir`.
+            BackendArg: Computed output value from `mock_isdir`.
         """
         return False
 
-    def mock_exists(path: EagerValue) -> EagerValue:
+    def mock_exists(path: BackendArg) -> BackendArg:
         """Test function mock_exists.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_exists`.
+            BackendArg: Computed output value from `mock_exists`.
         """
         return True
 
@@ -103,7 +107,7 @@ def test_cuda_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
             assert gen.config.templates["op3"] == {"body": "test"}
 
 
-def test_cuda_runner_init_ctypes_except(monkeypatch: EagerTensorProtocol) -> None:
+def test_cuda_runner_init_ctypes_except(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_cuda_runner_init_ctypes_except.
 
     Args:
@@ -112,7 +116,7 @@ def test_cuda_runner_init_ctypes_except(monkeypatch: EagerTensorProtocol) -> Non
     from ml_switcheroo_compiler.backends.cuda.cuda import CUDARunner
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None)
-    with patch("ctypes.util.find_library", side_effect=Exception("mocked exception")):
+    with patch("ctypes.util.find_library", side_effect=RuntimeError("mocked exception")):
         runner = CUDARunner()
         assert runner.mode == "ctypes"
 

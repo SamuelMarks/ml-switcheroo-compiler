@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> TensorOrScalar:
+def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> OpValue:
     """Apply mixup to a pair of batches of images.
 
     Args:
@@ -31,7 +31,7 @@ def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None
     return _emit_shape_node("Mixup", [images1, images2], {"alpha": alpha, "seed": seed}, (), images1.dtype)
 
 
-def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> TensorOrScalar:
+def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> OpValue:
     """Apply cutmix to a pair of batches of images.
 
     Args:
@@ -51,3 +51,9 @@ def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | Non
             TensorConfig(extract_shape(backend.array(data)), images1.dtype, images1.device),
         )
     return _emit_shape_node("Cutmix", [images1, images2], {"alpha": alpha, "seed": seed}, (), images1.dtype)
+
+
+__all__ = [
+    "cutmix",
+    "mixup",
+]

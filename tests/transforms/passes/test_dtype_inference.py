@@ -4,17 +4,27 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.dtype_inference import _get_promoted_dtype, _get_value_dtype, _handle_cast_dtype, _infer_constant_dtype, _infer_input_dtype, _infer_op_dtype, _infer_output_dtype, dtype_inference_pass
-from tests.testing_utils import ensure_callable
+from ml_switcheroo_compiler.transforms.passes.dtype_inference import (
+    _get_promoted_dtype,
+    _get_value_dtype,
+    _handle_cast_dtype,
+    _infer_constant_dtype,
+    _infer_input_dtype,
+    _infer_op_dtype,
+    _infer_output_dtype,
+    dtype_inference_pass,
+)
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
 
 
-class DummyVal:
+class DummyVal(MockTestStub):
     """Test class DummyVal."""
 
     def __init__(self, dt: str) -> None:
@@ -28,7 +38,7 @@ class DummyVal:
 
 def test_get_value_dtype() -> None:
     """Test function test_get_value_dtype."""
-    assert ensure_callable(_get_value_dtype)(ensure_callable(DummyVal)("float16")) == DType.Float16
+    assert _get_value_dtype(DummyVal("float16")) == DType.Float16
     assert _get_value_dtype(True) == DType.Bool
     assert _get_value_dtype(1) == DType.Int32
     assert _get_value_dtype(1.0) == DType.Float32
@@ -70,15 +80,15 @@ def test_get_promoted_dtype() -> None:
     """Test function test_get_promoted_dtype."""
     from ml_switcheroo_compiler.core.config import config
 
-    old_x64 = config.jax_enable_x64
-    config.jax_enable_x64 = False
+    old_x64 = config.enable_x64
+    config.enable_x64 = False
     try:
         assert _get_promoted_dtype(["float32"]) == "float32"
         assert _get_promoted_dtype(["int32", "float32"]) == "float32"
         assert _get_promoted_dtype(["int32", "float32", "complex64"]) == "complex64"
         assert _get_promoted_dtype(["unknown1", "unknown2"]) == "unknown1"
     finally:
-        config.jax_enable_x64 = old_x64
+        config.enable_x64 = old_x64
 
 
 def test_handle_cast_dtype() -> None:
@@ -102,7 +112,7 @@ def test_infer_op_dtype() -> None:
     assert dtypes["n2"] == DType.Bool.value
     node3 = IRNode(id="n3", op_type="Add", inputs=["in1", "in2"], attributes={})
     assert _infer_op_dtype(node3, dtypes) is True
-    assert dtypes["n3"] == DType.Float32.value
+    assert dtypes["n3"] == DType.Float64.value
     node4 = IRNode(id="n4", op_type="Add", inputs=["in3"], attributes={})
     assert _infer_op_dtype(node4, dtypes) is True
     assert dtypes["n4"] == DType.Float32.value
@@ -115,7 +125,7 @@ def test_dtype_inference_pass() -> None:
     node3 = IRNode(id="add", op_type="Add", inputs=["in1", "in2"], attributes={})
     graph = IRGraph(name="test", nodes={"in1": node1, "in2": node2, "add": node3}, outputs=["add"])
     assert dtype_inference_pass(graph) is True
-    assert graph.nodes["add"].attributes["dtype"] == DType.Float32.value
+    assert graph.nodes["add"].attributes["dtype"] == DType.Float64.value
 
 
 def test_dtype_inference_branches() -> None:

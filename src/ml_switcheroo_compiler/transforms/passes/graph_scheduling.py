@@ -9,7 +9,7 @@ import yaml
 from ml_switcheroo_compiler.core.shape import SymbolicDim
 from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
 
 
 @typing.runtime_checkable
@@ -555,14 +555,16 @@ def _build_adjacency_lists(graph: IRGraph) -> tuple[dict[str, list[str]], dict[s
     return consumers, remaining_uses, in_degree
 
 
-def _score_node(node_id: str, graph: IRGraph, cost_model: CostModel, remaining_uses: dict[str, int], last_was_compute_heavy: bool) -> float:
+def _score_node(
+    node_id: str, graph: IRGraph, cost_model: CostModel, remaining_uses: dict[str, int], last_was_compute_heavy: bool
+) -> float:
     """Score a node for scheduling.
 
     Args:
         node_id (str): The node ID.
         graph (IRGraph): The graph.
         cost_model (CostModel): The cost model.
-        remaining_uses (dict): Remaining uses.
+        remaining_uses (dict[str, int]): Remaining uses.
         last_was_compute_heavy (bool): True if previous node was compute heavy.
 
     Returns:
@@ -585,14 +587,20 @@ def _score_node(node_id: str, graph: IRGraph, cost_model: CostModel, remaining_u
     return float(net_mem + interleave_penalty)
 
 
-def _select_best_node(ready_nodes: list[str], graph: IRGraph, cost_model: CostModel, remaining_uses: dict[str, int], last_was_compute_heavy: bool) -> tuple[int, str]:
+def _select_best_node(
+    ready_nodes: list[str],
+    graph: IRGraph,
+    cost_model: CostModel,
+    remaining_uses: dict[str, int],
+    last_was_compute_heavy: bool,
+) -> tuple[int, str]:
     """Select the best node.
 
     Args:
         ready_nodes (list[str]): List of ready nodes.
         graph (IRGraph): The graph.
         cost_model (CostModel): The cost model.
-        remaining_uses (dict): Remaining uses.
+        remaining_uses (dict[str, int]): Remaining uses.
         last_was_compute_heavy (bool): True if previous node was compute heavy.
 
     Returns:
@@ -611,16 +619,23 @@ def _select_best_node(ready_nodes: list[str], graph: IRGraph, cost_model: CostMo
     return best_idx, best_node_id
 
 
-def _update_degrees_and_uses(node: IRNode, best_node_id: str, consumers: dict[str, list[str]], remaining_uses: dict[str, int], in_degree: dict[str, int], ready_nodes: list[str]) -> None:
+def _update_degrees_and_uses(
+    node: IRNode,
+    best_node_id: str,
+    consumers: dict[str, list[str]],
+    remaining_uses: dict[str, int],
+    in_degree: dict[str, int],
+    ready_nodes: list[str],
+) -> None:
     """Update adjacency state after scheduling.
 
     Args:
         node (IRNode): The node.
         best_node_id (str): The node ID.
-        consumers (dict): Consumers map.
-        remaining_uses (dict): Remaining uses map.
-        in_degree (dict): In-degree map.
-        ready_nodes (list): Ready nodes list.
+        consumers (dict[str, list[str]]): Consumers map.
+        remaining_uses (dict[str, int]): Remaining uses map.
+        in_degree (dict[str, int]): In-degree map.
+        ready_nodes (list[str]): Ready nodes list.
     """
     for inp in node.inputs:
         if inp in remaining_uses:
@@ -638,7 +653,7 @@ class GraphSchedulingPass:
         """Initialize GraphSchedulingPass.
 
         Args:
-            cost_model (CostModel, optional): Cost model instance.
+            cost_model (CostModel | None): Cost model instance.
         """
         self.cost_model: CostModel = cost_model if cost_model is not None else DefaultCostModel()
 
@@ -680,7 +695,9 @@ class GraphSchedulingPass:
         scheduled_order: list[str] = []
         last_was_compute_heavy = False
         while ready_nodes:
-            best_idx, best_node_id = _select_best_node(ready_nodes, graph, self.cost_model, remaining_uses, last_was_compute_heavy)
+            best_idx, best_node_id = _select_best_node(
+                ready_nodes, graph, self.cost_model, remaining_uses, last_was_compute_heavy
+            )
             ready_nodes.pop(best_idx)
             scheduled_order.append(best_node_id)
             node = graph.nodes[best_node_id]
@@ -714,7 +731,11 @@ class GraphSchedulingPass:
         for nid in scheduled_order:
             node = graph.nodes[nid]
             if node.stream is None:
-                parent_streams: set[str] = {str(graph.nodes[inp].stream) for inp in node.inputs if inp in graph.nodes and graph.nodes[inp].stream is not None}
+                parent_streams: set[str] = {
+                    str(graph.nodes[inp].stream)
+                    for inp in node.inputs
+                    if inp in graph.nodes and graph.nodes[inp].stream is not None
+                }
                 if len(parent_streams) == 1:
                     node.stream = next(iter(parent_streams))
                     stream_modified = True

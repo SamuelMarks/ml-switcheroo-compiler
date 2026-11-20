@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+import pytest
+
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -25,19 +27,18 @@ def test_keras_np_serialization() -> None:
 
         pass
 
-    class FakeModel:
+    class FakeModel(MockTestStub):
         """Test class FakeModel."""
 
         def __init__(self) -> None:
             """Test function __init__."""
             self.layers = [FakeLayer()]
 
-    ensure_callable(save_model)(ensure_callable(FakeModel)(), test_file)
+    save_model(FakeModel(), test_file)
     model = load_model(test_file)
-    assert ensure_eager_tensor(model).config is not None
+    assert model.config is not None
     if os.path.exists(test_file):
         os.remove(test_file)
-    import pytest
 
     with pytest.raises(FileNotFoundError):
         load_model("nonexistent.keras")
@@ -58,12 +59,12 @@ def test_keras_file_editor() -> None:
     import os
     import zipfile
 
-    from ml_switcheroo_compiler.serialization import KerasFileEditor
+    from ml_switcheroo_compiler.serialization import ArchiveFileEditor
 
     test_file = "test_editor.keras"
     with zipfile.ZipFile(test_file, "w") as zf:
         zf.writestr("config.json", "{}")
-    ed = KerasFileEditor(test_file)
+    ed = ArchiveFileEditor(test_file)
     assert ed.filepath == test_file
     if os.path.exists(test_file):
         os.remove(test_file)

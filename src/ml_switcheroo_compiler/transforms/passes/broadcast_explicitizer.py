@@ -7,11 +7,10 @@ from collections.abc import (
     Sequence,  # noqa: F401
 )
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.shape import SymbolicDim, broadcast_shapes
-from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
@@ -23,7 +22,7 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     Args:
         graph (IRGraph): Input `graph` argument (graph).
         input_id (str): Input `input_id` argument (input id).
-        target_shape (tuple): Input `target_shape` argument (target shape).
+        target_shape (tuple[int, ...]): Input `target_shape` argument (target shape).
 
     Returns:
         str: Computed `str` output.
@@ -72,7 +71,17 @@ def _needs_broadcast(
         return None
     try:
         return broadcast_shapes(_to_int_shape(shape1), _to_int_shape(shape2))
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return None
 
 

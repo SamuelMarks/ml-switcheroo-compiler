@@ -10,17 +10,18 @@ import os
 import struct
 import typing
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_bytes,
-    ensure_callable,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_int,
-    ensure_int_list,
-    ensure_shape,
-    ensure_str,
+    BackendArg,
+    coerce_bytes,
+    coerce_int,
+    coerce_int_list,
+    coerce_operand_list,
+    coerce_shape,
+    coerce_str,
+    require_callable,
 )
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
@@ -29,11 +30,10 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
     load_hardware_templates,
     query_optimal_launch_geometry,
 )
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 @typing.runtime_checkable
@@ -53,14 +53,14 @@ class TensorLike(typing.Protocol):
 ArrayBufferType = typing.Union[TensorLike, bytes, memoryview, list[float], "tuple[float, ...]"]
 
 
-def _as_eager_dict(val: EagerValue) -> dict[str, EagerValue]:
-    """Narrow candidate value to `dict[str, EagerValue]`.
+def _as_eager_dict(val: BackendArg) -> dict[str, BackendArg]:
+    """Narrow candidate value to `dict[str, BackendArg]`.
 
     Args:
-        val (EagerValue): Candidate dictionary.
+        val (BackendArg): Candidate dictionary.
 
     Returns:
-        dict[str, EagerValue]: Dictionary or empty dict.
+        dict[str, BackendArg]: Dictionary or empty dict.
     """
     return val if isinstance(val, dict) else {}
 
@@ -76,7 +76,11 @@ def _calculate_node_bytes(node: IRNode | None) -> tuple[int, int]:
     """
     if node is None:
         return 1024, 4096
-    shape = ensure_shape(get_backend_member(node, "shape_metadata", None)) if get_backend_member(node, "shape_metadata", None) else None
+    shape = (
+        coerce_shape(adapt_backend_module(node).get_symbol("shape_metadata", None))
+        if adapt_backend_module(node).get_symbol("shape_metadata", None)
+        else None
+    )
     if shape:
         num_elements = 1
         for d in shape:
@@ -84,7 +88,9 @@ def _calculate_node_bytes(node: IRNode | None) -> tuple[int, int]:
     else:
         num_elements = 1024
     bytes_per_elem = 4
-    dtype = node.attributes.get("dtype", "float32") if has_backend_member(node, "attributes") else "float32"
+    dtype = (
+        node.attributes.get("dtype", "float32") if adapt_backend_module(node).has_symbol("attributes") else "float32"
+    )
     if dtype in ("float64", "int64", "double"):
         bytes_per_elem = 8
     elif dtype in ("float16", "int16", "bfloat16"):
@@ -109,12 +115,12 @@ def _resolve_metal_grid_sizes(
     Returns:
         tuple[str, str, str]: (grid_x, grid_y, grid_z).
     """
-    op_type_lower = str(get_backend_member(node, "op_type", "")).lower()
+    op_type_lower = str(adapt_backend_module(node).get_symbol("op_type", "")).lower()
     if op_type_lower in ("matmul", "dot"):
         in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
         in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-        in0_shape = ensure_shape(get_backend_member(in0_node, "shape_metadata", None) or (1, 1))
-        in1_shape = ensure_shape(get_backend_member(in1_node, "shape_metadata", None) or (1, 1))
+        in0_shape = coerce_shape(adapt_backend_module(in0_node).get_symbol("shape_metadata", None) or (1, 1))
+        in1_shape = coerce_shape(adapt_backend_module(in1_node).get_symbol("shape_metadata", None) or (1, 1))
         m_dim = in0_shape[-2] if len(in0_shape) >= 2 else 1
         n_dim = in1_shape[-1] if len(in1_shape) >= 1 else 1
         return str(n_dim), str(m_dim), "1"
@@ -122,8 +128,8 @@ def _resolve_metal_grid_sizes(
     if op_type_lower == "batchmatmul":
         in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
         in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
-        in0_shape = ensure_shape(get_backend_member(in0_node, "shape_metadata", None) or (1, 1, 1))
-        in1_shape = ensure_shape(get_backend_member(in1_node, "shape_metadata", None) or (1, 1, 1))
+        in0_shape = coerce_shape(adapt_backend_module(in0_node).get_symbol("shape_metadata", None) or (1, 1, 1))
+        in1_shape = coerce_shape(adapt_backend_module(in1_node).get_symbol("shape_metadata", None) or (1, 1, 1))
         b_sz = in0_shape[0] if len(in0_shape) > 2 else 1
         m_dim = in0_shape[-2] if len(in0_shape) >= 2 else 1
         n_dim = in1_shape[-1] if len(in1_shape) >= 1 else 1
@@ -131,8 +137,8 @@ def _resolve_metal_grid_sizes(
 
     if op_type_lower == "conv2d":
         in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
-        in0_shape = ensure_shape(get_backend_member(in0_node, "shape_metadata", None) or (1, 1, 1, 1))
-        out_shape = ensure_shape(get_backend_member(node, "shape_metadata", None) or (1, 1, 1, 1))
+        in0_shape = coerce_shape(adapt_backend_module(in0_node).get_symbol("shape_metadata", None) or (1, 1, 1, 1))
+        out_shape = coerce_shape(adapt_backend_module(node).get_symbol("shape_metadata", None) or (1, 1, 1, 1))
         n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
         c_out = out_shape[1] if len(out_shape) > 1 else 1
         h_out = out_shape[2] if len(out_shape) > 2 else 1
@@ -142,12 +148,12 @@ def _resolve_metal_grid_sizes(
     return str(num_elements), "1", "1"
 
 
-def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -> dict[str, bytes]:
+def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[BackendArg, ...]) -> dict[str, bytes]:
     """Prepare raw byte buffers for Metal execution.
 
     Args:
         graph (IRGraph): Graph being executed.
-        args (tuple[object, ...]): Input positional arguments.
+        args (tuple[BackendArg, ...]): Input positional arguments.
 
     Returns:
         dict[str, bytes]: Mapping of input names to byte buffers.
@@ -155,30 +161,38 @@ def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -
     input_buffers: dict[str, bytes] = {}
     for idx, arg in enumerate(args):
         input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if has_backend_member(arg, "tobytes"):
-            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(arg, "tobytes"))())
+        if adapt_backend_module(arg).has_symbol("tobytes"):
+            input_buffers[input_name] = coerce_bytes(adapt_backend_module(arg).require_op("tobytes")())
         elif isinstance(arg, (bytes, bytearray, memoryview)):
             input_buffers[input_name] = bytes(arg)
-        elif has_backend_member(arg, "data") and has_backend_member(get_backend_member(arg, "data"), "tobytes"):
-            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(get_backend_member(arg, "data"), "tobytes"))())
+        elif adapt_backend_module(arg).has_symbol("data") and adapt_backend_module(
+            adapt_backend_module(arg).require_symbol("data")
+        ).has_symbol("tobytes"):
+            input_buffers[input_name] = coerce_bytes(
+                adapt_backend_module(adapt_backend_module(arg).require_symbol("data")).require_op("tobytes")()
+            )
         else:
-            input_buffers[input_name] = ensure_bytes(arg)
+            input_buffers[input_name] = coerce_bytes(arg)
     return input_buffers
 
 
-def _evaluate_metal_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> EagerValue:
+def _evaluate_metal_fallback(graph: IRGraph, args: tuple[BackendArg, ...]) -> BackendArg:
     """Evaluate graph using reference interpreter fallback.
 
     Args:
         graph (IRGraph): Computation graph to evaluate.
-        args (tuple[object, ...]): Input positional arguments.
+        args (tuple[BackendArg, ...]): Input positional arguments.
 
     Returns:
-        EagerValue: Resulting tensor or tuple of tensors.
+        BackendArg: Resulting tensor or tuple of tensors.
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: get_backend_member(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    feed_dict: dict[str, BackendArg] = {
+        graph.inputs[i]: adapt_backend_module(arg).get_symbol("data", arg)
+        for i, arg in enumerate(args)
+        if i < len(graph.inputs)
+    }
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
@@ -212,44 +226,33 @@ METAL_SYNTH_MATH_MAP: dict[str, str] = {
 }
 
 
+@typing.runtime_checkable
 class _MetalDeviceFuncProtocol(typing.Protocol):
     """Protocol for ctypes Metal device creation function."""
 
-    restype: EagerValue
+    restype: BackendArg
 
-    def __call__(self) -> EagerValue:
+    def __call__(self) -> BackendArg:
         """Invoke MTLCreateSystemDefaultDevice.
 
         Returns:
-            EagerValue: Device pointer or None.
+            BackendArg: Device pointer or None.
         """
         ...
 
 
-def _as_metal_dev_fn(val: EagerValue) -> _MetalDeviceFuncProtocol:
+def _as_metal_dev_fn(val: BackendArg) -> _MetalDeviceFuncProtocol:
     """Narrow candidate value to `_MetalDeviceFuncProtocol`.
 
     Args:
-        val (EagerValue): Candidate function object.
+        val (BackendArg): Candidate function object.
 
     Returns:
         _MetalDeviceFuncProtocol: Narrowed function object.
     """
-    raw: EagerValue = val
-
-    def _guard(cand: EagerValue) -> typing.TypeGuard[_MetalDeviceFuncProtocol]:
-        """Narrow candidate to `_MetalDeviceFuncProtocol`.
-
-        Args:
-            cand (EagerValue): Candidate function.
-
-        Returns:
-            bool: True when non-None.
-        """
-        return cand is not None
-
-    assert _guard(raw)
-    return raw
+    cand: BackendArg | _MetalDeviceFuncProtocol = val
+    assert isinstance(cand, _MetalDeviceFuncProtocol)
+    return cand
 
 
 def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: str | None = None) -> str:
@@ -265,7 +268,11 @@ def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: str | 
     """
     if len(inps) <= 1:
         expr = scalar_expr or METAL_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id])")
-        helper = f"inline float {clean_op}_op(float a) {{ return a; }}\n" if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr else ""
+        helper = (
+            f"inline float {clean_op}_op(float a) {{ return a; }}\n"
+            if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr
+            else ""
+        )
         return (
             "#include <metal_stdlib>\n"
             "using namespace metal;\n"
@@ -282,7 +289,11 @@ def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: str | 
         )
     if len(inps) == 2:
         expr = scalar_expr or METAL_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id], B[id])")
-        helper = f"inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n" if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr else ""
+        helper = (
+            f"inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n"
+            if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr
+            else ""
+        )
         return (
             "#include <metal_stdlib>\n"
             "using namespace metal;\n"
@@ -302,7 +313,11 @@ def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: str | 
     call_args = ", ".join([f"in_{i}[id]" for i in range(len(inps))])
     fn_params = ", ".join([f"float in{i}" for i in range(len(inps))])
     expr = scalar_expr or METAL_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op({call_args})")
-    helper = f"inline float {clean_op}_op({fn_params}) {{ return in0; }}\n" if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr else ""
+    helper = (
+        f"inline float {clean_op}_op({fn_params}) {{ return in0; }}\n"
+        if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr
+        else ""
+    )
     return (
         "#include <metal_stdlib>\n"
         "using namespace metal;\n"
@@ -354,7 +369,7 @@ class MetalCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph inputs.
             msl (list[str]): Output MSL source lines.
         """
-        for inp in [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []))]:
+        for inp in [str(x) for x in coerce_operand_list(adapt_backend_module(node).get_symbol("inputs", []))]:
             if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
                 buf_to_free = node_buffers.get(inp)
                 if buf_to_free:
@@ -395,7 +410,13 @@ class MetalCodeGenerator(BaseGenerator):
         msl.append(f"    encoder.dispatchThreads_threadsPerThreadgroup_(grid_size_{node_idx}, tg_size_{node_idx})")
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, msl)
 
-    def _ensure_template(self, node: IRNode, node_idx: int) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
+    def _ensure_template(
+        self,
+        node: IRNode,
+        node_idx: int,
+    ) -> (
+        HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | int | float | None
+    ):
         """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
 
         Args:
@@ -403,9 +424,13 @@ class MetalCodeGenerator(BaseGenerator):
             node_idx (int): Current node index.
 
         Returns:
-            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
+            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str],
+                str]]: Existing or synthesized template.
+
+        Raises:
+            BackendNotSupportedError: If `_ensure_template` encounters an unsupported operation or missing template.
         """
-        op_type = str(get_backend_member(node, "op_type", ""))
+        op_type = str(adapt_backend_module(node).get_symbol("op_type", ""))
         if op_type.lower() in ("input", "output", "fusedelementwise"):
             return None
         if "unsupported" in op_type.lower():
@@ -413,13 +438,15 @@ class MetalCodeGenerator(BaseGenerator):
         tpl = self.config.templates.get(op_type.lower())
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
-            inps = [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []) or [])]
-            raw_se = _as_eager_dict(get_backend_member(node, "attributes", {})).get("scalar_expr")
+            inps = [str(x) for x in coerce_operand_list(adapt_backend_module(node).get_symbol("inputs", []) or [])]
+            raw_se = _as_eager_dict(adapt_backend_module(node).get_symbol("attributes", {})).get("scalar_expr")
             scalar_expr = str(raw_se) if raw_se is not None else None
             body = _synthesize_metal_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
-                grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),
+                grid_calc=GridDimensionConfig(
+                    x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"
+                ),
                 workgroup_size=[256, 1, 1],
             )
             self.config.templates[op_type.lower()] = tpl
@@ -446,7 +473,7 @@ class MetalCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             msl (list[str]): Output MSL source lines.
         """
-        op_type = str(get_backend_member(node, "op_type", ""))
+        op_type = str(adapt_backend_module(node).get_symbol("op_type", ""))
         if op_type.lower() == "fusedelementwise":
             self._emit_fused_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, msl)
             return
@@ -459,7 +486,11 @@ class MetalCodeGenerator(BaseGenerator):
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         msl.append(f"    {out_name} = device.newBufferWithLength_options_({bytes_alloc}, 0)")
-        wg: list[int] = ensure_int_list(ensure_callable(get_backend_member(tpl, "get"))("workgroup_size", [1, 1, 1])) or [1, 1, 1]
+        wg: list[int] = coerce_int_list(adapt_backend_module(tpl).require_op("get")("workgroup_size", [1, 1, 1])) or [
+            1,
+            1,
+            1,
+        ]
 
         gx, gy, gz = _resolve_metal_grid_sizes(node, num_elements, self.graph)
         msl.append(f"    grid_size_{node_idx} = MTLSize({gx}, {gy}, {gz})")
@@ -478,8 +509,10 @@ class MetalCodeGenerator(BaseGenerator):
         Args:
             msl (list[str]): MSL string lines to append to.
         """
-        for node_idx, node in enumerate(self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ()):
-            op_type: str = str(get_backend_member(node, "op_type", ""))
+        for node_idx, node in enumerate(
+            self.graph.nodes.values() if adapt_backend_module(self.graph).get_symbol("nodes", None) else ()
+        ):
+            op_type: str = str(adapt_backend_module(node).get_symbol("op_type", ""))
             if op_type.lower() == "fusedelementwise":
                 scalar_expr = str(node.attributes.get("scalar_expr", "in0"))
                 in_params = ", ".join([f"device const float* in_{k} [[buffer({k})]]" for k in range(len(node.inputs))])
@@ -497,7 +530,9 @@ class MetalCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    body: str = ensure_str(ensure_callable(get_backend_member(tpl, "get"))("body", "")).replace("#include <metal_stdlib>\nusing namespace metal;", "")
+                    body: str = coerce_str(adapt_backend_module(tpl).require_op("get")("body", "")).replace(
+                        "#include <metal_stdlib>\nusing namespace metal;", ""
+                    )
                     msl.append(body)
 
     def generate_msl(self) -> str:
@@ -511,7 +546,9 @@ class MetalCodeGenerator(BaseGenerator):
         msl.append("using namespace metal;")
         msl.append("")
         msl.append("// Dynamic N-dimensional coordinate-to-linear-offset index calculation")
-        msl.append("inline int coords_to_offset_nd(int linear_idx, constant int* shape, constant int* strides, int ndim) {")
+        msl.append(
+            "inline int coords_to_offset_nd(int linear_idx, constant int* shape, constant int* strides, int ndim) {"
+        )
         msl.append("    int offset = 0;")
         msl.append("    int rem = linear_idx;")
         msl.append("    for (int d = ndim - 1; d >= 0; --d) {")
@@ -543,14 +580,17 @@ class MetalCodeGenerator(BaseGenerator):
             "",
         ]
 
-        node_buffers: dict[str, str] = {str(inp_name): f"input_buffers[{i}]" for i, inp_name in enumerate(ensure_eager_list(get_backend_member(self.graph, "inputs", [])))}
+        node_buffers: dict[str, str] = {
+            str(inp_name): f"input_buffers[{i}]"
+            for i, inp_name in enumerate(coerce_operand_list(adapt_backend_module(self.graph).get_symbol("inputs", [])))
+        }
         last_consumer = compute_liveness(self.graph)
-        outputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "outputs", []))}
-        inputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "inputs", []))}
+        outputs_set = {str(x) for x in coerce_operand_list(adapt_backend_module(self.graph).get_symbol("outputs", []))}
+        inputs_set = {str(x) for x in coerce_operand_list(adapt_backend_module(self.graph).get_symbol("inputs", []))}
 
         node_idx: int = 0
-        for node in self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ():
-            if get_backend_member(node, "op_type", "") == "Input":
+        for node in self.graph.nodes.values() if adapt_backend_module(self.graph).get_symbol("nodes", None) else ():
+            if adapt_backend_module(node).get_symbol("op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, dispatch_lines)
             node_idx += 1
@@ -561,15 +601,15 @@ class MetalCodeGenerator(BaseGenerator):
 
         return "\n".join(dispatch_lines)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into ahead-of-time Apple Metal executable artifact.
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options such as optimization levels and metallib targets.
+            **kwargs (BackendArg): Compiler options such as optimization levels and metallib targets.
 
         Returns:
-            EagerValue: Executable compiled artifact.
+            BackendArg: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
         from ml_switcheroo_compiler.backends.hardware_compilers import MetalCompiler
@@ -579,24 +619,26 @@ class MetalCodeGenerator(BaseGenerator):
         compile_opts = kwargs.get("compile_options", None)
         comp_res = compiler.compile(metal_source, options=compile_opts if isinstance(compile_opts, list) else None)
 
-        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
+        def runner(*args: BackendArg, **runner_kwargs: BackendArg) -> BackendArg:
             """Execute compiled Metal artifact with runtime dispatch or fallback.
 
             Args:
-                *args (EagerValue): Input tensor or buffer arguments.
-                **runner_kwargs (EagerValue): Optional execution options.
+                *args (BackendArg): Input tensor or buffer arguments.
+                **runner_kwargs (BackendArg): Optional execution options.
 
             Returns:
-                EagerValue: Output tensor or tuple of output tensors.
+                BackendArg: Output tensor or tuple of output tensors.
             """
             if MetalRunner.is_available():
                 try:
                     runner_inst = MetalRunner()
                     if runner_inst.device is not None:
                         input_buffers = _prepare_metal_input_buffers(graph, args)
-                        out_dict = _as_eager_dict(ensure_callable(get_backend_member(runner_inst, "execute_graph"))(graph, input_buffers))
+                        out_dict = _as_eager_dict(
+                            adapt_backend_module(runner_inst).require_op("execute_graph")(graph, input_buffers)
+                        )
                         if len(graph.outputs) == 1:
-                            return ensure_eager_tensor(out_dict.get(graph.outputs[0]))
+                            return out_dict.get(graph.outputs[0])
                         return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -620,7 +662,7 @@ class MetalRunner:
             import Metal
 
             self.device = Metal.MTLCreateSystemDefaultDevice()
-        except Exception:
+        except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError):
             self.device = None
 
         self.objc: ctypes.CDLL | None = None
@@ -632,7 +674,7 @@ class MetalRunner:
             metal_path = ctypes.util.find_library("Metal")
             if metal_path:
                 self.metal = ctypes.cdll.LoadLibrary(metal_path)
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             self.objc = None
             self.metal = None
 
@@ -649,19 +691,19 @@ class MetalRunner:
             device = Metal.MTLCreateSystemDefaultDevice()
             if device is not None:
                 return True
-        except Exception:
+        except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
         try:
             metal_path = ctypes.util.find_library("Metal") or "/System/Library/Frameworks/Metal.framework/Metal"
             metal_lib = ctypes.cdll.LoadLibrary(metal_path)
-            func = get_backend_member(metal_lib, "MTLCreateSystemDefaultDevice", None)
+            func = adapt_backend_module(metal_lib).get_symbol("MTLCreateSystemDefaultDevice", None)
             if func is not None:
                 c_fn = _as_metal_dev_fn(func)
                 c_fn.restype = ctypes.c_void_p
                 dev = c_fn()
                 return dev is not None
-        except Exception:
+        except (OSError, AttributeError, TypeError, ValueError, RuntimeError, ctypes.ArgumentError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return False
 
@@ -679,8 +721,11 @@ class MetalRunner:
             msl_source (str): Metal Shading Language source.
             entry_point (str): Kernel entry point.
             workgroup_size (list[int]): [x, y, z] threadgroup sizing.
-            buffers (Optional[list[Optional[ctypes.c_void_p]]]): Bound buffer pointers.
+            buffers (list[ctypes.c_void_p | None] | None): Bound buffer pointers.
             grid_size (Optional[list[int]]): Total grid dimensions.
+
+        Raises:
+            RuntimeError: If execution or validation fails in `compile_and_dispatch`.
         """
         if self.device is None:
             return
@@ -710,7 +755,7 @@ class MetalRunner:
 
         if buffers:
             for idx, buf_ptr in enumerate(buffers):
-                if buf_ptr is not None and get_backend_member(buf_ptr, "value", None):
+                if buf_ptr is not None and adapt_backend_module(buf_ptr).get_symbol("value", None):
                     metal_buf = self.device.newBufferWithBytesNoCopy_length_options_deallocator_(
                         buf_ptr.value,
                         4096,
@@ -740,11 +785,13 @@ class MetalRunner:
             Optional[ctypes.c_void_p]: Pointer to buffer.
         """
         if self.device is not None:
-            if has_backend_member(self.device, "newBufferWithLength_options_"):
+            if adapt_backend_module(self.device).has_symbol("newBufferWithLength_options_"):
                 buf = self.device.newBufferWithLength_options_(size, 0)
-                if buf is not None and has_backend_member(buf, "contents"):
+                if buf is not None and adapt_backend_module(buf).has_symbol("contents"):
                     return ctypes.c_void_p(int(buf.contents()))
-            elif self.objc is not None and (isinstance(self.device, int) or get_backend_member(self.device, "value", None)):
+            elif self.objc is not None and (
+                isinstance(self.device, int) or adapt_backend_module(self.device).get_symbol("value", None)
+            ):
                 dev_ptr = self.device if isinstance(self.device, int) else self.device.value
                 sel_reg = self.objc.sel_registerName
                 sel_reg.restype = ctypes.c_void_p
@@ -761,7 +808,7 @@ class MetalRunner:
                     contents_ptr = msg_send_contents(buf_ptr, sel_contents)
                     return ctypes.c_void_p(contents_ptr)
         if self.metal is not None and self.objc is not None:
-            func = get_backend_member(self.metal, "MTLCreateSystemDefaultDevice", None)
+            func = adapt_backend_module(self.metal).get_symbol("MTLCreateSystemDefaultDevice", None)
             if func is not None:
                 c_fn = _as_metal_dev_fn(func)
                 c_fn.restype = ctypes.c_void_p
@@ -828,6 +875,9 @@ class MetalRunner:
 
         Returns:
             ArrayBufferType: Evaluated result buffer as array.
+
+        Raises:
+            RuntimeError: If execution or validation fails in `execute_kernel`.
         """
         import Metal
 
@@ -868,7 +918,7 @@ class MetalRunner:
             encoder.setBuffer_offset_atIndex_(buf, 0, i)
 
         first_in = inputs[0] if inputs else None
-        out_shape = ensure_shape(get_backend_member(first_in, "shape", (1,)))
+        out_shape = coerce_shape(adapt_backend_module(first_in).get_symbol("shape", (1,)))
         num_elements = 1
         for dim_val in out_shape:
             num_elements *= int(dim_val)
@@ -886,16 +936,20 @@ class MetalRunner:
         cmd_buf.waitUntilCompleted()
 
         out_ptr = out_buf.contents()
-        addr = ensure_int(get_backend_member(out_ptr, "value", out_ptr)) if isinstance(out_ptr, int) or has_backend_member(out_ptr, "value") else ctypes.addressof(out_ptr.contents)
+        addr = (
+            coerce_int(adapt_backend_module(out_ptr).get_symbol("value", out_ptr))
+            if isinstance(out_ptr, int) or adapt_backend_module(out_ptr).has_symbol("value")
+            else ctypes.addressof(out_ptr.contents)
+        )
         c_floats = (ctypes.c_float * num_elements).from_address(addr)
         return [float(c_floats[idx]) for idx in range(num_elements)]
 
     @staticmethod
-    def _to_float32_bytes(data: EagerValue) -> bytes:
+    def _to_float32_bytes(data: BackendArg) -> bytes:
         """Convert an array, sequence, or byte buffer into contiguous float32 bytes.
 
         Args:
-            data (EagerValue): Input array, sequence, or byte buffer.
+            data (BackendArg): Input array, sequence, or byte buffer.
 
         Returns:
             bytes: Contiguous float32 byte representation.
@@ -905,9 +959,11 @@ class MetalRunner:
         if isinstance(data, (list, tuple)):
             float_arr = (ctypes.c_float * len(data))(*(float(x) for x in data))
             return bytes(float_arr)
-        return ensure_bytes(ensure_callable(get_backend_member(ensure_callable(get_backend_member(data, "astype"))("float32"), "tobytes"))())
+        return coerce_bytes(
+            adapt_backend_module(adapt_backend_module(data).require_op("astype")("float32")).require_op("tobytes")()
+        )
 
-    def _prepare_device_buffers(self, inputs: dict[str, ArrayBufferType]) -> dict[str, EagerValue]:
+    def _prepare_device_buffers(self, inputs: dict[str, ArrayBufferType]) -> dict[str, BackendArg]:
         """Allocate and populate input Metal buffers from host inputs.
 
         Args:
@@ -918,7 +974,7 @@ class MetalRunner:
         """
         import Metal
 
-        device_buffers: dict[str, EagerValue] = {}
+        device_buffers: dict[str, BackendArg] = {}
         for inp_name, data in inputs.items():
             raw_bytes = self._to_float32_bytes(data)
             buf = self.device.newBufferWithBytes_length_options_(
@@ -933,25 +989,27 @@ class MetalRunner:
         self,
         node: IRNode,
         node_idx: int,
-        library: EagerValue,
-        encoder: EagerValue,
-        device_buffers: dict[str, EagerValue],
+        library: BackendArg,
+        encoder: BackendArg,
+        device_buffers: dict[str, BackendArg],
     ) -> None:
         """Dispatch a single compute node on Metal encoder.
 
         Args:
             node (IRNode): IR node.
             node_idx (int): Current node index.
-            library (EagerValue): MTLLibrary instance.
-            encoder (EagerValue): Compute command encoder.
-            device_buffers (dict[str, object]): Buffer map.
+            library (BackendArg): MTLLibrary instance.
+            encoder (BackendArg): Compute command encoder.
+            device_buffers (dict[str, BackendArg]): Buffer map.
         """
         import Metal
 
-        op_type = str(get_backend_member(node, "op_type", ""))
-        func_name = f"fused_elementwise_{node_idx}" if op_type.lower() == "fusedelementwise" else f"kernel_{op_type.lower()}"
-        fn_maker = get_backend_member(library, "newFunctionWithName_", None)
-        func: EagerValue = ensure_callable(fn_maker)(func_name) if fn_maker is not None else None
+        op_type = str(adapt_backend_module(node).get_symbol("op_type", ""))
+        func_name = (
+            f"fused_elementwise_{node_idx}" if op_type.lower() == "fusedelementwise" else f"kernel_{op_type.lower()}"
+        )
+        fn_maker = adapt_backend_module(library).get_symbol("newFunctionWithName_", None)
+        func: BackendArg = require_callable(fn_maker)(func_name) if fn_maker is not None else None
         if func is None:
             return
 
@@ -959,22 +1017,26 @@ class MetalRunner:
         if pipeline_state is None:
             return
 
-        ensure_callable(get_backend_member(encoder, "setComputePipelineState_"))(pipeline_state)
+        adapt_backend_module(encoder).require_op("setComputePipelineState_")(pipeline_state)
         for in_i, inp in enumerate(node.inputs):
             b = device_buffers.get(inp)
             if b is not None:
-                ensure_callable(get_backend_member(encoder, "setBuffer_offset_atIndex_"))(b, 0, in_i)
+                adapt_backend_module(encoder).require_op("setBuffer_offset_atIndex_")(b, 0, in_i)
         elem_count, byte_size = _calculate_node_bytes(node)
         out_buf = self.device.newBufferWithLength_options_(byte_size, Metal.MTLResourceStorageModeShared)
-        ensure_callable(get_backend_member(encoder, "setBuffer_offset_atIndex_"))(out_buf, 0, len(node.inputs))
+        adapt_backend_module(encoder).require_op("setBuffer_offset_atIndex_")(out_buf, 0, len(node.inputs))
         device_buffers[node.id] = out_buf
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
-            ensure_shape(get_backend_member(node, "shape_metadata", None) or (elem_count,)),
+            coerce_shape(adapt_backend_module(node).get_symbol("shape_metadata", None) or (elem_count,)),
         )
-        threads_per_grid = Metal.MTLSize(grid_cfg[0] * block_cfg[0], grid_cfg[1] * block_cfg[1], grid_cfg[2] * block_cfg[2])
+        threads_per_grid = Metal.MTLSize(
+            grid_cfg[0] * block_cfg[0], grid_cfg[1] * block_cfg[1], grid_cfg[2] * block_cfg[2]
+        )
         threads_per_group = Metal.MTLSize(block_cfg[0], block_cfg[1], block_cfg[2])
-        ensure_callable(get_backend_member(encoder, "dispatchThreads_threadsPerThreadgroup_"))(threads_per_grid, threads_per_group)
+        adapt_backend_module(encoder).require_op("dispatchThreads_threadsPerThreadgroup_")(
+            threads_per_grid, threads_per_group
+        )
 
     def execute_graph(
         self,
@@ -1010,8 +1072,8 @@ class MetalRunner:
         encoder = cmd_buf.computeCommandEncoder()
 
         node_idx: int = 0
-        for node in graph.nodes.values() if get_backend_member(graph, "nodes", None) else ():
-            if get_backend_member(node, "op_type", "") == "Input":
+        for node in graph.nodes.values() if adapt_backend_module(graph).get_symbol("nodes", None) else ():
+            if adapt_backend_module(node).get_symbol("op_type", "") == "Input":
                 continue
             self._dispatch_compute_node(node, node_idx, library, encoder, device_buffers)
             node_idx += 1
@@ -1021,21 +1083,21 @@ class MetalRunner:
         cmd_buf.waitUntilCompleted()
 
         results: dict[str, bytes] = {}
-        for out_id in [str(x) for x in ensure_eager_list(get_backend_member(graph, "outputs", []))]:
+        for out_id in [str(x) for x in coerce_operand_list(adapt_backend_module(graph).get_symbol("outputs", []))]:
             buf = device_buffers.get(out_id)
-            if buf is not None and has_backend_member(buf, "contents"):
+            if buf is not None and adapt_backend_module(buf).has_symbol("contents"):
                 out_node = graph.nodes.get(out_id)
                 _, byte_size = _calculate_node_bytes(out_node)
-                ptr = int(ensure_int(ensure_callable(get_backend_member(buf, "contents"))()))
+                ptr = int(coerce_int(adapt_backend_module(buf).require_op("contents")()))
                 results[out_id] = bytes(ctypes.string_at(ptr, byte_size))
 
         return results
 
-    def _execute_metal_reduction_passes(self, np_arr: EagerValue, fallback: float) -> float:
+    def _execute_metal_reduction_passes(self, np_arr: BackendArg, fallback: float) -> float:
         """Execute multi-pass parallel tree reduction on Metal GPU device.
 
         Args:
-            np_arr (EagerValue): Contiguous array or byte buffer.
+            np_arr (BackendArg): Contiguous array or byte buffer.
             fallback (float): Value to return on compilation or dispatch failure.
 
         Returns:
@@ -1137,7 +1199,11 @@ class MetalRunner:
 
             if num_tgs == 1:
                 ptr = out_buf.contents()
-                addr = ensure_int(get_backend_member(ptr, "value", ptr)) if isinstance(ptr, int) or has_backend_member(ptr, "value") else ctypes.addressof(ptr.contents)
+                addr = (
+                    coerce_int(adapt_backend_module(ptr).get_symbol("value", ptr))
+                    if isinstance(ptr, int) or adapt_backend_module(ptr).has_symbol("value")
+                    else ctypes.addressof(ptr.contents)
+                )
                 return float(ctypes.c_float.from_address(addr).value)
 
             curr_n = num_tgs
@@ -1169,5 +1235,15 @@ class MetalRunner:
 
         try:
             return self._execute_metal_reduction_passes(raw_bytes, default_result)
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             return default_result

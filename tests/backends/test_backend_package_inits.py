@@ -1,4 +1,4 @@
-"""Tests for test_backend_package_inits."""
+"""Behavioral unit tests for backend package inits."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 from ml_switcheroo_compiler.backends.numpy import distributed as bnp_dist_mod
 from ml_switcheroo_compiler.backends.pyarrow_compute.generator import PyArrowComputeGenerator
 from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
+from tests.testing_utils import adapt_backend_module
 
 
 class _DummyGenerator:
@@ -34,15 +35,15 @@ class _DummyGenerator:
 class _MockArrayWithNumpy:
     """Mock object with numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with numpy array.
 
         Args:
-            arr (np.ndarray): Underlying array.
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
         """
         self.arr = arr
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Return underlying numpy array.
 
         Returns:
@@ -54,11 +55,11 @@ class _MockArrayWithNumpy:
 class _MockDataWithNumpy:
     """Mock object with data.numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with nested data object.
 
         Args:
-            arr (np.ndarray): Underlying array.
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
         """
         self.data = _MockArrayWithNumpy(arr)
 
@@ -109,9 +110,9 @@ class _MockBackendH5:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load h5 mock weights.
 
         Args:
@@ -122,11 +123,11 @@ class _MockBackendH5:
         """
         return {"backend_key": np.array([42.0])}
 
-    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], path: str) -> None:
+    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save h5 mock weights.
 
         Args:
-            weights (dict[str, np.ndarray]): Weights dict.
+            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
@@ -137,18 +138,18 @@ class _MockBackendNPZ:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], path: str) -> None:
+    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save npz mock weights.
 
         Args:
-            weights (dict[str, np.ndarray]): Weights dict.
+            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
 
-    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load npz mock weights.
 
         Args:
@@ -163,7 +164,9 @@ class _MockBackendNPZ:
 class _MockBackendSafetensors:
     """Mock backend implementing custom from_buffer method."""
 
-    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
+    def from_buffer(
+        self, buffer: bytes, dtype: str, shape: Sequence[int]
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
         """Reconstruct array from buffer.
 
         Args:
@@ -213,3 +216,45 @@ def test_package_inits() -> None:
     assert bnp_dist_mod.__doc__ is not None
     assert iah_mod.histogram is not None
     assert text_mod.AsStringConfig is not None
+
+
+def test_edge_inits_symbol_exports() -> None:
+    """Verify that canonical edge package and BackendRegistry export all edge generators."""
+    import ml_switcheroo_compiler.backends.edge as edge
+    import ml_switcheroo_compiler.backends.edge.distributed_webrtc as edge_webrtc
+    import ml_switcheroo_compiler.backends.llvm_cpp as llvm_cpp
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+    assert adapt_backend_module(edge).has_symbol("MLIRBytecodeEncoder")
+    assert edge.MLIRBytecodeEncoder is not None
+    assert adapt_backend_module(edge).has_symbol("ONNXCodeGenerator")
+    assert edge.ONNXCodeGenerator is not None
+    assert adapt_backend_module(edge).has_symbol("StableHLOCodeGenerator")
+    assert edge.StableHLOCodeGenerator is not None
+    assert adapt_backend_module(edge).has_symbol("WasmCodeGenerator")
+    assert edge.WasmCodeGenerator is not None
+    assert adapt_backend_module(edge).has_symbol("WebGLCodeGenerator")
+    assert edge.WebGLCodeGenerator is not None
+    assert adapt_backend_module(edge).has_symbol("WebGPUCodeGenerator")
+    assert edge.WebGPUCodeGenerator is not None
+
+    assert adapt_backend_module(edge_webrtc).has_symbol("SignalingHandler")
+    assert edge_webrtc.SignalingHandler is not None
+    assert adapt_backend_module(edge_webrtc).has_symbol("SignalingServer")
+    assert edge_webrtc.SignalingServer is not None
+    assert adapt_backend_module(edge_webrtc).has_symbol("WebRTCDataChannelStream")
+    assert edge_webrtc.WebRTCDataChannelStream is not None
+
+    assert adapt_backend_module(llvm_cpp).has_symbol("CppGenerator")
+    assert llvm_cpp.CppGenerator is not None
+    assert adapt_backend_module(llvm_cpp).has_symbol("LLVMCPPRunner")
+    assert llvm_cpp.LLVMCPPRunner is not None
+
+    assert BackendRegistry.get("edge") is edge.ONNXCodeGenerator
+    assert BackendRegistry.get("edge_onnx") is edge.ONNXCodeGenerator
+    assert BackendRegistry.get("edge_stablehlo") is edge.StableHLOCodeGenerator
+    assert BackendRegistry.get("edge_wasm") is edge.WasmCodeGenerator
+    assert BackendRegistry.get("edge_wasm_simd") is edge.WasmCodeGenerator
+    assert BackendRegistry.get("edge_webgl") is edge.WebGLCodeGenerator
+    assert BackendRegistry.get("edge_wgsl") is edge.WebGPUCodeGenerator
+    assert BackendRegistry.get("webgpu") is edge.WebGPUCodeGenerator

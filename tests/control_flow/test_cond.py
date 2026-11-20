@@ -13,10 +13,10 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import extract_test_dtype
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 device = Device(DeviceType.CPU, 0)
 
 
@@ -24,7 +24,7 @@ def test_cond_eager() -> None:
     """Test the cond eager behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with ConfigContext(eager_mode=True):
         pred = Tensor(np.array(True), TensorConfig((), DType.Bool, device))
@@ -39,28 +39,28 @@ def test_cond_trace() -> None:
     """Test the cond trace behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with ConfigContext(eager_mode=False):
         pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
-        def true_fn() -> EagerValue:
+        def true_fn() -> BackendArg:
             """True fn.
 
             Returns:
-            EagerValue: The resulting output.
+            BackendArg: The resulting output.
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
-        def false_fn() -> EagerValue:
+        def false_fn() -> BackendArg:
             """False fn.
 
             Returns:
-            EagerValue: The resulting output.
+            BackendArg: The resulting output.
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
         global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)
-        assert ensure_eager_tensor(ensure_eager_tensor(res).dtype) == DType.Float32
+        assert extract_test_dtype(res) == DType.Float32
         global_tracing_state.stop_tracing()

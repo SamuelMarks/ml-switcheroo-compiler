@@ -5,17 +5,25 @@ from __future__ import annotations
 
 import typing
 from collections import namedtuple
+from collections.abc import Mapping
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends import jax, keras, mlx, pytorch, registry, tensorflow
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, ClassBasedGenerator, PythonStringGenerator
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
-from ml_switcheroo_compiler.backends.generator_utils import _extract_audio_stft_attributes, _extract_extract_boxes_attributes, _extract_filter_attributes, _extract_resize_attributes, _extract_stft_attributes, _extract_vision_transform_attributes
+from ml_switcheroo_compiler.backends.generator_utils import (
+    _extract_audio_stft_attributes,
+    _extract_extract_boxes_attributes,
+    _extract_filter_attributes,
+    _extract_resize_attributes,
+    _extract_stft_attributes,
+    _extract_vision_transform_attributes,
+)
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
@@ -26,14 +34,22 @@ from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerat
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_backend
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_str, ensure_tensor_list
+from tests.testing_utils import (
+    MockGraphStub,
+    MockNodeStub,
+    adapt_backend_module,
+    coerce_numeric,
+    coerce_str,
+    require_callable,
+)
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
-GroupNormConfig = namedtuple("GroupNormConfig", ["prefix", "module", "reshape", "mean", "var", "sqrt", "dim_arg", "keepdim_arg"])
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerCallableProtocol, EagerTensorProtocol
+GroupNormConfig = namedtuple(
+    "GroupNormConfig", ["prefix", "module", "reshape", "mean", "var", "sqrt", "dim_arg", "keepdim_arg"]
+)
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 
 
@@ -41,7 +57,7 @@ def test_backends_coverage() -> None:
     """Test the backends coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": [1.0]}, shape_metadata=None)
@@ -52,14 +68,14 @@ def test_backends_coverage() -> None:
     g.inputs = ["n2"]
     g.outputs = ["n3"]
     for gen_cls in [
-        ensure_eager_tensor(ensure_eager_tensor(jax).JAXCodeGenerator),
-        ensure_eager_tensor(ensure_eager_tensor(keras).KerasCodeGenerator),
+        jax.JAXCodeGenerator,
+        keras.KerasCodeGenerator,
         mlx.MLXCodeGenerator,
-        ensure_eager_tensor(ensure_eager_tensor(pytorch).PyTorchCodeGenerator),
-        ensure_eager_tensor(ensure_eager_tensor(tensorflow).TensorFlowCodeGenerator),
+        pytorch.PyTorchCodeGenerator,
+        tensorflow.TensorFlowCodeGenerator,
     ]:
-        res = ensure_callable(ensure_callable(gen_cls)(g).generate)()
-        assert isinstance(ensure_eager_tensor(res), str)
+        res = gen_cls(g).generate()
+        assert isinstance(res, str)
         assert len(res) > 0
 
 
@@ -67,57 +83,77 @@ def test_registry_coverage() -> None:
     """Test the registry coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with pytest.raises((ValueError, ShapeMismatchError), match="Backend 'nonexistent' not found"):
         registry.BackendRegistry.get("nonexistent")
 
-    class FakeGen:
+    class FakeGen(BaseGenerator):
         """Configuration class for fake gen."""
 
-    ensure_callable(registry.BackendRegistry.register)("fake", FakeGen)
-    assert ensure_eager_tensor(registry.BackendRegistry.get("fake")) == ensure_eager_tensor(FakeGen)
+    registry.BackendRegistry.register("fake", FakeGen)
+    assert registry.BackendRegistry.get("fake") == FakeGen
     assert "fake" in registry.BackendRegistry.get_all()
 
-    @ensure_callable(registry.register_backend)("fake2")
-    class FakeGen2:
+    @registry.register_backend("fake2")
+    class FakeGen2(BaseGenerator):
         """Configuration class for fake gen2."""
 
-    assert ensure_eager_tensor(registry.BackendRegistry.get("fake2")) == ensure_eager_tensor(FakeGen2)
+    assert registry.BackendRegistry.get("fake2") == FakeGen2
 
 
 def test_truncate_ops_generation() -> None:
     """Test the truncate ops generation behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with pytest.raises(AttributeError):
         node_div = IRNode(id="n1", op_type="TruncateDiv", inputs=["x", "y"])
         node_mod = IRNode(id="n2", op_type="TruncateMod", inputs=["x", "y"])
         assert TensorFlowCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "tf.math.truncatediv(x, y)"
         assert TensorFlowCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "tf.math.truncatemod(x, y)"
-        assert ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TruncateDiv)(node_div, ["x", "y"]) == "np.trunc(np.divide(x, y))"
+        assert (
+            adapt_backend_module(NumpyASTVisitor).require_op("visit_TruncateDiv")(node_div, ["x", "y"])
+            == "np.trunc(np.divide(x, y))"
+        )
         assert PyTorchCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "torch.trunc(x / y)"
         assert JAXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "jnp.trunc(jnp.divide(x, y))"
         assert MLXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "mx.trunc(mx.divide(x, y))"
-        assert KerasCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "keras.ops.trunc(keras.ops.divide(x, y))"
-        assert ensure_eager_tensor(ensure_eager_tensor(CupyGenerator(MagicMock())).visit_TruncateDiv)(node_div, ["x", "y"]) == "cp.trunc(cp.divide(x, y))"
-        assert ensure_eager_tensor(ensure_eager_tensor(DaskGenerator(MagicMock())).visit_TruncateDiv)(node_div, ["x", "y"]) == "da.trunc(da.divide(x, y))"
-        assert ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TruncateMod)(node_mod, ["x", "y"]) == "np.fmod(x, y)"
+        assert (
+            KerasCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
+            == "keras.ops.trunc(keras.ops.divide(x, y))"
+        )
+        assert (
+            adapt_backend_module(CupyGenerator(MagicMock())).require_op("visit_TruncateDiv")(node_div, ["x", "y"])
+            == "cp.trunc(cp.divide(x, y))"
+        )
+        assert (
+            adapt_backend_module(DaskGenerator(MagicMock())).require_op("visit_TruncateDiv")(node_div, ["x", "y"])
+            == "da.trunc(da.divide(x, y))"
+        )
+        assert adapt_backend_module(NumpyASTVisitor).require_op("visit_TruncateMod")(node_mod, ["x", "y"]) == (
+            "np.fmod(x, y)"
+        )
         assert PyTorchCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "torch.fmod(x, y)"
         assert JAXCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "jnp.fmod(x, y)"
         assert MLXCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "mx.remainder(x, y)"
         assert KerasCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "keras.ops.mod(x, y)"
-        assert ensure_eager_tensor(ensure_eager_tensor(CupyGenerator(MagicMock())).visit_TruncateMod)(node_mod, ["x", "y"]) == "cp.fmod(x, y)"
-        assert ensure_eager_tensor(ensure_eager_tensor(DaskGenerator(MagicMock())).visit_TruncateMod)(node_mod, ["x", "y"]) == "da.fmod(x, y)"
+        assert (
+            adapt_backend_module(CupyGenerator(MagicMock())).require_op("visit_TruncateMod")(node_mod, ["x", "y"])
+            == "cp.fmod(x, y)"
+        )
+        assert (
+            adapt_backend_module(DaskGenerator(MagicMock())).require_op("visit_TruncateMod")(node_mod, ["x", "y"])
+            == "da.fmod(x, y)"
+        )
 
 
 def test_coverage_brute() -> None:
     """Test the coverage brute behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
 
     class FakeGenerator(BaseGenerator):
@@ -131,7 +167,7 @@ def test_coverage_brute() -> None:
             """
             return "fake"
 
-    ensure_callable(register_backend)("fake")(FakeGenerator)
+    register_backend("fake")(FakeGenerator)
     assert BackendRegistry.get("fake") == FakeGenerator
     assert "fake" in BackendRegistry.get_all()
     with pytest.raises((ValueError, ShapeMismatchError), match="Backend 'non_existent' not found"):
@@ -152,7 +188,9 @@ def test_coverage_brute() -> None:
     assert "zeros" in gen_keras.visit(n_zeros, [], shape="(2,)").lower()
     assert "zeros" in gen_mlx.visit(n_zeros, [], shape="(2,)").lower()
     assert "zeros" in gen_pytorch.visit(n_zeros, [], shape="(2,)").lower()
-    n_custom = IRNode(id="n3", op_type="CustomFake", inputs=["x"], attributes={"axis": 1, "keepdims": True}, shape_metadata=None)
+    n_custom = IRNode(
+        id="n3", op_type="CustomFake", inputs=["x"], attributes={"axis": 1, "keepdims": True}, shape_metadata=None
+    )
     assert "customfake" in gen_jax.visit(n_custom, ["x"], axis=1, keepdims=True).lower()
     assert "customfake" in gen_mlx.visit(n_custom, ["x"], axis=1, keepdims=True).lower()
     assert "customfake" in gen_pytorch.visit(n_custom, ["x"], axis=1, keepdims=True).lower()
@@ -171,7 +209,7 @@ def test_cupy_dask_kwargs_only_coverage() -> None:
     """Test the cupy dask kwargs only coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     n = IRNode(id="n_kw", op_type="KwOp", inputs=[], attributes={"shape": (2,)}, shape_metadata=None)
@@ -186,7 +224,7 @@ def test_add_n_accumulate_n_generation() -> None:
     """Test the add n accumulate n generation behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with pytest.raises(TypeError):
 
@@ -201,27 +239,29 @@ def test_add_n_accumulate_n_generation() -> None:
                 """
                 return "mock"
 
-            def visit(self, node: EagerValue, input_vars: EagerValue, **kwargs: EagerValue) -> str:
+            def visit(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
                 """Evaluate and process the visit operation.
 
                 Args:
-                    node (EagerValue): Required parameter for node.
-                    input_vars (EagerValue): Required parameter for input_vars.
-                    **kwargs (EagerValue): Arbitrary keyword arguments.
+                    node (IRNode): Required parameter for node.
+                    input_vars (list[str]): Required parameter for input_vars.
+                    **kwargs (BackendArg): Arbitrary keyword arguments.
 
                 Returns:
                     str: The evaluated or processed output.
                 """
-                if ensure_eager_tensor(node).op_type == "AddN":
-                    return ensure_str(ensure_callable(ensure_eager_tensor(self).visit_AddN)(node, input_vars, **kwargs))
-                return ensure_str(ensure_callable(ensure_eager_tensor(self).visit_AccumulateN)(node, input_vars, **kwargs))
+                if node.op_type == "AddN":
+                    return coerce_str(adapt_backend_module(self).require_op("visit_AddN")(node, input_vars, **kwargs))
+                return coerce_str(
+                    adapt_backend_module(self).require_op("visit_AccumulateN")(node, input_vars, **kwargs)
+                )
 
-        gen = ensure_callable(MockGenerator)()
+        gen = require_callable(MockGenerator)()
         node1 = IRNode(id="n1", op_type="AddN", inputs=["a", "b", "c"], attributes={}, shape_metadata=None)
-        assert ensure_eager_tensor(ensure_eager_tensor(gen).visit_AddN)(node1, ["a", "b", "c"]) == "a + b + c"
-        assert ensure_eager_tensor(ensure_eager_tensor(gen).visit_AddN)(node1, []) == "0.0"
+        assert adapt_backend_module(gen).require_op("visit_AddN")(node1, ["a", "b", "c"]) == "a + b + c"
+        assert adapt_backend_module(gen).require_op("visit_AddN")(node1, []) == "0.0"
         node2 = IRNode(id="n2", op_type="AccumulateN", inputs=["x", "y"], attributes={}, shape_metadata=None)
-        assert ensure_eager_tensor(ensure_eager_tensor(gen).visit_AccumulateN)(node2, ["x", "y"]) == "x + y"
+        assert adapt_backend_module(gen).require_op("visit_AccumulateN")(node2, ["x", "y"]) == "x + y"
 
 
 class DummyGenerator(GeneratorLifecycleMixin):
@@ -231,15 +271,15 @@ class DummyGenerator(GeneratorLifecycleMixin):
         """Test function __init__."""
         self.header = "header"
         self.indent_level = 0
-        self.code = []
+        self.code: list[str] = []
 
-    def add_line(self, line: EagerValue) -> None:
+    def add_line(self, line: str) -> None:
         """Test function add_line.
 
         Args:
             line: Test parameter `line`.
         """
-        ensure_callable(self.code.append)(ensure_eager_tensor(" ") * ensure_eager_tensor(self.indent_level) + ensure_eager_tensor(line))
+        self.code.append(" " * self.indent_level + line)
 
     def _generate_body(self, input_prefix: str = "args") -> None:
         """Test function _generate_body.
@@ -257,7 +297,7 @@ def test_generator_lifecycle_mixin() -> None:
     assert "header" in code
     assert "def apply_model(params, *args, **kwargs) -> object:" in code
     assert " body" in code
-    assert ensure_callable(gen._generate_return_block)() is None
+    gen._generate_return_block()
 
 
 class DummyEager(EagerExecutionMixin):
@@ -275,8 +315,8 @@ def test_eager_execution_mixin() -> None:
         assert DummyEager.array([1], None) == "array"
     with patch("ml_switcheroo_compiler.backends.eager.types_utils.generic_asarray", return_value="asarray"):
         assert DummyEager.asarray([1]) == "asarray"
-    with patch("ml_switcheroo_compiler.backends.eager.types_utils.generic_item", return_value="item"):
-        assert ensure_eager_tensor(DummyEager.item([1])) == ensure_eager_tensor("item")
+    with patch("ml_switcheroo_compiler.backends.eager.types_utils.generic_item", return_value=1.0):
+        assert DummyEager.item([1]) == 1.0
 
 
 def test_generator_lifecycle_mixin_generate_body() -> None:
@@ -296,63 +336,61 @@ def test_generator_lifecycle_mixin_generate_body() -> None:
         mock_walker.return_value.walk.assert_called_once_with("test_prefix")
 
 
-class DummyNode:
+class DummyNode(MockNodeStub):
     """Test class DummyNode."""
 
-    def __init__(self, attrs: EagerValue = None) -> None:
+    def __init__(self, attrs: Mapping[str, AttributeValue] | None = None) -> None:
         """Test function __init__.
 
         Args:
-            attrs: Test parameter `attrs`.
+            attrs (Mapping[str, AttributeValue] | None): Test parameter `attrs`.
         """
-        self.attributes = attrs or {}
+        self.attributes = dict(attrs) if attrs is not None else {}
 
 
 def test_generator_utils() -> None:
     """Test function test_generator_utils."""
     node = DummyNode()
-    assert ensure_callable(_extract_audio_stft_attributes)(node) == (2048, 512, None, "hann", False)
-    assert ensure_callable(_extract_resize_attributes)(node) == (None, "bilinear", False, False, None)
-    assert ensure_callable(_extract_vision_transform_attributes)(node) == ("bilinear", 0.0, None)
-    assert ensure_callable(_extract_filter_attributes)(node) == (None, None, "same", None)
-    assert ensure_callable(_extract_extract_boxes_attributes)(node) == (None, "bilinear", 0.0, None)
-    assert ensure_callable(_extract_stft_attributes)(node) == (2048, None, None, None, True, "reflect", False, True)
+    assert _extract_audio_stft_attributes(node) == (2048, 512, None, "hann", False)
+    assert _extract_resize_attributes(node) == (None, "bilinear", False, False, None)
+    assert _extract_vision_transform_attributes(node) == ("bilinear", 0.0, None)
+    assert _extract_filter_attributes(node) == (None, None, "same", None)
+    assert _extract_extract_boxes_attributes(node) == (None, "bilinear", 0.0, None)
+    assert _extract_stft_attributes(node) == (2048, None, None, None, True, "reflect", False, True)
     node_full = DummyNode(
-        ensure_eager_tensor(
-            {
-                "frame_length": 1,
-                "frame_step": 2,
-                "fft_length": 3,
-                "window_fn": "win",
-                "pad_end": True,
-                "size": 4,
-                "interpolation": "bicubic",
-                "align_corners": True,
-                "antialias": True,
-                "data_format": "df",
-                "fill_value": 1.0,
-                "kernel_size": 5,
-                "sigma": 6,
-                "padding": "valid",
-                "crop_size": 7,
-                "extrapolation_value": 2.0,
-                "n_fft": 8,
-                "hop_length": 9,
-                "win_length": 10,
-                "window": "w",
-                "center": False,
-                "pad_mode": "constant",
-                "normalized": True,
-                "onesided": False,
-            }
-        )
+        {
+            "frame_length": 1,
+            "frame_step": 2,
+            "fft_length": 3,
+            "window_fn": "win",
+            "pad_end": True,
+            "size": 4,
+            "interpolation": "bicubic",
+            "align_corners": True,
+            "antialias": True,
+            "data_format": "df",
+            "fill_value": 1.0,
+            "kernel_size": 5,
+            "sigma": 6,
+            "padding": "valid",
+            "crop_size": 7,
+            "extrapolation_value": 2.0,
+            "n_fft": 8,
+            "hop_length": 9,
+            "win_length": 10,
+            "window": "w",
+            "center": False,
+            "pad_mode": "constant",
+            "normalized": True,
+            "onesided": False,
+        }
     )
-    assert ensure_callable(_extract_audio_stft_attributes)(node_full) == (1, 2, 3, "win", True)
-    assert ensure_callable(_extract_resize_attributes)(node_full) == (4, "bicubic", True, True, "df")
-    assert ensure_callable(_extract_vision_transform_attributes)(node_full) == ("bicubic", 1.0, "df")
-    assert ensure_callable(_extract_filter_attributes)(node_full) == (5, 6, "valid", "df")
-    assert ensure_callable(_extract_extract_boxes_attributes)(node_full) == (7, "bicubic", 2.0, "df")
-    assert ensure_callable(_extract_stft_attributes)(node_full) == (8, 9, 10, "w", False, "constant", True, False)
+    assert _extract_audio_stft_attributes(node_full) == (1, 2, 3, "win", True)
+    assert _extract_resize_attributes(node_full) == (4, "bicubic", True, True, "df")
+    assert _extract_vision_transform_attributes(node_full) == ("bicubic", 1.0, "df")
+    assert _extract_filter_attributes(node_full) == (5, 6, "valid", "df")
+    assert _extract_extract_boxes_attributes(node_full) == (7, "bicubic", 2.0, "df")
+    assert _extract_stft_attributes(node_full) == (8, 9, 10, "w", False, "constant", True, False)
 
 
 BACKENDS = [
@@ -440,10 +478,10 @@ def test_generator_basic(generator_cls: type, expected: dict[str, str]) -> None:
 
     Args:
         generator_cls (type): The generator_cls parameter.
-        expected (dict): The expected parameter.
+        expected (dict[str, str]): The expected parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_graph", outputs=["out"])
     if id(generator_cls) == id(KerasCodeGenerator):
@@ -480,10 +518,10 @@ def test_generator_expand_shape(generator_cls: type, expected: dict[str, str]) -
 
     Args:
         generator_cls (type): The generator_cls parameter.
-        expected (dict): The expected parameter.
+        expected (dict[str, str]): The expected parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_graph", outputs=["out"])
     graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
@@ -500,10 +538,10 @@ def test_generator_unknown_op(generator_cls: type, expected: dict[str, str]) -> 
 
     Args:
         generator_cls (type): The generator_cls parameter.
-        expected (dict): The expected parameter.
+        expected (dict[str, str]): The expected parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_graph", outputs=["out"])
     graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
@@ -520,10 +558,10 @@ def test_generator_no_output(generator_cls: type, expected: dict[str, str]) -> N
 
     Args:
         generator_cls (type): The generator_cls parameter.
-        expected (dict): The expected parameter.
+        expected (dict[str, str]): The expected parameter.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_graph")
     graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
@@ -536,7 +574,7 @@ def test_keras_generator_layer_map() -> None:
     """Test the keras generator layer map behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_keras", outputs=["out"])
     graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
@@ -556,31 +594,39 @@ def test_keras_generator_coverage() -> None:
     """Test the keras generator coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     gen = KerasCodeGenerator(LogicalGraph("foo"))
 
-    class DummyNode:
+    class DummyNode(MockNodeStub):
         """Configuration class for dummy node."""
 
-        op_type = "Matmul"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.op_type = "Matmul"
 
-    res = ensure_callable(gen.visit)(ensure_callable(DummyNode)(), ["a", "b"], unrelated="hi")
+    res = gen.visit(DummyNode(), ["a", "b"], unrelated="hi")
     assert "keras.ops.matmul(a, b" in str(res)
 
-    class DummyNode2:
+    class DummyNode2(MockNodeStub):
         """Configuration class for dummy node2."""
 
-        op_type = "Zeros"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.op_type = "Zeros"
 
-    res2 = ensure_callable(gen.visit)(ensure_callable(DummyNode2)(), ["a"], shape=[1], unrelated="hi")
+    res2 = gen.visit(DummyNode2(), ["a"], shape=[1], unrelated="hi")
     assert "keras.ops.zeros" in str(res2)
 
 
 class MockNode:
     """Mock Node."""
 
-    def __init__(self, id: str, op_type: str, inputs: list[str], attributes: EagerValue, shape_metadata: tuple[int, ...] | None) -> None:
+    def __init__(
+        self, id: str, op_type: str, inputs: list[str], attributes: BackendArg, shape_metadata: tuple[int, ...] | None
+    ) -> None:
         """Init.
 
         Args:
@@ -601,32 +647,41 @@ def test_pytorch_generator_coverage() -> None:
     """Test the pytorch generator coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     gen = PyTorchCodeGenerator(LogicalGraph("foo"))
 
-    class DummyNode:
+    class DummyNode(MockNodeStub):
         """Configuration class for dummy node."""
 
-        op_type = "Sum"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.op_type = "Sum"
 
-    res = ensure_callable(gen.visit)(ensure_callable(DummyNode)(), ["a"], unrelated="hi")
+    res = gen.visit(DummyNode(), ["a"], unrelated="hi")
     assert "torch.sum(a" in str(res)
 
-    class ReshapeNode:
+    class ReshapeNode(MockNodeStub):
         """Configuration class for reshape node."""
 
-        op_type = "Reshape"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.op_type = "Reshape"
 
-    res2 = ensure_callable(gen.visit)(ensure_callable(ReshapeNode)(), ["a"], shape="(2, 2)")
+    res2 = gen.visit(ReshapeNode(), ["a"], shape="(2, 2)")
     assert "torch.reshape(a" in str(res2)
 
-    class ReluNode:
+    class ReluNode(MockNodeStub):
         """Configuration class for relu node."""
 
-        op_type = "Relu"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.op_type = "Relu"
 
-    res3 = ensure_callable(gen.visit)(ensure_callable(ReluNode)(), ["a"], axis=1, keepdims=True)
+    res3 = gen.visit(ReluNode(), ["a"], axis=1, keepdims=True)
     assert "relu(a" in str(res3)
 
 
@@ -634,7 +689,7 @@ def test_pytorch_generator_generate() -> None:
     """Test the pytorch generator generate behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph("test")
     gen1 = PyTorchCodeGenerator(graph)
@@ -646,7 +701,7 @@ def test_pytorch_generator_generate() -> None:
     n2 = LogicalNode("n2", "Relu", inputs=["n1"], attributes={}, shape_metadata=None)
     graph2.nodes = NodeDict({"n1": n1, "n2": n2})
     gen2 = PyTorchCodeGenerator(graph2)
-    ensure_mutable(gen2).emit_constant = ensure_eager_tensor(lambda node: "42.0")
+    pytest.MonkeyPatch().setattr(gen2, "emit_constant", lambda node: "42.0", raising=False)
     code2 = gen2.generate()
     assert "self.register_parameter" in code2
     assert "pass" not in code2
@@ -656,12 +711,14 @@ def test_tensorflow_generator_ops_map_kwargs() -> None:
     """Test the tensorflow generator ops map kwargs behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_tf", outputs=["out1", "out2"])
     graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
     graph.nodes["sum1"] = LogicalNode(id="sum1", op_type="Sum", inputs=["in1"])
-    graph.nodes["sum2"] = LogicalNode(id="sum2", op_type="Sum", inputs=["in1"], attributes={"axis": 0, "keepdims": True})
+    graph.nodes["sum2"] = LogicalNode(
+        id="sum2", op_type="Sum", inputs=["in1"], attributes={"axis": 0, "keepdims": True}
+    )
     graph.nodes["out1"] = LogicalNode(id="out1", op_type="Output", inputs=["sum1"])
     graph.nodes["out2"] = LogicalNode(id="out2", op_type="Output", inputs=["sum2"])
     generator = TensorFlowCodeGenerator(graph)
@@ -674,11 +731,13 @@ def test_tensorflow_generator_generic_kwargs() -> None:
     """Test the tensorflow generator generic kwargs behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph(name="test_tf", outputs=["out"])
     graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
-    graph.nodes["foo"] = LogicalNode(id="foo", op_type="FooOp", inputs=["in1"], attributes={"axis": 1, "keepdims": True})
+    graph.nodes["foo"] = LogicalNode(
+        id="foo", op_type="FooOp", inputs=["in1"], attributes={"axis": 1, "keepdims": True}
+    )
     graph.nodes["out"] = LogicalNode(id="out", op_type="Output", inputs=["foo"])
     generator = TensorFlowCodeGenerator(graph)
     code = generator.generate()
@@ -689,7 +748,7 @@ def test_tensorflow_generator_coverage_brute() -> None:
     """Test the tensorflow generator coverage brute behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
@@ -702,11 +761,13 @@ def test_jax_generator_coverage_brute() -> None:
     """Test the jax generator coverage brute behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     gen = JAXCodeGenerator(g)
-    node1 = IRNode(id="n1", op_type="Zeros", inputs=[], attributes={"fake": 1, "shape": "(2, 2)", "fake2": 2}, shape_metadata=None)
+    node1 = IRNode(
+        id="n1", op_type="Zeros", inputs=[], attributes={"fake": 1, "shape": "(2, 2)", "fake2": 2}, shape_metadata=None
+    )
     _out = gen.visit(node1, [], shape="(2, 2)", fake=1, fake2=2)
     assert _out == "jnp.zeros((2, 2))"
 
@@ -715,7 +776,7 @@ def test_mlx_generator_coverage_brute() -> None:
     """Test the mlx generator coverage brute behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     gen_mlx = MLXCodeGenerator(g)
@@ -730,31 +791,33 @@ def test_base_generator_import_header() -> None:
 
     gen = PythonStringGenerator(MagicMock())
     gen._import_header = "import something"
-    ensure_mutable(gen).add_line = ensure_eager_tensor(MagicMock())
-    ensure_mutable(gen)._generate_body = ensure_eager_tensor(MagicMock())
-    gen.generate()
-    ensure_eager_tensor(ensure_eager_tensor(gen.add_line).assert_any_call)("import something")
+    add_line_mock = MagicMock()
+    pytest.MonkeyPatch().setattr(gen, "add_line", add_line_mock, raising=False)
+    pytest.MonkeyPatch().setattr(gen, "_generate_body", MagicMock(), raising=False)
+    out1 = gen.generate()
+    add_line_mock.assert_any_call("import something")
     gen2 = PythonStringGenerator(MagicMock())
-    ensure_mutable(gen2)._import_header = ensure_eager_tensor(["import something"])
-    ensure_mutable(gen2).add_line = ensure_eager_tensor(MagicMock())
-    ensure_mutable(gen2)._generate_body = ensure_eager_tensor(MagicMock())
-    gen2.generate()
-    ensure_eager_tensor(ensure_eager_tensor(gen2.add_line).assert_any_call)("import something")
-    assert gen is not None
+    pytest.MonkeyPatch().setattr(gen2, "_import_header", ["import something"], raising=False)
+    add_line_mock2 = MagicMock()
+    pytest.MonkeyPatch().setattr(gen2, "add_line", add_line_mock2, raising=False)
+    pytest.MonkeyPatch().setattr(gen2, "_generate_body", MagicMock(), raising=False)
+    out2 = gen2.generate()
+    add_line_mock2.assert_any_call("import something")
+    assert out1 == out2 and "AUTOGENERATED VIA ML-SWITCHEROO" in out1
 
 
-class DummyGraph:
+class DummyGraph(MockGraphStub):
     """Test class DummyGraph."""
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.nodes = ensure_tensor_list([])
+        self.nodes: NodeDict = NodeDict()
 
 
 class MyGen(BaseGenerator):
     """Test class MyGen."""
 
-    def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
+    def get_ops_map(self, *args: BackendArg, **kwargs: BackendArg) -> dict[str, str]:
         """Test function get_ops_map.
 
         Args:
@@ -772,7 +835,7 @@ class MyPyGen(PythonStringGenerator):
 
     _import_header = ("import sys", "import os")
 
-    def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
+    def get_ops_map(self, *args: BackendArg, **kwargs: BackendArg) -> dict[str, str]:
         """Test function get_ops_map.
 
         Args:
@@ -796,7 +859,7 @@ class MyPyGen(PythonStringGenerator):
 class MyClassGen(ClassBasedGenerator):
     """Test class MyClassGen."""
 
-    def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
+    def get_ops_map(self, *args: BackendArg, **kwargs: BackendArg) -> dict[str, str]:
         """Test function get_ops_map.
 
         Args:
@@ -812,26 +875,26 @@ class MyClassGen(ClassBasedGenerator):
 def test_base_generator_properties() -> None:
     """Test function test_base_generator_properties."""
     graph = DummyGraph()
-    gen = ensure_callable(MyGen)(graph)
-    ensure_mutable(gen).var_names = ensure_eager_tensor({"test": "val"})
+    gen = MyGen(graph)
+    pytest.MonkeyPatch().setattr(gen, "var_names", {"test": "val"}, raising=False)
     assert gen.var_names == {"test": "val"}
-    ensure_mutable(gen).header = ensure_eager_tensor("my_header")
+    pytest.MonkeyPatch().setattr(gen, "header", "my_header", raising=False)
     assert gen.header == "my_header"
-    ensure_mutable(gen).indent_level = ensure_eager_tensor(2)
+    pytest.MonkeyPatch().setattr(gen, "indent_level", 2, raising=False)
     assert gen.get_indent() == "        "
 
 
 def test_base_generator_fallbacks() -> None:
     """Test function test_base_generator_fallbacks."""
     graph = DummyGraph()
-    gen = ensure_callable(MyGen)(graph)
+    gen = MyGen(graph)
     assert gen.get_fallback_prefix() == "np"
     assert gen.get_fallback_axis_kwarg() == "axis"
     assert gen.get_fallback_keepdims_kwarg() == "keepdims"
     node = IRNode("Op", op_type="Op")
     gen._emit_output_assignment(node, [], "ret_val")
-    assert ensure_eager_tensor(gen)._output_returns == ["ret_val"]
-    ensure_mutable(gen).code = ensure_eager_tensor([])
+    assert gen._output_returns == ["ret_val"]
+    pytest.MonkeyPatch().setattr(gen, "code", [], raising=False)
     gen._emit_input_assignment("var_a", node, "inputs", 0)
     assert "var_a = inputs[0]" in gen.code[0]
 
@@ -839,11 +902,11 @@ def test_base_generator_fallbacks() -> None:
 def test_python_string_generator_tuple_import() -> None:
     """Test function test_python_string_generator_tuple_import."""
     graph = DummyGraph()
-    gen = ensure_callable(MyPyGen)(graph)
+    gen = MyPyGen(graph)
     code = gen.generate()
     assert "import sys\nimport os" in code
-    gen2 = ensure_callable(MyPyGen)(graph)
-    ensure_mutable(gen2)._import_header = ensure_eager_tensor("import sys")
+    gen2 = MyPyGen(graph)
+    pytest.MonkeyPatch().setattr(gen2, "_import_header", "import sys", raising=False)
     code2 = gen2.generate()
     assert "import sys" in code2
 
@@ -851,7 +914,7 @@ def test_python_string_generator_tuple_import() -> None:
 def test_class_based_generator_prefix_code() -> None:
     """Test function test_class_based_generator_prefix_code."""
     graph = DummyGraph()
-    gen = ensure_callable(MyClassGen)(graph)
+    gen = MyClassGen(graph)
     assert gen._get_prefix_code() == []
     assert gen._emit_init_body() == False
 
@@ -859,22 +922,22 @@ def test_class_based_generator_prefix_code() -> None:
 def test_python_string_generator_string_and_list_import() -> None:
     """Test function test_python_string_generator_string_and_list_import."""
     graph = DummyGraph()
-    gen1 = ensure_callable(MyPyGen)(graph)
-    ensure_mutable(gen1)._import_header = ensure_eager_tensor("import something")
+    gen1 = MyPyGen(graph)
+    pytest.MonkeyPatch().setattr(gen1, "_import_header", "import something", raising=False)
     assert "import something" in gen1.generate()
-    gen2 = ensure_callable(MyPyGen)(graph)
-    ensure_mutable(gen2)._import_header = ensure_eager_tensor(["import a", "import b"])
+    gen2 = MyPyGen(graph)
+    pytest.MonkeyPatch().setattr(gen2, "_import_header", ["import a", "import b"], raising=False)
     code2 = gen2.generate()
     assert "import a\nimport b" in code2
-    gen3 = ensure_callable(MyPyGen)(graph)
-    ensure_mutable(gen3)._import_header = ensure_eager_tensor(42)
+    gen3 = MyPyGen(graph)
+    pytest.MonkeyPatch().setattr(gen3, "_import_header", 42, raising=False)
     gen3.generate()
 
 
 def test_emit_output_assignment_twice() -> None:
     """Test function test_emit_output_assignment_twice."""
     graph = DummyGraph()
-    gen = ensure_callable(MyGen)(graph)
+    gen = MyGen(graph)
     node = IRNode("Op", op_type="Op")
     gen._emit_output_assignment(node, [], "ret1")
     gen._emit_output_assignment(node, [], "ret2")
@@ -883,8 +946,9 @@ def test_emit_output_assignment_twice() -> None:
 
 def test_pytorch_generator_send_recv() -> None:
     """Test PyTorch Send/Recv generation."""
+    from ml_switcheroo_ir import IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
     graph = IRGraph()
     n_send = LogicalNode(id="n_send", op_type="Send", inputs=["in1"])
@@ -905,8 +969,9 @@ def test_jax_generator_send_recv() -> None:
     """Test JAX Send/Recv generation."""
     import ast
 
+    from ml_switcheroo_ir import IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
     graph = IRGraph()
     n_send = LogicalNode(id="n_send", op_type="Send", inputs=["in1"])
@@ -915,13 +980,16 @@ def test_jax_generator_send_recv() -> None:
     n_recv.attributes = {"src_rank": 3, "dtype": "float32"}
     n_recv.shape_metadata = (4, 4)
     gen = JAXCodeGenerator(graph)
-    out_send = ensure_callable(JaxDistributedVisitor.visit_Send)(gen, n_send, ["in_var"])
+    dist_visitor = JaxDistributedVisitor(gen)
+    out_send = dist_visitor.visit_Send(n_send, ["in_var"])
     assert out_send == ""
     assert any("# JAX Send to 2" in line for line in gen.code)
     assert any("token = jax.lax.send(in_var, token, channel=2)" in line for line in gen.code)
-    out_recv = ensure_callable(JaxDistributedVisitor.visit_Recv)(gen, n_recv, [])
+    out_recv = dist_visitor.visit_Recv(n_recv, [])
     assert out_recv == "v_n_recv"
-    assert any("v_n_recv, token = jax.lax.recv(token, channel=3, shape=(4, 4), dtype=jnp.float32)" in line for line in gen.code)
+    assert any(
+        "v_n_recv, token = jax.lax.recv(token, channel=3, shape=(4, 4), dtype=jnp.float32)" in line for line in gen.code
+    )
     assert any("token = jax.lax.create_token()" in line for line in gen.code)
     module_code = "\n".join(["def pipeline_stage(in_var):"] + gen.code + ["    return v_n_recv"])
     parsed_ast = ast.parse(module_code)
@@ -930,16 +998,17 @@ def test_jax_generator_send_recv() -> None:
 
 def test_nn_primitives_emission_cross_backend() -> None:
     """Verify native code generation for neural network primitives across PyTorch, JAX, and MLX."""
+    from ml_switcheroo_ir import AttributeValue, IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
     from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
     graph = IRGraph()
     pt_gen = PyTorchCodeGenerator(graph)
     jax_gen = JAXCodeGenerator(graph)
     mlx_gen = MLXCodeGenerator(graph)
-    ops_to_test = [
+    ops_to_test: list[tuple[str, list[str], dict[str, AttributeValue]]] = [
         ("Conv1D", ["x", "w"], {"stride": 1, "padding": 0}),
         ("Conv2D", ["x", "w"], {"stride": 2, "padding": 1}),
         ("Conv3D", ["x", "w"], {"stride": 1, "padding": 0}),
@@ -956,10 +1025,10 @@ def test_nn_primitives_emission_cross_backend() -> None:
         ("Linear", ["x", "w"], {}),
     ]
     for op_name, inputs, attrs in ops_to_test:
-        node = ensure_callable(LogicalNode)(id=f"n_{op_name}", op_type=op_name, inputs=inputs, attributes=attrs)
+        node = LogicalNode(id=f"n_{op_name}", op_type=op_name, inputs=inputs, attributes=dict(attrs))
         pt_code = pt_gen.visit(node, inputs)
         assert len(pt_code) > 0, f"PyTorch emission failed for {op_name}"
-        jax_code = ensure_callable(jax_gen.visit)(node, inputs)
+        jax_code = jax_gen.visit(node, inputs)
         assert len(jax_code) > 0, f"JAX emission failed for {op_name}"
-        mlx_code = ensure_callable(mlx_gen.visit)(node, inputs)
+        mlx_code = mlx_gen.visit(node, inputs)
         assert len(mlx_code) > 0, f"MLX emission failed for {op_name}"

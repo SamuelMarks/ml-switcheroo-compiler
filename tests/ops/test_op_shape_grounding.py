@@ -1,21 +1,24 @@
-"""Exhaustive tests for operator shape inference grounding across linear algebra, searchsorted, sorting, and foreign calls."""
+"""Exhaustive tests for operator shape inference grounding across linear algebra, searchsorted, sorting, and.
+
+foreign calls.
+"""
 
 from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.foreign import ForeignCall
+from ml_switcheroo_compiler.ops.foreign_call import ForeignCall
 from ml_switcheroo_compiler.ops.linalg import CustomLinearSolve, CustomRoot, Vecdot
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher
 from ml_switcheroo_compiler.ops.shape.pad_and_tile import Searchsorted, SortComplex
 from ml_switcheroo_compiler.ops.unary.logical import Ediff1d, Isin, Issubdtype
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
 
 
-class MockTensor:
+class MockTensor(MockTestStub):
     """Mock tensor object holding shape attribute."""
 
     def __init__(self, shape: tuple[int, ...]) -> None:
@@ -49,8 +52,8 @@ def test_foreign_call_shape_introspection() -> None:
 
         output_shapes = [(3, 5), (2, 2)]
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(MockExternalModule)()) == (4, 8)
-    assert ensure_callable(op.infer_shape)(ensure_callable(MockMultiOutputModule)()) == (3, 5)
+    assert op.infer_shape(MockExternalModule()) == (4, 8)
+    assert op.infer_shape(MockMultiOutputModule()) == (3, 5)
 
     # 4. Bound subgraph introspection
     class MockNode:
@@ -69,7 +72,7 @@ def test_foreign_call_shape_introspection() -> None:
 
         subgraph = MockSubgraph()
 
-    assert ensure_callable(op.infer_shape)(ensure_callable(MockGraphContainer)()) == (1, 64)
+    assert op.infer_shape(MockGraphContainer()) == (1, 64)
 
     # 5. Callable with return annotation
     def annotated_fn(x: int) -> tuple[int, int]:
@@ -83,7 +86,7 @@ def test_foreign_call_shape_introspection() -> None:
         """
         return (x, x)
 
-    assert ensure_eager_tensor(op.infer_shape(annotated_fn)) == ensure_eager_tensor((int, int))
+    assert op.infer_shape(annotated_fn) == (int, int)
 
     # 6. Fallback empty
     assert op.infer_shape() == ()
@@ -102,23 +105,23 @@ def test_searchsorted_and_sort_complex_shape() -> None:
     # Searchsorted with 1D sequence and 1D / 2D values
     seq_1d = MockTensor((10,))
     val_1d = MockTensor((5,))
-    assert ensure_callable(ss.infer_shape)(seq_1d, val_1d) == (5,)
+    assert ss.infer_shape(seq_1d, val_1d) == (5,)
 
     val_2d = MockTensor((3, 7))
-    assert ensure_callable(ss.infer_shape)(seq_1d, val_2d) == (3, 7)
+    assert ss.infer_shape(seq_1d, val_2d) == (3, 7)
 
     # Searchsorted with multidimensional sequence and broadcasted values
     seq_batched = MockTensor((2, 1, 10))
     val_batched = MockTensor((1, 4, 8))
     # Leading batch dims (2, 1) and (1, 4) broadcast to (2, 4) + (8,)
-    assert ensure_callable(ss.infer_shape)(seq_batched, val_batched) == (2, 4, 8)
+    assert ss.infer_shape(seq_batched, val_batched) == (2, 4, 8)
 
     # SortComplex preserves input shape
     inp_2d = MockTensor((4, 5))
-    assert ensure_callable(sc.infer_shape)(inp_2d) == (4, 5)
+    assert sc.infer_shape(inp_2d) == (4, 5)
 
     inp_4d = MockTensor((2, 3, 8, 8))
-    assert ensure_callable(sc.infer_shape)(inp_4d) == (2, 3, 8, 8)
+    assert sc.infer_shape(inp_4d) == (2, 3, 8, 8)
 
 
 def test_linalg_and_random_shape_grounding() -> None:
@@ -130,12 +133,12 @@ def test_linalg_and_random_shape_grounding() -> None:
     # 1D @ 1D -> scalar ()
     x1 = MockTensor((4,))
     y1 = MockTensor((4,))
-    assert ensure_callable(vecdot.infer_shape)(x1, y1) == ()
+    assert vecdot.infer_shape(x1, y1) == ()
 
     # Batched vecdot (2, 3, 5) and (2, 1, 5) along axis -1 -> (2, 3)
     x_batch = MockTensor((2, 3, 5))
     y_batch = MockTensor((2, 1, 5))
-    assert ensure_callable(vecdot.infer_shape)(x_batch, y_batch, axis=-1) == (2, 3)
+    assert vecdot.infer_shape(x_batch, y_batch, axis=-1) == (2, 3)
 
     # 2. CustomLinearSolve: solves AX = B
     solve = CustomLinearSolve()
@@ -144,18 +147,18 @@ def test_linalg_and_random_shape_grounding() -> None:
     # A: (2, 4, 4), B: (2, 4) -> X: (2, 4)
     mat_a = MockTensor((2, 4, 4))
     rhs_b1 = MockTensor((2, 4))
-    assert ensure_callable(solve.infer_shape)(mat_a, rhs_b1) == (2, 4)
+    assert solve.infer_shape(mat_a, rhs_b1) == (2, 4)
 
     # A: (2, 4, 4), B: (2, 4, 3) -> X: (2, 4, 3)
     rhs_b2 = MockTensor((2, 4, 3))
-    assert ensure_callable(solve.infer_shape)(mat_a, rhs_b2) == (2, 4, 3)
+    assert solve.infer_shape(mat_a, rhs_b2) == (2, 4, 3)
 
     # 3. CustomRoot: matches initial guess x0
     croot = CustomRoot()
     assert croot.infer_shape() == ()
     x0 = MockTensor((10, 2))
-    assert ensure_callable(croot.infer_shape)(None, x0) == (10, 2)
-    assert ensure_callable(croot.infer_shape)(x0) == (10, 2)
+    assert croot.infer_shape(None, x0) == (10, 2)
+    assert croot.infer_shape(x0) == (10, 2)
 
     # 4. Rademacher: output sample shape
     rad = Rademacher()
@@ -178,7 +181,7 @@ def test_logical_reduction_ops_shape() -> None:
     # Isin preserves element shape
     el = MockTensor((3, 4, 5))
     test_el = MockTensor((10,))
-    assert ensure_callable(isin_op.infer_shape)(el, test_el) == (3, 4, 5)
+    assert isin_op.infer_shape(el, test_el) == (3, 4, 5)
 
     # Ediff1d produces 1D differences
     assert ediff.infer_shape() == (0,)

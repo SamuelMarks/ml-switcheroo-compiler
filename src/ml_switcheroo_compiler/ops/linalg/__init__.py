@@ -1,15 +1,16 @@
 # ruff: noqa: E402
 # auto-generate-all
-# exclude_exports: OpDef, register_op, annotations
+# exclude_exports: OpDef, register_op, annotations, EagerTensorProtocol
+# exclude_exports: ShapeProtocol, OpValue, coerce_int, extract_shape
 
 """Linear algebra operations package."""
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int
-from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.backends.registry import coerce_int
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol, extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
+from ml_switcheroo_compiler.ops.linalg.conv import ConvGeneralDilated, ConvTranspose
 from ml_switcheroo_compiler.ops.linalg.dot import (
     Dot,
     DotGeneral,
@@ -19,17 +20,18 @@ from ml_switcheroo_compiler.ops.linalg.einsum import (
 )
 from ml_switcheroo_compiler.ops.linalg.products import Matmul
 
+from .conv import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal
+from .conv import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches
+from .conv import ConvWithGeneralPadding as ConvWithGeneralPadding
 from .conv import conv_general_dilated as conv_general_dilated
 from .conv import conv_general_dilated_local as conv_general_dilated_local
 from .conv import conv_general_dilated_patches as conv_general_dilated_patches
 from .conv import conv_with_general_padding as conv_with_general_padding
-from .conv_ops import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal
-from .conv_ops import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches
-from .conv_ops import ConvWithGeneralPadding as ConvWithGeneralPadding
+from .decompositions.lu import lu as lu
 from .decompositions.norms import power_iteration as power_iteration
 from .decompositions.qr import qr as qr
-from .einsum_frontend import einsum as einsum
-from .einsum_frontend import tensordot as tensordot
+from .einsum_api import einsum as einsum
+from .einsum_api import tensordot as tensordot
 from .linear_operator import LinearOperator as LinearOperator
 from .linear_operator import LinearOperatorAdjoint as LinearOperatorAdjoint
 from .linear_operator import LinearOperatorBlockDiag as LinearOperatorBlockDiag
@@ -92,16 +94,18 @@ from .matrix_ops import tridiagonal_matmul as tridiagonal_matmul
 from .matrix_ops import vector_norm as vector_norm
 from .products import MatrixRank as MatrixRank
 from .products import MatrixTranspose as MatrixTranspose
+from .products import Sqrtm as Sqrtm
 from .products import Trace as Trace
-from .solvers import Sqrtm as Sqrtm
 from .solvers import banded_triangular_solve as banded_triangular_solve
 from .solvers import cholesky_solve as cholesky_solve
 from .solvers import conjugate_gradient as conjugate_gradient
 from .solvers import lstsq as lstsq
-from .solvers import lu as lu
 from .solvers import lu_matrix_inverse as lu_matrix_inverse
 from .solvers import lu_reconstruct as lu_reconstruct
 from .solvers import lu_solve as lu_solve
+from .solvers import solve as solve
+from .solvers import solve_ex as solve_ex
+from .solvers import solve_triangular as solve_triangular
 from .solvers import tensorinv as tensorinv
 from .solvers import tensorsolve as tensorsolve
 from .solvers import triangular_solve as triangular_solve
@@ -115,12 +119,12 @@ class Vecdot(OpDef):
 
     op_name = "Vecdot"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Evaluate infer_shape operation contracting vector dimension.
 
         Args:
-            *args (EagerTensorProtocol): Positional args (x, y).
-            **kwargs (EagerTensorProtocol): Keyword args (axis).
+            *args (OpValue): Positional args (x, y).
+            **kwargs (OpValue): Keyword args (axis).
 
         Returns:
             tuple[int, ...]: Resulting shape after contracting vector dimension.
@@ -129,7 +133,7 @@ class Vecdot(OpDef):
             return ()
         x_shape = extract_shape(args[0])
         y_shape = extract_shape(args[1])
-        axis = int(ensure_int(kwargs.get("axis", -1)))
+        axis = int(coerce_int(kwargs.get("axis", -1)))
         x_norm = axis if axis >= 0 else len(x_shape) + axis
         y_norm = axis if axis >= 0 else len(y_shape) + axis
         x_batch = tuple(dim for idx, dim in enumerate(x_shape) if idx != x_norm)
@@ -145,12 +149,12 @@ class CustomLinearSolve(OpDef):
 
     op_name = "CustomLinearSolve"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Evaluate infer_shape operation solving AX = B.
 
         Args:
-            *args (EagerTensorProtocol): Positional args (A, B).
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args (A, B).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Resulting shape matching broadcasted solution X.
@@ -177,20 +181,20 @@ class CustomRoot(OpDef):
 
     op_name = "CustomRoot"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Evaluate infer_shape operation for root finding.
 
         Args:
-            *args (EagerTensorProtocol): Positional args (fn, x0).
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args (fn, x0).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Shape matching initial guess x0.
         """
         if len(args) > 1 and isinstance(args[1], ShapeProtocol):
-            return tuple(args[1].shape)
+            return tuple(extract_shape(args[1]))
         if args and isinstance(args[0], ShapeProtocol):
-            return tuple(args[0].shape)
+            return tuple(extract_shape(args[0]))
         return ()
 
 
@@ -206,7 +210,6 @@ __all__ = [
     "CustomRoot",
     "Dot",
     "DotGeneral",
-    "EagerTensorProtocol",
     "Einsum",
     "LinearOperator",
     "LinearOperatorAdjoint",
@@ -233,14 +236,11 @@ __all__ = [
     "MatrixRank",
     "MatrixTranspose",
     "Pdot",
-    "ShapeProtocol",
     "Sqrtm",
-    "TensorOrScalar",
     "Trace",
     "Vecdot",
     "addmm",
     "adjoint",
-    "ensure_int",
     "band_part",
     "banded_triangular_solve",
     "block_masked_mm",
@@ -260,7 +260,6 @@ __all__ = [
     "eigh_tridiagonal",
     "einsum",
     "expm",
-    "extract_shape",
     "gather_mm",
     "global_norm",
     "hadamard_transform",
@@ -284,6 +283,9 @@ __all__ = [
     "qr",
     "segmented_mm",
     "set_diag",
+    "solve",
+    "solve_ex",
+    "solve_triangular",
     "sqrtm",
     "svdvals",
     "tensor_diag",

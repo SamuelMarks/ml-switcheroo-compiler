@@ -47,7 +47,7 @@ def _scale_gradients(parameters: list[Tensor], max_norm: float, total_norm: Tens
     """Scales gradients in-place based on maximum and total norm.
 
     Args:
-        parameters (list): Input `parameters` argument (parameters).
+        parameters (list[Tensor]): Input `parameters` argument (parameters).
         max_norm (float): Input `max_norm` argument (max norm).
         total_norm (Tensor): Input `total_norm` argument (total norm).
 

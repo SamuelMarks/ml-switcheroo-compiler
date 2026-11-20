@@ -1,4 +1,4 @@
-"""Implementation of distributions discrete operations and utilities for the random subsystem (`ml_switcheroo_compiler.random.distributions_discrete`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.random.distributions_discrete`."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
 from ml_switcheroo_compiler.core import dtype as dtypes
+from ml_switcheroo_compiler.core.shape import ShapeDim
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import RandomArg, _dispatch_random, _emit_random_node
 
@@ -16,11 +17,11 @@ class _RandomTensorProtocol(typing.Protocol):
     """Protocol for tensor-like objects exposing `.shape` and `.dtype`."""
 
     @property
-    def shape(self) -> Sequence[int | str]:
+    def shape(self) -> Sequence[ShapeDim]:
         """Return tensor shape.
 
         Returns:
-            Sequence[int | str]: Shape sequence.
+            Sequence[ShapeDim]: Shape sequence.
         """
         ...
 
@@ -34,11 +35,11 @@ class _RandomTensorProtocol(typing.Protocol):
         ...
 
 
-def _extract_int_shape(seq: Sequence[int | str]) -> tuple[int, ...]:
+def _extract_int_shape(seq: Sequence[ShapeDim]) -> tuple[int, ...]:
     """Convert a sequence of shape dimensions into a concrete integer tuple.
 
     Args:
-        seq (Sequence[int | str]): Shape sequence.
+        seq (Sequence[ShapeDim]): Shape sequence.
 
     Returns:
         tuple[int, ...]: Concrete integer shape tuple.
@@ -130,8 +131,12 @@ def permutation(
     Returns:
         Tensor: Permuted tensor.
     """
-    shape: tuple[int, ...] = _extract_int_shape(x.shape) if isinstance(x, (Tensor, ShapeProtocol, _RandomTensorProtocol)) else ()
-    dtype: dtypes.DType | str | None = x.dtype if isinstance(x, (Tensor, _RandomTensorProtocol)) else None
+    if isinstance(x, int) and not isinstance(x, bool):
+        shape: tuple[int, ...] = (x,)
+        dtype: dtypes.DType | str | None = dtypes.DType.Int32
+    else:
+        shape = _extract_int_shape(x.shape) if isinstance(x, (Tensor, ShapeProtocol, _RandomTensorProtocol)) else ()
+        dtype = x.dtype if isinstance(x, (Tensor, _RandomTensorProtocol)) else None
     return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 
 
@@ -151,7 +156,9 @@ def choice(
         Tensor: The computed result.
     """
     raw_shape = kwargs.get("shape", ())
-    shape: Sequence[int] | int = raw_shape if isinstance(raw_shape, (Sequence, int)) and not isinstance(raw_shape, (str, bool)) else ()
+    shape: Sequence[int] | int = (
+        raw_shape if isinstance(raw_shape, (Sequence, int)) and not isinstance(raw_shape, (str, bool)) else ()
+    )
     replace = bool(kwargs.get("replace", True))
     p = kwargs.get("p", None)
     raw_axis = kwargs.get("axis", 0)

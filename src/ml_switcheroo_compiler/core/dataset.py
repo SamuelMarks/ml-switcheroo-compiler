@@ -4,34 +4,27 @@ from __future__ import annotations
 
 import math
 import random
-import typing
 from collections.abc import Iterator, Sequence, Sized
 from enum import Enum
 
 from ml_switcheroo_compiler.backends.registry import ShapeProtocol
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    IRAttrValue,
+    OpValue,
+    ShapeDim,
+    extract_int_shape,
+    is_variadic_callable,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
-def _is_tensor_tuple(val: TensorOrScalar) -> typing.TypeGuard[tuple[Tensor, ...]]:
-    """Type guard narrowing `val` to `tuple[Tensor, ...]`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        bool: True if valid dataset element.
-    """
-    return isinstance(val, (tuple, Tensor)) or not isinstance(val, type(Ellipsis))
-
-
-def _ensure_dataset_tensor(val: TensorOrScalar) -> Tensor:
+def _ensure_dataset_tensor(val: OpValue) -> Tensor:
     """Narrow `val` to `Tensor`.
 
     Args:
-        val (TensorOrScalar): Candidate tensor value.
+        val (OpValue): Candidate tensor value.
 
     Returns:
         Tensor: Narrowed Tensor instance.
@@ -40,11 +33,11 @@ def _ensure_dataset_tensor(val: TensorOrScalar) -> Tensor:
     return val
 
 
-def _extract_dataset_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+def _extract_dataset_shape(seq: Sequence[ShapeDim]) -> tuple[int, ...]:
     """Convert a sequence of dimensions into a concrete integer shape tuple.
 
     Args:
-        seq (Sequence[int | str | None]): Shape sequence.
+        seq (Sequence[ShapeDim]): Shape sequence.
 
     Returns:
         tuple[int, ...]: Concrete integer shape tuple.
@@ -98,8 +91,8 @@ class Dataset:
         """
         self.tensors = tensors
         if tensors:
-            self.length = tensors[0].shape[0]
-            if not all(t.shape[0] == self.length for t in tensors):
+            self.length = extract_int_shape(tensors[0])[0]
+            if not all(extract_int_shape(t)[0] == self.length for t in tensors):
                 raise ValueError("All tensors must have the same leading dimension.")
             self._indices = list(range(self.length))
         else:
@@ -111,14 +104,14 @@ class Dataset:
         self._buffer_size = 0
         self._prefetch_buffer = 0
         self._drop_remainder = False
-        self._elements: TensorOrScalar = None
+        self._elements: OpValue = None
         self._seed: int | None = None
         self._reshuffle: bool | None = None
-        self._map_func: TensorOrScalar = None
+        self._map_func: OpValue = None
         self._padded_cardinality: int | None = None
-        self._window_config: dict[str, TensorOrScalar] | None = None
-        self._resample_config: dict[str, TensorOrScalar] | None = None
-        self._interleave_config: dict[str, TensorOrScalar] | None = None
+        self._window_config: dict[str, OpValue] | None = None
+        self._resample_config: dict[str, OpValue] | None = None
+        self._interleave_config: dict[str, OpValue] | None = None
         self._target_device: str | None = None
         self._snapshot_path: str | None = None
         self._saved_path: str | None = None
@@ -142,11 +135,11 @@ class Dataset:
         return cls(*tensors)
 
     @classmethod
-    def from_list(cls, elements: TensorOrScalar) -> Dataset:
+    def from_list(cls, elements: OpValue) -> Dataset:
         """Create a dataset stream from a sized sequence of elements.
 
         Args:
-            elements (TensorOrScalar): Sequence of elements to iterate over.
+            elements (OpValue): Sequence of elements to iterate over.
 
         Returns:
             Dataset: Configured dataset stream instance.
@@ -230,7 +223,7 @@ class Dataset:
 
     def map_and_batch(
         self,
-        map_func: TensorOrScalar,
+        map_func: OpValue,
         batch_size: int,
         num_parallel_batches: int | None = None,
         drop_remainder: bool = False,
@@ -238,7 +231,7 @@ class Dataset:
         """Apply a fused element mapping function and batching stage.
 
         Args:
-            map_func (TensorOrScalar): Transformation callable applied to each batch.
+            map_func (OpValue): Transformation callable applied to each batch.
             batch_size (int): Number of elements per batch.
             num_parallel_batches (Optional[int]): Optional number of batches to compute in parallel.
             drop_remainder (bool): Whether to drop the final incomplete batch.
@@ -255,8 +248,8 @@ class Dataset:
 
     def group_by_window(
         self,
-        key_func: TensorOrScalar,
-        reduce_func: TensorOrScalar,
+        key_func: OpValue,
+        reduce_func: OpValue,
         window_size: int,
         window_shift: int | None = None,
         window_stride: int = 1,
@@ -264,8 +257,8 @@ class Dataset:
         """Group stream elements by key and reduce them in sliding windows.
 
         Args:
-            key_func (TensorOrScalar): Callable mapping an element to a grouping key.
-            reduce_func (TensorOrScalar): Callable reducing a key and window into a stream.
+            key_func (OpValue): Callable mapping an element to a grouping key.
+            reduce_func (OpValue): Callable reducing a key and window into a stream.
             window_size (int): Number of elements per window.
             window_shift (Optional[int]): Optional window shift increment.
             window_stride (int): Stride between elements within a window.
@@ -284,7 +277,7 @@ class Dataset:
 
     def rejection_resample(
         self,
-        class_func: TensorOrScalar,
+        class_func: OpValue,
         target_dist: list[float],
         initial_dist: list[float] | None = None,
         seed: int | None = None,
@@ -292,7 +285,7 @@ class Dataset:
         """Resample stream elements via rejection sampling to match `target_dist`.
 
         Args:
-            class_func (TensorOrScalar): Callable mapping an element to its class index.
+            class_func (OpValue): Callable mapping an element to its class index.
             target_dist (list[float]): Target class probability distribution.
             initial_dist (Optional[list[float]]): Optional known initial class distribution.
             seed (Optional[int]): Optional PRNG seed for acceptance sampling.
@@ -310,7 +303,7 @@ class Dataset:
 
     def parallel_interleave(
         self,
-        map_func: TensorOrScalar,
+        map_func: OpValue,
         cycle_length: int,
         block_length: int = 1,
         slack: int = 0,
@@ -319,7 +312,7 @@ class Dataset:
         """Interleave elements from multiple mapped streams in parallel.
 
         Args:
-            map_func (TensorOrScalar): Callable mapping input elements to sub-streams.
+            map_func (OpValue): Callable mapping input elements to sub-streams.
             cycle_length (int): Number of streams to interleave concurrently.
             block_length (int): Number of consecutive elements consumed per stream.
             slack (int): Optional scheduling slack parameter.
@@ -400,16 +393,16 @@ class Dataset:
         self,
         path: str,
         compression: str | None = None,
-        reader_func: TensorOrScalar = None,
-        shard_func: TensorOrScalar = None,
+        reader_func: OpValue = None,
+        shard_func: OpValue = None,
     ) -> Dataset:
         """Persist or read a cached stream snapshot at `path`.
 
         Args:
             path (str): Filesystem path for snapshot storage.
             compression (Optional[str]): Optional compression format.
-            reader_func (TensorOrScalar): Optional custom shard reader callable.
-            shard_func (TensorOrScalar): Optional custom sharding callable.
+            reader_func (OpValue): Optional custom shard reader callable.
+            shard_func (OpValue): Optional custom sharding callable.
 
         Returns:
             Dataset: The snapshotted dataset stream (`self`).
@@ -418,13 +411,13 @@ class Dataset:
         self._snapshot_path = path
         return self
 
-    def save(self, path: str, compression: str | None = None, shard_func: TensorOrScalar = None) -> Dataset:
+    def save(self, path: str, compression: str | None = None, shard_func: OpValue = None) -> Dataset:
         """Materialize the dataset stream to disk at `path`.
 
         Args:
             path (str): Destination directory path.
             compression (Optional[str]): Optional compression format.
-            shard_func (TensorOrScalar): Optional custom shard assignment callable.
+            shard_func (OpValue): Optional custom shard assignment callable.
 
         Returns:
             Dataset: The saved dataset stream (`self`).
@@ -437,17 +430,17 @@ class Dataset:
     def load(
         cls,
         path: str,
-        element_spec: AttrValue = None,
+        element_spec: IRAttrValue = None,
         compression: str | None = None,
-        reader_func: TensorOrScalar = None,
+        reader_func: OpValue = None,
     ) -> Dataset:
         """Load a materialized dataset stream from `path`.
 
         Args:
             path (str): Source directory path.
-            element_spec (AttrValue): Optional element type specification.
+            element_spec (IRAttrValue): Optional element type specification.
             compression (Optional[str]): Optional compression format.
-            reader_func (TensorOrScalar): Optional custom reader callable.
+            reader_func (OpValue): Optional custom reader callable.
 
         Returns:
             Dataset: Loaded dataset stream instance.
@@ -457,11 +450,11 @@ class Dataset:
         ds._saved_path = path
         return ds
 
-    def __iter__(self) -> Iterator[tuple[Tensor, ...]]:
+    def __iter__(self) -> Iterator[tuple[Tensor, ...] | Tensor]:
         """Iterate over batches of tensors yielded by the stream.
 
         Yields:
-            tuple[Tensor, ...]: Tuple of batch tensors for each stream step.
+            tuple[Tensor, ...] | Tensor: Batch tensor tuple or mapped batch tensor for each stream step.
         """
         if not self.tensors:
             yield ()
@@ -500,11 +493,14 @@ class Dataset:
                 batch_tuple: tuple[Tensor, ...] = tuple(batch_tensors)
 
             if self._map_func is not None:
-                from ml_switcheroo_compiler.core.shape import invoke_callable
-
-                mapped: TensorOrScalar = invoke_callable(self._map_func, *batch_tensors)
-                assert _is_tensor_tuple(mapped)
-                yield mapped
+                _callable_fn_1: OpValue = self._map_func
+                assert is_variadic_callable(_callable_fn_1)
+                mapped: OpValue = _callable_fn_1(*batch_tensors)
+                yield (
+                    tuple(_ensure_dataset_tensor(x) for x in mapped)
+                    if isinstance(mapped, tuple)
+                    else _ensure_dataset_tensor(mapped)
+                )
             else:
                 yield batch_tuple
 
@@ -528,11 +524,11 @@ class NumpyIterator:
         """
         return self
 
-    def __next__(self) -> tuple[TensorOrScalar, ...]:
+    def __next__(self) -> tuple[OpValue, ...]:
         """Advance the iterator and return the next batch of raw arrays.
 
         Returns:
-            tuple[TensorOrScalar, ...]: Tuple of raw backend arrays for the current batch.
+            tuple[OpValue, ...]: Tuple of raw backend arrays for the current batch.
         """
         batch = next(self._iterator)
         return tuple(t.data for t in batch) if len(batch) > 0 else ()
@@ -557,11 +553,11 @@ class ArrayIterator:
         """
         return self
 
-    def __next__(self) -> tuple[TensorOrScalar, ...]:
+    def __next__(self) -> tuple[OpValue, ...]:
         """Advance the iterator and return the next batch of native arrays.
 
         Returns:
-            tuple[TensorOrScalar, ...]: Tuple of native backend arrays for the current batch.
+            tuple[OpValue, ...]: Tuple of native backend arrays for the current batch.
         """
         batch = next(self._iterator)
         return tuple(t.data for t in batch) if len(batch) > 0 else ()
@@ -585,7 +581,7 @@ class CsvDataset(Dataset):
 
         Args:
             filenames (Union[str, list[str]]): Path or list of paths to CSV files.
-            record_defaults (Optional[list[Union[int, float, str]]]): Default values per column.
+            record_defaults (list[int | float | str] | None): Default values per column.
             compression_type (Optional[str]): Optional compression format.
             buffer_size (Optional[int]): Optional read buffer size in bytes.
             header (bool): Whether to skip the initial header line.
@@ -646,9 +642,6 @@ class BinaryRecordReader(Dataset):
         self.compression_type = compression_type
         self.buffer_size = buffer_size
         self.num_parallel_reads = num_parallel_reads
-
-
-TFRecordReader = BinaryRecordReader
 
 
 class ImageDataset(Dataset):
@@ -733,11 +726,11 @@ class TextDataset(Dataset):
 class NumpyDataset(Dataset):
     """Dataset stream wrapping raw backend arrays into `Tensor` slices."""
 
-    def __init__(self, *arrays: TensorOrScalar) -> None:
+    def __init__(self, *arrays: OpValue) -> None:
         """Initialize NumpyDataset from raw arrays.
 
         Args:
-            *arrays (TensorOrScalar): Raw arrays sharing the same leading dimension.
+            *arrays (OpValue): Raw arrays sharing the same leading dimension.
         """
         from ml_switcheroo_compiler.core.device import Device, DeviceType
         from ml_switcheroo_compiler.ops.type_inference import resolve_dtype

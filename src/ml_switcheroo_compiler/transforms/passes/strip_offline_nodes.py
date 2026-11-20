@@ -6,9 +6,10 @@ import logging
 import typing
 from collections.abc import Mapping
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 OFFLINE_DIAGNOSTIC_OPS: frozenset[str] = frozenset(
     {
@@ -36,25 +37,6 @@ class _GraphOutputsProtocol(typing.Protocol):
     outputs: list[str]
 
 
-@typing.runtime_checkable
-class _SortedNodesGraphProtocol(typing.Protocol):
-    """Protocol for graphs exposing a mutable `sorted_nodes` list."""
-
-    sorted_nodes: list[IRNode]
-
-
-def _is_sorted_nodes_holder(val: IRGraph) -> typing.TypeGuard[_SortedNodesGraphProtocol]:
-    """Type guard narrowing `val` to `_SortedNodesGraphProtocol` for attribute assignment.
-
-    Args:
-        val (IRGraph): Graph instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
 def export_graph_to_dot_string(graph: IRGraph) -> str:
     """Generate a Graphviz DOT representation of an IRGraph.
 
@@ -68,7 +50,7 @@ def export_graph_to_dot_string(graph: IRGraph) -> str:
     lines.append("  rankdir=LR;")
     lines.append('  node [shape=box, fontname="Courier"];')
 
-    raw_graph: TensorOrScalar = graph
+    raw_graph: OpValue | _GraphNodesProtocol = graph
     graph_nodes: Mapping[str, IRNode] = raw_graph.nodes if isinstance(raw_graph, _GraphNodesProtocol) else {}
     for node_id, node in graph_nodes.items():
         op = node.op_type if node.op_type else "Unknown"
@@ -136,7 +118,11 @@ def _rewire_graph_edges_and_outputs(
         node.inputs = [rewire_map.get(inp, inp) for inp in node.inputs]
 
     if graph.outputs:
-        graph.outputs = [rewire_map.get(out_id, out_id) for out_id in graph.outputs if rewire_map.get(out_id, out_id) not in nodes_to_remove]
+        graph.outputs = [
+            rewire_map.get(out_id, out_id)
+            for out_id in graph.outputs
+            if rewire_map.get(out_id, out_id) not in nodes_to_remove
+        ]
 
 
 def strip_offline_diagnostic_nodes_pass(graph: IRGraph) -> IRGraph:
@@ -153,7 +139,7 @@ def strip_offline_diagnostic_nodes_pass(graph: IRGraph) -> IRGraph:
     Returns:
         IRGraph: Sanitized graph with offline diagnostic nodes removed.
     """
-    raw_graph: TensorOrScalar = graph
+    raw_graph: OpValue | _GraphNodesProtocol = graph
     if not isinstance(raw_graph, _GraphNodesProtocol) or not raw_graph.nodes:
         return graph
 
@@ -169,7 +155,6 @@ def strip_offline_diagnostic_nodes_pass(graph: IRGraph) -> IRGraph:
 
     try:
         sorted_list = topological_sort(graph)
-        assert _is_sorted_nodes_holder(graph)
         graph.sorted_nodes = sorted_list
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)

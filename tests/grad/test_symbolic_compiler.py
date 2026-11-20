@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import IRGraph, LogicalNode
 
 from ml_switcheroo_compiler.grad.symbolic_compiler import SymbolicExpressionCompiler
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def test_symbolic_compiler_init_and_load(tmp_path: EagerTensorProtocol) -> None:
+def test_symbolic_compiler_init_and_load(tmp_path: Path) -> None:
     """Test compiler initialization, manifest loading, caching, and missing file error handling.
 
     Args:

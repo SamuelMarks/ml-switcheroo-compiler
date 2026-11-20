@@ -7,8 +7,7 @@ import typing  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, maximum, multiply, subtract
 from ml_switcheroo_compiler.ops.unary import abs as abs_op
@@ -558,15 +557,22 @@ class ApplyAdam(OpDef):
 
     op_name = "ApplyAdam"
 
-    def infer_shape(self, param: EagerTensorProtocol, m: EagerTensorProtocol, v: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        param: OpValue,
+        m: OpValue,
+        v: OpValue,
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): Input `param` argument (param).
-            m (EagerTensorProtocol): Input `m` argument (m).
-            v (EagerTensorProtocol): Input `v` argument (v).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            param (OpValue): Input `param` argument (param).
+            m (OpValue): Input `m` argument (m).
+            v (OpValue): Input `v` argument (v).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -580,14 +586,20 @@ class ApplyAdagrad(OpDef):
 
     op_name = "ApplyAdagrad"
 
-    def infer_shape(self, param: EagerTensorProtocol, accum: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        param: OpValue,
+        accum: OpValue,
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): Input `param` argument (param).
-            accum (EagerTensorProtocol): Input `accum` argument (accum).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            param (OpValue): Input `param` argument (param).
+            accum (OpValue): Input `accum` argument (accum).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -601,15 +613,22 @@ class ApplyFtrl(OpDef):
 
     op_name = "ApplyFtrl"
 
-    def infer_shape(self, param: EagerTensorProtocol, accum: EagerTensorProtocol, linear: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        param: OpValue,
+        accum: OpValue,
+        linear: OpValue,
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): Input `param` argument (param).
-            accum (EagerTensorProtocol): Input `accum` argument (accum).
-            linear (EagerTensorProtocol): Input `linear` argument (linear).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            param (OpValue): Input `param` argument (param).
+            accum (OpValue): Input `accum` argument (accum).
+            linear (OpValue): Input `linear` argument (linear).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -623,15 +642,22 @@ class ApplyRMSProp(OpDef):
 
     op_name = "ApplyRMSProp"
 
-    def infer_shape(self, param: EagerTensorProtocol, ms: EagerTensorProtocol, mom: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        param: OpValue,
+        ms: OpValue,
+        mom: OpValue,
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape.
 
         Args:
-            param (EagerTensorProtocol): Input `param` argument (param).
-            ms (EagerTensorProtocol): Input `ms` argument (ms).
-            mom (EagerTensorProtocol): Input `mom` argument (mom).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            param (OpValue): Input `param` argument (param).
+            ms (OpValue): Input `ms` argument (ms).
+            mom (OpValue): Input `mom` argument (mom).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -639,7 +665,7 @@ class ApplyRMSProp(OpDef):
         return extract_shape(param)
 
 
-def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> TensorOrScalar:
+def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> OpValue:
     """Apply Adam update.
 
     Args:
@@ -660,7 +686,7 @@ def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> 
     return out, m, v
 
 
-def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> TensorOrScalar:
+def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> OpValue:
     """Apply Adagrad update.
 
     Args:
@@ -679,7 +705,7 @@ def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> Tens
     return out, accum
 
 
-def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> TensorOrScalar:
+def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> OpValue:
     """Apply FTRL update.
 
     Args:
@@ -699,7 +725,7 @@ def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: f
     return out, accum, linear
 
 
-def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> TensorOrScalar:
+def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> OpValue:
     """Apply RMSProp update.
 
     Args:
@@ -725,13 +751,13 @@ class LionConfigOp(OpDef):
 
     op_name = "LionConfig"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -745,13 +771,13 @@ class AdamaxHyperparamsOp(OpDef):
 
     op_name = "AdamaxHyperparams"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

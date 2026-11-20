@@ -3,49 +3,24 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
-from ml_switcheroo_compiler.backends.registry import ensure_callable
-from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable
-from ml_switcheroo_compiler.ops.base import OpDef
+from ml_switcheroo_compiler.core.shape import (
+    CallableObjectProtocol,
+    OpValue,
+    TypedVariadicCallable,
+    is_variadic_callable,
+)
+from ml_switcheroo_compiler.ops.base import MultiOutputOpDef, OpDef
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.shape_inference import ShapeType
 
 _REGISTRY: dict[str, type[OpDef]] = {}
+_MULTI_REGISTRY: dict[str, type[MultiOutputOpDef]] = {}
 _YAML_REGISTRY: dict[str, dict[str, dict[str, dict[str, str]]]] = {}
-_UTIL_REGISTRY: dict[str, TypedVariadicCallable[TensorOrScalar]] = {}
-
-
-@typing.runtime_checkable
-class _OpClassProtocol(typing.Protocol):
-    """Protocol for operation classes exposing a mutable `op_type` attribute."""
-
-    op_type: str
-
-
-def _is_op_class(val: type) -> typing.TypeGuard[type[OpDef]]:
-    """Type guard narrowing `val` to `type[OpDef]`.
-
-    Args:
-        val (type): Candidate class.
-
-    Returns:
-        bool: True if `val` is a class.
-    """
-    return isinstance(val, type)
-
-
-def _is_yaml_entry_dict(val: TensorOrScalar) -> typing.TypeGuard[dict[str, dict[str, dict[str, str]]]]:
-    """Type guard narrowing a raw YAML operation entry to `dict[str, dict[str, dict[str, str]]]`.
-
-    Args:
-        val (TensorOrScalar): Candidate YAML entry.
-
-    Returns:
-        bool: True if `val` is a dict.
-    """
-    return isinstance(val, dict)
+_OP_DESCRIPTIONS: dict[str, str] = {}
+_UTIL_REGISTRY: dict[str, TypedVariadicCallable[OpValue]] = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
@@ -62,10 +37,19 @@ def _load_yaml_registry(force: bool = False) -> None:
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
         _YAML_REGISTRY.clear()
+        _OP_DESCRIPTIONS.clear()
         for k, v in OPS_REGISTRY.items():
-            raw_v: TensorOrScalar = v
-            assert _is_yaml_entry_dict(raw_v)
-            _YAML_REGISTRY[k] = raw_v
+            entry: dict[str, dict[str, dict[str, str]]] = {}
+            for sec_k, sec_v in v.items():
+                if sec_k == "description" and isinstance(sec_v, str):
+                    _OP_DESCRIPTIONS[k] = sec_v
+                elif isinstance(sec_v, Mapping):
+                    sec_dict: dict[str, dict[str, str]] = {}
+                    for item_k, item_v in sec_v.items():
+                        if isinstance(item_v, Mapping):
+                            sec_dict[str(item_k)] = {str(mk): str(mv) for mk, mv in item_v.items()}
+                    entry[str(sec_k)] = sec_dict
+            _YAML_REGISTRY[k] = entry
 
 
 def register_op(name: str) -> Callable[[type], type]:
@@ -86,13 +70,19 @@ def register_op(name: str) -> Callable[[type], type]:
 
         Returns:
             type: The registered operation class.
+
+        Raises:
+            ValueError: If input arguments, shapes, or configuration values in `decorator` are invalid.
         """
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
-        raw_cls: type = cls
-        assert _is_op_class(raw_cls)
-        raw_cls.op_type = name
-        _REGISTRY[name] = raw_cls
+        if issubclass(cls, MultiOutputOpDef):
+            cls.op_type = name
+            _MULTI_REGISTRY[name] = cls
+        else:
+            assert issubclass(cls, OpDef)
+            cls.op_type = name
+            _REGISTRY[name] = cls
         return cls
 
     return decorator
@@ -120,20 +110,22 @@ def register_util(name: str) -> Callable[[F], F]:
         Returns:
             F: The registered function.
         """
-        _UTIL_REGISTRY[name] = ensure_callable(func)
+        cand: OpValue | F = func
+        assert is_variadic_callable(cand)
+        _UTIL_REGISTRY[name] = cand
         return func
 
     return decorator
 
 
-def get_util(name: str) -> TypedVariadicCallable[TensorOrScalar]:
+def get_util(name: str) -> TypedVariadicCallable[OpValue]:
     """Retrieve a registered utility function by name.
 
     Args:
         name (str): Identifier of the utility function.
 
     Returns:
-        TypedVariadicCallable[TensorOrScalar]: Registered utility callable.
+        TypedVariadicCallable[OpValue]: Registered utility callable.
 
     Raises:
         KeyError: If the utility function is not registered.
@@ -350,16 +342,22 @@ class _RegistryShimFix(_RegistryShim):
         backend = variants.get(prefix, {})
         return backend.get("eager") or backend.get("generator") or backend.get("target_api")
 
-    def get_op(self, op_name: str) -> dict[str, dict[str, dict[str, str]]] | None:
+    def get_op(self, op_name: str) -> dict[str, str | dict[str, dict[str, str]]] | None:
         """Retrieve raw operation entry from the registry.
 
         Args:
             op_name (str): Operation name.
 
         Returns:
-            dict[str, dict[str, dict[str, str]]] | None: Operation dictionary if found.
+            dict[str, str | dict[str, dict[str, str]]] | None: Operation dictionary if found.
         """
-        return self.operations.get(op_name)
+        op = self.operations.get(op_name)
+        if op is None:
+            return None
+        out: dict[str, str | dict[str, dict[str, str]]] = dict(op)
+        if op_name in _OP_DESCRIPTIONS:
+            out["description"] = _OP_DESCRIPTIONS[op_name]
+        return out
 
 
 backend_mapping_registry = _RegistryShimFix(_YAML_REGISTRY)

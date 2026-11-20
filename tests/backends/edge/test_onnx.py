@@ -2,18 +2,63 @@
 
 from __future__ import annotations
 
+import types
 import typing
 from unittest.mock import patch
 
-from ml_switcheroo_ir import LogicalNode, NodeDict
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalNode, NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node_dict
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.ir.core import ensure_attrs
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+
+
+class _MockGraphProto:
+    """Mock ONNX GraphProto compatible with `BackendArg`."""
+
+    def __init__(self, n: BackendArg) -> None:
+        """Initialize mock graph.
+
+        Args:
+            n: Graph name.
+        """
+        self.name = n
+
+    @property
+    def __name__(self) -> str:
+        """Return mock graph class identifier.
+
+        Returns:
+            str: Identifier string.
+        """
+        return "MockGraphProto"
+
+
+class _MockModelProto:
+    """Mock ONNX ModelProto compatible with `BackendArg`."""
+
+    @property
+    def __name__(self) -> str:
+        """Return mock model class identifier.
+
+        Returns:
+            str: Identifier string.
+        """
+        return "MockModelProto"
+
+    def SerializeToString(self) -> bytes:
+        """Serialize mock model to bytes.
+
+        Returns:
+            bytes: Serialized mock payload.
+        """
+        return b"model"
 
 
 def test_onnx_code_generator_instantiation() -> None:
@@ -28,14 +73,14 @@ def test_onnx_generate_mocked() -> None:
     graph = IRGraph()
     node = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
     graph.nodes["add_1"] = node
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node])
+    graph.sorted_nodes = [node]
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Add": "Add"}}
 
     # We test generic_visit manually
-    res = ensure_callable(generator.generic_visit)(node, ["in1", "in2"])
+    res = generator.generic_visit(node, ["in1", "in2"])
     assert res == "add_1"
 
     # We test missing dependencies fallback
@@ -53,15 +98,16 @@ def test_onnx_proto_type() -> None:
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
         INT32 = 6
         INT64 = 7
         BOOL = 9
 
-    assert ensure_callable(generator._get_proto_type)("float32", MockTensorProto) == MockTensorProto.FLOAT
-    assert ensure_callable(generator._get_proto_type)("int32", MockTensorProto) == MockTensorProto.INT32
-    assert ensure_callable(generator._get_proto_type)("bool", MockTensorProto) == MockTensorProto.BOOL
-    assert ensure_callable(generator._get_proto_type)("unknown", MockTensorProto) == MockTensorProto.FLOAT
+    assert generator._get_proto_type("float32", MockTensorProto) == MockTensorProto.FLOAT
+    assert generator._get_proto_type("int32", MockTensorProto) == MockTensorProto.INT32
+    assert generator._get_proto_type("bool", MockTensorProto) == MockTensorProto.BOOL
+    assert generator._get_proto_type("unknown", MockTensorProto) == MockTensorProto.FLOAT
 
 
 def test_onnx_build_methods() -> None:
@@ -70,35 +116,38 @@ def test_onnx_build_methods() -> None:
     node1 = IRNode("in1", "Input", inputs=[], shape_metadata=[2, 2])
     node2 = IRNode("in2", "Input", inputs=[], shape_metadata=[2, 2])
     node3 = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
-    ensure_mutable(node3).attributes = ensure_eager_tensor({"axis": 1})
+    node3.attributes = {"axis": 1}
 
     # Let's add nodes for constant and control flow
     node4 = IRNode("c_1", "Constant", inputs=[], shape_metadata=[1])
-    ensure_mutable(node4).attributes = ensure_eager_tensor({"value": 1.0})
+    node4.attributes = {"value": 1.0}
 
     node5 = IRNode("if_1", "If", inputs=[], shape_metadata=[1])
     subgraph = IRGraph()
-    ensure_mutable(node5).attributes = ensure_eager_tensor({"then_branch": subgraph, "else_branch": subgraph})
+    node5.attributes = {"then_branch": subgraph, "else_branch": subgraph}
 
     node6 = IRNode("loop_1", "Loop", inputs=[], shape_metadata=[1])
-    ensure_mutable(node6).attributes = ensure_eager_tensor({"body": subgraph})
+    node6.attributes = {"body": subgraph}
 
-    graph.nodes = NodeDict(ensure_node_dict({"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6}))
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2, node3, node4, node5, node6])
+    graph.nodes = NodeDict({"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6})
+    graph.sorted_nodes = [node1, node2, node3, node4, node5, node6]
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
-    generator.schema = {"operations": {"Input": "Input", "Add": "Add", "Constant": "Constant", "If": "If", "Loop": "Loop"}}
+    generator.schema = {
+        "operations": {"Input": "Input", "Add": "Add", "Constant": "Constant", "If": "If", "Loop": "Loop"}
+    }
 
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor_value_info(self, name: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
+        def make_tensor_value_info(self, name: BackendArg, dtype: BackendArg, shape: BackendArg) -> BackendArg:
             """Test function make_tensor_value_info.
 
             Args:
@@ -107,11 +156,13 @@ def test_onnx_build_methods() -> None:
                 shape: Test parameter `shape`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor_value_info`.
+                BackendArg: Computed output value from `make_tensor_value_info`.
             """
             return f"value_info({name}, {dtype}, {shape})"
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -122,11 +173,13 @@ def test_onnx_build_methods() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -136,11 +189,13 @@ def test_onnx_build_methods() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
-        def make_graph(self, nodes: EagerValue, name: EagerValue, inputs: EagerValue, outputs: EagerValue) -> EagerValue:
+        def make_graph(
+            self, nodes: BackendArg, name: BackendArg, inputs: BackendArg, outputs: BackendArg
+        ) -> BackendArg:
             """Test function make_graph.
 
             Args:
@@ -150,23 +205,11 @@ def test_onnx_build_methods() -> None:
                 outputs: Test parameter `outputs`.
 
             Returns:
-                EagerValue: Computed output value from `make_graph`.
+                BackendArg: Computed output value from `make_graph`.
             """
+            return _MockGraphProto(name)
 
-            class Graph:
-                """Test class Graph."""
-
-                def __init__(self, n: EagerValue) -> None:
-                    """Test function __init__.
-
-                    Args:
-                        n: Test parameter `n`.
-                    """
-                    self.name = n
-
-            return ensure_eager_tensor(Graph(name))
-
-        def make_model(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_model(self, graph: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function make_model.
 
             Args:
@@ -174,30 +217,18 @@ def test_onnx_build_methods() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_model`.
+                BackendArg: Computed output value from `make_model`.
             """
+            return _MockModelProto()
 
-            class Model:
-                """Test class Model."""
-
-                def SerializeToString(self) -> EagerValue:
-                    """Test function SerializeToString.
-
-                    Returns:
-                        EagerValue: Computed output value from `SerializeToString`.
-                    """
-                    return b"model"
-
-            return ensure_eager_tensor(Model())
-
-        def printable_graph(self, graph: EagerValue) -> EagerValue:
+        def printable_graph(self, graph: BackendArg) -> BackendArg:
             """Test function printable_graph.
 
             Args:
                 graph: Test parameter `graph`.
 
             Returns:
-                EagerValue: Computed output value from `printable_graph`.
+                BackendArg: Computed output value from `printable_graph`.
             """
             return f"printable({graph})"
 
@@ -217,20 +248,20 @@ def test_onnx_build_methods() -> None:
 
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            v1 = ensure_callable(generator._build_single_value_info)(node1, None, MockTensorProto, False)
+            v1 = generator._build_single_value_info(node1, None, MockTensorProto, False)
             assert v1 is not None
 
-            ensure_mutable(node1).id = ensure_eager_tensor("in1")
+            node1.id = "in1"
             dyn_axes = {"in1": {0: "batch"}}
-            ensure_callable(generator._build_single_value_info)(node1, dyn_axes, MockTensorProto, False)
+            generator._build_single_value_info(node1, dyn_axes, MockTensorProto, False)
 
-            ensure_callable(generator._build_single_value_info)("missing", None, MockTensorProto, False)
+            generator._build_single_value_info("missing", None, MockTensorProto, False)
 
             # Test _build_onnx_nodes
-            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
-            assert any("node(" in n for n in nodes)
-            assert any("Constant" in n for n in nodes)
-            assert any("If" in n for n in nodes)
+            nodes = generator._build_onnx_nodes(MockTensorProto)
+            assert any("node(" in str(n) for n in nodes)
+            assert any("Constant" in str(n) for n in nodes)
+            assert any("If" in str(n) for n in nodes)
 
             # Test graph and generate
             generator._build_onnx_graph(None)
@@ -251,12 +282,13 @@ def test_onnx_export_and_missing() -> None:
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor_value_info(self, name: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
+        def make_tensor_value_info(self, name: BackendArg, dtype: BackendArg, shape: BackendArg) -> BackendArg:
             """Test function make_tensor_value_info.
 
             Args:
@@ -265,11 +297,13 @@ def test_onnx_export_and_missing() -> None:
                 shape: Test parameter `shape`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor_value_info`.
+                BackendArg: Computed output value from `make_tensor_value_info`.
             """
             return f"value_info({name}, {dtype}, {shape})"
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -280,11 +314,13 @@ def test_onnx_export_and_missing() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -294,11 +330,13 @@ def test_onnx_export_and_missing() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
-        def make_graph(self, nodes: EagerValue, name: EagerValue, inputs: EagerValue, outputs: EagerValue) -> EagerValue:
+        def make_graph(
+            self, nodes: BackendArg, name: BackendArg, inputs: BackendArg, outputs: BackendArg
+        ) -> BackendArg:
             """Test function make_graph.
 
             Args:
@@ -308,23 +346,11 @@ def test_onnx_export_and_missing() -> None:
                 outputs: Test parameter `outputs`.
 
             Returns:
-                EagerValue: Computed output value from `make_graph`.
+                BackendArg: Computed output value from `make_graph`.
             """
+            return _MockGraphProto(name)
 
-            class Graph:
-                """Test class Graph."""
-
-                def __init__(self, n: EagerValue) -> None:
-                    """Test function __init__.
-
-                    Args:
-                        n: Test parameter `n`.
-                    """
-                    self.name = n
-
-            return ensure_eager_tensor(Graph(name))
-
-        def make_model(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_model(self, graph: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function make_model.
 
             Args:
@@ -332,26 +358,14 @@ def test_onnx_export_and_missing() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_model`.
+                BackendArg: Computed output value from `make_model`.
             """
-
-            class Model:
-                """Test class Model."""
-
-                def SerializeToString(self) -> EagerValue:
-                    """Test function SerializeToString.
-
-                    Returns:
-                        EagerValue: Computed output value from `SerializeToString`.
-                    """
-                    return b"model"
-
-            return ensure_eager_tensor(Model())
+            return _MockModelProto()
 
     class MockChecker:
         """Test class MockChecker."""
 
-        def check_model(self, model: EagerValue) -> None:
+        def check_model(self, model: BackendArg) -> None:
             """Test function check_model.
 
             Args:
@@ -383,12 +397,12 @@ def test_onnx_build_single_value_info_missing() -> None:
     class MockTensorProto:
         """Test class MockTensorProto."""
 
-        pass
+        name: str = "MockTensorProto"
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor_value_info(self, name: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
+        def make_tensor_value_info(self, name: BackendArg, dtype: BackendArg, shape: BackendArg) -> BackendArg:
             """Test function make_tensor_value_info.
 
             Args:
@@ -397,7 +411,7 @@ def test_onnx_build_single_value_info_missing() -> None:
                 shape: Test parameter `shape`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor_value_info`.
+                BackendArg: Computed output value from `make_tensor_value_info`.
             """
             return f"value_info({name}, {dtype}, {shape})"
 
@@ -410,18 +424,17 @@ def test_onnx_build_single_value_info_missing() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         # Tests missing node ID fallback
-        v = ensure_callable(generator._build_single_value_info)("non_existent_node", None, MockTensorProto, is_output=False)
-        assert "value_info(" in v
+        v = generator._build_single_value_info("non_existent_node", None, MockTensorProto, is_output=False)
+        assert "value_info(" in str(v)
 
 
 def test_onnx_generate_text_fallback() -> None:
     """Test function test_onnx_generate_text_fallback."""
     graph = IRGraph()
-    node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
-    ensure_mutable(node).dtype = ensure_eager_tensor("float32")
-    node2 = IRNode("Add", "add_1", inputs=["in_1", "in_1"])
-    graph.nodes = NodeDict(ensure_node_dict({"in_1": node, "add_1": node2}))
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node, node2])
+    node = IRNode(id="in_1", op_type="Input", inputs=[], shape_metadata=[2, 2], dtype="float32")
+    node2 = IRNode(id="add_1", op_type="Add", inputs=["in_1", "in_1"])
+    graph.nodes = NodeDict({"in_1": node, "add_1": node2})
+    graph.sorted_nodes = [node, node2]
     graph.outputs = ["add_1"]
 
     generator = ONNXCodeGenerator(graph, [])
@@ -435,23 +448,26 @@ def test_onnx_node_attributes() -> None:
     graph = IRGraph()
     node_const = IRNode("c_1", "Constant", inputs=[], shape_metadata=[1], attributes={"value": 5.0})
     node_if = IRNode("if_1", "If", inputs=[])
-    ensure_mutable(node_if).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
+    node_if.attributes = {"then_branch": IRGraph(), "else_branch": IRGraph()}
     node_loop = IRNode("loop_1", "Loop", inputs=[])
-    ensure_mutable(node_loop).attributes = ensure_eager_tensor({"body": IRGraph()})
+    node_loop.attributes = {"body": IRGraph()}
 
-    graph.nodes = NodeDict(ensure_node_dict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
+    graph.nodes = NodeDict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop})
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"If": {}, "Loop": {}}}
 
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -461,11 +477,13 @@ def test_onnx_node_attributes() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -476,24 +494,26 @@ def test_onnx_node_attributes() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
-        def make_tensor_value_info(self, name: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
+        def make_tensor_value_info(self, name: BackendArg, dtype: BackendArg, shape: BackendArg) -> BackendArg:
             """Construct mock ONNX ValueInfoProto.
 
             Args:
-                name (EagerValue): Tensor name.
-                dtype (EagerValue): Tensor data type code.
-                shape (EagerValue): Tensor shape sequence.
+                name (BackendArg): Tensor name.
+                dtype (BackendArg): Tensor data type code.
+                shape (BackendArg): Tensor shape sequence.
 
             Returns:
-                EagerValue: Mock value info identifier.
+                BackendArg: Mock value info identifier.
             """
             return f"vi({name})"
 
-        def make_graph(self, nodes: EagerValue, name: EagerValue, inputs: EagerValue, outputs: EagerValue) -> EagerValue:
+        def make_graph(
+            self, nodes: BackendArg, name: BackendArg, inputs: BackendArg, outputs: BackendArg
+        ) -> BackendArg:
             """Test function make_graph.
 
             Args:
@@ -503,21 +523,9 @@ def test_onnx_node_attributes() -> None:
                 outputs: Test parameter `outputs`.
 
             Returns:
-                EagerValue: Computed output value from `make_graph`.
+                BackendArg: Computed output value from `make_graph`.
             """
-
-            class Graph:
-                """Test class Graph."""
-
-                def __init__(self, n: EagerValue) -> None:
-                    """Test function __init__.
-
-                    Args:
-                        n: Test parameter `n`.
-                    """
-                    self.name = n
-
-            return ensure_eager_tensor(Graph(name))
+            return _MockGraphProto(name)
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -528,26 +536,26 @@ def test_onnx_node_attributes() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = generator._build_onnx_nodes(MockTensorProto)
             assert nodes == ["node(Constant, c_1)", "node(If, if_1)", "node(Loop, loop_1)"]
 
 
 def test_onnx_value_infos() -> None:
     """Test function test_onnx_value_infos."""
     graph = IRGraph()
-    node_a = IRNode("A", "a_1", inputs=[])
-    ensure_mutable(node_a).dtype = ensure_eager_tensor("bool")
+    node_a = IRNode(id="a_1", op_type="A", inputs=[], dtype="bool")
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         BOOL = 9
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor_value_info(self, name: EagerValue, dtype: EagerValue, shape: EagerValue) -> EagerValue:
+        def make_tensor_value_info(self, name: BackendArg, dtype: BackendArg, shape: BackendArg) -> BackendArg:
             """Test function make_tensor_value_info.
 
             Args:
@@ -556,7 +564,7 @@ def test_onnx_value_infos() -> None:
                 shape: Test parameter `shape`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor_value_info`.
+                BackendArg: Computed output value from `make_tensor_value_info`.
             """
             return "vi"
 
@@ -568,12 +576,12 @@ def test_onnx_value_infos() -> None:
 
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
-        vis = ensure_callable(generator._build_onnx_value_infos)([node_a], None, MockTensorProto)
+        vis = generator._build_onnx_value_infos([node_a], None, MockTensorProto)
         assert len(vis) == 1
 
         # Test dict lookup
-        graph.nodes = NodeDict(ensure_node_dict({"a_1": node_a}))
-        vis2 = ensure_callable(generator._build_onnx_value_infos)(["a_1"], None, MockTensorProto)
+        graph.nodes = NodeDict({"a_1": node_a})
+        vis2 = generator._build_onnx_value_infos(["a_1"], None, MockTensorProto)
         assert len(vis2) == 1
 
 
@@ -586,22 +594,22 @@ def test_onnx_node_attributes_2() -> None:
     node2 = IRNode("ru_1", "RandomUniform", inputs=[], shape_metadata=[2, 2], dtype=IRDType("float32"))
     node3 = IRNode("split_1", "Split", inputs=[], attributes={"axis": 1, "split": [1, 1]})
     node4 = IRNode("cast_1", "Cast", inputs=[], attributes={"to": "int32"})
-    node5 = IRNode("max_1", "MaxPool2D", inputs=[], attributes={"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
+    node5 = IRNode(
+        "max_1", "MaxPool2D", inputs=[], attributes={"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)}
+    )
     node6 = IRNode("res_1", "Reshape", inputs=[], shape_metadata=[4])
     node7 = IRNode("br_1", "BroadcastTo", inputs=[], shape_metadata=[2, 2])
 
     graph.nodes = NodeDict(
-        ensure_node_dict(
-            {
-                "bn_1": node1,
-                "ru_1": node2,
-                "split_1": node3,
-                "cast_1": node4,
-                "max_1": node5,
-                "res_1": node6,
-                "br_1": node7,
-            }
-        )
+        {
+            "bn_1": node1,
+            "ru_1": node2,
+            "split_1": node3,
+            "cast_1": node4,
+            "max_1": node5,
+            "res_1": node6,
+            "br_1": node7,
+        }
     )
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {
@@ -619,13 +627,16 @@ def test_onnx_node_attributes_2() -> None:
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
         INT32 = 6
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -635,11 +646,13 @@ def test_onnx_node_attributes_2() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -650,7 +663,7 @@ def test_onnx_node_attributes_2() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -663,7 +676,7 @@ def test_onnx_node_attributes_2() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = generator._build_onnx_nodes(MockTensorProto)
             assert len(nodes) == 7
             assert "node(Reshape, res_1)" in nodes
 
@@ -676,19 +689,22 @@ def test_onnx_node_attributes_3() -> None:
     node3 = IRNode("tr_1", "Transpose", inputs=[], attributes={"axes": [1, 0]})
     node4 = IRNode("sl_1", "Slice", inputs=[], attributes={"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
     node5 = IRNode("ga_1", "Gather", inputs=[], attributes={"axis": 0})
-    node6 = IRNode("conv_1", "Conv2D", inputs=[], attributes={"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
+    node6 = IRNode(
+        "conv_1",
+        "Conv2D",
+        inputs=[],
+        attributes={"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1},
+    )
 
     graph.nodes = NodeDict(
-        ensure_node_dict(
-            {
-                "dr_1": node1,
-                "ln_1": node2,
-                "tr_1": node3,
-                "sl_1": node4,
-                "ga_1": node5,
-                "conv_1": node6,
-            }
-        )
+        {
+            "dr_1": node1,
+            "ln_1": node2,
+            "tr_1": node3,
+            "sl_1": node4,
+            "ga_1": node5,
+            "conv_1": node6,
+        }
     )
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {
@@ -705,13 +721,16 @@ def test_onnx_node_attributes_3() -> None:
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
         INT32 = 6
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -721,11 +740,13 @@ def test_onnx_node_attributes_3() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -736,7 +757,7 @@ def test_onnx_node_attributes_3() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
@@ -749,7 +770,7 @@ def test_onnx_node_attributes_3() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = generator._build_onnx_nodes(MockTensorProto)
             assert len(nodes) == 6
             assert "node(Transpose, tr_1)" in nodes
 
@@ -758,14 +779,14 @@ def test_onnx_full_build_nodes() -> None:
     """Test function test_onnx_full_build_nodes."""
     graph = IRGraph()
     node_const = IRNode("c_1", "Constant", inputs=[])
-    ensure_mutable(node_const).shape_metadata = ensure_eager_tensor([2])
-    ensure_mutable(node_const).attributes = ensure_eager_tensor({"value": 3.14})
+    pytest.MonkeyPatch().setattr(node_const, "shape_metadata", [2], raising=False)
+    node_const.attributes = {"value": 3.14}
     node_if = IRNode("if_1", "If", inputs=[])
-    ensure_mutable(node_if).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
+    node_if.attributes = {"then_branch": IRGraph(), "else_branch": IRGraph()}
     node_loop = IRNode("loop_1", "Loop", inputs=[])
-    ensure_mutable(node_loop).attributes = ensure_eager_tensor({"body": IRGraph()})
-    graph.nodes = NodeDict(ensure_node_dict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node_const, node_if, node_loop])
+    node_loop.attributes = {"body": IRGraph()}
+    graph.nodes = NodeDict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop})
+    graph.sorted_nodes = [node_const, node_if, node_loop]
 
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Constant": "Constant", "If": "If", "Loop": "Loop"}}
@@ -773,12 +794,15 @@ def test_onnx_full_build_nodes() -> None:
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -788,11 +812,13 @@ def test_onnx_full_build_nodes() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return f"tensor({name})"
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -803,11 +829,13 @@ def test_onnx_full_build_nodes() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return f"node({op_type}, {name})"
 
-        def make_graph(self, nodes: EagerValue, name: EagerValue, inputs: EagerValue, outputs: EagerValue) -> EagerValue:
+        def make_graph(
+            self, nodes: BackendArg, name: BackendArg, inputs: BackendArg, outputs: BackendArg
+        ) -> BackendArg:
             """Test function make_graph.
 
             Args:
@@ -817,21 +845,9 @@ def test_onnx_full_build_nodes() -> None:
                 outputs: Test parameter `outputs`.
 
             Returns:
-                EagerValue: Computed output value from `make_graph`.
+                BackendArg: Computed output value from `make_graph`.
             """
-
-            class Graph:
-                """Test class Graph."""
-
-                def __init__(self, n: EagerValue) -> None:
-                    """Test function __init__.
-
-                    Args:
-                        n: Test parameter `n`.
-                    """
-                    self.name = n
-
-            return ensure_eager_tensor(Graph(name))
+            return _MockGraphProto(name)
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -842,14 +858,15 @@ def test_onnx_full_build_nodes() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = ensure_callable(generator._build_onnx_nodes)(MockTensorProto)
+            nodes = generator._build_onnx_nodes(MockTensorProto)
             assert len(nodes) == 3
 
 
 def test_onnx_schema_missing() -> None:
     """Test function test_onnx_schema_missing."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     with patch("os.path.exists", return_value=False):
         gen = ONNXCodeGenerator(IRGraph(), [])
@@ -858,26 +875,24 @@ def test_onnx_schema_missing() -> None:
 
 def test_onnx_generic_visit_none() -> None:
     """Test function test_onnx_generic_visit_none."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = ONNXCodeGenerator(IRGraph(), [])
-    assert ensure_callable(gen.generic_visit)(None, []) == "onnx_op"
+    assert gen.generic_visit(None, []) == "onnx_op"
 
 
 def test_onnx_text_fallback_input() -> None:
     """Test function test_onnx_text_fallback_input."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     graph = IRGraph()
-    # The problem was that IRNode assigns name to node.id usually, but let's be explicit
-    node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("in_1")
-    ensure_mutable(node).dtype = ensure_eager_tensor("float32")
-    ensure_mutable(node).op_type = ensure_eager_tensor("Input")
+    node = IRNode(id="in_1", op_type="Input", inputs=[], shape_metadata=[2, 2], dtype="float32")
     gen = ONNXCodeGenerator(graph, [])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node])
+    gen.sorted_nodes = [node]
     out = gen._generate_text_fallback()
     assert 'input: "in_1"' in out
 
@@ -886,26 +901,30 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     """Test function test_onnx_generator_edge_onnx_fallback."""
     import copy
 
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
     graph = IRGraph()
     node = IRNode("test_1", "TestOp", inputs=[])
 
     gen = ONNXCodeGenerator(graph, [])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node])
+    gen.sorted_nodes = [node]
     gen.schema = {"operations": {"TestOp": "TestOpMapped"}}
 
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -916,7 +935,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return op_type
 
@@ -931,7 +950,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     try:
         with patch.dict("sys.modules", {"onnx": MockOnnx()}):
             with patch("importlib.import_module", return_value=MockOnnx()):
-                nodes = ensure_callable(gen._build_onnx_nodes)(MockTensorProto)
+                nodes = gen._build_onnx_nodes(MockTensorProto)
                 assert nodes[0] == "TestOp"
     finally:
         OPS_REGISTRY.clear()
@@ -940,50 +959,61 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
 
 def test_onnx_build_onnx_nodes_branches() -> None:
     """Test function test_onnx_build_onnx_nodes_branches."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     graph = IRGraph()
 
     node_input = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(node_input).op_type = ensure_eager_tensor("Input")
+    node_input.op_type = "Input"
 
     node_constant = IRNode("Constant", "c_1", inputs=[])
-    ensure_mutable(node_constant).op_type = ensure_eager_tensor("Constant")
-    ensure_mutable(node_constant).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(node_constant).attributes = ensure_eager_tensor({"value": 1.0})
+    node_constant.op_type = "Constant"
+    pytest.MonkeyPatch().setattr(node_constant, "shape_metadata", [2, 2], raising=False)
+    node_constant.attributes = {"value": 1.0}
 
     # If without then_branch
     node_if_no_then = IRNode("If", "if_1", inputs=[])
-    ensure_mutable(node_if_no_then).op_type = ensure_eager_tensor("If")
-    ensure_mutable(node_if_no_then).attributes = ensure_eager_tensor({"else_branch": IRGraph()})
+    node_if_no_then.op_type = "If"
+    node_if_no_then.attributes = {"else_branch": IRGraph()}
 
     # If without else_branch
     node_if_no_else = IRNode("If", "if_2", inputs=[])
-    ensure_mutable(node_if_no_else).op_type = ensure_eager_tensor("If")
-    ensure_mutable(node_if_no_else).attributes = ensure_eager_tensor({"then_branch": IRGraph()})
+    node_if_no_else.op_type = "If"
+    node_if_no_else.attributes = {"then_branch": IRGraph()}
 
     # Loop without body
     node_loop_no_body = IRNode("Loop", "loop_1", inputs=[])
-    ensure_mutable(node_loop_no_body).op_type = ensure_eager_tensor("Loop")
-    ensure_mutable(node_loop_no_body).attributes = ensure_eager_tensor({})
+    node_loop_no_body.op_type = "Loop"
+    node_loop_no_body.attributes = {}
 
     node_loop_with_body = IRNode("Loop", "loop_2", inputs=[])
-    ensure_mutable(node_loop_with_body).op_type = ensure_eager_tensor("Loop")
-    ensure_mutable(node_loop_with_body).attributes = ensure_eager_tensor({"body": IRGraph()})
+    node_loop_with_body.op_type = "Loop"
+    node_loop_with_body.attributes = {"body": IRGraph()}
 
     gen = ONNXCodeGenerator(graph, [])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node_input, node_constant, node_if_no_then, node_if_no_else, node_loop_no_body, node_loop_with_body])
+    gen.sorted_nodes = [
+        node_input,
+        node_constant,
+        node_if_no_then,
+        node_if_no_else,
+        node_loop_no_body,
+        node_loop_with_body,
+    ]
 
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -994,11 +1024,13 @@ def test_onnx_build_onnx_nodes_branches() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return op_type
 
-        def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
+        def make_tensor(
+            self, name: BackendArg, data_type: BackendArg, dims: BackendArg, vals: BackendArg
+        ) -> BackendArg:
             """Test function make_tensor.
 
             Args:
@@ -1008,11 +1040,11 @@ def test_onnx_build_onnx_nodes_branches() -> None:
                 vals: Test parameter `vals`.
 
             Returns:
-                EagerValue: Computed output value from `make_tensor`.
+                BackendArg: Computed output value from `make_tensor`.
             """
             return "tensor"
 
-        def make_graph(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_graph(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function make_graph.
 
             Args:
@@ -1020,15 +1052,9 @@ def test_onnx_build_onnx_nodes_branches() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_graph`.
+                BackendArg: Computed output value from `make_graph`.
             """
-
-            class M:
-                """Test class M."""
-
-                name = "test"
-
-            return ensure_eager_tensor(M())
+            return _MockGraphProto("test")
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -1038,14 +1064,15 @@ def test_onnx_build_onnx_nodes_branches() -> None:
 
     with patch.dict("sys.modules", {"onnx": MockOnnx()}):
         with patch("importlib.import_module", return_value=MockOnnx()):
-            ensure_callable(gen._build_onnx_nodes)(MockTensorProto)
-    assert gen is not None
+            built_nodes = gen._build_onnx_nodes(MockTensorProto)
+    assert built_nodes == ["Constant", "If", "If", "Loop", "Loop"]
 
 
 def test_onnx_printer_non_str() -> None:
     """Test function test_onnx_printer_non_str."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = ONNXCodeGenerator(IRGraph(), [])
 
@@ -1053,14 +1080,14 @@ def test_onnx_printer_non_str() -> None:
         """Test class MockPrinter."""
 
         @staticmethod
-        def to_text(graph: EagerValue) -> EagerValue:
+        def to_text(graph: BackendArg) -> BackendArg:
             """Test function to_text.
 
             Args:
                 graph: Test parameter `graph`.
 
             Returns:
-                EagerValue: Computed output value from `to_text`.
+                BackendArg: Computed output value from `to_text`.
             """
             return b"bytes_result"
 
@@ -1073,14 +1100,14 @@ def test_onnx_printer_non_str() -> None:
             """Test class helper."""
 
             @staticmethod
-            def printable_graph(graph: EagerValue) -> EagerValue:
+            def printable_graph(graph: BackendArg) -> BackendArg:
                 """Test function printable_graph.
 
                 Args:
                     graph: Test parameter `graph`.
 
                 Returns:
-                    EagerValue: Computed output value from `printable_graph`.
+                    BackendArg: Computed output value from `printable_graph`.
                 """
                 return "printable"
 
@@ -1093,8 +1120,9 @@ def test_onnx_printer_non_str() -> None:
 
 def test_onnx_import_error_printer() -> None:
     """Test function test_onnx_import_error_printer."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = ONNXCodeGenerator(IRGraph(), [])
 
@@ -1102,14 +1130,14 @@ def test_onnx_import_error_printer() -> None:
         """Test class MockHelper."""
 
         @staticmethod
-        def printable_graph(graph: EagerValue) -> EagerValue:
+        def printable_graph(graph: BackendArg) -> BackendArg:
             """Test function printable_graph.
 
             Args:
                 graph: Test parameter `graph`.
 
             Returns:
-                EagerValue: Computed output value from `printable_graph`.
+                BackendArg: Computed output value from `printable_graph`.
             """
             return "printable"
 
@@ -1128,8 +1156,9 @@ def test_onnx_import_error_printer() -> None:
 
 def test_onnx_import_error_outer() -> None:
     """Test function test_onnx_import_error_outer."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = ONNXCodeGenerator(IRGraph(), [])
     with patch("importlib.import_module", side_effect=ImportError):
@@ -1143,27 +1172,31 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
     """Test function test_onnx_generator_edge_onnx_truthy."""
     import copy
 
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
     graph = IRGraph()
     node = IRNode("TestOp2", "test_2", inputs=[])
-    ensure_mutable(node).id = ensure_eager_tensor("test_2")
-    ensure_mutable(node).op_type = ensure_eager_tensor("TestOp2")
+    node.id = "test_2"
+    node.op_type = "TestOp2"
 
     gen = ONNXCodeGenerator(graph, [])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([node])
+    gen.sorted_nodes = [node]
 
     class MockTensorProto:
         """Test class MockTensorProto."""
 
+        name: str = "MockTensorProto"
         FLOAT = 1
 
     class MockHelper:
         """Test class MockHelper."""
 
-        def make_node(self, op_type: EagerValue, inputs: EagerValue, outputs: EagerValue, name: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def make_node(
+            self, op_type: BackendArg, inputs: BackendArg, outputs: BackendArg, name: BackendArg, **kwargs: BackendArg
+        ) -> BackendArg:
             """Test function make_node.
 
             Args:
@@ -1174,7 +1207,7 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `make_node`.
+                BackendArg: Computed output value from `make_node`.
             """
             return op_type
 
@@ -1189,7 +1222,7 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
     try:
         with patch.dict("sys.modules", {"onnx": MockOnnx()}):
             with patch("importlib.import_module", return_value=MockOnnx()):
-                nodes = ensure_callable(gen._build_onnx_nodes)(MockTensorProto)
+                nodes = gen._build_onnx_nodes(MockTensorProto)
                 assert nodes[0] == "MyCustomGen"
     finally:
         OPS_REGISTRY.clear()
@@ -1200,13 +1233,10 @@ def test_onnx_remaining_serialization_branches() -> None:
     """Test lines 218, 578, 591, 637-640, 644, 649-651, and 686-688 in edge/onnx.py."""
     from ml_switcheroo_ir import LogicalGraph
 
-    from ml_switcheroo_compiler.backends.edge.onnx import (
-        ONNXCodeGenerator,
-        serialize_attribute,
-    )
+    from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator, serialize_attribute
 
     # 1. Line 218: serialize_attribute with non-primitive object
-    class CustomNonPrimitive:
+    class CustomNonPrimitive(MockTestStub):
         """Test class CustomNonPrimitive."""
 
         def __str__(self) -> str:
@@ -1217,13 +1247,19 @@ def test_onnx_remaining_serialization_branches() -> None:
             """
             return "custom_val"
 
-    attr_custom = ensure_callable(serialize_attribute)("custom_attr", ensure_callable(CustomNonPrimitive)())
+    attr_custom = serialize_attribute("custom_attr", CustomNonPrimitive())
     assert len(attr_custom) > 0
 
     # 2. Dynamic axes out of range (lines 578->577 and 591->590) and attributes with skipped keys (lines 649-651)
     g = LogicalGraph(name="test_dyn")
     n_in = LogicalNode(id="in_1", op_type="Input", shape_metadata=(2,))
-    n_out = LogicalNode(id="out_1", op_type="Relu", inputs=["in_1"], attributes={"dtype": "float32", "custom_float": 1.5}, shape_metadata=(2,))
+    n_out = LogicalNode(
+        id="out_1",
+        op_type="Relu",
+        inputs=["in_1"],
+        attributes={"dtype": "float32", "custom_float": 1.5},
+        shape_metadata=(2,),
+    )
     g.inputs = ["in_1"]
     g.outputs = ["out_1"]
     g.nodes = NodeDict({"in_1": n_in, "out_1": n_out})
@@ -1264,14 +1300,13 @@ def test_onnx_remaining_serialization_branches() -> None:
     assert len(res_sub) > 0
 
 
-def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
+def _ensure_onnx_reference_mock() -> dict[str, BackendArg]:
     """Install a mock onnx.reference module if onnx is not installed.
 
     Returns:
-        dict[str, EagerValue]: Mapping of sys.modules entries to patch.
+        dict[str, BackendArg]: Mapping of sys.modules entries to patch.
     """
     import importlib.util
-    import types
 
     import numpy as np
 
@@ -1285,7 +1320,7 @@ def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
     class _MockRefEval:
         """Mock ReferenceEvaluator when onnx is not installed."""
 
-        def __init__(self, proto: EagerValue) -> None:
+        def __init__(self, proto: BackendArg) -> None:
             """Initialize _MockRefEval.
 
             Args:
@@ -1293,7 +1328,7 @@ def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
             """
             self.proto = proto
 
-        def run(self, output_names: EagerValue, feed: dict[str, EagerValue]) -> list[EagerValue]:
+        def run(self, output_names: BackendArg, feed: dict[str, BackendArg]) -> list[BackendArg]:
             """Execute mock reference evaluation.
 
             Args:
@@ -1301,13 +1336,13 @@ def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
                 feed: Input dictionary.
 
             Returns:
-                list[EagerValue]: Evaluated outputs.
+                list[BackendArg]: Evaluated outputs.
             """
-            return [ensure_eager_tensor(np.maximum(np.asarray(v), 0.0)) for v in feed.values()]
+            return [np.maximum(np.asarray(v), 0.0) for v in feed.values()]
 
-    ensure_mutable(mock_ref).ReferenceEvaluator = ensure_eager_tensor(_MockRefEval)
-    ensure_mutable(mock_onnx).reference = ensure_eager_tensor(mock_ref)
-    return {"onnx": ensure_eager_tensor(mock_onnx), "onnx.reference": ensure_eager_tensor(mock_ref)}
+    pytest.MonkeyPatch().setattr(mock_ref, "ReferenceEvaluator", _MockRefEval, raising=False)
+    pytest.MonkeyPatch().setattr(mock_onnx, "reference", mock_ref, raising=False)
+    return {"onnx": mock_onnx, "onnx.reference": mock_ref}
 
 
 def test_onnx_aot_compilation_and_runner() -> None:
@@ -1328,7 +1363,8 @@ def test_onnx_aot_compilation_and_runner() -> None:
         g.nodes = NodeDict({"x": n_x, "y": n_y})
 
         gen = ONNXCodeGenerator(g)
-        runner = gen.compile_aot(g, dynamic_axes=ensure_eager_tensor({"x": {0: "batch"}}), opset_version=18)
+        dyn_axes: dict[str, dict[str | int, str]] = {"x": {0: "batch"}}
+        runner = gen.compile_aot(g, dynamic_axes=dyn_axes, opset_version=18)
         assert callable(runner)
 
         inp_data = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
@@ -1347,8 +1383,12 @@ def test_onnx_aot_compilation_and_runner() -> None:
         g_multi = IRGraph()
         n_a = IRNode(id="a", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
         n_b = IRNode(id="b", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
-        n_add = IRNode(id="out_add", op_type="Add", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"})
-        n_sub = IRNode(id="out_sub", op_type="Sub", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"})
+        n_add = IRNode(
+            id="out_add", op_type="Add", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"}
+        )
+        n_sub = IRNode(
+            id="out_sub", op_type="Sub", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"}
+        )
         g_multi.inputs = ["a", "b"]
         g_multi.outputs = ["out_add", "out_sub"]
         g_multi.nodes = NodeDict({"a": n_a, "b": n_b, "out_add": n_add, "out_sub": n_sub})
@@ -1369,7 +1409,7 @@ def test_onnx_aot_compilation_and_runner() -> None:
         # Single output branch
         g_multi.outputs = ["out_add"]
         fb_res_single = fb_runner(a_val, b=b_val)
-        ensure_callable(np.testing.assert_allclose)(fb_res_single, a_val + b_val)
+        np.testing.assert_allclose(ensure_ndarray(fb_res_single), a_val + b_val)
 
         # No outputs branch
         g_multi.outputs = []

@@ -7,12 +7,12 @@ import typing
 
 import numpy as np
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
-numpy_eager_registry = ensure_eager_tensor(ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager")).numpy_eager_registry)
+numpy_eager_registry = importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager").numpy_eager_registry
 
 
 def test_numpy_distributed_simulators() -> None:
@@ -25,20 +25,20 @@ def test_numpy_distributed_simulators() -> None:
     tensor = np.array([1, 2, 3])
 
     # AllGather
-    gathered = ensure_callable(numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
-    assert ensure_eager_tensor(gathered).shape == (1, 3)
+    gathered = numpy_eager_registry.get("AllGather")(np_mod, tensor, axis=0)
+    assert gathered.shape == (1, 3)
 
     # AllReduce
-    reduced = ensure_callable(numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
-    ensure_callable(np.testing.assert_array_equal)(reduced, tensor)
+    reduced = numpy_eager_registry.get("AllReduce")(np_mod, tensor)
+    np.testing.assert_array_equal(reduced, tensor)
 
     # ReduceScatter
-    scattered = ensure_callable(numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
-    ensure_callable(np.testing.assert_array_equal)(scattered, tensor)
+    scattered = numpy_eager_registry.get("ReduceScatter")(np_mod, tensor)
+    np.testing.assert_array_equal(scattered, tensor)
 
     # AllToAll
-    all_to_all = ensure_callable(numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
-    ensure_callable(np.testing.assert_array_equal)(all_to_all, tensor)
+    all_to_all = numpy_eager_registry.get("AllToAll")(np_mod, tensor)
+    np.testing.assert_array_equal(all_to_all, tensor)
 
 
 def test_numpy_distributed_all_reduce_ring_branches() -> None:
@@ -57,10 +57,10 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
 
     with patch("numpy.array_split", return_value=[np.array([1]), np.array([2])]):
         # Mocking numpy backend
-        class DummyBackend:
+        class DummyBackend(MockTestStub):
             """Test class DummyBackend."""
 
-            def array_split(self, x: EagerValue, sz: EagerValue) -> EagerValue:
+            def array_split(self, x: BackendArg, sz: BackendArg) -> BackendArg:
                 """Test function array_split.
 
                 Args:
@@ -68,22 +68,22 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
                     sz: Test parameter `sz`.
 
                 Returns:
-                    EagerValue: Computed output value from `array_split`.
+                    BackendArg: Computed output value from `array_split`.
                 """
                 return [np.array([1]), np.array([2])]
 
-            def concatenate(self, x: EagerValue) -> EagerValue:
+            def concatenate(self, x: BackendArg) -> BackendArg:
                 """Test function concatenate.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    EagerValue: Computed output value from `concatenate`.
+                    BackendArg: Computed output value from `concatenate`.
                 """
                 return np.array([1, 2])
 
-        ensure_callable(ctx.all_reduce_ring)(ensure_callable(np.array)([1, 2, 3]), op_type="dummy", backend_module=ensure_callable(DummyBackend)())
+        ctx.all_reduce_ring(np.array([1, 2, 3]), op_type="dummy", backend_module=DummyBackend())
         ctx.all_gather_tensors(np.array([1, 2, 3]))
     assert ctx.world_size == 2
 

@@ -6,11 +6,12 @@ from __future__ import annotations
 import typing
 
 import pytest
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.state_lifting import (
+    StateEntry,
     StateLiftingPass,
     _get_node_items,
     _get_val,
@@ -20,18 +21,18 @@ from ml_switcheroo_compiler.transforms.passes.state_lifting import (
     _set_val,
     state_lifting_pass,
 )
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_int, ensure_mutable
+from tests.testing_utils import MockGraphStub, MockTestStub, coerce_int
 
 if typing.TYPE_CHECKING:
     pass
 
 
-class DummyBlock:
+class DummyBlock(MockGraphStub):
     """Dummy block container with nodes and outputs."""
 
     def __init__(self) -> None:
         """Initialize DummyBlock."""
-        self.nodes: dict[str, IRNode] = {}
+        self.nodes = NodeDict()
         self.outputs: list[str] = []
 
 
@@ -65,7 +66,7 @@ def test_state_lifting() -> None:
     assert n2.op_type == "Output"
     b = DummyBlock()
     n4 = IRNode("n4", "ReadVariable", attributes={})
-    b.nodes = {"n4": n4}
+    b.nodes = NodeDict({"n4": n4})
     n5 = IRNode("n5", "If", attributes=ensure_attrs({"body": b}))
     graph.nodes["n5"] = n5
     res = state_lifting_pass(graph)
@@ -74,22 +75,26 @@ def test_state_lifting() -> None:
 
 def test_get_node_items() -> None:
     """Test _get_node_items with None, list, and dict node representations."""
-    assert ensure_callable(_get_node_items)(None) == []
+    assert _get_node_items(None) == []
 
-    class DummyBlockList:
+    class DummyBlockList(MockGraphStub):
         """Dummy block containing list of nodes."""
 
         def __init__(self) -> None:
             """Initialize DummyBlockList."""
             n = IRNode("n1", "Add", attributes={})
-            self.nodes = [n]
+            pytest.MonkeyPatch().setattr(self, "nodes", [n], raising=False)
 
-    assert ensure_callable(len)(ensure_callable(list)(ensure_callable(_get_node_items)(ensure_callable(DummyBlockList)()))) == 1
+    assert len(list(_get_node_items(DummyBlockList()))) == 1
 
 
 def test_state_lifting_already_in_outputs() -> None:
     """Test state lifting when node id is already in outputs."""
-    nodes = {"assign1": IRNode(id="assign1", op_type="AssignVariable", inputs=["some_input"], attributes={"variable_name": "my_var"})}
+    nodes = {
+        "assign1": IRNode(
+            id="assign1", op_type="AssignVariable", inputs=["some_input"], attributes={"variable_name": "my_var"}
+        )
+    }
     graph = IRGraph(name="test", nodes=nodes, outputs=["assign1"])
     state_lifting_pass(graph)
     assert graph.nodes["assign1"].op_type == "Output"
@@ -99,15 +104,22 @@ def test_state_lifting_already_in_outputs() -> None:
 def test_state_lifting_no_outputs() -> None:
     """Test state lifting when block has no outputs attribute."""
 
-    class DummyBlockNoOutputs:
+    class DummyBlockNoOutputs(MockTestStub):
         """Dummy block lacking outputs attribute."""
 
         def __init__(self) -> None:
             """Initialize DummyBlockNoOutputs."""
-            self.nodes = {"assign1": IRNode(id="assign1", op_type="AssignVariable", inputs=["some_input"], attributes={"variable_name": "my_var"})}
+            self.nodes = {
+                "assign1": IRNode(
+                    id="assign1",
+                    op_type="AssignVariable",
+                    inputs=["some_input"],
+                    attributes={"variable_name": "my_var"},
+                )
+            }
 
     block = DummyBlockNoOutputs()
-    ensure_callable(_lift_block)(block)
+    _lift_block(block)
     assert block.nodes["assign1"].op_type == "Output"
 
 
@@ -120,74 +132,116 @@ def test_get_and_set_val() -> None:
     assert d["a"] == 99
 
     class Obj:
-        """Simple object container."""
+        """Simple protocol-backed object container."""
 
         def __init__(self) -> None:
             """Initialize Obj."""
-            self.x = "hello"
+            self._state: dict[str, StateEntry] = {"x": "hello"}
+
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return state dict.
+
+            Returns:
+                dict[str, StateEntry]: Container state map.
+            """
+            return self._state
+
+        def load_state_dict(self, state: dict[str, StateEntry]) -> None:
+            """Update state dict.
+
+            Args:
+                state (dict[str, StateEntry]): Updated state entries.
+            """
+            self._state.update(state)
 
     obj = Obj()
-    assert ensure_callable(_get_val)(obj, "x") == "hello"
-    assert ensure_callable(_get_val)(obj, "y") is None
-    ensure_callable(_set_val)(obj, "x", "world")
-    assert obj.x == "world"
+    assert _get_val(obj, "x") == "hello"
+    assert _get_val(obj, "y") is None
+    _set_val(obj, "x", "world")
+    assert obj.state_dict()["x"] == "world"
 
 
 def test_navigate() -> None:
-    """Test _navigate traversing dictionaries and objects."""
+    """Test _navigate traversing dictionaries and protocol objects."""
     d = {"layer1": {"layer2": 42}}
     assert _navigate(d, ["layer1", "layer2"]) == 42
     assert _navigate(d, []) == d
 
     class Child:
-        """Child container with value."""
+        """Child container with state_dict."""
 
         def __init__(self) -> None:
             """Initialize Child."""
             self.val = 123
 
-    class Parent:
+        def state_dict(self) -> dict[str, int]:
+            """Return child state dict.
+
+            Returns:
+                dict[str, int]: Child state map.
+            """
+            return {"val": self.val}
+
+    class Parent(MockTestStub):
         """Parent container with child."""
 
         def __init__(self) -> None:
             """Initialize Parent."""
             self.child = Child()
 
+        def state_dict(self) -> dict[str, Child]:
+            """Return parent state dict.
+
+            Returns:
+                dict[str, Child]: Parent state map.
+            """
+            return {"child": self.child}
+
     parent = Parent()
-    assert ensure_callable(_navigate)(parent, ["child", "val"]) == 123
+    assert _navigate(parent, ["child", "val"]) == 123
 
 
 def test_lift_node_state_defaults() -> None:
     """Test _lift_node_state with default naming fallbacks and unhandled ops."""
     block = DummyBlock()
     read_node = IRNode("read1", "ReadVariable", attributes={})
-    assert bool(ensure_callable(_lift_node_state)(read_node, "read1", block)) is True
+    assert bool(_lift_node_state(read_node, "read1", block)) is True
     assert read_node.op_type == "Input"
     assert read_node.attributes["name"] == "var_read1"
 
     assign_node = IRNode("assign1", "AssignVariable", attributes={})
-    assert bool(ensure_callable(_lift_node_state)(assign_node, "assign1", block)) is True
+    assert bool(_lift_node_state(assign_node, "assign1", block)) is True
     assert assign_node.op_type == "Output"
     assert assign_node.attributes["name"] == "var_assign1_out"
 
     other_node = IRNode("n3", "Add", attributes={})
-    assert bool(ensure_callable(_lift_node_state)(other_node, "n3", block)) is False
+    assert bool(_lift_node_state(other_node, "n3", block)) is False
 
 
 def test_extract_state_reflection() -> None:
     """Test extract_state via reflection over __dict__."""
     pass_obj = StateLiftingPass()
 
-    class SubModule:
-        """Submodule with tensor attributes."""
+    from tests.testing_utils import MockTestStub
+
+    class SubModule(MockTestStub):
+        """Submodule with tensor state_dict."""
 
         def __init__(self) -> None:
             """Initialize SubModule."""
             self.sub_param = MockTensor(requires_grad=True)
             self.sub_buf = MockTensor(requires_grad=False)
 
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return submodule state dict.
+
+            Returns:
+                dict[str, StateEntry]: Submodule state map.
+            """
+            return {"sub_param": self.sub_param, "sub_buf": self.sub_buf}
+
     class RootModel:
-        """Root model with various attributes."""
+        """Root model with various state_dict entries."""
 
         def __init__(self) -> None:
             """Initialize RootModel."""
@@ -197,7 +251,7 @@ def test_extract_state_reflection() -> None:
             self.real_tensor = Tensor([1.0], cfg)
             self._private_val = MockTensor()
             self._buffers_explicit = MockTensor(requires_grad=False)
-            self.dict_params = {
+            self.dict_params: dict[str, StateEntry] = {
                 "w1": MockTensor(requires_grad=True),
                 "b1": MockTensor(requires_grad=False),
                 "non_tensor": "string_value",
@@ -206,8 +260,26 @@ def test_extract_state_reflection() -> None:
             self.primitive_int = 42
             self.instance_fn = lambda: 123
 
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return state dict.
+
+            Returns:
+                dict[str, StateEntry]: State map.
+            """
+            return {
+                "weight": self.weight,
+                "bias": self.bias,
+                "real_tensor": self.real_tensor,
+                "_private_val": self._private_val,
+                "_buffers_explicit": self._buffers_explicit,
+                "dict_params": self.dict_params,
+                "sub": self.sub,
+                "primitive_int": self.primitive_int,
+                "instance_fn": self.instance_fn,
+            }
+
     model = RootModel()
-    params, buffers = ensure_callable(pass_obj.extract_state)(model)
+    params, buffers = pass_obj.extract_state(model)
     assert "weight" in params
     assert "bias" in buffers
     assert "real_tensor" in params
@@ -219,17 +291,19 @@ def test_extract_state_reflection() -> None:
     assert "dict_params.non_tensor" not in params
     assert "sub.sub_param" in params
     assert "sub.sub_buf" in buffers
+    p_map, b_map = pass_obj.extract_state({"m_w": MockTensor(requires_grad=True)})
+    assert "m_w" in p_map and b_map == {}
 
 
 def test_extract_state_no_dict() -> None:
-    """Test extract_state on object without __dict__."""
+    """Test extract_state on object without protocol methods."""
 
-    class SlotsModel:
+    class SlotsModel(MockTestStub):
         """Model using __slots__."""
 
         __slots__ = ()
 
-    params, buffers = ensure_callable(StateLiftingPass)().extract_state(ensure_callable(SlotsModel)())
+    params, buffers = StateLiftingPass().extract_state(SlotsModel())
     assert params == {}
     assert buffers == {}
 
@@ -246,8 +320,16 @@ def test_lift_model_to_graph() -> None:
             self.w = MockTensor(shape=(4, 4), dtype="float32", requires_grad=True)
             self.running_mean = MockTensor(shape=(4,), dtype="float32", requires_grad=False)
 
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return simple model state dict.
+
+            Returns:
+                dict[str, StateEntry]: Simple model state map.
+            """
+            return {"w": self.w, "running_mean": self.running_mean}
+
     model = SimpleModel()
-    combined_state, graph = ensure_callable(pass_obj.lift)(model)
+    combined_state, graph = pass_obj.lift(model)
     assert "w" in combined_state
     assert "running_mean" in combined_state
     assert graph.name == "functional_SimpleModel"
@@ -258,11 +340,78 @@ def test_lift_model_to_graph() -> None:
     assert bool(w_node.attributes["is_state"]) is True
     assert bool(w_node.attributes["is_parameter"]) is True
     assert bool(w_node.attributes["is_buffer"]) is False
-    assert w_node.shape_metadata["shape"] == (4, 4)
+    assert w_node.shape_metadata == (4, 4)
 
     mean_node = graph.nodes["param_running_mean"]
     assert bool(mean_node.attributes["is_parameter"]) is False
     assert bool(mean_node.attributes["is_buffer"]) is True
+
+
+def test_stateful_container_protocols_and_arbitrary_attr_names() -> None:
+    """Verify StatefulContainerProtocol, StateDictContainerProtocol, and arbitrary attribute names."""
+    from collections.abc import Mapping
+
+    from ml_switcheroo_compiler.transforms.passes.state_lifting import _iter_container_attrs
+
+    class ExplicitStatefulModule:
+        """Container implementing StatefulContainerProtocol."""
+
+        __slots__ = ("_p", "_b")
+
+        def __init__(self) -> None:
+            """Initialize ExplicitStatefulModule."""
+            self._p = MockTensor(shape=(3, 3), requires_grad=True)
+            self._b = MockTensor(shape=(3,), requires_grad=False)
+
+        def parameters(self) -> Mapping[str, StateEntry]:
+            """Return explicit parameter dictionary.
+
+            Returns:
+                Mapping[str, StateEntry]: Parameters map.
+            """
+            return {"arbitrary_kernel_xyz": self._p}
+
+        def buffers(self) -> Mapping[str, StateEntry]:
+            """Return explicit buffer dictionary.
+
+            Returns:
+                Mapping[str, StateEntry]: Buffers map.
+            """
+            return {"arbitrary_running_var_xyz": self._b}
+
+    class ExplicitStateDictModule:
+        """Container implementing StateDictContainerProtocol."""
+
+        __slots__ = ("_t",)
+
+        def __init__(self) -> None:
+            """Initialize ExplicitStateDictModule."""
+            self._t = MockTensor(shape=(5,), requires_grad=True)
+
+        def state_dict(self) -> Mapping[str, StateEntry]:
+            """Return explicit state_dict.
+
+            Returns:
+                Mapping[str, StateEntry]: State map.
+            """
+            return {"custom_sd_weight": self._t}
+
+    pass_obj = StateLiftingPass()
+    exp_mod = ExplicitStatefulModule()
+    assert len(_iter_container_attrs(exp_mod)) == 2
+    p1, b1 = pass_obj.extract_state(exp_mod)
+    assert "arbitrary_kernel_xyz" in p1
+    assert "arbitrary_running_var_xyz" in b1
+
+    sd_mod = ExplicitStateDictModule()
+    p2, b2 = pass_obj.extract_state(sd_mod)
+    assert "custom_sd_weight" in p2
+    assert b2 == {}
+
+    assert _get_val(exp_mod, "arbitrary_kernel_xyz") is exp_mod._p
+    assert _get_val(exp_mod, "arbitrary_running_var_xyz") is exp_mod._b
+    assert _get_val(42, "missing") is None
+    _set_val(42, "missing", 99)
 
 
 def test_functionalize_callable() -> None:
@@ -270,12 +419,31 @@ def test_functionalize_callable() -> None:
     pass_obj = StateLiftingPass()
 
     class CallableModel:
-        """Callable model with state mutation."""
+        """Callable model with state_dict and load_state_dict."""
 
         def __init__(self) -> None:
             """Initialize CallableModel."""
-            self.weight = [1.0]
-            self.counter = 0
+            self.weight: StateEntry = [1.0]
+            self.counter: StateEntry = 0
+
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return state dict.
+
+            Returns:
+                dict[str, StateEntry]: State map.
+            """
+            return {"weight": self.weight, "counter": self.counter}
+
+        def load_state_dict(self, state: dict[str, StateEntry]) -> None:
+            """Load state dict entries.
+
+            Args:
+                state (dict[str, StateEntry]): Updated state map.
+            """
+            if "weight" in state:
+                self.weight = state["weight"]
+            if "counter" in state:
+                self.counter = state["counter"]
 
         def __call__(self, x: float) -> float:
             """Forward call modifying state.
@@ -286,14 +454,15 @@ def test_functionalize_callable() -> None:
             Returns:
                 float: Computed value.
             """
-            self.counter += 1
-            return x * self.weight[0] + self.counter
+            self.counter = coerce_int(self.counter) + 1
+            w0 = float(self.weight[0]) if isinstance(self.weight, list) else 0.0
+            return x * w0 + coerce_int(self.counter)
 
     model = CallableModel()
-    ensure_mutable(model).weight = ensure_eager_tensor(MockTensor(shape=(1,), dtype="float32", requires_grad=True))
-    ensure_mutable(model).counter = ensure_eager_tensor(MockTensor(shape=(), dtype="int32", requires_grad=False))
+    model.weight = MockTensor(shape=(1,), dtype="float32", requires_grad=True)
+    model.counter = MockTensor(shape=(), dtype="int32", requires_grad=False)
 
-    init_state, pure_fn = pass_obj.functionalize(ensure_callable(model))
+    init_state, pure_fn = pass_obj.functionalize(model)
     assert "weight" in init_state
     assert "counter" in init_state
 
@@ -315,10 +484,27 @@ def test_functionalize_type_error_restore() -> None:
 
         def __init__(self) -> None:
             """Initialize InertModel."""
-            self.p = MockTensor()
+            self.p: StateEntry = MockTensor()
+
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return state dict.
+
+            Returns:
+                dict[str, StateEntry]: State map.
+            """
+            return {"p": self.p}
+
+        def load_state_dict(self, state: dict[str, StateEntry]) -> None:
+            """Load state dict.
+
+            Args:
+                state (dict[str, StateEntry]): State map.
+            """
+            if "p" in state:
+                self.p = state["p"]
 
     model = InertModel()
-    init_state, pure_fn = ensure_callable(pass_obj.functionalize)(model)
+    init_state, pure_fn = pass_obj.functionalize(model)
     with pytest.raises(TypeError, match="is not callable"):
         pure_fn({"p": "temporary"})
     assert id(model.p) == id(init_state["p"])
@@ -328,12 +514,31 @@ def test_functionalize_nested_state() -> None:
     """Test functionalize with nested container paths."""
     pass_obj = StateLiftingPass()
 
-    class InnerSub:
+    from tests.testing_utils import MockTestStub
+
+    class InnerSub(MockTestStub):
         """Inner subcontainer."""
 
         def __init__(self) -> None:
             """Initialize InnerSub."""
-            self.param = MockTensor(requires_grad=True)
+            self.param: StateEntry = MockTensor(requires_grad=True)
+
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return inner state dict.
+
+            Returns:
+                dict[str, StateEntry]: Inner state map.
+            """
+            return {"param": self.param}
+
+        def load_state_dict(self, state: dict[str, StateEntry]) -> None:
+            """Load inner state dict.
+
+            Args:
+                state (dict[str, StateEntry]): Updated inner state map.
+            """
+            if "param" in state:
+                self.param = state["param"]
 
     class OuterSub:
         """Outer container containing nested subcontainer."""
@@ -341,6 +546,14 @@ def test_functionalize_nested_state() -> None:
         def __init__(self) -> None:
             """Initialize OuterSub."""
             self.inner = InnerSub()
+
+        def state_dict(self) -> dict[str, StateEntry]:
+            """Return outer state dict.
+
+            Returns:
+                dict[str, StateEntry]: Outer state map.
+            """
+            return {"inner": self.inner}
 
         def __call__(self, factor: int) -> int:
             """Evaluate container.
@@ -351,10 +564,10 @@ def test_functionalize_nested_state() -> None:
             Returns:
                 int: Multiplied parameter.
             """
-            return ensure_int(self.inner.param) * factor
+            return coerce_int(self.inner.param) * factor
 
     outer = OuterSub()
-    _, pure_fn = ensure_callable(pass_obj.functionalize)(outer)
+    _, pure_fn = pass_obj.functionalize(outer)
     res, new_st = pure_fn({"inner.param": 7}, 3)
     assert res == 21
     assert new_st["inner.param"] == 7
@@ -376,3 +589,26 @@ def test_state_lifting_subgraphs() -> None:
     assert sub.nodes["r1"].op_type == "Input"
     assert sub.nodes["a1"].op_type == "Output"
     assert "a1" in sub.outputs
+
+
+def test_functionalize_assign_graph() -> None:
+    """Verify functionalize_assign_graph rewrites Assign nodes on state_vars into functional outputs."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    from ml_switcheroo_compiler.transforms.passes.state_lifting import functionalize_assign_graph
+
+    g = LogicalGraph(name="mut_graph")
+    g.nodes["s0"] = LogicalNode(id="s0", op_type="Input", inputs=[])
+    g.nodes["x"] = LogicalNode(id="x", op_type="Input", inputs=[])
+    g.nodes["next_s"] = LogicalNode(id="next_s", op_type="Add", inputs=["s0", "x"])
+    g.nodes["assign_s"] = LogicalNode(id="assign_s", op_type="Assign", inputs=["s0", "next_s"])
+    g.nodes["assign_ignored"] = LogicalNode(id="assign_ignored", op_type="Assign", inputs=["untracked", "x"])
+    g.nodes["out"] = LogicalNode(id="out", op_type="Mul", inputs=["s0", "x"])
+    g.outputs = ["out"]
+
+    fg = functionalize_assign_graph(g, ["s0"])
+    assert fg.name == "mut_graph_functional"
+    assert "assign_s" not in fg.nodes
+    assert "assign_ignored" not in fg.nodes
+    assert fg.nodes["out"].inputs == ["next_s", "x"]
+    assert fg.outputs == ["out", "next_s"]

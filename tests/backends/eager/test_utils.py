@@ -4,28 +4,36 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array, _jax_from_numpy, _mlx_from_numpy, _to_channels_last, _to_numpy_array, _torch_from_numpy
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.eager.utils import (
+    _from_channels_last,
+    _from_numpy_array,
+    _jax_from_numpy,
+    _mlx_from_numpy,
+    _to_channels_last,
+    _to_numpy_array,
+    _torch_from_numpy,
+)
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class DummyNp:
+class DummyNp(MockTestStub):
     """Test class DummyNp."""
 
-    def asarray(self, x: EagerValue) -> EagerValue:
+    def asarray(self, x: BackendArg) -> BackendArg:
         """Test function asarray.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `asarray`.
+            BackendArg: Computed output value from `asarray`.
         """
         return "np_asarray_res"
 
-    def array(self, out: EagerValue, dtype: EagerValue = None) -> EagerValue:
+    def array(self, out: BackendArg, dtype: BackendArg = None) -> BackendArg:
         """Test function array.
 
         Args:
@@ -33,62 +41,62 @@ class DummyNp:
             dtype: Test parameter `dtype`.
 
         Returns:
-            EagerValue: Computed output value from `array`.
+            BackendArg: Computed output value from `array`.
         """
         if dtype:
             return f"np_array_res_{dtype}"
         return "np_array_res"
 
 
-class DummyTensorWithNumpy:
+class DummyTensorWithNumpy(MockTestStub):
     """Test class DummyTensorWithNumpy."""
 
-    def numpy(self) -> EagerValue:
+    def numpy(self) -> BackendArg:
         """Test function numpy.
 
         Returns:
-            EagerValue: Computed output value from `numpy`.
+            BackendArg: Computed output value from `numpy`.
         """
         return "numpy_res"
 
 
-class DummyTensorTorch:
+class DummyTensorTorch(MockTestStub):
     """Test class DummyTensorTorch."""
 
-    def detach(self) -> EagerValue:
+    def detach(self) -> BackendArg:
         """Test function detach.
 
         Returns:
-            EagerValue: Computed output value from `detach`.
+            BackendArg: Computed output value from `detach`.
         """
 
-        class Cpu:
+        class Cpu(MockTestStub):
             """Test class Cpu."""
 
-            def cpu(self) -> EagerValue:
+            def cpu(self) -> BackendArg:
                 """Test function cpu.
 
                 Returns:
-                    EagerValue: Computed output value from `cpu`.
+                    BackendArg: Computed output value from `cpu`.
                 """
 
-                class Numpy:
+                class Numpy(MockTestStub):
                     """Test class Numpy."""
 
-                    def numpy(self) -> EagerValue:
+                    def numpy(self) -> BackendArg:
                         """Test function numpy.
 
                         Returns:
-                            EagerValue: Computed output value from `numpy`.
+                            BackendArg: Computed output value from `numpy`.
                         """
                         return "torch_numpy_res"
 
-                return ensure_eager_tensor(Numpy())
+                return Numpy()
 
-        return ensure_eager_tensor(Cpu())
+        return Cpu()
 
 
-class DummyOriginal:
+class DummyOriginal(MockTestStub):
     """Test class DummyOriginal."""
 
     dtype = "float32"
@@ -99,26 +107,26 @@ def test_to_numpy_array() -> None:
     np_mod = DummyNp()
 
     t1 = DummyTensorWithNumpy()
-    assert ensure_callable(_to_numpy_array)(np_mod, t1, "test") == "numpy_res"
+    assert _to_numpy_array(np_mod, t1, "test") == "numpy_res"
 
     t2 = DummyTensorTorch()
-    assert ensure_callable(_to_numpy_array)(np_mod, t2, "torch") == "torch_numpy_res"
+    assert _to_numpy_array(np_mod, t2, "torch") == "torch_numpy_res"
 
-    assert ensure_callable(_to_numpy_array)(np_mod, "other", "test") == "np_asarray_res"
+    assert _to_numpy_array(np_mod, "other", "test") == "np_asarray_res"
 
 
 def test_from_numpy_array() -> None:
     """Test function test_from_numpy_array."""
     backend = DummyNp()
 
-    assert ensure_callable(_from_numpy_array)(backend, "out", "torch") == "out"
-    assert ensure_callable(_from_numpy_array)(backend, "out", "mlx.core") == "out"
-    assert ensure_callable(_from_numpy_array)(backend, "out", "jax.numpy") == "out"
+    assert _from_numpy_array(backend, "out", "torch") == "out"
+    assert _from_numpy_array(backend, "out", "mlx.core") == "out"
+    assert _from_numpy_array(backend, "out", "jax.numpy") == "out"
 
-    assert ensure_callable(_from_numpy_array)(backend, "out", "other") == "np_array_res"
+    assert _from_numpy_array(backend, "out", "other") == "np_array_res"
 
     orig = DummyOriginal()
-    assert ensure_callable(_from_numpy_array)(backend, "out", "other", orig) == "np_array_res_float32"
+    assert _from_numpy_array(backend, "out", "other", orig) == "np_array_res_float32"
 
 
 def test_other_utils() -> None:

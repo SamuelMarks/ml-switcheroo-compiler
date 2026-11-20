@@ -3,19 +3,26 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from tests.testing_utils import MockTestStub, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_init_classes_serialization() -> None:
     """Test function test_init_classes_serialization."""
-    from ml_switcheroo_compiler.serialization import MaxShardSizePolicy, PythonState, SavedModel, ShardByTaskPolicy, TrackableResource
+    from ml_switcheroo_compiler.serialization import (
+        MaxShardSizePolicy,
+        PythonState,
+        SavedModel,
+        ShardByTaskPolicy,
+        TrackableResource,
+    )
 
     class DummyRes(TrackableResource):
         """Test class DummyRes."""
@@ -24,7 +31,7 @@ def test_init_classes_serialization() -> None:
             """Test function initialize."""
             pass
 
-        def write_to_directory(self, d: EagerValue) -> None:
+        def write_to_directory(self, d: BackendArg) -> None:
             """Test function write_to_directory.
 
             Args:
@@ -39,7 +46,7 @@ def test_init_classes_serialization() -> None:
             """Test function serialize."""
             pass
 
-        def deserialize(self, s: EagerValue) -> None:
+        def deserialize(self, s: BackendArg) -> None:
             """Test function deserialize.
 
             Args:
@@ -50,7 +57,7 @@ def test_init_classes_serialization() -> None:
     class DummyMaxPolicy(MaxShardSizePolicy):
         """Test class DummyMaxPolicy."""
 
-        def apply(self, x: EagerValue) -> None:
+        def apply(self, x: BackendArg) -> None:
             """Test function apply.
 
             Args:
@@ -61,7 +68,7 @@ def test_init_classes_serialization() -> None:
     class DummyShardTask(ShardByTaskPolicy):
         """Test class DummyShardTask."""
 
-        def apply(self, x: EagerValue) -> None:
+        def apply(self, x: BackendArg) -> None:
             """Test function apply.
 
             Args:
@@ -72,7 +79,7 @@ def test_init_classes_serialization() -> None:
     class DummySavedModel(SavedModel):
         """Test class DummySavedModel."""
 
-        def save(self, p: EagerValue) -> None:
+        def save(self, p: BackendArg) -> None:
             """Test function save.
 
             Args:
@@ -108,7 +115,17 @@ def test_init_classes_serialization() -> None:
 
 def test_init_other_methods() -> None:
     """Test function test_init_other_methods."""
-    from ml_switcheroo_compiler.serialization import CustomObjectScope, KerasFileEditor, _get_format_handler, _infer_weight_format, custom_object_scope, deserialize_object, get_registered_name, get_registered_object, serialize_object
+    from ml_switcheroo_compiler.serialization import (
+        ArchiveFileEditor,
+        CustomObjectScope,
+        _get_format_handler,
+        _infer_weight_format,
+        custom_object_scope,
+        deserialize_object,
+        get_registered_name,
+        get_registered_object,
+        serialize_object,
+    )
 
     assert _infer_weight_format("x.h5") == "h5"
     assert _infer_weight_format("x.safetensors") == "safetensors"
@@ -124,19 +141,23 @@ def test_init_other_methods() -> None:
         pass
     with CustomObjectScope({}):
         pass
-    KerasFileEditor("nonexistent")
+    ArchiveFileEditor("nonexistent")
     serialize_object(list)
     deserialize_object({})
 
 
 def test_extract_model_state_layers() -> None:
     """Test function test_extract_model_state_layers."""
-    from ml_switcheroo_compiler.serialization import _extract_model_weights, _extract_non_trainable_state, _extract_optimizer_state
+    from ml_switcheroo_compiler.serialization import (
+        _extract_model_weights,
+        _extract_non_trainable_state,
+        _extract_optimizer_state,
+    )
 
     class FakeW:
         """Test class FakeW."""
 
-        def __init__(self, n: EagerValue) -> None:
+        def __init__(self, n: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -144,20 +165,20 @@ def test_extract_model_state_layers() -> None:
             """
             self.name = n
 
-        def numpy(self) -> EagerValue:
+        def numpy(self) -> BackendArg:
             """Test function numpy.
 
             Returns:
-                EagerValue: Computed output value from `numpy`.
+                BackendArg: Computed output value from `numpy`.
             """
             return 1
 
-    class FakeModel:
+    class FakeModel(MockTestStub):
         """Test class FakeModel."""
 
         weights = [FakeW("w1")]
 
-    ws = ensure_callable(_extract_model_weights)(ensure_callable(FakeModel)())
+    ws = _extract_model_weights(FakeModel())
     assert ws["w1"] == 1
 
     class FakeOpt:
@@ -166,49 +187,55 @@ def test_extract_model_state_layers() -> None:
         variables = [FakeW("v1")]
         momentums = [FakeW("m1")]
 
-    class FakeModelOpt:
+    class FakeModelOpt(MockTestStub):
         """Test class FakeModelOpt."""
 
         optimizer = FakeOpt()
 
-    st = ensure_tensor_dict({})
-    ensure_callable(_extract_optimizer_state)(ensure_callable(FakeModelOpt)(), st)
+    st: dict[str, BackendArg] = {}
+    _extract_optimizer_state(FakeModelOpt(), st)
     assert st["v1"] == 1
     assert st["m1"] == 1
 
-    class FakeModelNT:
+    class FakeModelNT(MockTestStub):
         """Test class FakeModelNT."""
 
         non_trainable_variables = [FakeW("nt1")]
 
     st = {}
-    ws = ensure_eager_tensor({"nt1": 1})
-    ensure_callable(_extract_non_trainable_state)(ensure_callable(FakeModelNT)(), st, ws)
+    ws = {"nt1": 1}
+    _extract_non_trainable_state(FakeModelNT(), st, ws)
     assert "nt1" not in st
-    ensure_callable(_extract_non_trainable_state)(ensure_callable(FakeModelNT)(), st, {})
+    _extract_non_trainable_state(FakeModelNT(), st, {})
     assert st["nt1"] == 1
 
 
 def test_extract_model_state_submodules() -> None:
     """Test function test_extract_model_state_submodules."""
-    from ml_switcheroo_compiler.serialization import KerasSerializationContext, _compile_model_metadata, _extract_model_state, _write_h5_to_zip, _write_keras_zip
+    from ml_switcheroo_compiler.serialization import (
+        ArchiveSerializationContext,
+        _compile_model_metadata,
+        _extract_model_state,
+        _write_archive_zip,
+        _write_h5_to_zip,
+    )
 
-    class FakeModelNT:
+    class FakeModelNT(MockTestStub):
         """Test class FakeModelNT."""
 
-        def get_config(self) -> EagerValue:
+        def get_config(self) -> BackendArg:
             """Test function get_config.
 
             Returns:
-                EagerValue: Computed output value from `get_config`.
+                BackendArg: Computed output value from `get_config`.
             """
             return {"c": 1}
 
-    st = ensure_callable(_extract_model_state)(ensure_callable(FakeModelNT)(), {})
-    assert isinstance(ensure_eager_tensor(st), dict)
-    (c, m) = ensure_callable(_compile_model_metadata)(ensure_callable(FakeModelNT)())
+    st = _extract_model_state(FakeModelNT(), {})
+    assert isinstance(st, dict)
+    (c, m) = _compile_model_metadata(FakeModelNT())
     assert c == {"c": 1}
-    (c2, m2) = ensure_callable(_compile_model_metadata)(None)
+    (c2, m2) = _compile_model_metadata(None)
     assert c2 == {}
     import os
     import zipfile
@@ -225,7 +252,7 @@ def test_extract_model_state_submodules() -> None:
             _write_h5_to_zip(zf, "a.h5", {"a": 1})
     if os.path.exists(tf):
         os.remove(tf)
-    ctx = ensure_callable(KerasSerializationContext)(
+    ctx = ArchiveSerializationContext(
         filepath=tf,
         config_dict={},
         metadata={},
@@ -233,7 +260,7 @@ def test_extract_model_state_submodules() -> None:
         state_store={"s": 1},
     )
     with patch.object(H5WeightFormat, "save"):
-        ensure_callable(_write_keras_zip)(ctx)
+        _write_archive_zip(ctx)
     if os.path.exists(tf):
         os.remove(tf)
 
@@ -245,7 +272,7 @@ def test_extract_model_state_parameters() -> None:
     class FakeW:
         """Test class FakeW."""
 
-        def __init__(self, n: EagerValue) -> None:
+        def __init__(self, n: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -253,21 +280,21 @@ def test_extract_model_state_parameters() -> None:
             """
             self.name = n
 
-        def numpy(self) -> EagerValue:
+        def numpy(self) -> BackendArg:
             """Test function numpy.
 
             Returns:
-                EagerValue: Computed output value from `numpy`.
+                BackendArg: Computed output value from `numpy`.
             """
             return 1
 
-    class FakeModelEMA:
+    class FakeModelEMA(MockTestStub):
         """Test class FakeModelEMA."""
 
         ema_variables = [FakeW("ema1"), FakeW("ema2")]
 
-    st = ensure_tensor_dict({})
-    ensure_callable(_extract_ema_state)(ensure_callable(FakeModelEMA)(), st)
+    st: dict[str, BackendArg] = {}
+    _extract_ema_state(FakeModelEMA(), st)
     assert st["ema1"] == 1
     assert st["ema2"] == 1
 
@@ -277,21 +304,23 @@ def test_extract_model_state_nested_objects() -> None:
     import os
     from unittest.mock import patch
 
-    import ml_switcheroo_compiler.serialization as s
-    from ml_switcheroo_compiler.serialization import KerasSerializationContext, _write_keras_zip
+    import ml_switcheroo_compiler.serialization.model_archive as ma
+    from ml_switcheroo_compiler.serialization import ArchiveSerializationContext, _write_archive_zip
 
     tf = "test_write2.zip"
     if os.path.exists(tf):
         os.remove(tf)
-    ctx1 = KerasSerializationContext(filepath=tf, config_dict={}, metadata={}, weights_store={}, state_store={})
-    with patch.object(s, "_write_h5_to_zip") as mock_w:
-        _write_keras_zip(ctx1)
+    ctx1 = ArchiveSerializationContext(filepath=tf, config_dict={}, metadata={}, weights_store={}, state_store={})
+    with patch.object(ma, "_write_h5_to_zip") as mock_w:
+        _write_archive_zip(ctx1)
         mock_w.assert_not_called()
     if os.path.exists(tf):
         os.remove(tf)
-    ctx2 = ensure_callable(KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
-    with patch.object(s, "_write_h5_to_zip") as mock_w:
-        ensure_callable(_write_keras_zip)(ctx2)
+    ctx2 = ArchiveSerializationContext(
+        filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1}
+    )
+    with patch.object(ma, "_write_h5_to_zip") as mock_w:
+        _write_archive_zip(ctx2)
         assert mock_w.call_count == 2
     if os.path.exists(tf):
         os.remove(tf)
@@ -303,7 +332,7 @@ def test_get_registered_name() -> None:
 
     assert get_registered_name() == "CustomObject"
 
-    class MyC:
+    class MyC(MockTestStub):
         """Test class MyC."""
 
         __name__ = "MyC"
@@ -323,23 +352,23 @@ def test_serialize_keras_object() -> None:
     """Test function test_serialize_keras_object."""
     from ml_switcheroo_compiler.serialization import serialize_object
 
-    class MyC:
+    class MyC(MockTestStub):
         """Test class MyC."""
 
-        def get_config(self) -> EagerValue:
+        def get_config(self) -> BackendArg:
             """Test function get_config.
 
             Returns:
-                EagerValue: Computed output value from `get_config`.
+                BackendArg: Computed output value from `get_config`.
             """
             return {"a": 1}
 
     assert serialize_object() == {}
-    assert serialize_object(ensure_eager_tensor(MyC())) == {"a": 1}
+    assert serialize_object(MyC()) == {"a": 1}
     assert serialize_object(1) == {}
 
 
-def test_read_fingerprint(tmp_path: EagerTensorProtocol) -> None:
+def test_read_fingerprint(tmp_path: Path) -> None:
     """Test function test_read_fingerprint.
 
     Args:
@@ -355,7 +384,7 @@ def test_read_fingerprint(tmp_path: EagerTensorProtocol) -> None:
     assert read_fingerprint(str(fp_dir)) == "fp_data"
 
 
-def test_load_variable(tmp_path: EagerTensorProtocol) -> None:
+def test_load_variable(tmp_path: Path) -> None:
     """Test function test_load_variable.
 
     Args:
@@ -391,61 +420,70 @@ def test_run_restore_ops() -> None:
     shutil.rmtree("test_restore")
 
 
-def test_export_methods() -> None:
-    """Test function test_export_methods."""
+def test_export_methods(tmp_path: Path) -> None:
+    """Test function test_export_methods.
+
+    Args:
+        tmp_path: Temporary directory fixture.
+    """
     import os
 
     from ml_switcheroo_compiler.serialization import export_model_topology, export_to_onnx, export_to_tflite
 
-    class FakeGraph:
+    class FakeGraph(MockTestStub):
         """Test class FakeGraph."""
 
-        def to_json(self) -> EagerValue:
+        def to_json(self, indent: int | None = 2) -> str:
             """Test function to_json.
 
+            Args:
+                indent: JSON indentation spaces.
+
             Returns:
-                EagerValue: Computed output value from `to_json`.
+                str: Computed output value from `to_json`.
             """
+            del indent
             return "{}"
 
     g = FakeGraph()
-    ensure_callable(export_to_onnx)(g, "test.onnx")
-    assert os.path.exists("test.onnx")
-    with open("test.onnx", "rb") as f:
+    onnx_p = str(tmp_path / "test.onnx")
+    tflite_p = str(tmp_path / "test.tflite")
+    json_p = str(tmp_path / "test.json")
+    real_onnx_p = str(tmp_path / "test_real.onnx")
+    real_tflite_p = str(tmp_path / "test_real.tflite")
+    require_callable(export_to_onnx)(g, onnx_p)
+    assert os.path.exists(onnx_p)
+    with open(onnx_p, "rb") as f:
         assert f.read() == b"ONNX"
-    os.remove("test.onnx")
-    ensure_callable(export_to_tflite)(g, "test.tflite")
-    assert os.path.exists("test.tflite")
-    with open("test.tflite", "rb") as f:
+    require_callable(export_to_tflite)(g, tflite_p)
+    assert os.path.exists(tflite_p)
+    with open(tflite_p, "rb") as f:
         assert f.read() == b"TFLITE"
-    os.remove("test.tflite")
-    ensure_callable(export_model_topology)(g, "test.json")
-    assert os.path.exists("test.json")
-    with open("test.json") as f2:
+    require_callable(export_model_topology)(g, json_p)
+    assert os.path.exists(json_p)
+    with open(json_p) as f2:
         assert f2.read() == "{}"
-    os.remove("test.json")
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.serialization import _validate_and_map_weights
 
     real_g = IRGraph(name="real_export")
     real_g.nodes["x"] = IRNode(id="x", op_type="Input", shape_metadata=(2,))
     real_g.outputs = ["x"]
-    export_to_onnx(real_g, "test_real.onnx")
-    assert os.path.exists("test_real.onnx")
-    os.remove("test_real.onnx")
-    export_to_tflite(real_g, "test_real.tflite")
-    assert os.path.exists("test_real.tflite")
-    with open("test_real.tflite", "rb") as f_tfl:
+    export_to_onnx(real_g, real_onnx_p)
+    assert os.path.exists(real_onnx_p)
+    export_to_tflite(real_g, real_tflite_p)
+    assert os.path.exists(real_tflite_p)
+    with open(real_tflite_p, "rb") as f_tfl:
         assert f_tfl.read().startswith(b"TFL3")
-    os.remove("test_real.tflite")
 
-    class DummyTargetModel:
+    class DummyTargetModel(MockTestStub):
         """Dummy model for target_model validation."""
 
         weights: list[int] = []
 
-    assert ensure_callable(_validate_and_map_weights)({"a": 1}, DummyTargetModel()) == {"a": 1}
+    assert _validate_and_map_weights({"a": 1}, DummyTargetModel()) == {"a": 1}
 
 
 def test_init_exports_mocked() -> None:
@@ -453,15 +491,22 @@ def test_init_exports_mocked() -> None:
     from unittest.mock import patch
 
     import ml_switcheroo_compiler.serialization as s
-    from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
+    from ml_switcheroo_compiler.serialization import (
+        _load_h5_weights,
+        _load_npz_weights,
+        _load_pickle_weights,
+        _load_safetensors_weights,
+        _save_as_h5,
+        _save_as_safetensors,
+    )
 
     with (
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save") as m_h5_save,
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load") as m_h5_load,
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save") as m_st_save,
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load") as m_st_load,
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load") as m_pk_load,
-        ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load") as m_npz_load,
+        patch.object(s.H5WeightFormat, "save") as m_h5_save,
+        patch.object(s.H5WeightFormat, "load") as m_h5_load,
+        patch.object(s.SafetensorsWeightFormat, "save") as m_st_save,
+        patch.object(s.SafetensorsWeightFormat, "load") as m_st_load,
+        patch.object(s.PickleWeightFormat, "load") as m_pk_load,
+        patch.object(s.NpzWeightFormat, "load") as m_npz_load,
     ):
         _save_as_h5({}, "test.h5")
         _save_as_safetensors({}, "test.st")
@@ -469,28 +514,35 @@ def test_init_exports_mocked() -> None:
         _load_safetensors_weights("test.st")
         _load_npz_weights("test.npz")
         _load_pickle_weights("test.pk")
-        assert ensure_eager_tensor(m_h5_save).called and ensure_eager_tensor(m_h5_load).called
-        assert ensure_eager_tensor(m_st_save).called and ensure_eager_tensor(m_st_load).called
-        assert ensure_eager_tensor(m_pk_load).called and ensure_eager_tensor(m_npz_load).called
+        assert m_h5_save.called and m_h5_load.called
+        assert m_st_save.called and m_st_load.called
+        assert m_pk_load.called and m_npz_load.called
 
 
 def test_init_exports_unmocked() -> None:
     """Test function test_init_exports_unmocked."""
     import pytest
 
-    from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
+    from ml_switcheroo_compiler.serialization import (
+        _load_h5_weights,
+        _load_npz_weights,
+        _load_pickle_weights,
+        _load_safetensors_weights,
+        _save_as_h5,
+        _save_as_safetensors,
+    )
 
     with pytest.raises(Exception, match=".*"):
-        ensure_callable(_save_as_h5)(None, None)
+        require_callable(_save_as_h5)(None, None)
     with pytest.raises(Exception, match=".*"):
-        ensure_callable(_save_as_safetensors)(None, None)
+        require_callable(_save_as_safetensors)(None, None)
     with pytest.raises(Exception, match=".*"):
-        ensure_callable(_load_h5_weights)(None)
+        require_callable(_load_h5_weights)(None)
     with pytest.raises(Exception, match=".*"):
-        ensure_callable(_load_safetensors_weights)(None)
-    assert ensure_callable(_load_npz_weights)(None) == {}
+        require_callable(_load_safetensors_weights)(None)
+    assert require_callable(_load_npz_weights)(None) == {}
     with pytest.raises(Exception, match=".*"):
-        ensure_callable(_load_pickle_weights)(None)
+        require_callable(_load_pickle_weights)(None)
 
 
 def test_init_module_exports() -> None:
@@ -498,26 +550,33 @@ def test_init_module_exports() -> None:
     from unittest.mock import patch
 
     import ml_switcheroo_compiler.serialization as s
-    from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
+    from ml_switcheroo_compiler.serialization import (
+        _load_h5_weights,
+        _load_npz_weights,
+        _load_pickle_weights,
+        _load_safetensors_weights,
+        _save_as_h5,
+        _save_as_safetensors,
+    )
 
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "save") as m1:
+    with patch.object(s.H5WeightFormat, "save") as m1:
         _save_as_h5({}, "test.h5")
-        assert ensure_eager_tensor(m1).called
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "save") as m2:
+        assert m1.called
+    with patch.object(s.SafetensorsWeightFormat, "save") as m2:
         _save_as_safetensors({}, "test.st")
-        assert ensure_eager_tensor(m2).called
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).H5WeightFormat), "load") as m3:
+        assert m2.called
+    with patch.object(s.H5WeightFormat, "load") as m3:
         _load_h5_weights("test.h5")
-        assert ensure_eager_tensor(m3).called
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).SafetensorsWeightFormat), "load") as m4:
+        assert m3.called
+    with patch.object(s.SafetensorsWeightFormat, "load") as m4:
         _load_safetensors_weights("test.st")
-        assert ensure_eager_tensor(m4).called
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).NpzWeightFormat), "load") as m5:
+        assert m4.called
+    with patch.object(s.NpzWeightFormat, "load") as m5:
         _load_npz_weights("test.npz")
-        assert ensure_eager_tensor(m5).called
-    with ensure_callable(patch.object)(ensure_eager_tensor(ensure_eager_tensor(s).PickleWeightFormat), "load") as m6:
+        assert m5.called
+    with patch.object(s.PickleWeightFormat, "load") as m6:
         _load_pickle_weights("test.pk")
-        assert ensure_eager_tensor(m6).called
+        assert m6.called
 
 
 def test_init_module_all_exports() -> None:
@@ -526,16 +585,23 @@ def test_init_module_all_exports() -> None:
 
     import numpy as np
 
-    from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
+    from ml_switcheroo_compiler.serialization import (
+        _load_h5_weights,
+        _load_npz_weights,
+        _load_pickle_weights,
+        _load_safetensors_weights,
+        _save_as_h5,
+        _save_as_safetensors,
+    )
 
     tf = "test_real_init_unmocked.h5"
     tf_st = "test_real_init_unmocked.st"
     tf_npz = "test_real_init_unmocked.npz"
     tf_pk = "test_real_init_unmocked.pk"
     _save_as_h5({"a": 1}, tf)
-    assert "a" in ensure_callable(_load_h5_weights)(tf)
+    assert "a" in str(_load_h5_weights(tf))
     _save_as_safetensors({"a": np.array([1.0], dtype=np.float32)}, tf_st)
-    assert "a" in ensure_callable(_load_safetensors_weights)(tf_st)
+    assert "a" in str(_load_safetensors_weights(tf_st))
     assert _load_npz_weights(tf_npz) == {}
     with pytest.raises(FileNotFoundError):
         _load_pickle_weights(tf_pk)
@@ -572,11 +638,11 @@ def test_extract_optimizer_state_missing_branches() -> None:
 
         pass
 
-    class FakeModelOptEmpty:
+    class FakeModelOptEmpty(MockTestStub):
         """Test class FakeModelOptEmpty."""
 
         optimizer = FakeOptEmpty()
 
-    st = ensure_tensor_dict({})
-    ensure_callable(_extract_optimizer_state)(ensure_callable(FakeModelOptEmpty)(), st)
+    st: dict[str, BackendArg] = {}
+    _extract_optimizer_state(FakeModelOptEmpty(), st)
     assert len(st) == 0

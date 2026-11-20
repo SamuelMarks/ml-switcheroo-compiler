@@ -7,18 +7,20 @@ import typing
 from ml_switcheroo_compiler.backends.backend_utils import format_shape_metadata, resolve_input_vars
 
 if typing.TYPE_CHECKING:
+    from ml_switcheroo_ir import IRNode
+
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.backends.generator_mixins import GeneratorLifecycleMixin
 
 
 class CodeGeneratorVisitor:
-    """Define base visitor for code generation."""
+    """Walk the IR graph and dispatch to generator methods."""
 
-    def __init__(self, generator: BaseGenerator) -> None:
+    def __init__(self, generator: BaseGenerator | GeneratorLifecycleMixin) -> None:
         """Initialize the object.
 
         Args:
-            generator (BaseGenerator): The parent generator object.
+            generator (BaseGenerator | GeneratorLifecycleMixin): The generator to use.
         """
         self.generator = generator
 
@@ -29,12 +31,13 @@ class CodeGeneratorVisitor:
             input_prefix (str): The input_prefix parameter for the operation.
         """
         self.generator.input_idx = 0
-        self.generator._output_returns = []
+        out_returns: list[str] = []
+        self.generator._output_returns = out_returns
 
         for node in self.generator.sorted_nodes:
             self.generate_node(node, input_prefix)
 
-        self.generator._emit_body_return(self.generator._output_returns)
+        self.generator._emit_body_return(self.generator._output_returns or out_returns)
 
     def generate_node(self, node: IRNode, input_prefix: str) -> None:
         """Generate code for a single node.

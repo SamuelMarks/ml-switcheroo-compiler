@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_unroll_pipeline_1f1b_schedule() -> None:

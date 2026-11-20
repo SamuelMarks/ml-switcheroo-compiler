@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_mapping_loader_dir_yaml(monkeypatch: EagerTensorProtocol) -> None:
+def test_mapping_loader_dir_yaml(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test loading mappings from a directory of yaml files.
 
     Args:
@@ -19,25 +21,25 @@ def test_mapping_loader_dir_yaml(monkeypatch: EagerTensorProtocol) -> None:
 
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 
-    def mock_isdir(path: EagerValue) -> EagerValue:
+    def mock_isdir(path: BackendArg) -> BackendArg:
         """Test function mock_isdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_isdir`.
+            BackendArg: Computed output value from `mock_isdir`.
         """
         return True
 
-    def mock_listdir(path: EagerValue) -> EagerValue:
+    def mock_listdir(path: BackendArg) -> BackendArg:
         """Test function mock_listdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_listdir`.
+            BackendArg: Computed output value from `mock_listdir`.
         """
         return ["test.yaml"]
 

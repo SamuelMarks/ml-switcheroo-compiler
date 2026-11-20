@@ -7,10 +7,10 @@ import re
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_graph
+from ml_switcheroo_compiler.core.shape import OpValue
+from ml_switcheroo_compiler.ir.core import as_opt_graph
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
 if typing.TYPE_CHECKING:
@@ -31,16 +31,17 @@ class _IdNodeProtocol(typing.Protocol):
     id: str
 
 
-def _get_node_shape_meta(node: IRNode | TensorOrScalar | None) -> tuple[int | str, ...] | list[int | str] | None:
+def _get_node_shape_meta(node: IRNode | OpValue | None) -> tuple[int | str, ...] | list[int | str] | None:
     """Safely extract `shape_metadata` from a node or return None.
 
     Args:
-        node (IRNode | TensorOrScalar | None): Candidate node object.
+        node (IRNode | OpValue | None): Candidate node object.
 
     Returns:
         tuple[int | str, ...] | list[int | str] | None: Shape metadata if present, else None.
     """
-    return node.shape_metadata if isinstance(node, _ShapeMetadataNodeProtocol) else None
+    cand_node: IRNode | OpValue | _ShapeMetadataNodeProtocol | None = node
+    return cand_node.shape_metadata if isinstance(cand_node, _ShapeMetadataNodeProtocol) else None
 
 
 def _split_nested_args(args_str: str) -> list[str]:
@@ -98,7 +99,7 @@ def _parse_args_and_attrs(
 
             try:
                 parsed_attrs[k.strip()] = ast.literal_eval(v.strip())
-            except Exception:
+            except (SyntaxError, ValueError, TypeError, MemoryError, RecursionError):
                 parsed_attrs[k.strip()] = v.strip()
         else:
             parsed_inputs.append(_parse_expression(graph, arg, node, cotangent, tangents))
@@ -141,21 +142,27 @@ def _build_parsed_call(
         val = float(parsed_inputs[0]) if parsed_inputs else 0.0
         node_id = f"cst_ad_{id(node)}_{val}".replace(".", "_").replace("-", "neg_")
         if node_id not in graph.nodes:
-            from ml_switcheroo_compiler.ir.core import LogicalNode
+            from ml_switcheroo_ir import LogicalNode
 
-            new_node = LogicalNode(id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=_get_node_shape_meta(node))
+            new_node = LogicalNode(
+                id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=_get_node_shape_meta(node)
+            )
             graph.nodes[node_id] = new_node
         return node_id
 
     if op in ("BroadcastAlign", "BroadcastReduce"):
         cot_id, tgt_id = parsed_inputs[0], parsed_inputs[1]
         shape_meta = _get_node_shape_meta(graph.nodes.get(tgt_id)) if tgt_id in graph.nodes else None
-        return emit_ir_node(graph, "BroadcastReduce", [cot_id, tgt_id], shape_metadata=shape_meta, attributes={"target_id": tgt_id})
+        return emit_ir_node(
+            graph, "BroadcastReduce", [cot_id, tgt_id], shape_metadata=shape_meta, attributes={"target_id": tgt_id}
+        )
 
     if op == "BroadcastLike":
         src_id, tgt_id = parsed_inputs[0], parsed_inputs[1]
         shape_meta = _get_node_shape_meta(graph.nodes.get(tgt_id)) if tgt_id in graph.nodes else None
-        return emit_ir_node(graph, "BroadcastLike", [src_id, tgt_id], shape_metadata=shape_meta, attributes={"target_id": tgt_id})
+        return emit_ir_node(
+            graph, "BroadcastLike", [src_id, tgt_id], shape_metadata=shape_meta, attributes={"target_id": tgt_id}
+        )
 
     attrs = dict(node.attributes) if op == node.op_type else {}
     if not attrs and op == "SetItem":
@@ -192,7 +199,7 @@ def _resolve_variable_ref(
         assert cotangent is not None
         return cotangent
     if expr == "$output":
-        raw_node: TensorOrScalar = node
+        raw_node: OpValue = node
         return str(raw_node.id) if isinstance(raw_node, _IdNodeProtocol) else ""
     if expr.startswith("$input["):
         match = re.match(r"\$input\[(\d+)\]", expr)
@@ -246,72 +253,25 @@ def _parse_expression(
     return _resolve_variable_ref(expr, node, cotangent, tangents)
 
 
-def _is_ir_node(val: TensorOrScalar) -> typing.TypeGuard[IRNode]:
-    """Type guard narrowing `val` to `IRNode`.
-
-    Args:
-        val (TensorOrScalar): Candidate IR node value.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
-def _as_ir_node(val: TensorOrScalar) -> IRNode:
-    """Narrow a runtime node argument to `IRNode`.
-
-    Args:
-        val (TensorOrScalar): Candidate IR node value.
-
-    Returns:
-        IRNode: Narrowed IRNode instance.
-    """
-    assert _is_ir_node(val)
-    return val
-
-
-def _is_ir_graph(val: TensorOrScalar) -> typing.TypeGuard[IRGraph]:
-    """Type guard narrowing `val` to `IRGraph`.
-
-    Args:
-        val (TensorOrScalar): Candidate IR graph value.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
-def _ensure_ir_graph(val: TensorOrScalar) -> IRGraph:
-    """Narrow a runtime graph argument to `IRGraph`.
-
-    Args:
-        val (TensorOrScalar): Candidate IR graph value.
-
-    Returns:
-        IRGraph: Narrowed IRGraph instance.
-    """
-    assert _is_ir_graph(val)
-    return val
-
-
-def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
+def _fallback_finite_difference_jvp(
+    graph: IRGraph,
+    node: IRNode,
+    tangents: typing.Sequence[str] | str,
+) -> str:
     """Implement a generic finite difference fallback for JVP.
 
     Args:
-        graph (TensorOrScalar): Input `graph` argument (graph).
-        node (TensorOrScalar): Input `node` argument (node).
-        tangents (TensorOrScalar): Input `tangents` argument (tangents).
+        graph (IRGraph): Target IR computation graph.
+        node (IRNode): Primal IR node being differentiated.
+        tangents (typing.Sequence[str] | str): Incoming tangent node ID(s).
 
     Returns:
         str: Emitted finite-difference JVP node ID.
     """
-    # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    ir_graph = _ensure_ir_graph(graph)
-    ir_node = _as_ir_node(node)
+    ir_graph = graph
+    ir_node = node
     opt_graph = as_opt_graph(ir_graph)
     node_shape = _get_node_shape_meta(ir_node)
 
@@ -368,7 +328,9 @@ def _get_autodiff_manifest() -> AutodiffRulesManifestModel | None:
                 jvp_data = yaml.safe_load(f) or {}
             with open(vjp_path, encoding="utf-8") as f:
                 vjp_data = yaml.safe_load(f) or {}
-            _MANIFEST_MODEL_CACHE = AutodiffRulesManifestModel.model_validate({"jvp_rules": jvp_data, "vjp_rules": vjp_data})
+            _MANIFEST_MODEL_CACHE = AutodiffRulesManifestModel.model_validate(
+                {"jvp_rules": jvp_data, "vjp_rules": vjp_data}
+            )
             return _MANIFEST_MODEL_CACHE
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -502,7 +464,12 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> dict[str, AttributeValu
     Returns:
         Optional[dict[str, AttributeValue]]: Rule dictionary if found, else None.
     """
-    return _lookup_manifest_rule(op_type, rule_type) or _lookup_modular_rule(op_type, rule_type) or _lookup_primitive_registry_rule(op_type, rule_type) or _load_rule_from_yaml_files(op_type, rule_type)
+    return (
+        _lookup_manifest_rule(op_type, rule_type)
+        or _lookup_modular_rule(op_type, rule_type)
+        or _lookup_primitive_registry_rule(op_type, rule_type)
+        or _load_rule_from_yaml_files(op_type, rule_type)
+    )
 
 
 def _read_yaml_dict(file_path: str) -> dict[str, AttributeValue]:
@@ -588,7 +555,9 @@ def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[st
         return None
 
     vjp_exprs = ad_rules["vjp"]
-    vjp_exprs_list: list[str] = [str(e) for e in vjp_exprs] if isinstance(vjp_exprs, (list, tuple)) else [str(vjp_exprs)]
+    vjp_exprs_list: list[str] = (
+        [str(e) for e in vjp_exprs] if isinstance(vjp_exprs, (list, tuple)) else [str(vjp_exprs)]
+    )
 
     def data_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...]:
         """Execute data vjp for compiler processing.
@@ -607,14 +576,14 @@ def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[st
     return data_vjp
 
 
-def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar, TensorOrScalar], str] | None:
+def get_jvp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, typing.Sequence[str] | str], str] | None:
     """Get JVP handler from data-driven rules.
 
     Args:
         op_type (str): Operation identifier.
 
     Returns:
-        Callable[[TensorOrScalar, TensorOrScalar, TensorOrScalar], str] | None: Evaluator callable.
+        Callable[[IRGraph, IRNode, typing.Sequence[str] | str], str] | None: Evaluator callable.
     """
     ad_rules = _load_autodiff_rule(op_type, "jvp")
     if not ad_rules or "jvp" not in ad_rules or not ad_rules["jvp"]:
@@ -622,19 +591,21 @@ def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar,
 
     jvp_expr = ad_rules["jvp"]
 
-    def data_jvp(graph: TensorOrScalar, node: TensorOrScalar, tangents: TensorOrScalar) -> str:
+    def data_jvp(graph: IRGraph, node: IRNode, tangents: typing.Sequence[str] | str) -> str:
         """Evaluate JVP expression for `node`.
 
         Args:
-            graph (TensorOrScalar): Input `graph` argument (graph).
-            node (TensorOrScalar): Input `node` argument (node).
-            tangents (TensorOrScalar): Input `tangents` argument (tangents).
+            graph (IRGraph): Target IR computation graph.
+            node (IRNode): Primal IR node being differentiated.
+            tangents (typing.Sequence[str] | str): Incoming tangent node ID(s).
 
         Returns:
             str: Emitted JVP tangent node ID.
         """
-        tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
+        tangents_list: list[str] = (
+            [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
+        )
         expr_str = jvp_expr if isinstance(jvp_expr, str) else str(jvp_expr)
-        return _parse_expression(_ensure_ir_graph(graph), expr_str, _as_ir_node(node), tangents=tangents_list)
+        return _parse_expression(graph, expr_str, node, tangents=tangents_list)
 
     return data_jvp

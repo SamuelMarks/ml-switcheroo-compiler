@@ -1,138 +1,119 @@
-"""Tests for test_frontend_matrix."""
+"""Behavioral tests for `eye`, `identity`, and `diag` in eager and IR tracing modes."""
 
 from __future__ import annotations
 
-import typing
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.ops.creation.frontend_matrix import _diag_eager, diag, eye, identity
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.creation.api_matrix import _diag_eager, diag, eye, identity
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
+from tests.testing_utils import MockTestStub, ensure_tensor, require_callable
 
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+def test_matrix_creation_eager_execution() -> None:
+    """Verify `eye`, `identity`, `_diag_eager`, and `diag` compute exact matrices on the NumPy backend."""
+    with ConfigContext(backend="numpy", eager_mode=True):
+        e_sq = ensure_tensor(eye(3))
+        np.testing.assert_allclose(np.asarray(e_sq.data), np.eye(3, dtype=np.float32))
+        assert e_sq.shape == (3, 3)
+
+        e_rect = ensure_tensor(eye(3, m=4, k=1, dtype=DType.Float64, device=Device("cpu")))
+        np.testing.assert_allclose(np.asarray(e_rect.data), np.eye(3, 4, k=1, dtype=np.float64))
+        assert e_rect.shape == (3, 4)
+        assert e_rect.dtype == DType.Float64
+
+        class _CustomDTypeName:
+            """Custom dtype descriptor lacking `.value`."""
+
+            shape: tuple[int, ...] = ()
+
+            def __str__(self) -> str:
+                """Return string representation `'float32'`.
+
+                Returns:
+                    str: Canonical dtype string.
+                """
+                return "float32"
+
+        e_custom = ensure_tensor(require_callable(eye)(2, dtype=_CustomDTypeName()))
+        assert e_custom.shape == (2, 2)
+
+        ident = ensure_tensor(identity(4))
+        np.testing.assert_allclose(np.asarray(ident.data), np.eye(4, dtype=np.float32))
+
+        mat = Tensor(
+            np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32),
+            TensorConfig((2, 2), DType.Float32, Device("cpu")),
+        )
+        d_default = ensure_tensor(_diag_eager(mat, 0, Device("cpu"), None))
+        np.testing.assert_allclose(np.asarray(d_default.data), np.array([1.0, 4.0], dtype=np.float32))
+
+        d_eager = ensure_tensor(diag(mat, diagonal=1))
+        np.testing.assert_allclose(np.asarray(d_eager.data), np.array([2.0], dtype=np.float32))
+
+        scalar_backend = MagicMock()
+        scalar_backend.execute_op.return_value = 123.0
+        with patch("ml_switcheroo_compiler.ops.creation.api_matrix.get_active_backend", return_value=scalar_backend):
+            d_scalar = ensure_tensor(_diag_eager(mat, 0, Device("cpu"), DType.Float32))
+            assert d_scalar.shape == ()
 
 
-def test_frontend_matrix() -> None:
-    """Test function test_frontend_matrix."""
-    from ml_switcheroo_compiler.core.config import config
+def test_matrix_creation_symbolic_tracing_and_validation() -> None:
+    """Verify `eye`, `identity`, and `diag` emit `EyeLike` and `Diag` IR nodes and validate rank/tracing."""
+    t_1d = Tensor(np.array([1.0, 2.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
+    t_const_2d = Tensor(
+        np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32),
+        TensorConfig((2, 2), DType.Float32, Device("cpu")),
+    )
 
-    config.eager_mode = True
+    with ConfigContext(eager_mode=False):
+        with pytest.raises(ValueError, match="diag requires a 1D or 2D tensor."):
+            diag(t_1d)
 
-    class DummyBackend:
-        """Test class DummyBackend."""
+        with pytest.raises(RuntimeError, match="Cannot emit diag node outside of a tracing context."):
+            diag(t_const_2d)
 
-        def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
-            """Test function execute_op.
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("matrix_creation_trace")
+        try:
+            sym_eye = ensure_tensor(eye(3, 4, k=1))
+            sym_id = ensure_tensor(identity(2))
 
-            Args:
-                op: Test parameter `op`.
-                a: Test parameter `a`.
-                k: Test parameter `k`.
+            t_proxy = Tensor(
+                ProxyTensor("mat_in", (3, 3), "float32"),
+                TensorConfig((3, 3), DType.Float32, Device("cpu")),
+            )
+            diag_proxy = ensure_tensor(diag(t_proxy, diagonal=1))
+            diag_const = ensure_tensor(diag(t_const_2d, diagonal=0))
 
-            Returns:
-                EagerValue: Computed output value from `execute_op`.
-            """
+            diag_direct = ensure_tensor(require_callable(diag)(ProxyTensor("direct_mat_id", (4, 4), "float32"), 0))
 
-            class T:
-                """Test class T."""
+            class _ShapeOnlyMat(MockTestStub):
+                """Direct matrix input without `.data` or `.dtype` attributes."""
 
-                shape = (1, 1)
+                shape: tuple[int, ...] = (4, 4)
 
-            return T()
+            diag_nodtype = ensure_tensor(require_callable(diag)(_ShapeOnlyMat(), 0))
+        finally:
+            tape.stop_tracing()
 
-    import ml_switcheroo_compiler.backends.registry as reg
+    assert sym_eye.shape == (3, 4)
+    assert sym_id.shape == (2, 2)
+    assert diag_proxy.shape == (2,)
+    assert diag_const.shape == (2,)
+    assert diag_direct.shape == (4,)
+    assert diag_nodtype.shape == (4,)
 
-    orig_reg_backend = get_backend_member(reg, "_ACTIVE_BACKEND", None)
-    has_reg_backend = has_backend_member(reg, "_ACTIVE_BACKEND")
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
-    import ml_switcheroo_compiler.ops.creation.frontend_matrix
-
-    orig_frontend_matrix_backend = ensure_eager_tensor(ensure_eager_tensor(ml_switcheroo_compiler.ops.creation.frontend_matrix).get_active_backend)
-    ensure_mutable(ml_switcheroo_compiler.ops.creation.frontend_matrix).get_active_backend = ensure_eager_tensor(lambda: DummyBackend())
-
-    from ml_switcheroo_compiler.core.config import config
-
-    config.eager_mode = True
-    assert ensure_eager_tensor(eye(1)).shape == (1, 1)
-    assert ensure_eager_tensor(identity(1)).shape == (1, 1)
-
-    class DummyInput:
-        """Test class DummyInput."""
-
-        data = "data"
-        device = "cpu"
-        dtype = "float32"
-        shape = (1,)
-
-    class DummyInputNoDtype:
-        """Test class DummyInputNoDtype."""
-
-        data = "data"
-        device = "cpu"
-        dtype = None
-        shape = (1,)
-
-    assert ensure_eager_tensor(ensure_callable(_diag_eager)(ensure_callable(DummyInput)(), 0, "cpu", "float32")).shape == (1, 1)
-    assert ensure_eager_tensor(ensure_callable(_diag_eager)(ensure_callable(DummyInputNoDtype)(), 0, "cpu", None)).shape == (1, 1)
-
-    assert ensure_eager_tensor(ensure_callable(diag)(ensure_callable(DummyInput)())).shape == (1, 1)
-
-    class DummyInput2:
-        """Test class DummyInput2."""
-
-        data = type("D", (), {"id": "id"})()
-        device = "cpu"
-        dtype = "float32"
-        shape = (2, 2)
-
-    config.eager_mode = False
-    with pytest.raises(RuntimeError):
-        ensure_callable(diag)(ensure_callable(DummyInput2)())
-
-    import ml_switcheroo_compiler.tracing.state as state
-
-    class DummyGraph:
-        """Test class DummyGraph."""
-
-        def __init__(self) -> None:
-            """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
-
-        def add_node(self, node: EagerValue) -> None:
-            """Test function add_node.
-
-            Args:
-                node: Test parameter `node`.
-            """
-            pass
-
-    state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
-
-    assert ensure_eager_tensor(ensure_callable(diag)(ensure_callable(DummyInput2)())).shape == (2,)
-
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_matrix._emit_creation_node", return_value="emitted"):
-        assert eye(1) == "emitted"
-
-    config.eager_mode = True
-
-    class DummyInput3:
-        """Test class DummyInput3."""
-
-        data = type("D", (), {"id": "id"})()
-        device = "cpu"
-        dtype = "float32"
-        shape = (1, 1, 1)
-
-    config.eager_mode = False
-    with pytest.raises(ValueError):
-        ensure_callable(diag)(ensure_callable(DummyInput3)())
-
-    if has_reg_backend:
-        ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(orig_reg_backend)
-    else:
-        del ensure_mutable(reg)._ACTIVE_BACKEND
-    ensure_mutable(ml_switcheroo_compiler.ops.creation.frontend_matrix).get_active_backend = ensure_eager_tensor(orig_frontend_matrix_backend)
+    eye_nodes = [n for n in traced_graph.nodes.values() if n.op_type == "EyeLike"]
+    diag_nodes = [n for n in traced_graph.nodes.values() if n.op_type == "Diag"]
+    assert len(eye_nodes) == 2
+    assert len(diag_nodes) == 4
+    assert any(n.inputs == ["mat_in"] and n.attributes == {"k": 1} for n in diag_nodes)
+    assert any(n.inputs == ["const"] and n.attributes == {"k": 0} for n in diag_nodes)
+    assert any(n.inputs == ["direct_mat_id"] for n in diag_nodes)

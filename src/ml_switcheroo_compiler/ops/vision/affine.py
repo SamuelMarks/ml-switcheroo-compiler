@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -26,7 +26,7 @@ class AffineConfig(pydantic.BaseModel):
     data_format: str | None = None
 
 
-def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> TensorOrScalar:
+def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> OpValue:
     """Apply the given 2D affine transforms to the given images.
 
     Args:
@@ -44,7 +44,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
-def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> TensorOrScalar:
+def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> OpValue:
     """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
@@ -72,13 +72,18 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(images: Tensor, mode: TensorOrScalar = "horizontal_and_vertical", seed: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def random_flip(
+    images: Tensor,
+    mode: OpValue = "horizontal_and_vertical",
+    seed: OpValue = None,
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly flip images horizontally and/or vertically.
 
     Args:
         images (Tensor): Input images.
-        mode (str): String indicating which flip to apply.
-        seed (int): Random seed.
+        mode (OpValue): String indicating which flip to apply.
+        seed (OpValue): Random seed.
         **kwargs: Additional kwargs.
 
     Returns:
@@ -100,8 +105,8 @@ def random_rotation(
     images: Tensor,
     factor: float,
     config: AffineConfig | None = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly rotate images.
 
     Args:
@@ -137,13 +142,13 @@ def random_rotation(
     )
 
 
-def random_crop(images: Tensor, size: TensorOrScalar, seed: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def random_crop(images: Tensor, size: OpValue, seed: OpValue = None, **kwargs: OpValue) -> OpValue:
     """Randomly crop images.
 
     Args:
         images (Tensor): Input images.
-        size (tuple): Target size.
-        seed (int): Random seed.
+        size (OpValue): Target size.
+        seed (OpValue): Random seed.
         **kwargs: Additional kwargs.
 
     Returns:
@@ -163,15 +168,15 @@ def random_zoom(
     images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly zoom images.
 
     Args:
         images (Tensor): Input `images` argument (images).
         height_factor (tuple[float, float] | float): Input `height_factor` argument (height factor).
         width_factor (tuple[float, float] | float | None): Input `width_factor` argument (width factor).
-        **kwargs (TensorOrScalar): Keyword args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -207,8 +212,8 @@ def random_translation(
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
     config: AffineConfig | None = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly translate images.
 
     Args:
@@ -251,8 +256,8 @@ def random_shear(
     images: Tensor,
     y_factor: float | tuple[float, float],
     x_factor: float | tuple[float, float] | None = None,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly shear images.
 
     Args:
@@ -293,8 +298,8 @@ def random_shear(
 def random_perspective(
     images: Tensor,
     factor: float | tuple[float, float],
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly apply perspective transform to images.
 
     Args:
@@ -333,8 +338,8 @@ def random_elastic_transform(
     images: Tensor,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly apply elastic transform to images.
 
     Args:
@@ -372,12 +377,12 @@ def random_elastic_transform(
     )
 
 
-def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> TensorOrScalar:
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> OpValue:
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
         theta (Tensor): Input `theta` argument (theta).
-        size (tuple): Input `size` argument (size).
+        size (tuple[int, ...]): Input `size` argument (size).
         align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
@@ -396,7 +401,7 @@ def grid_sample(
     mode: str = "bilinear",
     padding_mode: str = "zeros",
     align_corners: bool = False,
-) -> TensorOrScalar:
+) -> OpValue:
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
@@ -435,18 +440,18 @@ class AffineGenerator(OpDef):
 
     op_name = "AffineGenerator"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-        *args (EagerTensorProtocol): Positional args.
-        **kwargs (EagerTensorProtocol): Keyword args.
+        inputs (OpValue): Input `inputs` argument (inputs).
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_1: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_1: OpValue = extract_shape(inputs)
         return _typed_ret_1
 
 
@@ -456,18 +461,18 @@ class AffineGrid(OpDef):
 
     op_name = "AffineGrid"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_2: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_2: OpValue = extract_shape(inputs)
         return _typed_ret_2
 
 
@@ -477,18 +482,18 @@ class AffineTransform(OpDef):
 
     op_name = "AffineTransform"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_3: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_3: OpValue = extract_shape(inputs)
         return _typed_ret_3
 
 
@@ -498,16 +503,37 @@ class PerspectiveTransform(OpDef):
 
     op_name = "PerspectiveTransform"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, inputs: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            inputs (EagerTensorProtocol): Input `inputs` argument (inputs).
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            inputs (OpValue): Input `inputs` argument (inputs).
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        _typed_ret_4: TensorOrScalar = extract_shape(inputs)
+        _typed_ret_4: OpValue = extract_shape(inputs)
         return _typed_ret_4
+
+
+__all__ = [
+    "AffineConfig",
+    "AffineGenerator",
+    "AffineGrid",
+    "AffineTransform",
+    "PerspectiveTransform",
+    "affine_generator",
+    "affine_grid",
+    "affine_transform",
+    "grid_sample",
+    "random_crop",
+    "random_elastic_transform",
+    "random_flip",
+    "random_perspective",
+    "random_rotation",
+    "random_shear",
+    "random_translation",
+    "random_zoom",
+]

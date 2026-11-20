@@ -2,25 +2,33 @@
 
 from __future__ import annotations
 
+import builtins
+import types
 import typing
+from collections.abc import Mapping, Sequence
 from unittest import mock
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.sparse import kernels
 from ml_switcheroo_compiler.backends.sparse.eager import _dispatch_sparse_linalg, execute_op
 from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
 from ml_switcheroo_compiler.backends.sparse.profiler import SparseProfiler, _get_process_memory_mb
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from tests.testing_utils import (
+    EagerBoundCallable,
+    MockTestStub,
+    NumpyTestArray,
+    adapt_backend_module,
+    coerce_operand_list,
+    extract_test_shape,
+    require_callable,
+)
 
 
 def _make_test_adj(n: int = 4) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float32]], COOTensor]:
@@ -50,31 +58,31 @@ def test_sparse_dense_and_sparse_sparse_linalg_parity() -> None:
     csr_a = coo_a.to_csr()
     csc_a = coo_a.to_csc()
     dense_b = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], dtype=np.float32)
-    expected_spmm = ensure_eager_tensor(dense_a) @ ensure_eager_tensor(dense_b)
+    expected_spmm = dense_a @ dense_b
     res_coo_dense = execute_op(SparseGenerator, "MatMul", coo_a, dense_b)
-    ensure_callable(np.testing.assert_allclose)(res_coo_dense, expected_spmm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(ensure_ndarray(res_coo_dense), expected_spmm, rtol=1e-05, atol=1e-05)
     res_csr_dense = execute_op(SparseGenerator, "matmul", csr_a, dense_b)
-    ensure_callable(np.testing.assert_allclose)(res_csr_dense, expected_spmm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(ensure_ndarray(res_csr_dense), expected_spmm, rtol=1e-05, atol=1e-05)
     res_csc_dense = execute_op(SparseGenerator, "Dot", csc_a, dense_b)
-    ensure_callable(np.testing.assert_allclose)(res_csc_dense, expected_spmm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(ensure_ndarray(res_csc_dense), expected_spmm, rtol=1e-05, atol=1e-05)
     dense_left = dense_b.T
-    expected_dense_spmm = ensure_eager_tensor(dense_left) @ ensure_eager_tensor(dense_a)
+    expected_dense_spmm = dense_left @ dense_a
     res_dense_coo = execute_op(SparseGenerator, "matmul", dense_left, coo_a)
-    ensure_callable(np.testing.assert_allclose)(res_dense_coo, expected_dense_spmm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(ensure_ndarray(res_dense_coo), expected_dense_spmm, rtol=1e-05, atol=1e-05)
     res_dense_csr = execute_op(SparseGenerator, "Dot", dense_left, csr_a)
-    ensure_callable(np.testing.assert_allclose)(res_dense_csr, expected_dense_spmm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(ensure_ndarray(res_dense_csr), expected_dense_spmm, rtol=1e-05, atol=1e-05)
     res_dense_csc = execute_op(SparseGenerator, "MatMul", dense_left, csc_a)
-    ensure_callable(np.testing.assert_allclose)(res_dense_csc, expected_dense_spmm, rtol=1e-05, atol=1e-05)
-    expected_spgemm = ensure_eager_tensor(dense_a) @ ensure_eager_tensor(dense_a)
+    np.testing.assert_allclose(ensure_ndarray(res_dense_csc), expected_dense_spmm, rtol=1e-05, atol=1e-05)
+    expected_spgemm = dense_a @ dense_a
     res_spgemm_coo = execute_op(SparseGenerator, "MatMul", coo_a, coo_a)
     assert isinstance(res_spgemm_coo, COOTensor)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(res_spgemm_coo.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(res_spgemm_coo.to_dense(), expected_spgemm, rtol=1e-05, atol=1e-05)
     res_spgemm_csr = execute_op(SparseGenerator, "matmul", csr_a, csr_a)
     assert isinstance(res_spgemm_csr, CSRTensor)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(res_spgemm_csr.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(res_spgemm_csr.to_dense(), expected_spgemm, rtol=1e-05, atol=1e-05)
     res_spgemm_csc = execute_op(SparseGenerator, "Dot", csc_a, csc_a)
     assert isinstance(res_spgemm_csc, CSCTensor)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(res_spgemm_csc.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(res_spgemm_csc.to_dense(), expected_spgemm, rtol=1e-05, atol=1e-05)
 
 
 def test_csr_and_csc_arithmetic() -> None:
@@ -85,13 +93,33 @@ def test_csr_and_csc_arithmetic() -> None:
     (csr_1, csr_2) = (coo_1.to_csr(), coo_2.to_csr())
     (csc_1, csc_2) = (coo_1.to_csc(), coo_2.to_csc())
     res_csr_add = execute_op(SparseGenerator, "Add", csr_1, csr_2)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_csr_add).to_dense))(), ensure_eager_tensor(dense_1) + ensure_eager_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(
+        adapt_backend_module(res_csr_add).require_symbol("to_dense")(),
+        dense_1 + dense_2,
+        rtol=1e-05,
+        atol=1e-05,
+    )
     res_csr_sub = execute_op(SparseGenerator, "Sub", csr_1, csr_2)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_csr_sub).to_dense))(), ensure_eager_tensor(dense_1) - ensure_eager_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(
+        adapt_backend_module(res_csr_sub).require_symbol("to_dense")(),
+        dense_1 - dense_2,
+        rtol=1e-05,
+        atol=1e-05,
+    )
     res_csc_add = execute_op(SparseGenerator, "add", csc_1, csc_2)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_csc_add).to_dense))(), ensure_eager_tensor(dense_1) + ensure_eager_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(
+        adapt_backend_module(res_csc_add).require_symbol("to_dense")(),
+        dense_1 + dense_2,
+        rtol=1e-05,
+        atol=1e-05,
+    )
     res_csc_sub = execute_op(SparseGenerator, "sub", csc_1, csc_2)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res_csc_sub).to_dense))(), ensure_eager_tensor(dense_1) - ensure_eager_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(
+        adapt_backend_module(res_csc_sub).require_symbol("to_dense")(),
+        dense_1 - dense_2,
+        rtol=1e-05,
+        atol=1e-05,
+    )
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
     empty_csr = empty_coo.to_csr()
     empty_csc = empty_coo.to_csc()
@@ -113,9 +141,9 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     attn_dense = attn_coo.to_dense()
     for r in range(4):
         if np.any(dense_adj[r] != 0):
-            assert ensure_callable(np.isclose)(ensure_callable(np.sum)(ensure_eager_tensor(attn_dense)[r]), 1.0, atol=1e-05)
+            assert np.isclose(np.sum(attn_dense[r]), 1.0, atol=1e-05)
         else:
-            assert ensure_callable(np.isclose)(ensure_callable(np.sum)(ensure_eager_tensor(attn_dense)[r]), 0.0)
+            assert np.isclose(np.sum(attn_dense[r]), 0.0)
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
     assert kernels.sparse_softmax(empty_coo).nnz == 0
     masked_softmax = kernels.sparse_softmax(coo_adj, mask=coo_adj)
@@ -127,15 +155,15 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     deg_hat = np.sum(a_hat, axis=1)
     deg_inv_sqrt = np.diag(1.0 / np.sqrt(deg_hat))
     expected_norm_adj = deg_inv_sqrt @ a_hat @ deg_inv_sqrt
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(norm_adj.to_dense)(), expected_norm_adj, rtol=1e-05, atol=1e-05)
+    np.testing.assert_allclose(norm_adj.to_dense(), expected_norm_adj, rtol=1e-05, atol=1e-05)
     norm_adj_no_loops = kernels.graph_norm_adjacency(coo_adj, add_self_loops=False)
     assert norm_adj_no_loops.shape == (4, 4)
     node_features = np.array([[1.0, 0.5], [0.2, 0.8], [1.5, 0.1], [0.7, 0.9]], dtype=np.float32)
     agg_out = kernels.gnn_spmm_attention(coo_adj, node_features)
-    assert ensure_eager_tensor(agg_out).shape == (4, 2)
-    ensure_callable(np.testing.assert_allclose)(agg_out, ensure_eager_tensor(dense_adj) @ ensure_eager_tensor(node_features), rtol=1e-05, atol=1e-05)
+    assert extract_test_shape(agg_out) == (4, 2)
+    np.testing.assert_allclose(ensure_ndarray(agg_out), dense_adj @ node_features, rtol=1e-05, atol=1e-05)
     agg_attn_out = kernels.gnn_spmm_attention(coo_adj, node_features, attention_weights=coo_adj)
-    assert ensure_eager_tensor(agg_attn_out).shape == (4, 2)
+    assert extract_test_shape(agg_attn_out) == (4, 2)
     dropped = kernels.sparse_dropout(coo_adj, drop_rate=0.5, training=True, seed=42)
     assert isinstance(dropped, COOTensor)
     assert dropped.shape == coo_adj.shape
@@ -193,41 +221,43 @@ def test_sparse_profiler_and_memory_metrics() -> None:
     profiler = SparseProfiler()
     metrics = profiler.profile_graph(g, inputs={"x": [[1.0, 2.0], [3.0, 4.0]]}, num_iters=3, warmup_iters=1)
     assert "latencies" in metrics
-    assert ensure_callable(len)(metrics["latencies"]) == 3
-    assert ensure_eager_tensor(metrics)["latency_ms"] >= 0.0
-    assert ensure_eager_tensor(metrics)["p50_ms"] >= 0.0
-    assert ensure_eager_tensor(metrics)["p95_ms"] >= 0.0
-    assert ensure_eager_tensor(metrics)["p99_ms"] >= 0.0
-    assert ensure_eager_tensor(metrics)["peak_memory_mb"] > 0.0
+    assert len(coerce_operand_list(metrics["latencies"])) == 3
+    assert metrics["latency_ms"] >= 0.0
+    assert metrics["p50_ms"] >= 0.0
+    assert metrics["p95_ms"] >= 0.0
+    assert metrics["p99_ms"] >= 0.0
+    assert metrics["peak_memory_mb"] > 0.0
     with mock.patch("sys.platform", "linux"):
         assert _get_process_memory_mb() > 0.0
     empty_graph = IRGraph()
     metrics_empty = profiler.profile_graph(empty_graph, inputs={}, num_iters=2, warmup_iters=1)
-    assert ensure_callable(len)(metrics_empty["latencies"]) == 2
+    assert len(coerce_operand_list(metrics_empty["latencies"])) == 2
 
-    class MockAddTensor:
+    class MockAddTensor(MockTestStub):
         """Test class MockAddTensor."""
 
-        def __add__(self, other: EagerValue) -> EagerValue:
+        def __add__(self, other: BackendArg) -> BackendArg:
             """Test function __add__.
 
             Args:
-                other: Test parameter `other`.
+                other (BackendArg): Test parameter `other`.
 
             Returns:
-                EagerValue: Computed output value from `__add__`.
+                BackendArg: Computed output value from `__add__`.
             """
-            return ensure_eager_tensor(self)
+            return self
 
-    class MockNonAddTensor:
+    class MockNonAddTensor(MockTestStub):
         """Test class MockNonAddTensor."""
 
-        pass
-
-    metrics_add = ensure_callable(profiler.profile_graph)(empty_graph, inputs={"a": ensure_callable(MockAddTensor)(), "b": ensure_callable(MockAddTensor)()}, num_iters=2)
-    assert ensure_callable(len)(metrics_add["latencies"]) == 2
-    metrics_non_add = ensure_callable(profiler.profile_graph)(empty_graph, inputs={"a": ensure_callable(MockNonAddTensor)(), "b": ensure_callable(MockNonAddTensor)()}, num_iters=2)
-    assert ensure_callable(len)(metrics_non_add["latencies"]) == 2
+    metrics_add = profiler.profile_graph(empty_graph, inputs={"a": MockAddTensor(), "b": MockAddTensor()}, num_iters=2)
+    assert len(coerce_operand_list(metrics_add["latencies"])) == 2
+    metrics_non_add = profiler.profile_graph(
+        empty_graph,
+        inputs={"a": MockNonAddTensor(), "b": MockNonAddTensor()},
+        num_iters=2,
+    )
+    assert len(coerce_operand_list(metrics_non_add["latencies"])) == 2
 
 
 def test_sparse_eager_dispatch_coverage() -> None:
@@ -245,11 +275,27 @@ def test_sparse_eager_dispatch_coverage() -> None:
         execute_op(SparseGenerator, "NonexistentUnknownSparseOp", coo_adj)
 
 
-def _test_sparse_edge_cases_and_branch_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestSparseEdgeCasesAndBranchCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_sparse_edge_cases_and_branch_coverage` split helpers."""
+
+    coo_adj: COOTensor
+    csc_adj: CSCTensor
+    csr_adj: CSRTensor
+    dense_adj: NumpyTestArray
+    empty_csc: CSCTensor
+    empty_csr: CSRTensor
+    fake_sparse_import: EagerBoundCallable
+    g: LogicalGraph
+    prepared: list[BackendArg]
+    profiler: SparseProfiler
+    sub_csr_res: CSRTensor
+
+
+def _test_sparse_edge_cases_and_branch_coverage_part_1(_state: _TestSparseEdgeCasesAndBranchCoverageState) -> None:
     """Execute part 1 of test_sparse_edge_cases_and_branch_coverage.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestSparseEdgeCasesAndBranchCoverageState): Shared test state dictionary.
     """
     (dense_adj, coo_adj) = _make_test_adj(4)
     csr_adj = coo_adj.to_csr()
@@ -273,55 +319,57 @@ def _test_sparse_edge_cases_and_branch_coverage_part_1(_state: dict[str, EagerTe
         kernels.csc_sub(csc_adj, CSCTensor.from_dense(np.ones((2, 2))))
     sub_csr_res = kernels.csr_sub(empty_csr, csr_adj)
     assert isinstance(sub_csr_res, CSRTensor)
-    _state.update(ensure_tensor_dict({"_": _, "coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj}))
-    _state.update(ensure_tensor_dict({"dense_adj": dense_adj, "empty_coo": empty_coo, "empty_csc": empty_csc, "empty_csr": empty_csr}))
-    _state.update(ensure_tensor_dict({"handled_add": handled_add, "handled_coo_add": handled_coo_add, "handled_dense_matmul": handled_dense_matmul, "handled_mixed_add": handled_mixed_add}))
-    _state.update(ensure_tensor_dict({"handled_sub": handled_sub, "sub_csr_res": sub_csr_res}))
+    _state.update({"coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj})
+    _state.update({"dense_adj": dense_adj, "empty_csc": empty_csc, "empty_csr": empty_csr})
+    _state.update({"sub_csr_res": sub_csr_res})
 
 
-def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: _TestSparseEdgeCasesAndBranchCoverageState) -> None:
     """Execute part 2 of test_sparse_edge_cases_and_branch_coverage.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestSparseEdgeCasesAndBranchCoverageState): Shared test state dictionary.
     """
-    (coo_adj, csc_adj, csr_adj, dense_adj) = (_state["coo_adj"], _state["csc_adj"], _state["csr_adj"], _state["dense_adj"])
+    (coo_adj, csc_adj, csr_adj, dense_adj) = (
+        _state["coo_adj"],
+        _state["csc_adj"],
+        _state["csr_adj"],
+        _state["dense_adj"],
+    )
     (empty_csc, empty_csr, sub_csr_res) = (_state["empty_csc"], _state["empty_csr"], _state["sub_csr_res"])
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(sub_csr_res.to_dense)(), -dense_adj)
-    sub_csr_b_empty = ensure_callable(kernels.csr_sub)(csr_adj, empty_csr)
-    assert ensure_eager_tensor(sub_csr_b_empty) is csr_adj
-    sub_csc_res = ensure_callable(kernels.csc_sub)(empty_csc, csc_adj)
-    assert isinstance(ensure_eager_tensor(sub_csc_res), CSCTensor)
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(sub_csc_res.to_dense)(), -dense_adj)
-    sub_csc_b_empty = ensure_callable(kernels.csc_sub)(csc_adj, empty_csc)
+    np.testing.assert_allclose(sub_csr_res.to_dense(), -dense_adj)
+    sub_csr_b_empty = kernels.csr_sub(csr_adj, empty_csr)
+    assert sub_csr_b_empty is csr_adj
+    sub_csc_res = kernels.csc_sub(empty_csc, csc_adj)
+    assert isinstance(sub_csc_res, CSCTensor)
+    np.testing.assert_allclose(sub_csc_res.to_dense(), -dense_adj)
+    sub_csc_b_empty = kernels.csc_sub(csc_adj, empty_csc)
     assert sub_csc_b_empty is csc_adj
-    csr_100 = ensure_callable(kernels.sparse_dropout)(csr_adj, drop_rate=1.0)
-    assert isinstance(ensure_eager_tensor(csr_100), CSRTensor)
+    csr_100 = kernels.sparse_dropout(csr_adj, drop_rate=1.0)
+    assert isinstance(csr_100, CSRTensor)
     assert csr_100.nnz == 0
-    csc_100 = ensure_callable(kernels.sparse_dropout)(csc_adj, drop_rate=1.0)
-    assert isinstance(ensure_eager_tensor(csc_100), CSCTensor)
+    csc_100 = kernels.sparse_dropout(csc_adj, drop_rate=1.0)
+    assert isinstance(csc_100, CSCTensor)
     assert csc_100.nnz == 0
     fake_rng = mock.MagicMock()
     fake_rng.uniform.return_value = np.ones(coo_adj.nnz)
     with mock.patch("numpy.random.default_rng", return_value=fake_rng):
-        drop_all = ensure_callable(kernels.sparse_dropout)(coo_adj, drop_rate=0.5)
+        drop_all = kernels.sparse_dropout(coo_adj, drop_rate=0.5)
         assert drop_all.nnz == 0
     profiler = SparseProfiler()
     g = IRGraph()
     prepared = profiler._prepare_inputs(g, {"coo": coo_adj, "arr": np.array([1.0, 2.0]), "lst": [3.0, 4.0], "raw": 42})
-    _state.update(ensure_tensor_dict({"csc_100": csc_100, "csr_100": csr_100, "drop_all": drop_all, "fake_rng": fake_rng}))
-    _state.update(ensure_tensor_dict({"g": g, "prepared": prepared, "profiler": profiler, "sub_csc_b_empty": sub_csc_b_empty}))
-    _state.update(ensure_tensor_dict({"sub_csc_res": sub_csc_res, "sub_csr_b_empty": sub_csr_b_empty}))
-    _state.update(ensure_tensor_dict({"coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj}))
-    _state.update(ensure_tensor_dict({"dense_adj": dense_adj, "empty_csc": empty_csc, "empty_csr": empty_csr}))
-    _state.update(ensure_tensor_dict({"sub_csr_res": sub_csr_res}))
+    _state.update({"g": g, "prepared": prepared, "profiler": profiler})
+    _state.update({"coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj})
+    _state.update({"dense_adj": dense_adj, "empty_csc": empty_csc, "empty_csr": empty_csr})
+    _state.update({"sub_csr_res": sub_csr_res})
 
 
-def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: _TestSparseEdgeCasesAndBranchCoverageState) -> None:
     """Execute part 3 of test_sparse_edge_cases_and_branch_coverage.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestSparseEdgeCasesAndBranchCoverageState): Shared test state dictionary.
     """
     (g, prepared, profiler) = (_state["g"], _state["prepared"], _state["profiler"])
     assert len(prepared) == 4
@@ -342,33 +390,43 @@ def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTe
     with mock.patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile failed")):
         metrics_fail = profiler.profile_graph(g_sum, inputs={"x": [[1.0, 2.0], [3.0, 4.0]]}, num_iters=2)
         assert len(metrics_fail["latencies"]) == 2
-    real_import = __import__
+    real_import = builtins.__import__
 
-    def fake_sparse_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def fake_sparse_import(
+        name: str,
+        globals_map: Mapping[str, BackendArg] | None = None,
+        locals_map: Mapping[str, BackendArg] | None = None,
+        fromlist: Sequence[str] | None = (),
+        level: int = 0,
+    ) -> types.ModuleType:
         """Test function fake_sparse_import.
 
         Args:
-            name: Test parameter `name`.
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
+            name (str): Module name to import.
+            globals_map (Mapping[str, BackendArg] | None): Caller globals mapping.
+            locals_map (Mapping[str, BackendArg] | None): Caller locals mapping.
+            fromlist (Sequence[str] | None): Requested attribute names.
+            level (int): Relative import level.
 
         Returns:
-            EagerValue: Computed output value from `fake_sparse_import`.
+            types.ModuleType: Computed output value from `fake_sparse_import`.
+
+        Raises:
+            ImportError: When raised during `fake_sparse_import` (no sparse module).
         """
         if name == "sparse":
             raise ImportError("no sparse module")
-        return ensure_callable(real_import)(name, *args, **kwargs)
+        return real_import(name, globals_map, locals_map, fromlist, level)
 
-    _state.update(ensure_tensor_dict({"fake_sparse_import": fake_sparse_import, "g_sum": g_sum, "metrics_fail": metrics_fail, "n_in": n_in}))
-    _state.update(ensure_tensor_dict({"n_out": n_out, "real_import": real_import}))
-    _state.update(ensure_tensor_dict({"g": g, "prepared": prepared, "profiler": profiler}))
+    _state.update({"fake_sparse_import": require_callable(fake_sparse_import)})
+    _state.update({"g": g, "prepared": prepared, "profiler": profiler})
 
 
-def _test_sparse_edge_cases_and_branch_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_sparse_edge_cases_and_branch_coverage_part_4(_state: _TestSparseEdgeCasesAndBranchCoverageState) -> None:
     """Execute part 4 of test_sparse_edge_cases_and_branch_coverage.
 
     Args:
-        _state: Shared test state dictionary.
+        _state (_TestSparseEdgeCasesAndBranchCoverageState): Shared test state dictionary.
     """
     fake_sparse_import = _state["fake_sparse_import"]
     import importlib
@@ -380,12 +438,11 @@ def _test_sparse_edge_cases_and_branch_coverage_part_4(_state: dict[str, EagerTe
     import ml_switcheroo_compiler.backends.sparse.profiler as sp_prof_mod
 
     importlib.reload(sp_prof_mod)
-    _state.update(ensure_tensor_dict({"importlib": importlib, "sp_prof_mod": sp_prof_mod}))
 
 
 def test_sparse_edge_cases_and_branch_coverage() -> None:
     """Verify edge conditions in eager linalg dispatch, kernels, and profiler."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestSparseEdgeCasesAndBranchCoverageState = {}
     _test_sparse_edge_cases_and_branch_coverage_part_1(_state)
     _test_sparse_edge_cases_and_branch_coverage_part_2(_state)
     _test_sparse_edge_cases_and_branch_coverage_part_3(_state)

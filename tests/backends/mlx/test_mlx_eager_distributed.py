@@ -6,7 +6,7 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import extract_test_shape
 
 if typing.TYPE_CHECKING:
     pass
@@ -14,21 +14,21 @@ if typing.TYPE_CHECKING:
 
 def test_mlx_eager_distributed_all_reduce_fallback() -> None:
     """Test function test_mlx_eager_distributed_all_reduce_fallback."""
-    mock_mx = MagicMock()
+    mock_mx = MagicMock(spec=["expand_dims", "array"])
     mock_tensor = MagicMock()
     mock_tensor.tolist.return_value = [1.0]
 
     with patch.dict(sys.modules, {"mlx.core": mock_mx}):
         from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_reduce
 
-        with patch("ml_switcheroo_compiler.backends.mlx.eager.has_backend_member", return_value=False):
-            res = _mlx_all_reduce(mock_mx, mock_tensor)
-            assert ensure_eager_tensor(ensure_eager_tensor(res).tolist)() == [1.0]
+        res = _mlx_all_reduce(mock_mx, mock_tensor)
+        assert res is mock_tensor
+        assert mock_tensor.tolist() == [1.0]
 
 
 def test_mlx_eager_distributed_all_gather_fallback() -> None:
     """Test function test_mlx_eager_distributed_all_gather_fallback."""
-    mock_mx = MagicMock()
+    mock_mx = MagicMock(spec=["expand_dims", "array"])
     mock_tensor = MagicMock()
     mock_gathered = MagicMock()
     mock_gathered.shape = (1, 1)
@@ -37,10 +37,9 @@ def test_mlx_eager_distributed_all_gather_fallback() -> None:
     with patch.dict(sys.modules, {"mlx.core": mock_mx}):
         from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_gather
 
-        with patch("ml_switcheroo_compiler.backends.mlx.eager.has_backend_member", return_value=False):
-            res = _mlx_all_gather(mock_mx, mock_tensor)
-            assert ensure_eager_tensor(res).shape == (1, 1)
-            mock_mx.expand_dims.assert_called_once_with(mock_tensor, axis=0)
+        res = _mlx_all_gather(mock_mx, mock_tensor)
+        assert extract_test_shape(res) == (1, 1)
+        mock_mx.expand_dims.assert_called_once_with(mock_tensor, axis=0)
 
 
 def test_mlx_eager_distributed_all_to_all() -> None:
@@ -55,6 +54,5 @@ def test_mlx_eager_distributed_all_to_all() -> None:
     with patch.dict(sys.modules, {"mlx.core": mock_mx}):
         from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_to_all
 
-        with patch("ml_switcheroo_compiler.backends.mlx.eager.has_backend_member", return_value=True):
-            res = _mlx_all_to_all(mock_mx, mock_mx.array([1.0]))
-            assert res == "mocked_all_to_all"
+        res = _mlx_all_to_all(mock_mx, mock_mx.array([1.0]))
+        assert res == "mocked_all_to_all"

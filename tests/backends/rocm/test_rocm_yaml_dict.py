@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+import pytest
+
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
+def test_rocm_load_yaml_dict_string(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_rocm_load_yaml_dict_string.
 
     Args:
@@ -19,28 +21,29 @@ def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
     import os
     from unittest.mock import MagicMock, patch
 
-    from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
 
-    def mock_isdir(path: EagerValue) -> EagerValue:
+    from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
+
+    def mock_isdir(path: BackendArg) -> BackendArg:
         """Test function mock_isdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_isdir`.
+            BackendArg: Computed output value from `mock_isdir`.
         """
         return True
 
-    def mock_listdir(path: EagerValue) -> EagerValue:
+    def mock_listdir(path: BackendArg) -> BackendArg:
         """Test function mock_listdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_listdir`.
+            BackendArg: Computed output value from `mock_listdir`.
         """
         return ["test.yaml"]
 
@@ -58,7 +61,7 @@ def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
             assert gen.config.templates["op2"] == ["not", "string", "or", "dict_with_body"]
 
 
-def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
+def test_rocm_load_fallback_yaml(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_rocm_load_fallback_yaml.
 
     Args:
@@ -67,28 +70,29 @@ def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
     import os
     from unittest.mock import MagicMock, patch
 
-    from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
 
-    def mock_isdir(path: EagerValue) -> EagerValue:
+    from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
+
+    def mock_isdir(path: BackendArg) -> BackendArg:
         """Test function mock_isdir.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_isdir`.
+            BackendArg: Computed output value from `mock_isdir`.
         """
         return False
 
-    def mock_exists(path: EagerValue) -> EagerValue:
+    def mock_exists(path: BackendArg) -> BackendArg:
         """Test function mock_exists.
 
         Args:
             path: Test parameter `path`.
 
         Returns:
-            EagerValue: Computed output value from `mock_exists`.
+            BackendArg: Computed output value from `mock_exists`.
         """
         return True
 
@@ -105,7 +109,7 @@ def test_rocm_load_fallback_yaml(monkeypatch: EagerTensorProtocol) -> None:
             assert gen.config.templates["op3"] == {"body": "test"}
 
 
-def test_rocm_runner_init_no_cupy(monkeypatch: EagerTensorProtocol) -> None:
+def test_rocm_runner_init_no_cupy(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_rocm_runner_init_no_cupy.
 
     Args:
@@ -125,7 +129,7 @@ def test_rocm_runner_init_no_cupy(monkeypatch: EagerTensorProtocol) -> None:
             mock_cdll.hipInit.assert_called_once_with(0)
 
 
-def test_rocm_runner_init_ctypes_fail(monkeypatch: EagerTensorProtocol) -> None:
+def test_rocm_runner_init_ctypes_fail(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_rocm_runner_init_ctypes_fail.
 
     Args:
@@ -136,7 +140,7 @@ def test_rocm_runner_init_ctypes_fail(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.rocm.rocm.cupy", None)
-    with patch("ctypes.util.find_library", side_effect=Exception("mock fail")):
+    with patch("ctypes.util.find_library", side_effect=RuntimeError("mock fail")):
         runner = ROCmRunner()
         assert runner.rocm_lib is None
 
@@ -166,7 +170,7 @@ def test_rocm_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         ptr = runner.allocate_buffer(100)
-        assert ensure_eager_tensor(ensure_eager_tensor(ptr).value) == 12345
+        assert adapt_backend_module(ptr).require_symbol("value") == 12345
 
 
 def test_rocm_runner_allocate_ctypes() -> None:
@@ -188,8 +192,6 @@ def test_rocm_runner_allocate_ctypes() -> None:
 def test_rocm_runner_allocate_ctypes_fail() -> None:
     """Test function test_rocm_runner_allocate_ctypes_fail."""
     from unittest.mock import MagicMock, patch
-
-    import pytest
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
@@ -213,7 +215,7 @@ def test_rocm_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             ptr = runner.allocate_buffer(100)
-            assert ensure_eager_tensor(ensure_eager_tensor(ptr).value) is None
+            assert adapt_backend_module(ptr).get_symbol("value", None) is None
 
 
 def test_rocm_runner_write_cupy() -> None:
@@ -252,8 +254,6 @@ def test_rocm_runner_write_ctypes_fail() -> None:
     import ctypes
     from unittest.mock import MagicMock, patch
 
-    import pytest
-
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", None):
@@ -271,7 +271,9 @@ def test_rocm_runner_write_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert ensure_callable(runner.write_buffer)(None, b"test") is None
+    runner.write_buffer(None, b"test")
+    assert runner.mode in ("cupy", "ctypes", "none")
+    assert len(runner.limits) > 0
 
 
 def test_rocm_runner_read_cupy() -> None:
@@ -313,8 +315,6 @@ def test_rocm_runner_read_ctypes_fail() -> None:
     import ctypes
     from unittest.mock import MagicMock, patch
 
-    import pytest
-
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", None):
@@ -332,7 +332,7 @@ def test_rocm_runner_read_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert ensure_callable(runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert runner.read_buffer(None, 4) == b"\x00" * 4
 
 
 def test_rocm_runner_read_no_lib() -> None:
@@ -383,7 +383,7 @@ def test_rocm_runner_free_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    ensure_callable(runner.free_buffer)(None)
+    runner.free_buffer(None)
     assert isinstance(runner, ROCmRunner)
 
 
@@ -425,8 +425,6 @@ def test_rocm_runner_compile_ctypes_fail_load() -> None:
     """Test function test_rocm_runner_compile_ctypes_fail_load."""
     from unittest.mock import MagicMock, patch
 
-    import pytest
-
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", None):
@@ -442,8 +440,6 @@ def test_rocm_runner_compile_ctypes_fail_load() -> None:
 def test_rocm_runner_compile_ctypes_fail_func() -> None:
     """Test function test_rocm_runner_compile_ctypes_fail_func."""
     from unittest.mock import MagicMock, patch
-
-    import pytest
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
@@ -461,8 +457,6 @@ def test_rocm_runner_compile_ctypes_fail_func() -> None:
 def test_rocm_runner_compile_ctypes_fail_launch() -> None:
     """Test function test_rocm_runner_compile_ctypes_fail_launch."""
     from unittest.mock import MagicMock, patch
-
-    import pytest
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 

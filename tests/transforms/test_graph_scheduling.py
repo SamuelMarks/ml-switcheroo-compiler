@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.graph_scheduling import (
     CpuCostModel,
     EdgeCostModel,
@@ -50,7 +49,9 @@ def test_cpu_cost_model_properties_and_memory() -> None:
     assert model.get_memory_cost(node_sym) == "B * 128 * 4"
 
     # Empty dynamic shape
-    node_dyn_empty = IRNode("n_dyn", "Add", shape_metadata=(), attributes={"dtype": DType.Float32.value, "is_dynamic_shape": True})
+    node_dyn_empty = IRNode(
+        "n_dyn", "Add", shape_metadata=(), attributes={"dtype": DType.Float32.value, "is_dynamic_shape": True}
+    )
     assert model.get_memory_cost(node_dyn_empty) == 4
 
     # Float64 dtype size
@@ -102,7 +103,9 @@ def test_gpu_cost_model_properties_and_memory() -> None:
     node_sym = IRNode("n_sym", "MatMul", shape_metadata=("Seq", 512), attributes={"dtype": DType.Float32.value})
     assert model.get_memory_cost(node_sym) == "Seq * 512 * 4"
 
-    node_dyn_empty = IRNode("n_dyn", "Add", shape_metadata=(), attributes={"dtype": DType.Float32.value, "is_dynamic_shape": True})
+    node_dyn_empty = IRNode(
+        "n_dyn", "Add", shape_metadata=(), attributes={"dtype": DType.Float32.value, "is_dynamic_shape": True}
+    )
     assert model.get_memory_cost(node_dyn_empty) == 4
 
 

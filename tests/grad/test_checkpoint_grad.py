@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from tests.testing_utils import ensure_tensor, unpack_pair
 
 
 def test_checkpoint_grad() -> None:
@@ -22,16 +17,16 @@ def test_checkpoint_grad() -> None:
     config.backend = "numpy"
     config.eager_mode = False
 
-    def my_fun(x: EagerValue) -> EagerValue:
+    def my_fun(x: Tensor) -> Tensor:
         """Test function my_fun.
 
         Args:
-            x: Test parameter `x`.
+            x (Tensor): Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_fun`.
+            Tensor: Computed output value from `my_fun`.
         """
-        return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
+        return (x * x) * x
 
     cp_fun = checkpoint(my_fun)
 
@@ -42,11 +37,17 @@ def test_checkpoint_grad() -> None:
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted_std = ensure_callable(jit)(vg_std)
-    jitted_cp = ensure_callable(jit)(vg_cp)
+    jitted_std = jit(vg_std)
+    jitted_cp = jit(vg_cp)
 
-    v1, g1 = jitted_std(x)
-    v2, g2 = jitted_cp(x)
+    v1, g1 = unpack_pair(jitted_std(x))
+    v2, g2 = unpack_pair(jitted_cp(x))
 
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(v1).numpy))(), ensure_callable(ensure_eager_tensor(ensure_eager_tensor(v2).numpy))())
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(g1).numpy))(), ensure_callable(ensure_eager_tensor(ensure_eager_tensor(g2).numpy))())
+    np.testing.assert_allclose(
+        np.asarray(ensure_tensor(v1).numpy()),
+        np.asarray(ensure_tensor(v2).numpy()),
+    )
+    np.testing.assert_allclose(
+        np.asarray(ensure_tensor(g1).numpy()),
+        np.asarray(ensure_tensor(g2).numpy()),
+    )

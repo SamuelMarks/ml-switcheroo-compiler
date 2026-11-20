@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Mapping
 
 from ml_switcheroo_ir import LogicalGraph as IRGraph
 from ml_switcheroo_ir import LogicalNode as IRNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 
 
 @typing.runtime_checkable
@@ -29,10 +30,11 @@ def _node_clean_name_and_shape(node: IRNode) -> tuple[str, tuple[int, ...]]:
     param_name = node.attributes.get("param_name", node.attributes.get("variable_name", node.id))
     clean_name = str(param_name).replace(".", "_")
 
-    raw_node: TensorOrScalar = node
-    shape_meta = raw_node.shape_metadata if isinstance(raw_node, _ShapeMetaNodeProtocol) else None
-    raw_shape = shape_meta.get("shape", (1, 1)) if isinstance(shape_meta, dict) else (1, 1)
-    shape = tuple(int(x) for x in raw_shape)
+    raw_node: OpValue | _ShapeMetaNodeProtocol = node
+    shape_meta: OpValue = raw_node.shape_metadata if isinstance(raw_node, _ShapeMetaNodeProtocol) else None
+    cand_shape = shape_meta.get("shape", (1, 1)) if isinstance(shape_meta, Mapping) else shape_meta
+    raw_seq = cand_shape if isinstance(cand_shape, (tuple, list)) else (1, 1)
+    shape = tuple(int(x) for x in raw_seq if isinstance(x, (int, float, str)))
     return clean_name, shape
 
 
@@ -141,7 +143,10 @@ def _emit_keras_class(
     for node in state_inputs:
         clean_name, shape = _node_clean_name_and_shape(node)
         trainable = not bool(node.attributes.get("is_buffer", False))
-        lines.append(f"        self.{clean_name} = self.add_weight(name='{clean_name}', shape={shape}, initializer='zeros', trainable={trainable})")
+        lines.append(
+            f"        self.{clean_name} = self.add_weight(name='{clean_name}', shape={shape}, "
+            f"initializer='zeros', trainable={trainable})"
+        )
     lines.extend(["", f"    def call({args_str}):", return_stmt])
     return lines
 
@@ -161,8 +166,14 @@ def emit_backend_stateful_class(
     Returns:
         str: Generated Python source code representing the stateful class.
     """
-    state_inputs = [n for n in graph.nodes.values() if (n.op_type == "Input" and n.attributes.get("is_state", False)) or n.op_type == "ReadVariable"]
-    non_state_inputs = [n for n in graph.nodes.values() if n.op_type == "Input" and not n.attributes.get("is_state", False)]
+    state_inputs = [
+        n
+        for n in graph.nodes.values()
+        if (n.op_type == "Input" and n.attributes.get("is_state", False)) or n.op_type == "ReadVariable"
+    ]
+    non_state_inputs = [
+        n for n in graph.nodes.values() if n.op_type == "Input" and not n.attributes.get("is_state", False)
+    ]
 
     args_str = ", ".join(["self"] + [inp.id for inp in non_state_inputs])
     return_stmt = f"        return {', '.join(graph.outputs)}" if graph.outputs else "        return None"

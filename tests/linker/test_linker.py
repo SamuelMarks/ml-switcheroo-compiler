@@ -12,20 +12,21 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     import pytest
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def my_caller() -> EagerValue:
+def my_caller() -> BackendArg:
     """Call `get_source_ast_ref` to simulate an additional call stack frame.
 
     Returns:
-        EagerValue: The source AST reference string or None.
+        BackendArg: The source AST reference string or None.
     """
     return get_source_ast_ref()
 
@@ -45,7 +46,7 @@ def test_linker_edge_cases() -> None:
     """Test edge cases for `get_source_ast_ref` when frame retrieval fails or overflows."""
     old_currentframe = sys._getframe
     try:
-        ensure_mutable(sys)._getframe = ensure_eager_tensor(lambda *_args, **_kwargs: None)
+        pytest.MonkeyPatch().setattr(sys, "_getframe", lambda *_args, **_kwargs: None, raising=False)
         assert get_source_ast_ref() is None
     finally:
         sys._getframe = old_currentframe
@@ -61,12 +62,12 @@ def test_linker_exception(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
     """
 
-    def mock_getframeinfo(*_args: EagerValue, **_kwargs: EagerValue) -> typing.NoReturn:
+    def mock_getframeinfo(*_args: BackendArg, **_kwargs: BackendArg) -> typing.NoReturn:
         """Raise ValueError to simulate an inspection failure.
 
         Args:
-            *_args (EagerValue): Positional arguments passed to the mock.
-            **_kwargs (EagerValue): Keyword arguments passed to the mock.
+            *_args (BackendArg): Positional arguments passed to the mock.
+            **_kwargs (BackendArg): Keyword arguments passed to the mock.
 
         Raises:
             ValueError: Always raised to simulate an inspection error.

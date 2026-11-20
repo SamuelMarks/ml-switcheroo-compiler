@@ -8,19 +8,15 @@ import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.grad.api import (
-    hvp,
-    hvp_graph,
-    nth_order_grad,
-    nth_order_grad_graph,
-)
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.grad.api import hvp, hvp_graph, nth_order_grad, nth_order_grad_graph
+from tests.testing_utils import extract_test_data
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 def test_hvp_graph_symbolic_lowering() -> None:
@@ -91,11 +87,11 @@ def test_nth_order_grad_callable() -> None:
 
         first_deriv = nth_order_grad(cubic, n=1)
         res1 = first_deriv(x)
-        assert np.isclose(float(np.asarray(ensure_eager_tensor(res1).data).reshape(-1)[0]), 12.0, atol=1e-3)
+        assert np.isclose(float(np.asarray(extract_test_data(res1)).reshape(-1)[0]), 12.0, atol=1e-3)
 
         second_deriv = nth_order_grad(cubic, n=2)
         res2 = second_deriv(x)
-        assert np.isclose(float(np.asarray(ensure_eager_tensor(res2).data).reshape(-1)[0]), 12.0, atol=1e-3)
+        assert np.isclose(float(np.asarray(extract_test_data(res2)).reshape(-1)[0]), 12.0, atol=1e-3)
 
         with pytest.raises(ValueError, match="Derivative order n must be >= 1"):
             nth_order_grad(cubic, n=0)
@@ -108,17 +104,20 @@ def test_hvp_api_delegation() -> None:
         None
     """
     with ConfigContext(eager_mode=True):
+        from tests.testing_utils import NumpyTestArray
 
-        def scalar_quad(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> EagerValue:
+        def scalar_quad(
+            x: Tensor | NumpyTestArray,
+        ) -> Tensor | NumpyTestArray:
             """Quadratic polynomial.
 
             Args:
-                x (np.ndarray): Input tensor.
+                x (Tensor | NumpyTestArray): Input tensor.
 
             Returns:
-                EagerValue: Quad form tensor.
+                Tensor | NumpyTestArray: Quad form tensor.
             """
-            return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(0.5)
+            return (x * x) * 0.5
 
         x_val = np.array([3.0, 4.0], dtype=np.float32)
         v_val = np.array([1.0, 1.0], dtype=np.float32)
@@ -127,5 +126,5 @@ def test_hvp_api_delegation() -> None:
         # H = [[1, 0], [0, 1]]
         # H · v = [1, 1]
         primal, hvp_res = hvp(scalar_quad, (x_val,), (v_val,))
-        assert ensure_callable(np.allclose)(ensure_eager_tensor(primal).data, [4.5, 8.0], atol=1e-3)
-        assert ensure_callable(np.allclose)(ensure_eager_tensor(hvp_res).data, [1.0, 1.0], atol=1e-3)
+        assert np.allclose(ensure_ndarray(extract_test_data(primal)), [4.5, 8.0], atol=1e-3)
+        assert np.allclose(ensure_ndarray(extract_test_data(hvp_res)), [1.0, 1.0], atol=1e-3)

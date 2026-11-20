@@ -7,7 +7,7 @@ import typing
 import ml_switcheroo_compiler.distributed.collectives as dist_collectives
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class _MockBackendModule:
@@ -24,23 +24,23 @@ class _MockBackendModule:
         """
         return ("zeros", shape)
 
-    def array(self, data: EagerValue, dtype: EagerValue = None) -> tuple[str, EagerValue, EagerValue]:
+    def array(self, data: BackendArg, dtype: BackendArg = None) -> tuple[str, BackendArg, BackendArg]:
         """Mock array.
 
         Args:
-            data (EagerValue): Input data.
-            dtype (EagerValue): Optional data type.
+            data (BackendArg): Input data.
+            dtype (BackendArg): Optional data type.
 
         Returns:
             tuple[str, object, object]: Mock array descriptor.
         """
         return ("array", data, dtype)
 
-    def asarray(self, data: EagerValue) -> tuple[str, EagerValue]:
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
         """Mock asarray.
 
         Args:
-            data (EagerValue): Input data.
+            data (BackendArg): Input data.
 
         Returns:
             tuple[str, object]: Mock asarray descriptor.

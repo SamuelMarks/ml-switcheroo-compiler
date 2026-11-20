@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import ensure_int
+from ml_switcheroo_compiler.backends.registry import coerce_int
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_shape,
-    has_backend_member,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
@@ -17,18 +16,20 @@ from ml_switcheroo_compiler.ops.registry import register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
+@typing.runtime_checkable
 class _BackendEvalProtocol(typing.Protocol):
     """Protocol for backends exposing `.eval(*args)`."""
 
-    def eval(self, *args: TensorOrScalar) -> None:
+    def eval(self, *args: OpValue) -> None:
         """Evaluate lazy tensors.
 
         Args:
-            *args (TensorOrScalar): Tensors to evaluate.
+            *args (OpValue): Tensors to evaluate.
         """
         ...
 
 
+@typing.runtime_checkable
 class _BackendSynchronizeProtocol(typing.Protocol):
     """Protocol for backends exposing `.synchronize()`."""
 
@@ -37,6 +38,7 @@ class _BackendSynchronizeProtocol(typing.Protocol):
         ...
 
 
+@typing.runtime_checkable
 class _BackendPeakMemoryProtocol(typing.Protocol):
     """Protocol for backends exposing `.get_peak_memory()`."""
 
@@ -49,51 +51,51 @@ class _BackendPeakMemoryProtocol(typing.Protocol):
         ...
 
 
-def _is_eval_backend(val: TensorOrScalar) -> typing.TypeGuard[_BackendEvalProtocol]:
+def _is_eval_backend(val: OpValue) -> typing.TypeGuard[_BackendEvalProtocol]:
     """Check whether `val` exposes `eval`.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
-        bool: True if `val` has `eval`.
+        bool: True if `val` satisfies `_BackendEvalProtocol`.
     """
-    return has_backend_member(val, "eval")
+    return isinstance(val, _BackendEvalProtocol)
 
 
-def _is_synchronize_backend(val: TensorOrScalar) -> typing.TypeGuard[_BackendSynchronizeProtocol]:
+def _is_synchronize_backend(val: OpValue) -> typing.TypeGuard[_BackendSynchronizeProtocol]:
     """Check whether `val` exposes `synchronize`.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
-        bool: True if `val` has `synchronize`.
+        bool: True if `val` satisfies `_BackendSynchronizeProtocol`.
     """
-    return has_backend_member(val, "synchronize")
+    return isinstance(val, _BackendSynchronizeProtocol)
 
 
-def _is_peak_memory_backend(val: TensorOrScalar) -> typing.TypeGuard[_BackendPeakMemoryProtocol]:
+def _is_peak_memory_backend(val: OpValue) -> typing.TypeGuard[_BackendPeakMemoryProtocol]:
     """Check whether `val` exposes `get_peak_memory`.
 
     Args:
-        val (TensorOrScalar): Active backend.
+        val (OpValue): Active backend.
 
     Returns:
-        bool: True if `val` has `get_peak_memory`.
+        bool: True if `val` satisfies `_BackendPeakMemoryProtocol`.
     """
-    return has_backend_member(val, "get_peak_memory")
+    return isinstance(val, _BackendPeakMemoryProtocol)
 
 
-def eval(*args: TensorOrScalar) -> None:
+def eval(*args: OpValue) -> None:
     """Force the evaluation of the given tensors.
 
     Args:
-        *args (TensorOrScalar): Positional args.
+        *args (OpValue): Positional args.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar = get_active_backend()
+    backend: OpValue = get_active_backend()
     if _is_eval_backend(backend):
         backend.eval(*args)
     else:
@@ -106,7 +108,7 @@ def synchronize() -> None:
     """Synchronize the default device."""
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar = get_active_backend()
+    backend: OpValue = get_active_backend()
     if _is_synchronize_backend(backend):
         backend.synchronize()
 
@@ -119,9 +121,9 @@ def get_peak_memory() -> int:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: TensorOrScalar = get_active_backend()
+    backend: OpValue = get_active_backend()
     if _is_peak_memory_backend(backend):
-        return ensure_int(backend.get_peak_memory())
+        return coerce_int(backend.get_peak_memory())
     return 0
 
 
@@ -136,12 +138,12 @@ __all__ = [
 class DeviceContextOp(OpDef):
     """Operation definition for setting or altering a generic device context."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -153,12 +155,12 @@ class DeviceContextOp(OpDef):
 class DeviceTransferOp(OpDef):
     """Operation definition for migrating data between logical devices (e.g., host-to-device)."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -166,7 +168,7 @@ class DeviceTransferOp(OpDef):
         return extract_shape(args[0])
 
 
-def device_transfer(input: Tensor, target_device: str, stream: TensorOrScalar = None) -> TensorOrScalar:
+def device_transfer(input: Tensor, target_device: str, stream: OpValue = None) -> OpValue:
     """Simulate data migration between devices for a tensor.
 
     Args:

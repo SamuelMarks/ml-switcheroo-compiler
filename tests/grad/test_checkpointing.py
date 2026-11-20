@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+import pytest
+
+from tests.testing_utils import extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_checkpointing() -> None:
@@ -20,16 +22,16 @@ def test_checkpointing() -> None:
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     # Eager mode
-    def dummy(x: EagerValue) -> EagerValue:
+    def dummy(x: Tensor | int) -> Tensor | int:
         """Test function dummy.
 
         Args:
-            x: Test parameter `x`.
+            x (Tensor | int): Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `dummy`.
+            Tensor | int: Computed output value from `dummy`.
         """
-        return ensure_eager_tensor(x) + ensure_eager_tensor(1)
+        return x + 1
 
     cp = checkpoint(dummy)
     assert cp(1) == 2
@@ -41,7 +43,7 @@ def test_checkpointing() -> None:
     class FakeData:
         """Test class FakeData."""
 
-        def __init__(self, id: EagerValue) -> None:
+        def __init__(self, id: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -50,47 +52,53 @@ def test_checkpointing() -> None:
             self.id = id
 
     t1 = Tensor(np.array([1, 2]), TensorConfig(shape=(2,), dtype="float32", device="cpu"))
-    ensure_mutable(t1)._data = ensure_eager_tensor(FakeData("n1"))
+    pytest.MonkeyPatch().setattr(t1, "_data", FakeData("n1"), raising=False)
 
     t2 = Tensor(np.array([1, 2]), TensorConfig(shape=(2,), dtype="float32", device="cpu"))
-    ensure_mutable(t2)._data = ensure_eager_tensor(FakeData("n2"))
+    pytest.MonkeyPatch().setattr(t2, "_data", FakeData("n2"), raising=False)
 
     cp(t1)
 
     # with dtype in attr
-    def dummy_dtype(x: EagerValue) -> EagerValue:
+    def dummy_dtype(x: BackendArg) -> BackendArg:
         """Test function dummy_dtype.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_dtype`.
+            BackendArg: Computed output value from `dummy_dtype`.
         """
         return x
 
     # Test fallback
     from unittest.mock import patch
 
-    class FakeBlock:
-        """Test class FakeBlock."""
+    from tests.testing_utils import MockGraphStub, MockNodeStub
 
-        outputs = ["out"]
-        nodes = {"out": type("Node", (), {"inputs": ["real"], "id": "out"})(), "real": type("Node", (), {"shape_metadata": (2,), "attributes": {"dtype": "int32"}, "id": "real"})()}
+    fake_block = MockGraphStub(
+        outputs=["out"],
+        nodes={
+            "out": MockNodeStub(id="out", op_type="Output", inputs=["real"]),
+            "real": MockNodeStub(id="real", op_type="Relu", shape_metadata=(2,), attributes={"dtype": "int32"}),
+        },
+    )
 
-    with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=FakeBlock()):
+    with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=fake_block):
         res2 = cp(t1)
-        assert ensure_eager_tensor(res2).shape == (2,)
+        assert extract_test_shape(res2) == (2,)
 
-    class FakeBlock2:
-        """Test class FakeBlock2."""
+    fake_block2 = MockGraphStub(
+        outputs=["out"],
+        nodes={
+            "out": MockNodeStub(id="out", op_type="Output", inputs=["real"]),
+            "real": MockNodeStub(id="real", op_type="Relu", shape_metadata=(2,), attributes={}),
+        },
+    )
 
-        outputs = ["out"]
-        nodes = {"out": type("Node", (), {"inputs": ["real"], "id": "out"})(), "real": type("Node", (), {"shape_metadata": (2,), "attributes": {}, "id": "real"})()}
-
-    with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=FakeBlock2()):
+    with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=fake_block2):
         res3 = cp()
-        assert ensure_eager_tensor(res3).shape == (2,)
+        assert extract_test_shape(res3) == (2,)
 
     config.eager_mode = True
     global_tracing_state.stop_tracing()
@@ -100,14 +108,14 @@ def test_remat_and_recompute_grad() -> None:
     """Test function test_remat_and_recompute_grad."""
     from ml_switcheroo_compiler.grad.checkpointing import recompute_grad, remat
 
-    def dummy(x: EagerValue) -> EagerValue:
+    def dummy(x: BackendArg) -> BackendArg:
         """Test function dummy.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `dummy`.
+            BackendArg: Computed output value from `dummy`.
         """
         return x
 

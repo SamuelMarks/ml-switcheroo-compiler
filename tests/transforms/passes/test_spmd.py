@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
-from ml_switcheroo_ir import NodeDict, PartitionSpec
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict, PartitionSpec
+from pytest_mock import MockerFixture
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.transforms.passes.spmd import (
     _create_all_gather_node,
     _create_all_reduce_node,
@@ -23,12 +24,12 @@ from ml_switcheroo_compiler.transforms.passes.spmd import (
     _process_spmd_node,
     inject_spmd_communication_pass,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node, ensure_node_dict, has_backend_member
+from tests.testing_utils import adapt_backend_module, coerce_numeric
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 @pytest.fixture(autouse=True)
@@ -48,7 +49,7 @@ def _reset_spmd_rules_fixture() -> Iterator[None]:
 class DummySharding(PartitionSpec):
     """Test class DummySharding."""
 
-    def __init__(self, mapping: list[EagerValue]) -> None:
+    def __init__(self, mapping: list[BackendArg]) -> None:
         """Test function __init__.
 
         Args:
@@ -68,7 +69,6 @@ class DummySharding(PartitionSpec):
 
 def test_get_spmd_rules_yaml_fallback() -> None:
     """Test function test_get_spmd_rules_yaml_fallback."""
-    from pathlib import Path
     from unittest.mock import mock_open, patch
 
     import yaml
@@ -78,15 +78,18 @@ def test_get_spmd_rules_yaml_fallback() -> None:
 
     spmd_mod._SPMD_RULES = None
 
-    def mock_exists(self: EagerValue) -> EagerValue:
+    def mock_exists(self: Path) -> bool:
         """Test function mock_exists.
 
+        Args:
+            self: Path instance.
+
         Returns:
-            EagerValue: Computed output value from `mock_exists`.
+            bool: Computed output value from `mock_exists`.
         """
-        if ensure_eager_tensor(ensure_eager_tensor(self).name) == "spmd_mappings":
+        if self.name == "spmd_mappings":
             return False
-        if ensure_eager_tensor(ensure_eager_tensor(self).name) == "spmd_mappings.yaml":
+        if self.name == "spmd_mappings.yaml":
             return True
         return False
 
@@ -100,31 +103,31 @@ def test_get_spmd_rules_yaml_fallback() -> None:
 
 def test_is_boundary_transition() -> None:
     """Test function test_is_boundary_transition."""
-    assert ensure_callable(_is_boundary_transition)(ensure_callable(DummySharding)([None]), ensure_callable(DummySharding)([None])) == (False, False)
-    assert ensure_callable(_is_boundary_transition)(ensure_callable(DummySharding)(["x"]), ensure_callable(DummySharding)([None])) == (True, False)
-    assert ensure_callable(_is_boundary_transition)(ensure_callable(DummySharding)([None]), ensure_callable(DummySharding)(["x"])) == (False, True)
+    assert _is_boundary_transition(DummySharding([None]), DummySharding([None])) == (False, False)
+    assert _is_boundary_transition(DummySharding(["x"]), DummySharding([None])) == (True, False)
+    assert _is_boundary_transition(DummySharding([None]), DummySharding(["x"])) == (False, True)
 
 
 def test_create_nodes() -> None:
     """Test function test_create_nodes."""
     sharding = DummySharding(["x"])
 
-    n1 = ensure_callable(_create_all_gather_node)("inp1", sharding)
+    n1 = _create_all_gather_node("inp1", sharding)
     assert n1.id == "inp1_all_gather"
     assert n1.op_type == "AllGather"
     assert bool(n1.attributes.get("dispatch_early")) is True
 
-    n2 = ensure_callable(_create_reduce_scatter_node)("inp2", sharding)
+    n2 = _create_reduce_scatter_node("inp2", sharding)
     assert n2.id == "inp2_reduce_scatter"
     assert n2.op_type == "ReduceScatter"
     assert bool(n2.attributes.get("dispatch_early")) is True
 
-    n3 = ensure_callable(_create_all_reduce_node)("inp3", sharding)
+    n3 = _create_all_reduce_node("inp3", sharding)
     assert n3.id == "inp3_all_reduce"
     assert n3.op_type == "AllReduce"
     assert bool(n3.attributes.get("dispatch_early")) is True
 
-    n4 = ensure_callable(_create_all_to_all_node)("inp4", sharding)
+    n4 = _create_all_to_all_node("inp4", sharding)
     assert n4.id == "inp4_all_to_all"
     assert n4.op_type == "AllToAll"
     assert bool(n4.attributes.get("dispatch_early")) is True
@@ -135,22 +138,22 @@ def test_inject_nodes() -> None:
     sharding = DummySharding(["x"])
 
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1", "in2"])
-    res1 = ensure_callable(_inject_all_gather)(node1, 0, "in1", sharding)
+    res1 = _inject_all_gather(node1, 0, "in1", sharding)
     assert node1.inputs[0] == "in1_all_gather"
     assert res1.id == "in1_all_gather"
 
     node2 = IRNode(id="n2", op_type="Add", inputs=["in1", "in2"])
-    res2 = ensure_callable(_inject_reduce_scatter)(node2, 1, "in2", sharding)
+    res2 = _inject_reduce_scatter(node2, 1, "in2", sharding)
     assert node2.inputs[1] == "in2_reduce_scatter"
     assert res2.id == "in2_reduce_scatter"
 
     node3 = IRNode(id="n3", op_type="Add", inputs=["in3", "in2"])
-    res3 = ensure_callable(_inject_all_reduce)(node3, 0, "in3", sharding)
+    res3 = _inject_all_reduce(node3, 0, "in3", sharding)
     assert node3.inputs[0] == "in3_all_reduce"
     assert res3.id == "in3_all_reduce"
 
     node4 = IRNode(id="n4", op_type="Add", inputs=["in4", "in2"])
-    res4 = ensure_callable(_inject_all_to_all)(node4, 0, "in4", sharding)
+    res4 = _inject_all_to_all(node4, 0, "in4", sharding)
     assert node4.inputs[0] == "in4_all_to_all"
     assert res4.id == "in4_all_to_all"
 
@@ -162,53 +165,55 @@ def test_process_spmd_input() -> None:
     sharding_sharded_y = DummySharding(["y"])
 
     graph = IRGraph()
-    in_node1 = ensure_callable(IRNode)(id="in1", op_type="Input", inputs=[], sharding=sharding_sharded_x)
-    graph.nodes["in1"] = ensure_node(in_node1)
+    in_node1 = IRNode(id="in1", op_type="Input", inputs=[], sharding=sharding_sharded_x)
+    graph.nodes["in1"] = in_node1
 
     # 1. inp_sharded, not node_sharded, not grad/reduction => all_gather
-    node1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=sharding_unsharded)
-    res_ag = ensure_callable(_process_spmd_input)(node1, 0, "in1", graph, sharding_unsharded)
+    node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=sharding_unsharded)
+    res_ag = _process_spmd_input(node1, 0, "in1", graph, sharding_unsharded)
     # The default yaml has Add -> inject: AllGather
-    assert ensure_eager_tensor(res_ag) is not None and res_ag.op_type == "AllGather"
+    assert res_ag is not None and res_ag.op_type == "AllGather"
 
     # 2. inp_sharded, not node_sharded, reduction => all_reduce
-    node2 = ensure_callable(IRNode)(id="n2", op_type="ReduceSum", inputs=["in1"], sharding=sharding_unsharded)
-    res_ar = ensure_callable(_process_spmd_input)(node2, 0, "in1", graph, sharding_unsharded)
-    assert ensure_eager_tensor(res_ar) is not None and res_ar.op_type == "AllReduce"
+    node2 = IRNode(id="n2", op_type="ReduceSum", inputs=["in1"], sharding=sharding_unsharded)
+    res_ar = _process_spmd_input(node2, 0, "in1", graph, sharding_unsharded)
+    assert res_ar is not None and res_ar.op_type == "AllReduce"
 
     # 3. not inp_sharded, node_sharded, grad => reduce_scatter
-    in_node_unsharded = ensure_callable(IRNode)(id="in_un", op_type="Input", inputs=[], sharding=sharding_unsharded)
-    graph.nodes["in_un"] = ensure_node(in_node_unsharded)
-    node_grad = ensure_callable(IRNode)(id="grad_node", op_type="Grad", inputs=["in_un"], sharding=sharding_sharded_x)
-    res_rs = ensure_callable(_process_spmd_input)(node_grad, 0, "in_un", graph, sharding_sharded_x)
-    assert ensure_eager_tensor(res_rs) is not None and res_rs.op_type == "ReduceScatter"
+    in_node_unsharded = IRNode(id="in_un", op_type="Input", inputs=[], sharding=sharding_unsharded)
+    graph.nodes["in_un"] = in_node_unsharded
+    node_grad = IRNode(id="grad_node", op_type="Grad", inputs=["in_un"], sharding=sharding_sharded_x)
+    res_rs = _process_spmd_input(node_grad, 0, "in_un", graph, sharding_sharded_x)
+    assert res_rs is not None and res_rs.op_type == "ReduceScatter"
 
     # 4. inp_sharded, node_sharded, different axes => all_to_all
-    node3 = ensure_callable(IRNode)(id="n3", op_type="Add", inputs=["in1"], sharding=sharding_sharded_y)
-    res_a2a = ensure_callable(_process_spmd_input)(node3, 0, "in1", graph, sharding_sharded_y)
-    assert ensure_eager_tensor(res_a2a) is not None and res_a2a.op_type == "AllToAll"
+    node3 = IRNode(id="n3", op_type="Add", inputs=["in1"], sharding=sharding_sharded_y)
+    res_a2a = _process_spmd_input(node3, 0, "in1", graph, sharding_sharded_y)
+    assert res_a2a is not None and res_a2a.op_type == "AllToAll"
 
     # Missing input node
-    node4 = ensure_callable(IRNode)(id="n4", op_type="Add", inputs=["missing"], sharding=sharding_sharded_y)
-    assert ensure_callable(_process_spmd_input)(node4, 0, "missing", graph, sharding_sharded_y) is None
+    node4 = IRNode(id="n4", op_type="Add", inputs=["missing"], sharding=sharding_sharded_y)
+    assert _process_spmd_input(node4, 0, "missing", graph, sharding_sharded_y) is None
 
     # Missing sharding on input node
     in_node_no_shard = IRNode(id="in_ns", op_type="Input", inputs=[])
     graph.nodes["in_ns"] = in_node_no_shard
-    assert ensure_callable(_process_spmd_input)(node3, 0, "in_ns", graph, sharding_sharded_y) is None
+    assert _process_spmd_input(node3, 0, "in_ns", graph, sharding_sharded_y) is None
 
 
 def test_process_spmd_node() -> None:
     """Test function test_process_spmd_node."""
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1", "in2"])
-    graph = IRGraph(nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[]), "in2": IRNode(id="in2", op_type="Input", inputs=[])})
+    graph = IRGraph(
+        nodes={"in1": IRNode(id="in1", op_type="Input", inputs=[]), "in2": IRNode(id="in2", op_type="Input", inputs=[])}
+    )
 
     (mod, inj) = _process_spmd_node(node1, graph)
     assert not mod and not inj
 
-    ensure_mutable(node1).sharding = ensure_eager_tensor(DummySharding([None]))
-    ensure_mutable(graph.nodes["in1"]).sharding = ensure_eager_tensor(DummySharding(["x"]))
-    ensure_mutable(graph.nodes["in2"]).sharding = ensure_eager_tensor(DummySharding([None]))
+    node1.sharding = DummySharding([None])
+    graph.nodes["in1"].sharding = DummySharding(["x"])
+    graph.nodes["in2"].sharding = DummySharding([None])
     (mod, inj) = _process_spmd_node(node1, graph)
     assert mod is True
     assert len(inj) == 1
@@ -217,9 +222,14 @@ def test_process_spmd_node() -> None:
 
 def test_inject_spmd_communication_pass() -> None:
     """Test function test_inject_spmd_communication_pass."""
-    node1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=ensure_callable(DummySharding)([None]))
-    graph = ensure_callable(IRGraph)(nodes={"in1": ensure_callable(IRNode)(id="in1", op_type="Input", inputs=[], sharding=ensure_callable(DummySharding)(["x"])), "n1": node1})
-    res = ensure_callable(inject_spmd_communication_pass)(graph)
+    node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=DummySharding([None]))
+    graph = IRGraph(
+        nodes={
+            "in1": IRNode(id="in1", op_type="Input", inputs=[], sharding=DummySharding(["x"])),
+            "n1": node1,
+        }
+    )
+    res = inject_spmd_communication_pass(graph)
     assert bool(res) is True
     assert "in1_all_gather" in graph.nodes
 
@@ -234,9 +244,9 @@ def test_get_sharding_axes_none() -> None:
 def test_spmd_insert_communications_not_is_grad() -> None:
     """Test function test_spmd_insert_communications_not_is_grad."""
     g = IRGraph()
-    n1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=ensure_callable(DummySharding)([0]))
+    n1 = IRNode(id="n1", op_type="Add", inputs=["n2"], sharding=DummySharding([0]))
     n2 = IRNode(id="n2", op_type="Input", sharding=None)
-    g.nodes["n1"] = ensure_node(n1)
+    g.nodes["n1"] = n1
     g.nodes["n2"] = n2
 
     res = inject_spmd_communication_pass(g)
@@ -246,10 +256,10 @@ def test_spmd_insert_communications_not_is_grad() -> None:
 def test_spmd_insert_communications_axes_len_mismatch() -> None:
     """Test function test_spmd_insert_communications_axes_len_mismatch."""
     g = IRGraph()
-    n1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=ensure_callable(DummySharding)([0]))
-    n2 = ensure_callable(IRNode)(id="n2", op_type="Input", sharding=ensure_callable(DummySharding)([0, 1]))
-    g.nodes["n1"] = ensure_node(n1)
-    g.nodes["n2"] = ensure_node(n2)
+    n1 = IRNode(id="n1", op_type="Add", inputs=["n2"], sharding=DummySharding([0]))
+    n2 = IRNode(id="n2", op_type="Input", sharding=DummySharding([0, 1]))
+    g.nodes["n1"] = n1
+    g.nodes["n2"] = n2
 
     res = inject_spmd_communication_pass(g)
     assert res is False  # Length of axes mismatch, no all_to_all
@@ -258,10 +268,10 @@ def test_spmd_insert_communications_axes_len_mismatch() -> None:
 def test_spmd_insert_communications_not_inp_sharded_node_sharded_not_grad() -> None:
     """Test function test_spmd_insert_communications_not_inp_sharded_node_sharded_not_grad."""
     g = IRGraph()
-    n1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=ensure_callable(DummySharding)([0]))
-    n2 = ensure_callable(IRNode)(id="n2", op_type="Input", sharding=ensure_callable(DummySharding)([None]))
-    g.nodes["n1"] = ensure_node(n1)
-    g.nodes["n2"] = ensure_node(n2)
+    n1 = IRNode(id="n1", op_type="Add", inputs=["n2"], sharding=DummySharding([0]))
+    n2 = IRNode(id="n2", op_type="Input", sharding=DummySharding([None]))
+    g.nodes["n1"] = n1
+    g.nodes["n2"] = n2
     # Wait, n1 has node_sharded True, n2 has inp_sharded False.
     # But n1 is NOT grad.
     # Actually wait. _is_boundary_transition(inp, node) gives False, True.
@@ -273,7 +283,7 @@ def test_spmd_insert_communications_not_inp_sharded_node_sharded_not_grad() -> N
     assert res is False
 
 
-def test_spmd_empty_conditions(mocker: EagerTensorProtocol) -> None:
+def test_spmd_empty_conditions(mocker: MockerFixture) -> None:
     """Test function test_spmd_empty_conditions.
 
     Args:
@@ -286,11 +296,11 @@ def test_spmd_empty_conditions(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.transforms.passes.spmd._get_spmd_rules", return_value=mock_rules)
 
     graph = IRGraph()
-    in_node1 = ensure_callable(IRNode)(id="in1", op_type="Input", inputs=[], sharding=ensure_callable(DummySharding)(["x"]))
-    graph.nodes["in1"] = ensure_node(in_node1)
+    in_node1 = IRNode(id="in1", op_type="Input", inputs=[], sharding=DummySharding(["x"]))
+    graph.nodes["in1"] = in_node1
 
-    node1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=ensure_callable(DummySharding)(["y"]))
-    res = ensure_callable(_process_spmd_input)(node1, 0, "in1", graph, ensure_callable(DummySharding)(["y"]))
+    node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=DummySharding(["y"]))
+    res = _process_spmd_input(node1, 0, "in1", graph, DummySharding(["y"]))
     assert res is None
 
 
@@ -306,7 +316,7 @@ def test_spmd_load_rules_branches() -> None:
     class MockPathExistsDir:
         """Test class MockPathExistsDir."""
 
-        def __init__(self, path: EagerValue) -> None:
+        def __init__(self, path: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -314,26 +324,31 @@ def test_spmd_load_rules_branches() -> None:
             """
             self.path = path
 
-        def exists(self) -> EagerValue:
+        def exists(self) -> BackendArg:
             """Test function exists.
 
             Returns:
-                EagerValue: Computed output value from `exists`.
+                BackendArg: Computed output value from `exists`.
             """
             return True
 
-        def __truediv__(self, other: EagerValue) -> EagerValue:
+        def __truediv__(self, other: BackendArg) -> BackendArg:
             """Test function __truediv__.
 
             Args:
                 other: Test parameter `other`.
 
             Returns:
-                EagerValue: Computed output value from `__truediv__`.
+                BackendArg: Computed output value from `__truediv__`.
             """
-            return ensure_eager_tensor(self.path) / ensure_eager_tensor(other)
+            return coerce_numeric(self.path) / coerce_numeric(other)
 
-    with patch("pathlib.Path.exists", return_value=True), patch("os.listdir", return_value=["test.txt", "valid.yaml", "invalid.yaml"]), patch("builtins.open", mock_open()), patch("yaml.safe_load", side_effect=[{"Add": {}}, ["not a dict"]]):
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("os.listdir", return_value=["test.txt", "valid.yaml", "invalid.yaml"]),
+        patch("builtins.open", mock_open()),
+        patch("yaml.safe_load", side_effect=[{"Add": {}}, ["not a dict"]]),
+    ):
         # Test branches 184->183 (test.txt) and 187->183 (invalid.yaml returning a list)
         rules = spmd._get_spmd_rules()
         assert "Add" in rules
@@ -349,49 +364,45 @@ def test_spmd_load_rules_branches() -> None:
 
 def test_propagate_sharding_matmul_row_and_col_parallel() -> None:
     """Test function test_propagate_sharding_matmul_row_and_col_parallel."""
-    from ml_switcheroo_compiler.transforms.passes.spmd import (
-        propagate_sharding,
-    )
+    from ml_switcheroo_compiler.transforms.passes.spmd import propagate_sharding
 
     # Row parallel: LHS row-sharded, RHS replicated
     g = IRGraph()
-    lhs = ensure_callable(IRNode)(id="lhs", op_type="Input", sharding=ensure_callable(DummySharding)(["x", None]))
-    rhs = ensure_callable(IRNode)(id="rhs", op_type="Input", sharding=ensure_callable(DummySharding)([None, None]))
+    lhs = IRNode(id="lhs", op_type="Input", sharding=DummySharding(["x", None]))
+    rhs = IRNode(id="rhs", op_type="Input", sharding=DummySharding([None, None]))
     mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
-    g.nodes = NodeDict(ensure_node_dict({"lhs": lhs, "rhs": rhs, "mm": mm}))
+    g.nodes = NodeDict({"lhs": lhs, "rhs": rhs, "mm": mm})
 
     modified = propagate_sharding(g)
     assert modified is True
-    assert ensure_eager_tensor(ensure_eager_tensor(mm.sharding).mesh_mapping) == ("x", None)
+    assert adapt_backend_module(mm.sharding).require_symbol("mesh_mapping") == ("x", None)
 
     # Col parallel: LHS replicated, RHS col-sharded
     g2 = IRGraph()
-    lhs2 = ensure_callable(IRNode)(id="lhs2", op_type="Input", sharding=ensure_callable(DummySharding)([None, None]))
-    rhs2 = ensure_callable(IRNode)(id="rhs2", op_type="Input", sharding=ensure_callable(DummySharding)([None, "y"]))
+    lhs2 = IRNode(id="lhs2", op_type="Input", sharding=DummySharding([None, None]))
+    rhs2 = IRNode(id="rhs2", op_type="Input", sharding=DummySharding([None, "y"]))
     mm2 = IRNode(id="mm2", op_type="MatMul", inputs=["lhs2", "rhs2"])
-    g2.nodes = NodeDict(ensure_node_dict({"lhs2": lhs2, "rhs2": rhs2, "mm2": mm2}))
+    g2.nodes = NodeDict({"lhs2": lhs2, "rhs2": rhs2, "mm2": mm2})
 
     assert propagate_sharding(g2) is True
-    assert ensure_eager_tensor(ensure_eager_tensor(mm2.sharding).mesh_mapping) == (None, "y")
+    assert adapt_backend_module(mm2.sharding).require_symbol("mesh_mapping") == (None, "y")
 
 
 def test_propagate_sharding_matmul_contracting_parallel() -> None:
     """Test function test_propagate_sharding_matmul_contracting_parallel."""
-    from ml_switcheroo_compiler.transforms.passes.spmd import (
-        spmd_partitioning_pass,
-    )
+    from ml_switcheroo_compiler.transforms.passes.spmd import spmd_partitioning_pass
 
     # Contracting parallel: LHS contracting dim sharded, RHS contracting dim sharded
     g = IRGraph()
-    lhs = ensure_callable(IRNode)(id="lhs", op_type="Input", sharding=ensure_callable(DummySharding)([None, "x"]))
-    rhs = ensure_callable(IRNode)(id="rhs", op_type="Input", sharding=ensure_callable(DummySharding)(["x", None]))
+    lhs = IRNode(id="lhs", op_type="Input", sharding=DummySharding([None, "x"]))
+    rhs = IRNode(id="rhs", op_type="Input", sharding=DummySharding(["x", None]))
     mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
     out = IRNode(id="out", op_type="Relu", inputs=["mm"])
-    g.nodes = NodeDict(ensure_node_dict({"lhs": lhs, "rhs": rhs, "mm": mm, "out": out}))
+    g.nodes = NodeDict({"lhs": lhs, "rhs": rhs, "mm": mm, "out": out})
     g.outputs = ["out"]
 
     assert spmd_partitioning_pass(g) is True
-    assert ensure_eager_tensor(ensure_eager_tensor(mm.sharding).mesh_mapping) == (None, None)
+    assert adapt_backend_module(mm.sharding).require_symbol("mesh_mapping") == (None, None)
     assert "mm_all_reduce" in g.nodes
     assert g.nodes["out"].inputs == ["mm_all_reduce"]
 
@@ -401,10 +412,10 @@ def test_propagate_sharding_matmul_fallback() -> None:
     from ml_switcheroo_compiler.transforms.passes.spmd import propagate_sharding
 
     g = IRGraph()
-    lhs = ensure_callable(IRNode)(id="lhs", op_type="Input", sharding=ensure_callable(DummySharding)(["z"]))
-    rhs = ensure_callable(IRNode)(id="rhs", op_type="Input", sharding=ensure_callable(DummySharding)(["w"]))
+    lhs = IRNode(id="lhs", op_type="Input", sharding=DummySharding(["z"]))
+    rhs = IRNode(id="rhs", op_type="Input", sharding=DummySharding(["w"]))
     mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
-    g.nodes = NodeDict(ensure_node_dict({"lhs": lhs, "rhs": rhs, "mm": mm}))
+    g.nodes = NodeDict({"lhs": lhs, "rhs": rhs, "mm": mm})
 
     assert propagate_sharding(g) is True
     assert mm.sharding is not None
@@ -412,31 +423,28 @@ def test_propagate_sharding_matmul_fallback() -> None:
 
 def test_propagate_sharding_reductions() -> None:
     """Test function test_propagate_sharding_reductions."""
-    from ml_switcheroo_compiler.transforms.passes.spmd import (
-        propagate_sharding,
-        spmd_partitioning_pass,
-    )
+    from ml_switcheroo_compiler.transforms.passes.spmd import propagate_sharding, spmd_partitioning_pass
 
     # Case 1: Reduced dimension is sharded -> inject AllReduce
     g1 = IRGraph()
-    inp1 = ensure_callable(IRNode)(id="inp1", op_type="Input", sharding=ensure_callable(DummySharding)(["x", None]))
+    inp1 = IRNode(id="inp1", op_type="Input", sharding=DummySharding(["x", None]))
     red1 = IRNode(id="red1", op_type="ReduceSum", inputs=["inp1"], attributes={"axis": 0})
-    g1.nodes = NodeDict(ensure_node_dict({"inp1": inp1, "red1": red1}))
+    g1.nodes = NodeDict({"inp1": inp1, "red1": red1})
     g1.outputs = ["red1"]
 
     assert spmd_partitioning_pass(g1) is True
-    assert ensure_eager_tensor(ensure_eager_tensor(red1.sharding).mesh_mapping) == (None,)
+    assert adapt_backend_module(red1.sharding).require_symbol("mesh_mapping") == (None,)
     assert "red1_all_reduce" in g1.nodes
     assert g1.outputs == ["red1_all_reduce"]
 
     # Case 2: Reduced dimension is replicated -> keep other sharded dimensions
     g2 = IRGraph()
-    inp2 = ensure_callable(IRNode)(id="inp2", op_type="Input", sharding=ensure_callable(DummySharding)(["x", None]))
+    inp2 = IRNode(id="inp2", op_type="Input", sharding=DummySharding(["x", None]))
     red2 = IRNode(id="red2", op_type="ReduceSum", inputs=["inp2"], attributes={"axis": [1]})
-    g2.nodes = NodeDict(ensure_node_dict({"inp2": inp2, "red2": red2}))
+    g2.nodes = NodeDict({"inp2": inp2, "red2": red2})
 
     assert propagate_sharding(g2) is True
-    assert ensure_eager_tensor(ensure_eager_tensor(red2.sharding).mesh_mapping) == ("x",)
+    assert adapt_backend_module(red2.sharding).require_symbol("mesh_mapping") == ("x",)
     assert red2.attributes.get("inject_collective") is None
 
 
@@ -450,15 +458,27 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
 
     # Conv2D
     g = IRGraph()
-    inp = ensure_callable(IRNode)(id="inp", op_type="Input", sharding=ensure_callable(DummySharding)(["x", None, None, None]))
+    inp = IRNode(id="inp", op_type="Input", sharding=DummySharding(["x", None, None, None]))
     conv = IRNode(id="conv", op_type="Conv2D", inputs=["inp"])
     # Elementwise Add
     add = IRNode(id="add", op_type="Add", inputs=["conv"])
-    g.nodes = NodeDict(ensure_node_dict({"inp": inp, "conv": conv, "add": add}))
+    g.nodes = NodeDict({"inp": inp, "conv": conv, "add": add})
+
+    from tests.testing_utils import coerce_operand_list
 
     assert propagate_sharding(g) is True
-    assert ensure_eager_tensor(tuple(ensure_eager_tensor(ensure_eager_tensor(conv.sharding).mesh_mapping))) == ensure_eager_tensor(("x", None, None, None))
-    assert ensure_eager_tensor(tuple(ensure_eager_tensor(ensure_eager_tensor(add.sharding).mesh_mapping))) == ensure_eager_tensor(("x", None, None, None))
+    assert tuple(coerce_operand_list(adapt_backend_module(conv.sharding).require_symbol("mesh_mapping"))) == (
+        "x",
+        None,
+        None,
+        None,
+    )
+    assert tuple(coerce_operand_list(adapt_backend_module(add.sharding).require_symbol("mesh_mapping"))) == (
+        "x",
+        None,
+        None,
+        None,
+    )
 
     # SPMDShardingAnnotation repr
     annot = SPMDShardingAnnotation("mesh1", ["x", None])
@@ -481,13 +501,11 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
     # Matmul where inputs have sharding with empty mesh_mapping
     g_mm_no_map = IRGraph()
     g_mm_no_map.nodes = NodeDict(
-        ensure_node_dict(
-            {
-                "in1": ensure_callable(IRNode)(id="in1", op_type="Input", sharding=ensure_callable(DummySharding)([])),
-                "in2": ensure_callable(IRNode)(id="in2", op_type="Input", sharding=ensure_callable(DummySharding)([])),
-                "mm": IRNode(id="mm", op_type="MatMul", inputs=["in1", "in2"]),
-            }
-        )
+        {
+            "in1": IRNode(id="in1", op_type="Input", sharding=DummySharding([])),
+            "in2": IRNode(id="in2", op_type="Input", sharding=DummySharding([])),
+            "mm": IRNode(id="mm", op_type="MatMul", inputs=["in1", "in2"]),
+        }
     )
     assert propagate_sharding(g_mm_no_map) is False
 
@@ -500,11 +518,11 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
 
     # 4. Reduction reducing all dims resulting in out_map empty fallback to [None]
     g_red_all = IRGraph()
-    inp_all = ensure_callable(IRNode)(id="inp_all", op_type="Input", sharding=ensure_callable(DummySharding)([None]))
+    inp_all = IRNode(id="inp_all", op_type="Input", sharding=DummySharding([None]))
     red_all = IRNode(id="red_all", op_type="ReduceSum", inputs=["inp_all"], attributes={"axis": 0})
-    g_red_all.nodes = NodeDict(ensure_node_dict({"inp_all": inp_all, "red_all": red_all}))
+    g_red_all.nodes = NodeDict({"inp_all": inp_all, "red_all": red_all})
     assert propagate_sharding(g_red_all) is True
-    assert ensure_eager_tensor(ensure_eager_tensor(red_all.sharding).mesh_mapping) == (None,)
+    assert adapt_backend_module(red_all.sharding).require_symbol("mesh_mapping") == (None,)
 
     # 5. Spatial conv with no inputs or unsharded input
     g_cv_empty = IRGraph()
@@ -516,17 +534,15 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
     # 6. spmd_partitioning_pass without outputs attribute and with ar_id already existing
     g_no_out = IRGraph()
     g_no_out.nodes = NodeDict(
-        ensure_node_dict(
-            {
-                "lhs": ensure_callable(IRNode)(id="lhs", op_type="Input", sharding=ensure_callable(DummySharding)([None, "x"])),
-                "rhs": ensure_callable(IRNode)(id="rhs", op_type="Input", sharding=ensure_callable(DummySharding)(["x", None])),
-                "mm": IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"]),
-                "mm_all_reduce": IRNode(id="mm_all_reduce", op_type="AllReduce", inputs=["mm"]),
-            }
-        )
+        {
+            "lhs": IRNode(id="lhs", op_type="Input", sharding=DummySharding([None, "x"])),
+            "rhs": IRNode(id="rhs", op_type="Input", sharding=DummySharding(["x", None])),
+            "mm": IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"]),
+            "mm_all_reduce": IRNode(id="mm_all_reduce", op_type="AllReduce", inputs=["mm"]),
+        }
     )
-    if has_backend_member(g_no_out, "outputs"):
-        del ensure_mutable(g_no_out).outputs
+    if adapt_backend_module(g_no_out).has_symbol("outputs"):
+        pytest.MonkeyPatch().delattr(g_no_out, "outputs")
     assert spmd_partitioning_pass(g_no_out) is True
 
 
@@ -536,9 +552,15 @@ def test_spmd_pass_inject_collectives() -> None:
 
     for coll in ("AllReduce", "ReduceScatter", "AllGather", "AllToAll"):
         g = IRGraph()
-        n1 = ensure_callable(IRNode)(id="n1", op_type="Add", inputs=[], attributes={"inject_collective": coll}, sharding=ensure_callable(DummySharding)(["x"]))
+        n1 = IRNode(
+            id="n1",
+            op_type="Add",
+            inputs=[],
+            attributes={"inject_collective": coll},
+            sharding=DummySharding(["x"]),
+        )
         n2 = IRNode(id="n2", op_type="Relu", inputs=["n1"])
-        g.nodes = NodeDict(ensure_node_dict({"n1": n1, "n2": n2}))
+        g.nodes = NodeDict({"n1": n1, "n2": n2})
         g.outputs = ["n1"]
         res = spmd_partitioning_pass(g)
         assert res is True

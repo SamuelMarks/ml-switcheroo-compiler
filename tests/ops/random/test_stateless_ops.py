@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+from pytest_mock import MockerFixture
 
 import ml_switcheroo_compiler.ops.random as ops_random
 from ml_switcheroo_compiler.core.config import ConfigContext, config
@@ -30,23 +31,23 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_split,
     stateless_truncated_normal,
 )
-from tests.testing_utils import ensure_eager_tensor, ensure_tensor_obj, has_backend_member
+from tests.testing_utils import adapt_backend_module, ensure_tensor, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_ops_random_unified_package() -> None:
     """Verify `ml_switcheroo_compiler.ops.random` exports all unified stateless PRNG functions."""
-    assert has_backend_member(ops_random, "stateless_random_uniform")
-    assert has_backend_member(ops_random, "stateless_split")
-    assert has_backend_member(ops_random, "sobol_sample")
-    assert has_backend_member(ops_random, "rademacher")
-    assert has_backend_member(ops_random, "uniform")
-    assert has_backend_member(ops_random, "normal")
+    assert adapt_backend_module(ops_random).has_symbol("stateless_random_uniform")
+    assert adapt_backend_module(ops_random).has_symbol("stateless_split")
+    assert adapt_backend_module(ops_random).has_symbol("sobol_sample")
+    assert adapt_backend_module(ops_random).has_symbol("rademacher")
+    assert adapt_backend_module(ops_random).has_symbol("uniform")
+    assert adapt_backend_module(ops_random).has_symbol("normal")
 
 
-def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
+def test_stateless_random_uniform(mocker: MockerFixture) -> None:
     """Verify `stateless_random_uniform` delegates to uniform, multiply, and add.
 
     Args:
@@ -66,7 +67,7 @@ def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
     assert res2 == "add"
 
 
-def test_stateless_random_normal(mocker: EagerTensorProtocol) -> None:
+def test_stateless_random_normal(mocker: MockerFixture) -> None:
     """Verify `stateless_random_normal` delegates to normal, multiply, and add.
 
     Args:
@@ -85,7 +86,7 @@ def test_stateless_random_normal(mocker: EagerTensorProtocol) -> None:
     assert res2 == "add"
 
 
-def test_stateless_random_binomial(mocker: EagerTensorProtocol) -> None:
+def test_stateless_random_binomial(mocker: MockerFixture) -> None:
     """Verify `stateless_random_binomial` delegates to discrete binomial.
 
     Args:
@@ -99,7 +100,7 @@ def test_stateless_random_binomial(mocker: EagerTensorProtocol) -> None:
     assert res2 == "binom"
 
 
-def test_stateless_truncated_normal(mocker: EagerTensorProtocol) -> None:
+def test_stateless_truncated_normal(mocker: MockerFixture) -> None:
     """Verify `stateless_truncated_normal` delegates to truncated_normal, multiply, and add.
 
     Args:
@@ -117,7 +118,7 @@ def test_stateless_truncated_normal(mocker: EagerTensorProtocol) -> None:
     assert res2 == "add"
 
 
-def test_stateless_categorical(mocker: EagerTensorProtocol) -> None:
+def test_stateless_categorical(mocker: MockerFixture) -> None:
     """Verify `stateless_categorical` delegates to categorical and cast.
 
     Args:
@@ -137,7 +138,7 @@ def test_stateless_categorical(mocker: EagerTensorProtocol) -> None:
     assert res3 == "typing.cast"
 
 
-def test_stateless_gamma(mocker: EagerTensorProtocol) -> None:
+def test_stateless_gamma(mocker: MockerFixture) -> None:
     """Verify `stateless_gamma` delegates to continuous gamma.
 
     Args:
@@ -152,7 +153,7 @@ def test_stateless_gamma(mocker: EagerTensorProtocol) -> None:
     assert res2 == "gamma"
 
 
-def test_stateless_beta(mocker: EagerTensorProtocol) -> None:
+def test_stateless_beta(mocker: MockerFixture) -> None:
     """Verify `stateless_beta` delegates to continuous beta.
 
     Args:
@@ -168,7 +169,7 @@ def test_stateless_beta(mocker: EagerTensorProtocol) -> None:
     assert res2 == "beta"
 
 
-def test_stateless_shuffle(mocker: EagerTensorProtocol) -> None:
+def test_stateless_shuffle(mocker: MockerFixture) -> None:
     """Verify `stateless_shuffle` delegates to transformations.shuffle.
 
     Args:
@@ -188,12 +189,12 @@ def test_stateless_parameterized_truncated_normal() -> None:
     try:
         seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
         cfg = RandomGenerationConfig(means=1.0, stddevs=0.5, minvals=-1.0, maxvals=1.0)
-        res = ensure_tensor_obj(stateless_parameterized_truncated_normal((2,), seed, cfg))
+        res = ensure_tensor(stateless_parameterized_truncated_normal((2,), seed, cfg))
         assert res.config.shape == (2,)
         arr = np.asarray(res.data)
         assert np.all(arr >= 0.5)
         assert np.all(arr <= 1.5)
-        res_empty = ensure_tensor_obj(stateless_parameterized_truncated_normal((), seed, cfg))
+        res_empty = ensure_tensor(stateless_parameterized_truncated_normal((), seed, cfg))
         assert res_empty.config.shape == ()
     finally:
         config.eager_mode = orig
@@ -231,13 +232,13 @@ def test_index_shuffle_and_fold_in() -> None:
         assert isinstance(res, int) and 0 <= res <= 10
 
         scalar_arr = Tensor(np.array(2, dtype=np.int32), TensorConfig((), "int32", "cpu"))
-        res_scalar = ensure_tensor_obj(index_shuffle(scalar_arr, 123, np.array(5)))
+        res_scalar = ensure_tensor(index_shuffle(scalar_arr, 123, np.array(5)))
         assert res_scalar.shape == ()
 
         vec_arr = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
-        res_vec = ensure_tensor_obj(index_shuffle(vec_arr, 123, [5]))
+        res_vec = ensure_tensor(index_shuffle(vec_arr, 123, [5]))
         assert res_vec.shape == (2,)
-        res_list = ensure_tensor_obj(index_shuffle([1, 2], 123, 5))
+        res_list = ensure_tensor(index_shuffle([1, 2], 123, 5))
         assert res_list.shape == ()
         res_empty_max = index_shuffle(vec_arr, 123, [])
         assert res_empty_max is vec_arr
@@ -257,12 +258,12 @@ def test_stateless_split() -> None:
     config.eager_mode = True
     try:
         res = stateless_split("seed", 3)
-        assert ensure_eager_tensor(res).shape == (3, 2)
+        assert extract_test_shape(res) == (3, 2)
     finally:
         config.eager_mode = orig
 
 
-def test_stateless_poisson(mocker: EagerTensorProtocol) -> None:
+def test_stateless_poisson(mocker: MockerFixture) -> None:
     """Verify `stateless_poisson` delegates to discrete poisson.
 
     Args:

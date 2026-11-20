@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.dpnp.types import _get_dpnp_module
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, require_callable
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 _DPNP_OP_ALIASES: dict[str, str] = {
@@ -167,11 +167,11 @@ _DPNP_OP_ALIASES: dict[str, str] = {
 }
 
 
-def _get_target_function(module: EagerValue, target_path: str) -> EagerValue | None:
+def _get_target_function(module: BackendArg, target_path: str) -> BackendArg | None:
     """Retrieve target function from module resolving dot-delimited submodules.
 
     Args:
-        module (EagerValue): The root module (dpnp or numpy).
+        module (BackendArg): The root module (dpnp or numpy).
         target_path (str): Function attribute name or dotted path like 'linalg.cholesky'.
 
     Returns:
@@ -179,40 +179,40 @@ def _get_target_function(module: EagerValue, target_path: str) -> EagerValue | N
     """
     curr = module
     for part in target_path.split("."):
-        if not has_backend_member(curr, part):
+        if not adapt_backend_module(curr).has_symbol(part):
             return None
-        curr = get_backend_member(curr, part)
+        curr = adapt_backend_module(curr).require_symbol(part)
     return curr if callable(curr) else None
 
 
-def _unwrap_arg(arg: EagerValue) -> EagerValue:
+def _unwrap_arg(arg: BackendArg) -> BackendArg:
     """Unwrap framework Tensor objects to underlying array buffers.
 
     Args:
-        arg (EagerValue): Argument to inspect.
+        arg (BackendArg): Argument to inspect.
 
     Returns:
-        EagerValue: Unwrapped buffer or original value.
+        BackendArg: Unwrapped buffer or original value.
     """
-    if type(arg).__name__ == "Tensor" and has_backend_member(arg, "data"):
-        return get_backend_member(arg, "data")
+    if type(arg).__name__ == "Tensor" and adapt_backend_module(arg).has_symbol("data"):
+        return adapt_backend_module(arg).require_symbol("data")
     return arg
 
 
-def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | None:
+def _resolve_dpnp_callable(dpnp_mod: BackendArg, fn_name: str) -> BackendArg | None:
     """Resolve callable function on the DPNP module via direct attribute, alias, or linalg submodule.
 
     Args:
-        dpnp_mod (EagerValue): Loaded DPNP or fallback NumPy module.
+        dpnp_mod (BackendArg): Loaded DPNP or fallback NumPy module.
         fn_name (str): Lowercase operation name.
 
     Returns:
-        EagerValue | None: Resolved callable or None if not found.
+        BackendArg | None: Resolved callable or None if not found.
     """
-    if has_backend_member(dpnp_mod, fn_name):
-        fn: EagerValue = get_backend_member(dpnp_mod, fn_name)
+    if adapt_backend_module(dpnp_mod).has_symbol(fn_name):
+        fn: BackendArg = adapt_backend_module(dpnp_mod).require_symbol(fn_name)
         if callable(fn):
-            return ensure_eager_tensor(fn)
+            return fn
 
     target_path = _DPNP_OP_ALIASES.get(fn_name)
     if target_path is not None:
@@ -220,29 +220,29 @@ def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | N
         if fn is not None:
             return fn
 
-    linalg_mod: EagerValue = get_backend_member(dpnp_mod, "linalg", None)
-    if linalg_mod is not None and has_backend_member(linalg_mod, fn_name):
-        fn = get_backend_member(linalg_mod, fn_name)
+    linalg_mod: BackendArg = adapt_backend_module(dpnp_mod).get_symbol("linalg", None)
+    if linalg_mod is not None and adapt_backend_module(linalg_mod).has_symbol(fn_name):
+        fn = adapt_backend_module(linalg_mod).require_symbol(fn_name)
         if callable(fn):
-            return ensure_eager_tensor(fn)
+            return fn
 
     return None
 
 
 def execute_op(
     op_type: str,
-    *args: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute operation eagerly on DPNP backend with Intel SYCL target.
 
     Args:
         op_type (str): Operation name string.
-        *args (EagerValue): Input tensor parameters.
-        **kwargs (EagerValue): Additional keyword attributes.
+        *args (BackendArg): Input tensor parameters.
+        **kwargs (BackendArg): Additional keyword attributes.
 
     Returns:
-        EagerValue: Evaluated DPNP array.
+        BackendArg: Evaluated DPNP array.
 
     Raises:
         BackendNotSupportedError: When the operation cannot be resolved.
@@ -252,7 +252,7 @@ def execute_op(
 
     fn = _resolve_dpnp_callable(dpnp_mod, op_type.lower())
     if fn is not None:
-        return ensure_callable(fn)(*actual_args, **kwargs)
+        return require_callable(fn)(*actual_args, **kwargs)
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 

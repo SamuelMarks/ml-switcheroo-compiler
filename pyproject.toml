@@ -48,14 +48,18 @@ tensorflow = ["requirements-backend-tensorflow.txt"]
 onnx = ["requirements-backend-onnx.txt"]
 numba = ["requirements-backend-numba.txt"]
 sparse = ["requirements-backend-sparse.txt"]
+awkward = ["requirements-backend-awkward.txt"]
+dpnp = ["requirements-backend-dpnp.txt"]
+metal = ["requirements-backend-metal.txt"]
+pyarrow = ["requirements-backend-pyarrow.txt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ml_switcheroo_compiler"]
 
 [tool.ruff]
 target-version = "py310"
-exclude = ["ml-switcheroo-ir"]
-line-length = 300
+exclude = []
+line-length = 120
 lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "D", "ANN401", "PGH003", "TID251"]
 lint.ignore = ["B905"]
 
@@ -100,8 +104,8 @@ ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_unreachable = true
-disable_error_code = ["override"]
 enable_error_code = [
+    "override",
     "ignore-without-code",
     "redundant-expr",
     "truthy-bool",
@@ -115,6 +119,10 @@ enable_error_code = [
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+module = ["ml_switcheroo_compiler.core.tensor_comparison"]
+disable_error_code = ["override"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -190,7 +198,7 @@ ignore-nested-classes = false
 ignore-setters = false
 ignore-overloaded-functions = true
 fail-under = 100
-exclude = ["docs", "ml-switcheroo-ir"]
+exclude = ["docs"]
 ignore-regex = []
 # possible values: 0 (minimal output), 1 (-v), 2 (-vv)
 verbose = 0

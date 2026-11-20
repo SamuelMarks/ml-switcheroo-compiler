@@ -6,20 +6,20 @@ import typing
 from collections.abc import Iterable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import TensorOrScalar
+    from ml_switcheroo_compiler.core.shape import OpValue
 
-_ASSERTIONS_LIST: list[tuple[TensorOrScalar, str]] = []
+_ASSERTIONS_LIST: list[tuple[OpValue, str]] = []
 
 
 @typing.runtime_checkable
 class _NumpyConvertibleProtocol(typing.Protocol):
     """Protocol for objects exposing a `.numpy()` conversion method."""
 
-    def numpy(self) -> TensorOrScalar:
+    def numpy(self) -> OpValue:
         """Return numpy representation.
 
         Returns:
-            TensorOrScalar: Converted value.
+            OpValue: Converted value.
         """
         ...
 
@@ -28,20 +28,20 @@ class _NumpyConvertibleProtocol(typing.Protocol):
 class _AllEvaluatableProtocol(typing.Protocol):
     """Protocol for array objects exposing an `.all()` reduction method."""
 
-    def all(self) -> bool | TensorOrScalar:
+    def all(self) -> bool | OpValue:
         """Return True if all elements evaluate to True.
 
         Returns:
-            bool | TensorOrScalar: Reduction result.
+            bool | OpValue: Reduction result.
         """
         ...
 
 
-def _is_tensor_iterable(val: TensorOrScalar) -> typing.TypeGuard[Iterable[TensorOrScalar]]:
-    """Type guard narrowing `val` to a non-string `Iterable[TensorOrScalar]`.
+def _is_tensor_iterable(val: OpValue) -> typing.TypeGuard[Iterable[OpValue]]:
+    """Type guard narrowing `val` to a non-string `Iterable[OpValue]`.
 
     Args:
-        val (TensorOrScalar): Value to inspect.
+        val (OpValue): Value to inspect.
 
     Returns:
         bool: True if `val` is an `Iterable` and not `str` or `bytes`.
@@ -49,21 +49,21 @@ def _is_tensor_iterable(val: TensorOrScalar) -> typing.TypeGuard[Iterable[Tensor
     return isinstance(val, Iterable) and not isinstance(val, (str, bytes))
 
 
-def record_assertion(condition: TensorOrScalar, message: str = "") -> None:
+def record_assertion(condition: OpValue, message: str = "") -> None:
     """Record a boolean or tensor condition assertion for deferred evaluation.
 
     Args:
-        condition (TensorOrScalar): Boolean or tensor condition to record.
+        condition (OpValue): Boolean or tensor condition to record.
         message (str): Diagnostic error message if the assertion fails.
     """
     _ASSERTIONS_LIST.append((condition, message))
 
 
-def _is_iterable_non_string(c: TensorOrScalar) -> bool:
+def _is_iterable_non_string(c: OpValue) -> bool:
     """Check if a value is an iterable sequence/array that is not a string or bytes.
 
     Args:
-        c (TensorOrScalar): Value to inspect.
+        c (OpValue): Value to inspect.
 
     Returns:
         bool: True if `c` is an `Iterable` and not `str` or `bytes`.
@@ -71,11 +71,11 @@ def _is_iterable_non_string(c: TensorOrScalar) -> bool:
     return _is_tensor_iterable(c)
 
 
-def _evaluate_iterable(c: TensorOrScalar) -> bool:
+def _evaluate_iterable(c: OpValue) -> bool:
     """Evaluate truthiness across all elements of a non-string iterable.
 
     Args:
-        c (TensorOrScalar): Iterable condition value.
+        c (OpValue): Iterable condition value.
 
     Returns:
         bool: True if all elements evaluate to True.
@@ -88,16 +88,19 @@ def _evaluate_iterable(c: TensorOrScalar) -> bool:
     raise ValueError(f"Could not evaluate boolean value of {type(c)}")
 
 
-def _evaluate_single_condition(cond: TensorOrScalar) -> bool:
+def _evaluate_single_condition(cond: OpValue) -> bool:
     """Evaluate a single recorded condition (scalar, tensor, or iterable) to a boolean.
 
     Args:
-        cond (TensorOrScalar): Recorded assertion condition.
+        cond (OpValue): Recorded assertion condition.
 
     Returns:
         bool: True if the condition holds, else False.
     """
-    c = cond.numpy() if isinstance(cond, _NumpyConvertibleProtocol) else cond
+    cand_cond: OpValue | _NumpyConvertibleProtocol = cond
+    c: OpValue | _AllEvaluatableProtocol = (
+        cand_cond.numpy() if isinstance(cand_cond, _NumpyConvertibleProtocol) else cond
+    )
 
     if isinstance(c, _AllEvaluatableProtocol) and callable(c.all):
         return bool(c.all())

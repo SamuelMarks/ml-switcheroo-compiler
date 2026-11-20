@@ -6,10 +6,10 @@ import typing
 
 import pytest
 
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_dataset_options() -> None:
@@ -114,8 +114,8 @@ def test_dataset_iter_save_load_iters() -> None:
     ds = ds.batch(2, drop_remainder=False)
     batches = list(ds)
     assert len(batches) == 2
-    assert ensure_callable(len)(batches[0][0].data) == 2
-    assert ensure_callable(len)(batches[1][0].data) == 1
+    assert len(coerce_operand_list(batches[0][0].data)) == 2
+    assert len(coerce_operand_list(batches[1][0].data)) == 1
 
     ds = ds.batch(2, drop_remainder=True)
     batches = list(ds)
@@ -139,13 +139,13 @@ def test_dataset_iter_save_load_iters() -> None:
     it = NumpyIterator(ds)
     assert iter(it) is it
     n = next(it)
-    assert ensure_callable(len)(n) == 2
+    assert len(n) == 2
 
     ds2 = Dataset(t1)
     it2 = ArrayIterator(ds2)
     assert iter(it2) is it2
     n2 = next(it2)
-    assert ensure_callable(len)(n2) == 1
+    assert len(n2) == 1
 
 
 def test_dataset_coverage_remaining() -> None:
@@ -199,15 +199,15 @@ def test_dataset_coverage_remaining() -> None:
     class FakeUpsample:
         """Stub bilinear upsample callable."""
 
-        def __call__(self, t: EagerValue, size: EagerValue) -> EagerValue:
+        def __call__(self, t: BackendArg, size: BackendArg) -> BackendArg:
             """Return input tensor unchanged.
 
             Args:
-                t (EagerValue): Input tensor.
-                size (EagerValue): Target spatial size.
+                t (BackendArg): Input tensor.
+                size (BackendArg): Target spatial size.
 
             Returns:
-                EagerValue: Unmodified tensor `t`.
+                BackendArg: Unmodified tensor `t`.
             """
             _ = size
             return t
@@ -215,15 +215,15 @@ def test_dataset_coverage_remaining() -> None:
     class FakeTrueDiv:
         """Stub division callable."""
 
-        def __call__(self, t: EagerValue, v: EagerValue) -> EagerValue:
+        def __call__(self, t: BackendArg, v: BackendArg) -> BackendArg:
             """Return input tensor unchanged.
 
             Args:
-                t (EagerValue): Dividend tensor.
-                v (EagerValue): Divisor scalar.
+                t (BackendArg): Dividend tensor.
+                v (BackendArg): Divisor scalar.
 
             Returns:
-                EagerValue: Unmodified tensor `t`.
+                BackendArg: Unmodified tensor `t`.
             """
             _ = v
             return t
@@ -243,7 +243,7 @@ def test_dataset_coverage_remaining_2() -> None:
     """Verify snapshot, `BinaryRecordReader`, unseeded shuffle, and `ImageDataset` branch variants."""
     import numpy as np
 
-    from ml_switcheroo_compiler.core.dataset import BinaryRecordReader, Dataset, ImageDataset, TFRecordReader
+    from ml_switcheroo_compiler.core.dataset import BinaryRecordReader, Dataset, ImageDataset
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     t1 = Tensor(np.array([1, 2]), TensorConfig(shape=(2,), dtype="float32", device="cpu"))
@@ -251,7 +251,7 @@ def test_dataset_coverage_remaining_2() -> None:
 
     ds = ds.snapshot("dummy")
 
-    reader = TFRecordReader("dummy.tfrecord")
+    reader = BinaryRecordReader("dummy.records")
     assert isinstance(reader, BinaryRecordReader)
 
     ds = ds.shuffle(buffer_size=2, seed=None)
@@ -266,15 +266,15 @@ def test_dataset_coverage_remaining_2() -> None:
     class FakeUpsample:
         """Stub bilinear upsample callable."""
 
-        def __call__(self, t: EagerValue, size: EagerValue) -> EagerValue:
+        def __call__(self, t: BackendArg, size: BackendArg) -> BackendArg:
             """Return input tensor unchanged.
 
             Args:
-                t (EagerValue): Input tensor.
-                size (EagerValue): Target spatial size.
+                t (BackendArg): Input tensor.
+                size (BackendArg): Target spatial size.
 
             Returns:
-                EagerValue: Unmodified tensor `t`.
+                BackendArg: Unmodified tensor `t`.
             """
             _ = size
             return t

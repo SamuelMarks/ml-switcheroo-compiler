@@ -15,7 +15,7 @@ def test_variable_and_parameter() -> None:
     """Test the variable and parameter behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     device = Device(DeviceType.CPU, 0)
     data = np.array([1, 2, 3])

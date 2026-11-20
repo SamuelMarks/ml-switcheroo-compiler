@@ -7,9 +7,9 @@ import typing
 from collections.abc import Mapping
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, LogicalNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import clone_logical_node
 
 
 @typing.runtime_checkable
@@ -70,12 +70,12 @@ def clone_subgraph(graph: IRGraph | _NodesGraphProtocol, prefix: str, id_map: di
     return cloned_nodes
 
 
-def detect_static_bound(node: IRNode, heuristics: list[dict[str, AttributeValue]]) -> int | None:
+def detect_static_bound(node: IRNode, heuristics: typing.Sequence[typing.Mapping[str, AttributeValue]]) -> int | None:
     """Detect if a loop has a static bound based on heuristics.
 
     Args:
         node (IRNode): The node to check.
-        heuristics (list[dict[str, AttributeValue]]): The heuristics to apply.
+        heuristics (typing.Sequence[typing.Mapping[str, AttributeValue]]): The heuristics to apply.
 
     Returns:
         Optional[int]: The static bound if found, otherwise None.
@@ -178,16 +178,18 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
     raw_limit = config.get("default_unroll_limit", 10)
     default_limit: int = raw_limit if isinstance(raw_limit, int) else 10
     raw_heuristics = config.get("heuristics", [])
-    heuristics: list[dict[str, AttributeValue]] = [h for h in raw_heuristics if isinstance(h, dict)] if isinstance(raw_heuristics, list) else []
+    heuristics: list[dict[str, AttributeValue]] = (
+        [h for h in raw_heuristics if isinstance(h, dict)] if isinstance(raw_heuristics, list) else []
+    )
 
     unrolled = False
     new_nodes: dict[str, LogicalNode] = {}
 
     for node_id, node in graph.nodes.items():
         bound = detect_static_bound(node, heuristics)
-        from ml_switcheroo_compiler.core.shape import TensorOrScalar
+        from ml_switcheroo_compiler.core.shape import OpValue
 
-        body_graph: TensorOrScalar | AttributeValue = node.attributes.get("body")
+        body_graph: OpValue | AttributeValue | _NodesGraphProtocol = node.attributes.get("body")
         if bound is not None and bound <= default_limit and isinstance(body_graph, _NodesGraphProtocol):
             unrolled = True
             _unroll_single_node(node_id, node, bound, body_graph, new_nodes)

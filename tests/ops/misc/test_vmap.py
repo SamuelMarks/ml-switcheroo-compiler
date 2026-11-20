@@ -6,21 +6,27 @@ import typing
 
 import numpy as np
 import pytest
+from pytest_mock import MockerFixture
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import (
+    MockTensorStub,
+    adapt_backend_module,
+    extract_test_shape,
+    require_callable,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -34,7 +40,7 @@ class MockTensor:
         self.data = "mock_data"
 
 
-def test_vmap_eager(mocker: EagerTensorProtocol) -> None:
+def test_vmap_eager(mocker: MockerFixture) -> None:
     """Test function test_vmap_eager.
 
     Args:
@@ -44,23 +50,23 @@ def test_vmap_eager(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mocker.patch("ml_switcheroo_compiler.ops.eager_evaluator.EagerEvaluator.evaluate", return_value=t)
 
-    def my_func(x: EagerValue) -> EagerValue:
+    def my_func(x: BackendArg) -> BackendArg:
         """Test function my_func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_func`.
+            BackendArg: Computed output value from `my_func`.
         """
         return x
 
     vmapped = vmap(my_func, in_axes=0, out_axes=0)
-    out = ensure_callable(vmapped)(t)
+    out = require_callable(vmapped)(t)
     assert out == t
 
 
-def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
+def test_vmap_tracing(mocker: MockerFixture) -> None:
     """Test function test_vmap_tracing.
 
     Args:
@@ -72,7 +78,7 @@ def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.add_node")
     mocker.patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value="graph")
 
-    def my_func(x: EagerValue, y: EagerValue) -> EagerValue:
+    def my_func(x: BackendArg, y: BackendArg) -> BackendArg:
         """Test function my_func.
 
         Args:
@@ -80,13 +86,13 @@ def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
             y: Test parameter `y`.
 
         Returns:
-            EagerValue: Computed output value from `my_func`.
+            BackendArg: Computed output value from `my_func`.
         """
         return x
 
     vmapped = vmap(my_func, in_axes=(0, 1), out_axes=0)
     with pytest.raises(AttributeError):
-        ensure_callable(vmapped)(t, t)
+        require_callable(vmapped)(t, t)
 
 
 def test_vmap_not_tracing() -> None:
@@ -96,22 +102,22 @@ def test_vmap_not_tracing() -> None:
 
     state_mod.global_tracing_state.is_tracing = False
 
-    def my_func(x: EagerValue) -> EagerValue:
+    def my_func(x: BackendArg) -> BackendArg:
         """Test function my_func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_func`.
+            BackendArg: Computed output value from `my_func`.
         """
         return x
 
     with pytest.raises(RuntimeError):
-        ensure_callable(vmap)(my_func)(ensure_callable(Tensor)(ensure_callable(MockTensor)().data, ensure_callable(TensorConfig)((), DType.Float32, "cpu")))
+        require_callable(vmap)(my_func)(Tensor(MockTensor().data, TensorConfig((), DType.Float32, "cpu")))
 
 
-def test_vmap_eager_impl(mocker: EagerTensorProtocol) -> None:
+def test_vmap_eager_impl(mocker: MockerFixture) -> None:
     """Test function test_vmap_eager_impl.
 
     Args:
@@ -119,14 +125,14 @@ def test_vmap_eager_impl(mocker: EagerTensorProtocol) -> None:
     """
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), DType.Float32, "cpu"))
 
-    def func(x: EagerValue) -> EagerValue:
+    def func(x: BackendArg) -> BackendArg:
         """Test function func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `func`.
+            BackendArg: Computed output value from `func`.
         """
         return x
 
@@ -138,7 +144,7 @@ class MockData:
 
     shape = (2, 3)
 
-    def __init__(self, d: EagerValue = "mock") -> None:
+    def __init__(self, d: BackendArg = "mock") -> None:
         """Test function __init__.
 
         Args:
@@ -147,19 +153,19 @@ class MockData:
         self.data = d
         self.id = "mock_id"
 
-    def __array__(self) -> EagerValue:
+    def __array__(self) -> BackendArg:
         """Test function __array__.
 
         Returns:
-            EagerValue: Computed output value from `__array__`.
+            BackendArg: Computed output value from `__array__`.
         """
         return np.zeros((2, 3))
 
-    def tolist(self) -> EagerValue:
+    def tolist(self) -> BackendArg:
         """Test function tolist.
 
         Returns:
-            EagerValue: Computed output value from `tolist`.
+            BackendArg: Computed output value from `tolist`.
         """
         return []
 
@@ -174,7 +180,7 @@ def test_vmap_eager_execute() -> None:
     class FakeBackend:
         """Test class FakeBackend."""
 
-        def execute_op(self, name: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def execute_op(self, name: BackendArg, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -183,7 +189,7 @@ def test_vmap_eager_execute() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
 
             class R:
@@ -194,22 +200,22 @@ def test_vmap_eager_execute() -> None:
             return R()
 
     old = reg.get_active_backend
-    ensure_mutable(reg).get_active_backend = ensure_eager_tensor(lambda: FakeBackend())
+    pytest.MonkeyPatch().setattr(reg, "get_active_backend", lambda: FakeBackend(), raising=False)
     t = Tensor(MockData(), TensorConfig((2, 3), DType.Float32, "cpu"))
 
-    def my_func(x: EagerValue) -> EagerValue:
+    def my_func(x: BackendArg) -> BackendArg:
         """Test function my_func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_func`.
+            BackendArg: Computed output value from `my_func`.
         """
         return x
 
     res = _eager_vmap(my_func, 0, 0, (t,))
-    assert ensure_eager_tensor(res).shape == (2, 3)
+    assert extract_test_shape(res) == (2, 3)
     reg.get_active_backend = old
 
 
@@ -217,14 +223,17 @@ def test_vmap_resolve() -> None:
     """Test function test_vmap_resolve."""
     from ml_switcheroo_compiler.ops.vmap import _compute_vmap_shape
 
-    class FakeT:
+    class FakeT(MockTensorStub):
         """Test class FakeT."""
 
-        shape = ()
-        dtype = DType.Float32
-        device = "cpu"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = ()
+            self.dtype = DType.Float32
+            self.device = "cpu"
 
-    assert ensure_callable(_compute_vmap_shape)(ensure_callable(FakeT)(), None) == ()
+    assert _compute_vmap_shape(FakeT(), None) == ()
 
 
 def test_vmap_trace() -> None:
@@ -235,7 +244,7 @@ def test_vmap_trace() -> None:
     class DummyGraph:
         """Test class DummyGraph."""
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -244,34 +253,42 @@ def test_vmap_trace() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
+    pytest.MonkeyPatch().setattr(
+        state.global_tracing_state,
+        "add_node",
+        adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("add_node"),
+        raising=False,
+    )
 
-    def my_func(x: EagerValue) -> EagerValue:
+    def my_func(x: BackendArg) -> BackendArg:
         """Test function my_func.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `my_func`.
+            BackendArg: Computed output value from `my_func`.
         """
         return x
 
-    class FakeT:
+    class FakeT(MockTensorStub):
         """Test class FakeT."""
 
-        shape = (2,)
-        dtype = DType.Float32
-        device = "cpu"
-        data = "mock"
+        def __init__(self) -> None:
+            """Initialize stub attributes."""
+            super().__init__()
+            self.shape = (2,)
+            self.dtype = DType.Float32
+            self.device = "cpu"
+            self.data = "mock"
 
     t = Tensor(MockData(), TensorConfig((2,), DType.Float32, "cpu"))
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value="graph"):
         res = _trace_vmap(my_func, 0, 0, (t,))
-        assert ensure_eager_tensor(res).shape == (2,)
+        assert extract_test_shape(res) == (2,)
 
 
 def test_vmap_non_tensor_arg() -> None:

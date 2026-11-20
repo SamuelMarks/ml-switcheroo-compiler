@@ -7,76 +7,38 @@ import typing
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import _backend_name
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import IRAttrValue, OpValue, is_variadic_callable
 from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
 
 
-def _is_dist_tensor(val: TensorOrScalar) -> typing.TypeGuard[EagerTensorProtocol]:
-    """Type guard narrowing `val` to `EagerTensorProtocol`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
-def _ensure_dist_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
-    """Narrow `val` to `EagerTensorProtocol`.
-
-    Args:
-        val (TensorOrScalar): Candidate value.
-
-    Returns:
-        EagerTensorProtocol: Narrowed tensor.
-    """
-    assert _is_dist_tensor(val)
-    return val
-
-
+@typing.runtime_checkable
 class _InitializeDistributedBackendProtocol(typing.Protocol):
-    """Protocol for backends supporting `initialize_distributed()`."""
+    """Protocol for backends supporting ``initialize_distributed()``."""
 
-    def initialize_distributed(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+    def initialize_distributed(self, *args: OpValue, **kwargs: IRAttrValue) -> None:
         """Initialize distributed backend.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (AttrValue): Keyword arguments.
+            *args (OpValue): Positional arguments.
+            **kwargs (IRAttrValue): Keyword arguments.
         """
         ...
-
-
-def _is_initialize_distributed_backend(val: TensorOrScalar) -> typing.TypeGuard[_InitializeDistributedBackendProtocol]:
-    """Check whether `val` exposes `initialize_distributed`.
-
-    Args:
-        val (TensorOrScalar): Active backend.
-
-    Returns:
-        bool: True if `val` has `initialize_distributed`.
-    """
-    return has_backend_member(val, "initialize_distributed")
 
 
 class Distribution:
     """Base class for distributed strategies."""
 
-    def __init__(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+    def __init__(self, *args: OpValue, **kwargs: IRAttrValue) -> None:
         """Initialize Distribution.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (AttrValue): Keyword arguments.
+            *args (OpValue): Positional arguments.
+            **kwargs (IRAttrValue): Keyword arguments.
         """
         _ = args
         self.device_mesh = kwargs.get("device_mesh", None)
@@ -108,12 +70,12 @@ class Distribution:
 class DataParallel(Distribution):
     """DataParallel strategy for distributed execution."""
 
-    def __init__(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+    def __init__(self, *args: OpValue, **kwargs: IRAttrValue) -> None:
         """Initialize the DataParallel distribution.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (AttrValue): Keyword arguments.
+            *args (OpValue): Positional arguments.
+            **kwargs (IRAttrValue): Keyword arguments.
         """
         super().__init__(*args, **kwargs)
 
@@ -126,8 +88,8 @@ class ModelParallel(Distribution):
         device_mesh: DeviceMesh | None = None,
         layout_map: LayoutMap | None = None,
         batch_dim_name: str | None = None,
-        *args: TensorOrScalar,
-        **kwargs: AttrValue,
+        *args: OpValue,
+        **kwargs: IRAttrValue,
     ) -> None:
         """Initialize the ModelParallel distribution.
 
@@ -135,8 +97,8 @@ class ModelParallel(Distribution):
             device_mesh (Optional[DeviceMesh]): The device mesh.
             layout_map (Optional[LayoutMap]): The layout map.
             batch_dim_name (Optional[str]): Name of batch dimension.
-            *args (TensorOrScalar): Extra positional args.
-            **kwargs (AttrValue): Extra keyword args.
+            *args (OpValue): Extra positional args.
+            **kwargs (IRAttrValue): Extra keyword args.
         """
         _ = (device_mesh, batch_dim_name, args, kwargs)
         self.layout_map = layout_map
@@ -145,21 +107,21 @@ class ModelParallel(Distribution):
 class TensorLayoutClass:
     """Class representing TensorLayout."""
 
-    def __init__(self, axes: TensorOrScalar) -> None:
+    def __init__(self, axes: OpValue) -> None:
         """Initialize TensorLayoutClass.
 
         Args:
-            axes (TensorOrScalar): Tuple of axis names.
+            axes (OpValue): Tuple of axis names.
         """
         self.axes = axes
 
 
-def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorLayoutClass:
+def TensorLayout(*args: OpValue, **kwargs: IRAttrValue) -> TensorLayoutClass:
     """Create a TensorLayout.
 
     Args:
-        *args (TensorOrScalar): Positional arguments.
-        **kwargs (AttrValue): Keyword arguments.
+        *args (OpValue): Positional arguments.
+        **kwargs (IRAttrValue): Keyword arguments.
 
     Returns:
         TensorLayoutClass: TensorLayoutClass instance.
@@ -168,52 +130,55 @@ def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorLayoutClas
     return TensorLayoutClass(axes)
 
 
-def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
+def initialize(*args: OpValue, **kwargs: IRAttrValue) -> None:
     """Initialize the distributed environment.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (AttrValue): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (IRAttrValue): Keyword args.
 
     Raises:
-        BackendNotSupportedError: If the active backend does not support initialize_distributed().
+        BackendNotSupportedError: If the active backend does not support ``initialize_distributed()``.
     """
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend: TensorOrScalar = registry.get_active_backend()
-    if _is_initialize_distributed_backend(backend):
+    raw_backend = registry.get_active_backend()
+    backend: OpValue | _InitializeDistributedBackendProtocol = raw_backend
+    if isinstance(backend, _InitializeDistributedBackendProtocol) and callable(backend.initialize_distributed):
         backend.initialize_distributed(*args, **kwargs)
     else:
-        raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support initialize_distributed()")
+        raise BackendNotSupportedError(
+            f"Active backend '{_backend_name(raw_backend)}' does not support initialize_distributed()"
+        )
 
 
-def list_devices(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
+def list_devices(*args: OpValue, **kwargs: IRAttrValue) -> OpValue:
     """List available devices.
 
     Args:
-        *args (TensorOrScalar): Positional arguments.
-        **kwargs (AttrValue): Keyword arguments.
+        *args (OpValue): Positional arguments.
+        **kwargs (IRAttrValue): Keyword arguments.
 
     Returns:
-        TensorOrScalar: List of devices.
+        OpValue: List of devices.
     """
     _ = (args, kwargs)
     from ml_switcheroo_compiler.core.device import get_physical_devices
 
-    return _ensure_dist_tensor(get_physical_devices())
+    return get_physical_devices()
 
 
 _dist: Distribution | None = None
 _DIST_STATE: dict[str, Distribution | None] = {"dist": None}
 
 
-def distribution(*args: TensorOrScalar, **kwargs: AttrValue) -> Distribution | None:
+def distribution(*args: OpValue, **kwargs: IRAttrValue) -> Distribution | None:
     """Get the current distribution.
 
     Args:
-        *args (TensorOrScalar): Positional arguments.
-        **kwargs (AttrValue): Keyword arguments.
+        *args (OpValue): Positional arguments.
+        **kwargs (IRAttrValue): Keyword arguments.
 
     Returns:
         Optional[Distribution]: Current active distribution.
@@ -222,35 +187,36 @@ def distribution(*args: TensorOrScalar, **kwargs: AttrValue) -> Distribution | N
     return _DIST_STATE["dist"]
 
 
-def set_distribution(dist: Distribution, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+def set_distribution(dist: Distribution | None, *args: OpValue, **kwargs: IRAttrValue) -> None:
     """Set the current distribution.
 
     Args:
-        dist (Distribution): Distribution to set.
-        *args (TensorOrScalar): Positional arguments.
-        **kwargs (AttrValue): Keyword arguments.
+        dist (Distribution | None): Distribution to set.
+        *args (OpValue): Positional arguments.
+        **kwargs (IRAttrValue): Keyword arguments.
     """
     _ = (args, kwargs)
     _DIST_STATE["dist"] = dist
 
 
-def distribute_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
+def distribute_tensor(*args: OpValue, **kwargs: IRAttrValue) -> OpValue:
     """Distribute a tensor across the active distribution.
 
     Args:
-        *args (TensorOrScalar): Positional arguments.
-        **kwargs (AttrValue): Keyword arguments.
+        *args (OpValue): Positional arguments.
+        **kwargs (IRAttrValue): Keyword arguments.
 
     Returns:
-        TensorOrScalar: Distributed tensor.
+        OpValue: Distributed tensor.
     """
     if _DIST_STATE["dist"] is None:
         return args[0] if args else kwargs.get("tensor")
 
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
-
-    return _ensure_dist_tensor(invoke_callable(distributed_ops.shard_tensor, *args, **kwargs))
+    _callable_fn_1: OpValue = distributed_ops.shard_tensor
+    assert is_variadic_callable(_callable_fn_1)
+    return _callable_fn_1(*args, **kwargs)
 
 
 __all__ = [

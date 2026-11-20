@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import EagerBackendAdapter, StaticEagerBackendAdapter
 from ml_switcheroo_compiler.backends.pure_python.eager import execute_op
 from ml_switcheroo_compiler.backends.pure_python.types import PurePythonTensor
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 @register_backend("pure_python")
@@ -47,14 +49,14 @@ class PurePythonGenerator(PythonStringGenerator):
         self,
         node: IRNode,
         input_vars: list[str],
-        **kwargs: str | int | float | bool,
+        **kwargs: BackendArg,
     ) -> str:
         """Generate default pure Python code for an IR node.
 
         Args:
             node (IRNode): Target IR node.
             input_vars (list[str]): Names of input variables.
-            **kwargs (Union[str, int, float, bool]): Keyword compiler arguments.
+            **kwargs (BackendArg): Keyword compiler arguments.
 
         Returns:
             str: Emitted Python expression string.
@@ -86,13 +88,13 @@ class PurePythonGenerator(PythonStringGenerator):
     def _compile_aot_impl(
         self,
         graph: IRGraph,
-        **kwargs: EagerValue,
+        **kwargs: BackendArg,
     ) -> Callable[[PurePythonTensor], PurePythonTensor]:
         """Compile computation graph into an executable pure Python callable.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            **kwargs (Union[str, int, float, bool]): Compiler options.
+            **kwargs (BackendArg): Compiler options.
 
         Returns:
             Callable[[PurePythonTensor], PurePythonTensor]: Executable pure Python wrapper.
@@ -132,3 +134,29 @@ class PurePythonGenerator(PythonStringGenerator):
             return last_res
 
         return _runner
+
+    @classmethod
+    def get_eager_adapter(cls) -> EagerBackendAdapter:
+        """Return the explicitly bound `EagerBackendAdapter` for Pure Python.
+
+        Returns:
+            EagerBackendAdapter: Concrete Pure Python eager backend adapter.
+        """
+        import math
+
+        return StaticEagerBackendAdapter(
+            backend_name="pure_python",
+            ops={
+                "abs": abs,
+                "sin": math.sin,
+                "cos": math.cos,
+                "tanh": math.tanh,
+                "exp": math.exp,
+                "log": math.log,
+                "sqrt": math.sqrt,
+                "array": cls.array,
+                "asarray": cls.asarray,
+                "zeros": cls.zeros,
+            },
+            module=math,
+        )

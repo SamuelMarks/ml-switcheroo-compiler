@@ -8,10 +8,11 @@ import typing
 from collections.abc import Mapping, Sequence
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, SymInt, SymNode
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.core.shape import OpValue
+from ml_switcheroo_compiler.ir import SymInt, SymNode
+from ml_switcheroo_compiler.ir.core import clone_logical_node
 
 
 def _to_int(val: AttributeValue | int | str | SymNode | SymInt | None) -> int:
@@ -202,7 +203,8 @@ def _apply_batch_axis_policy(
     """Update node attributes and lifted operation type according to the batch axis policy.
 
     Args:
-        policy (str): Batch axis policy name ('shift_axis', 'shift_permutation', 'prepend_batch_dim', 'batch_matmul', 'preserve').
+        policy (str): Batch axis policy name ('shift_axis', 'shift_permutation', 'prepend_batch_dim', 'batch_matmul',
+            'preserve').
         lift_op (str): Initial lifted operation name.
         new_attrs (dict[str, AttributeValue]): Mutable dictionary of node attributes.
         batch_size (int): Concrete size of the leading batch dimension.
@@ -361,12 +363,13 @@ def _infer_vmap_batch_size(graph: IRGraph, node: IRNode, in_axes: int | tuple[in
 
 
 def _ensure_ir_graph(
-    body_graph: IRGraph | TensorOrScalar | _BodyGraphNodesProtocol | _BodyGraphIdProtocol | _BodyGraphIOProtocol,
+    body_graph: IRGraph | OpValue | _BodyGraphNodesProtocol | _BodyGraphIdProtocol | _BodyGraphIOProtocol,
 ) -> IRGraph:
     """Convert a LogicalGraph-like body into an IRGraph if needed.
 
     Args:
-        body_graph (IRGraph | TensorOrScalar | _BodyGraphNodesProtocol | _BodyGraphIdProtocol | _BodyGraphIOProtocol): Body graph attribute from a Vmap node.
+        body_graph (IRGraph | OpValue | _BodyGraphNodesProtocol | _BodyGraphIdProtocol | _BodyGraphIOProtocol):
+            Body graph attribute from a Vmap node.
 
     Returns:
         IRGraph: Normalized IRGraph instance.
@@ -401,7 +404,7 @@ def _inline_vmap_node(
     Returns:
         bool: True if the Vmap node had a valid body and was inlined, False otherwise.
     """
-    body_graph: TensorOrScalar = node.attributes.get("body")
+    body_graph: OpValue | _BodyGraphNodesProtocol = node.attributes.get("body")
     if not isinstance(body_graph, _BodyGraphNodesProtocol):
         return False
 

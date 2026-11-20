@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 from unittest.mock import mock_open, patch
 
+import pytest
 import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff_rules import autodiff_provider
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
     _build_parsed_call,
@@ -22,10 +23,9 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
     get_jvp_from_data,
     get_vjp_from_data,
 )
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_split_nested_args() -> None:
@@ -144,8 +144,11 @@ def test_fallback_finite_difference_jvp() -> None:
 def test_get_autodiff_manifest_branches() -> None:
     """Test _get_autodiff_manifest caching, missing file, and exception handling."""
     # 1. Cache hit
-    ensure_mutable(autodiff_provider)._MANIFEST_MODEL_CACHE = ensure_eager_tensor("cached_manifest")
-    assert ensure_eager_tensor(_get_autodiff_manifest()) == ensure_eager_tensor("cached_manifest")
+    from ml_switcheroo_compiler.core.shape import OpValue
+
+    pytest.MonkeyPatch().setattr(autodiff_provider, "_MANIFEST_MODEL_CACHE", "cached_manifest", raising=False)
+    cached_res: OpValue = _get_autodiff_manifest()
+    assert cached_res == "cached_manifest"
     autodiff_provider._MANIFEST_MODEL_CACHE = None
 
     # 2. File not found
@@ -199,7 +202,9 @@ def test_get_modular_rules_branches() -> None:
 
     # 4. File exists with dict but without vjp_rules (branch 280->269)
     with patch("os.path.exists", return_value=True):
-        with patch("builtins.open", mock_open(read_data=yaml.dump({"jvp_rules": {"SampleOp": {"jvp": "$tangent[0]"}}}))):
+        with patch(
+            "builtins.open", mock_open(read_data=yaml.dump({"jvp_rules": {"SampleOp": {"jvp": "$tangent[0]"}}}))
+        ):
             res_only_jvp = _get_modular_rules()
             assert "SampleOp" in res_only_jvp["jvp_rules"]
 
@@ -228,7 +233,7 @@ def test_load_autodiff_rule_hierarchy() -> None:
     class DummyRule:
         """Dummy rule model with VJP and JVP attributes."""
 
-        def __init__(self, vjp: EagerValue = None, jvp: EagerValue = None) -> None:
+        def __init__(self, vjp: BackendArg = None, jvp: BackendArg = None) -> None:
             """Initialize dummy rule with optional vjp and jvp strings.
 
             Args:
@@ -246,7 +251,10 @@ def test_load_autodiff_rule_hierarchy() -> None:
             self.vjp_rules = {"str_vjp_op": DummyRule(vjp="x_cot"), "empty_vjp": DummyRule(vjp=None)}
             self.jvp_rules = {"sample_jvp_op": DummyRule(jvp="x_tan"), "empty_jvp": DummyRule(vjp=None)}
 
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=DummyManifest()):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest",
+        return_value=DummyManifest(),
+    ):
         # VJP string wraps to list
         res_vjp = _load_autodiff_rule("str_vjp_op", "vjp")
         assert res_vjp == {"vjp": ["x_cot"]}
@@ -256,36 +264,63 @@ def test_load_autodiff_rule_hierarchy() -> None:
         assert res_jvp == {"jvp": "x_tan"}
 
         # Empty VJP and JVP fall through
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules", return_value={"jvp_rules": {}, "vjp_rules": {}}):
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules",
+            return_value={"jvp_rules": {}, "vjp_rules": {}},
+        ):
             assert _load_autodiff_rule("empty_vjp", "vjp") is None
             assert _load_autodiff_rule("empty_jvp", "jvp") is None
 
     # 2. Stage 2: Modular derivative files fallback (including non-dict entry branch 319->316)
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None
+    ):
         mod_rules = {
             "vjp_rules": {"modular_op": {"vjp": ["cot_mod"]}, "nondict_op": "not_a_dict"},
             "jvp_rules": {"modular_op": {"jvp": "tan_mod"}},
         }
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules", return_value=mod_rules):
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules",
+            return_value=mod_rules,
+        ):
             assert _load_autodiff_rule("modular_op", "vjp") == {"vjp": ["cot_mod"]}
             assert _load_autodiff_rule("modular_op", "jvp") == {"jvp": "tan_mod"}
             # nondict_op in modular falls through loop
             assert _load_autodiff_rule("nondict_op", "vjp") is None
 
     # 3. Stage 3: Primitive registries fallback (VJP and JVP, and JVP miss branch 329->337)
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules", return_value={"jvp_rules": {}, "vjp_rules": {}}):
-            with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.load_primitive_vjp_rules", return_value={"prim_op": DummyRule(vjp=["cot_prim"])}):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None
+    ):
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules",
+            return_value={"jvp_rules": {}, "vjp_rules": {}},
+        ):
+            with patch(
+                "ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.load_primitive_vjp_rules",
+                return_value={"prim_op": DummyRule(vjp=["cot_prim"])},
+            ):
                 assert _load_autodiff_rule("prim_op", "vjp") == {"vjp": ["cot_prim"]}
 
-            with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.load_primitive_jvp_rules", return_value={"prim_op": DummyRule(jvp="tan_prim")}):
+            with patch(
+                "ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.load_primitive_jvp_rules",
+                return_value={"prim_op": DummyRule(jvp="tan_prim")},
+            ):
                 assert _load_autodiff_rule("prim_op", "jvp") == {"jvp": "tan_prim"}
                 # Missing JVP primitive falls through (branch 329->337)
-                assert ensure_eager_tensor(_load_autodiff_rule("non_prim_op", "jvp")) == ensure_eager_tensor(_fallback_finite_difference_jvp) or ensure_eager_tensor(_load_autodiff_rule("non_prim_op", "jvp")) is ensure_eager_tensor(None)
+                from ml_switcheroo_compiler.core.shape import OpValue
+
+                loaded_rule: OpValue = _load_autodiff_rule("non_prim_op", "jvp")
+                assert loaded_rule == _fallback_finite_difference_jvp or loaded_rule is None
 
     # 4. Stage 4: OPS_REGISTRY fallback (including non-dict and missing autodiff branch 340->345)
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules", return_value={"jvp_rules": {}, "vjp_rules": {}}):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None
+    ):
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules",
+            return_value={"jvp_rules": {}, "vjp_rules": {}},
+        ):
             registry_data = {
                 "registry_op": {"autodiff": {"vjp": ["cot_reg"]}},
                 "nondict_reg_op": "not_a_dict",
@@ -299,8 +334,13 @@ def test_load_autodiff_rule_hierarchy() -> None:
                 assert _load_autodiff_rule("diff_rule_op", "vjp") is None
 
     # 5. Non-vjp and non-jvp rule_type (branch 329->337)
-    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):
-        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules", return_value={"jvp_rules": {}, "vjp_rules": {}}):
+    with patch(
+        "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None
+    ):
+        with patch(
+            "ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_modular_rules",
+            return_value={"jvp_rules": {}, "vjp_rules": {}},
+        ):
             assert _load_autodiff_rule("any_op", "other_type") is None
 
 

@@ -1,4 +1,7 @@
-"""Tests for Metal Shading Language (MSL) kernel generation, elimination of synthetic fallbacks, and syntax validation."""
+"""Tests for Metal Shading Language (MSL) kernel generation, elimination of synthetic fallbacks, and syntax.
+
+validation.
+"""
 
 from __future__ import annotations
 
@@ -6,15 +9,14 @@ import re
 import typing
 
 import numpy as np
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.metal.metal import (
     METAL_SYNTH_MATH_MAP,
     MetalCodeGenerator,
     _synthesize_metal_kernel,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
     pass
@@ -71,7 +73,7 @@ def test_custom_scalar_expr_synthesized_properly_metal() -> None:
 
     tpl = gen._ensure_template(custom_node, 0)
     assert tpl is not None
-    body = ensure_eager_tensor(tpl).body
+    body = adapt_backend_module(tpl).require_symbol("body")
     assert "clamp(A[id], 0.0f, 6.0f)" in body
     assert "relu6custommetal_kernel" in body
 
@@ -109,26 +111,26 @@ def test_expanded_metal_templates_yaml_coverage() -> None:
     for op in new_ops:
         assert op in templates, f"Template for '{op}' missing in msl_templates.yaml"
         tpl = templates[op]
-        body = ensure_eager_tensor(ensure_eager_tensor(tpl).get)("body", "")
-        assert "kernel void" in body, f"Kernel body for '{op}' must contain 'kernel void'"
-        assert f"{op}" in body, f"Kernel body for '{op}' should contain function name"
+        body = adapt_backend_module(tpl).require_symbol("get")("body", "")
+        assert "kernel void" in str(body), f"Kernel body for '{op}' must contain 'kernel void'"
+        assert f"{op}" in str(body), f"Kernel body for '{op}' should contain function name"
 
     # Specific check for argmax / argmin reduction in Metal
-    argmax_body = ensure_eager_tensor(ensure_eager_tensor(templates)["argmax"].get)("body", "")
-    assert "threadgroup float s_val" in argmax_body
-    assert "threadgroup int s_idx" in argmax_body
-    assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in argmax_body
+    argmax_body = adapt_backend_module(templates["argmax"]).require_symbol("get")("body", "")
+    assert "threadgroup float s_val" in str(argmax_body)
+    assert "threadgroup int s_idx" in str(argmax_body)
+    assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in str(argmax_body)
 
-    argmin_body = ensure_eager_tensor(ensure_eager_tensor(templates)["argmin"].get)("body", "")
-    assert "threadgroup float s_val" in argmin_body
-    assert "threadgroup int s_idx" in argmin_body
-    assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in argmin_body
+    argmin_body = adapt_backend_module(templates["argmin"]).require_symbol("get")("body", "")
+    assert "threadgroup float s_val" in str(argmin_body)
+    assert "threadgroup int s_idx" in str(argmin_body)
+    assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in str(argmin_body)
 
     # Check SIMD-group matrix primitives
-    simd_mat_body = ensure_eager_tensor(ensure_eager_tensor(templates)["matmul_simdgroup_matrix"].get)("body", "")
-    assert "using namespace metal::simdgroup_matrix;" in simd_mat_body
-    assert "simdgroup_matrix<half, 8, 8>" in simd_mat_body
-    assert "simdgroup_multiply_accumulate" in simd_mat_body
+    simd_mat_body = adapt_backend_module(templates["matmul_simdgroup_matrix"]).require_symbol("get")("body", "")
+    assert "using namespace metal::simdgroup_matrix;" in str(simd_mat_body)
+    assert "simdgroup_matrix<half, 8, 8>" in str(simd_mat_body)
+    assert "simdgroup_multiply_accumulate" in str(simd_mat_body)
 
 
 def test_metal_code_generator_full_pipeline_syntax_validation() -> None:

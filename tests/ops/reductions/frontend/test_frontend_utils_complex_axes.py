@@ -2,34 +2,30 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.reductions.frontend_utils import ReduceWindow, reduce_window
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
-
-if typing.TYPE_CHECKING:
-    pass
+from ml_switcheroo_compiler.ops.configs import WindowConfig
+from ml_switcheroo_compiler.ops.reductions.api_utils import ReduceWindow, reduce_window
+from tests.testing_utils import MockTestStub
 
 
 def test_frontend_utils_extras() -> None:
     """Test function test_frontend_utils_extras."""
     assert ReduceWindow().infer_shape() == ()
 
-    class DummyConfig:
-        """Test class DummyConfig."""
+    dummy_cfg = WindowConfig(
+        window_dimensions=(1, 1),
+        window_strides=(1, 1),
+        padding="VALID",
+        base_dilation=(1, 1),
+        window_dilation=(1, 1),
+    )
 
-        window_dimensions = (1, 1)
-        window_strides = (1, 1)
-        padding = "VALID"
-        base_dilation = (1, 1)
-        window_dilation = (1, 1)
-
-    class MockData:
+    class MockData(MockTestStub):
         """Test class MockData."""
 
         id = "t1"
@@ -37,7 +33,7 @@ def test_frontend_utils_extras() -> None:
     class MockTensor(Tensor):
         """Test class MockTensor."""
 
-        data = ensure_eager_tensor(MockData())
+        data = MockData()
         shape = (1, 2)
         dtype = DType("float32")
         device = Device("cpu")
@@ -52,10 +48,10 @@ def test_frontend_utils_extras() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
     try:
-        ensure_callable(reduce_window)(t, 0.0, "add", ensure_callable(DummyConfig)())
+        reduce_window(t, 0.0, "add", dummy_cfg)
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from . import api as api
 from . import concat as concat
 from . import dynamic_slicing as dynamic_slicing
-from . import frontend as frontend
 from . import indexing as indexing
 from . import indexing_advanced as indexing_advanced
 from . import joining as joining
@@ -15,6 +15,22 @@ from . import slicing as slicing
 from . import space_batch as space_batch
 from . import splitting as splitting
 from . import utils as utils
+from .api import atleast_1d as atleast_1d
+from .api import atleast_2d as atleast_2d
+from .api import atleast_3d as atleast_3d
+from .api import block as block
+from .api import delete as delete
+from .api import diag_indices as diag_indices
+from .api import diag_indices_from as diag_indices_from
+from .api import diagflat as diagflat
+from .api import expand_dims as expand_dims
+from .api import fill_diagonal as fill_diagonal
+from .api import insert as insert
+from .api import moveaxis as moveaxis
+from .api import permute as permute
+from .api import roll as roll
+from .api import squeeze as squeeze
+from .api import swapaxes as swapaxes
 from .concat import Append as Append
 from .concat import ColumnStack as ColumnStack
 from .concat import Dsplit as Dsplit
@@ -23,22 +39,6 @@ from .concat import Hsplit as Hsplit
 from .concat import Hstack as Hstack
 from .concat import Vsplit as Vsplit
 from .concat import Vstack as Vstack
-from .frontend import atleast_1d as atleast_1d
-from .frontend import atleast_2d as atleast_2d
-from .frontend import atleast_3d as atleast_3d
-from .frontend import block as block
-from .frontend import delete as delete
-from .frontend import diag_indices as diag_indices
-from .frontend import diag_indices_from as diag_indices_from
-from .frontend import diagflat as diagflat
-from .frontend import expand_dims as expand_dims
-from .frontend import fill_diagonal as fill_diagonal
-from .frontend import insert as insert
-from .frontend import moveaxis as moveaxis
-from .frontend import permute as permute
-from .frontend import roll as roll
-from .frontend import squeeze as squeeze
-from .frontend import swapaxes as swapaxes
 from .indexing import take_along_axis as take_along_axis
 from .joining import append as append
 from .joining import column_stack as column_stack
@@ -82,7 +82,7 @@ __all__ = [
     "hstack",
     "dstack",
     "dynamic_slicing",
-    "frontend",
+    "api",
     "indexing",
     "indexing_advanced",
     "joining",
@@ -173,9 +173,9 @@ __all__ = [
     "dsplit",
     "utils",
 ]
-from .frontend import flip as flip
-from .frontend import fliplr as fliplr
-from .frontend import flipud as flipud
+from .api import flip as flip
+from .api import fliplr as fliplr
+from .api import flipud as flipud
 from .reshape import Flip as Flip
 from .reshape import Fliplr as Fliplr
 from .reshape import Flipud as Flipud

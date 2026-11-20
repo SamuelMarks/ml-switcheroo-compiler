@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list
 from ml_switcheroo_compiler.core.constants import (
     CONV_2D_TENSOR_RANK,
     CONV_3D_TENSOR_RANK,
@@ -31,9 +31,9 @@ def conv_lstm_cell(
 
     Args:
         inputs (Tensor): Input `inputs` argument (inputs).
-        state (tuple): Input `state` argument (state).
+        state (tuple[Tensor, Tensor]): Input `state` argument (state).
         weights (RNNWeights): Input `weights` argument (weights).
-        config (Optional): Input `config` argument (config).
+        config (ConvLSTMConfig | None): Input `config` argument (config).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -64,7 +64,7 @@ def _apply_conv_lstm_gates(
     Args:
         x_conv (Tensor): Input `x_conv` argument (x conv).
         h_conv (Tensor): Input `h_conv` argument (h conv).
-        state (tuple): Input `state` argument (state).
+        state (tuple[Tensor, Tensor]): Input `state` argument (state).
         weights (RNNWeights): Input `weights` argument (weights).
         data_format (str): Input `data_format` argument (data format).
 
@@ -77,7 +77,7 @@ def _apply_conv_lstm_gates(
         gates = add(gates, weights.bias)
 
     axis_val = -1 if data_format == "channels_last" else 1
-    parts = [ensure_tensor(t) for t in ensure_eager_list(split(gates, 4, axis=axis_val))]
+    parts = [ensure_tensor(t) for t in coerce_operand_list(split(gates, 4, axis=axis_val))]
     i, f, c, o = parts
 
     i = _sigmoid(i)

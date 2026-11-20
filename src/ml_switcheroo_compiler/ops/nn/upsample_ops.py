@@ -7,8 +7,7 @@ from collections.abc import (
     Sequence,
 )
 
-from ml_switcheroo_compiler.backends.registry import ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
 
@@ -22,7 +21,7 @@ def _resolve_scale_factor(
 
     Args:
         input (Tensor): Input `input` argument (input).
-        scale_factor (Union): Input `scale_factor` argument (scale factor).
+        scale_factor (float | Sequence[float] | None): Input `scale_factor` argument (scale factor).
         spatial_dims (int): Input `spatial_dims` argument (spatial dims).
 
     Returns:
@@ -42,7 +41,13 @@ def _resolve_scale_factor(
 
     try:
         # Assuming shape is (N, C, D1, D2, ...) meaning spatial dimensions start at index 2
-        return tuple(int(input.shape[2 + i] * sfs[i]) for i in range(spatial_dims))
+        res_dims: list[int] = []
+        for i in range(spatial_dims):
+            dim_i = input.shape[2 + i]
+            if not isinstance(dim_i, int):
+                raise TypeError("Dynamic spatial dimension")
+            res_dims.append(int(dim_i * sfs[i]))
+        return tuple(res_dims)
     except (TypeError, IndexError):
         # Fallback for dynamic shapes
         return None
@@ -57,8 +62,8 @@ def _upsample_resolve_size(
 
     Args:
         input (Tensor): Input `input` argument (input).
-        size (Optional): Input `size` argument (size).
-        scale_factor (Optional): Input `scale_factor` argument (scale factor).
+        size (int | Sequence[int] | None): Input `size` argument (size).
+        scale_factor (float | Sequence[float] | None): Input `scale_factor` argument (scale factor).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -92,14 +97,14 @@ def _upsample_dispatch(
     size: int | Sequence[int] | None,
     scale_factor: float | Sequence[float] | None,
     align_corners: bool,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute the upsample dispatch tensor operation.
 
     Args:
         input (Tensor): Input `input` argument (input).
         mode (str): Input `mode` argument (mode).
-        size (Optional): Input `size` argument (size).
-        scale_factor (Optional): Input `scale_factor` argument (scale factor).
+        size (int | Sequence[int] | None): Input `size` argument (size).
+        scale_factor (float | Sequence[float] | None): Input `scale_factor` argument (scale factor).
         align_corners (bool): Input `align_corners` argument (align corners).
 
     Returns:
@@ -118,7 +123,12 @@ def _upsample_dispatch(
             "bicubic": image.resize_bicubic,
         }
         fn = dispatch_map.get(mode, image.resize_nearest)
-        return ensure_eager_tensor(ensure_callable(fn)(input, size=target_size, align_corners=align_corners))
+        pair2d: tuple[int, int] = (
+            (target_size[0], target_size[1])
+            if len(target_size) >= 2
+            else ((target_size[0], target_size[0]) if len(target_size) == 1 else (1, 1))
+        )
+        return fn(input, size=pair2d, align_corners=align_corners)
 
     # 1D or 3D fallback
     dispatch_map_fallback = {
@@ -137,7 +147,7 @@ def upsample(
     scale_factor: float | Sequence[float] | None = None,
     mode: str = "nearest",
     align_corners: bool | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Upsamples a given multi-channel data.
 
     Args:
@@ -154,7 +164,7 @@ def upsample(
     return _upsample_dispatch(input, mode, size, scale_factor, align_corners)
 
 
-def pixel_shuffle(input: Tensor, upscale_factor: int) -> TensorOrScalar:
+def pixel_shuffle(input: Tensor, upscale_factor: int) -> OpValue:
     """Rearranges elements in a tensor of shape (*, C, H, W) to a tensor of shape (*, C/r^2, H*r, W*r).
 
     Args:
@@ -190,7 +200,7 @@ def upsample_nearest(
     input: Tensor,
     size: int | Sequence[int] | None = None,
     scale_factor: float | Sequence[float] | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Upsamples the input using nearest-neighbor interpolation.
 
     Args:
@@ -228,7 +238,7 @@ def upsample_bilinear(
     input: Tensor,
     size: int | Sequence[int] | None = None,
     scale_factor: float | Sequence[float] | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Upsamples the input using bilinear interpolation.
 
     Args:
@@ -266,7 +276,7 @@ def upsample_bicubic(
     input: Tensor,
     size: int | Sequence[int] | None = None,
     scale_factor: float | Sequence[float] | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Upsamples the input using bicubic interpolation.
 
     Args:

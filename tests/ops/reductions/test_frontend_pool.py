@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.reductions.frontend_pool import (
+from ml_switcheroo_compiler.ops.reductions.api_pool import (
     adaptive_avg_pool2d,
     adaptive_avg_pool3d,
     adaptive_max_pool2d,
@@ -14,10 +12,7 @@ from ml_switcheroo_compiler.ops.reductions.frontend_pool import (
     fractional_max_pool3d,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable
-
-if typing.TYPE_CHECKING:
-    pass
+from tests.testing_utils import MockTestStub
 
 
 def test_frontend_pool_edge_cases() -> None:
@@ -29,28 +24,28 @@ def test_frontend_pool_edge_cases() -> None:
         graph = LogicalGraph()
         global_tracing_state.active_graph = graph
 
-        class DummyData:
+        class DummyData(MockTestStub):
             """Test class DummyData."""
 
             id = "dummy1"
 
-        t1d = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((1,), "float32", None))
+        t1d = Tensor(DummyData(), TensorConfig((1,), "float32", None))
 
-        ensure_callable(fractional_max_pool2d)(t1d, output_size=[1, 1])
-        ensure_callable(adaptive_avg_pool2d)(t1d, output_size=[1, 1])
-        ensure_callable(adaptive_max_pool2d)(t1d, output_size=[1, 1])
+        fractional_max_pool2d(t1d, output_size=(1, 1))
+        adaptive_avg_pool2d(t1d, output_size=(1, 1))
+        adaptive_max_pool2d(t1d, output_size=(1, 1))
 
-        class DummyData2:
+        class DummyData2(MockTestStub):
             """Test class DummyData2."""
 
             id = "dummy2"
 
-        t2d = ensure_callable(Tensor)(ensure_callable(DummyData2)(), ensure_callable(TensorConfig)((1, 1), "float32", None))
+        t2d = Tensor(DummyData2(), TensorConfig((1, 1), "float32", None))
 
-        ensure_callable(fractional_max_pool3d)(t2d, output_size=[1, 1, 1])
-        ensure_callable(adaptive_avg_pool3d)(t2d, output_size=[1, 1, 1])
-        ensure_callable(adaptive_max_pool3d)(t2d, output_size=[1, 1, 1])
-        assert len(graph.nodes) == 6
+        fractional_max_pool3d(t2d, output_size=(1, 1, 1))
+        adaptive_avg_pool3d(t2d, output_size=(1, 1, 1))
+        adaptive_max_pool3d(t2d, output_size=(1, 1, 1))
+        assert len(graph.nodes) == 7
 
     finally:
         global_tracing_state.is_tracing = False

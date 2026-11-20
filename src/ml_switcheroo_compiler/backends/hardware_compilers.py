@@ -456,7 +456,7 @@ class MetalCompiler(BaseHardwareCompiler):
         try:
             proc = subprocess.run(["xcrun", "-sdk", "macosx", "metal", "--version"], capture_output=True, check=False)
             return proc.returncode == 0
-        except Exception:
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError, RuntimeError):
             return False
 
     def compile(

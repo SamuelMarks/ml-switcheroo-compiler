@@ -10,15 +10,16 @@ import pytest
 from hypothesis import given, settings
 
 import ml_switcheroo_compiler.ops as ops
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import grad, hessian, hvp
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import coerce_float
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 pytest.importorskip("hypothesis")
 
@@ -45,14 +46,14 @@ def test_hvp_polynomial_vs_finite_difference(val: float) -> None:
     """
     eps = 1e-3
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return ops.multiply(x, ops.multiply(x, x))
 
@@ -60,20 +61,20 @@ def test_hvp_polynomial_vs_finite_difference(val: float) -> None:
     v = make_tensor(1.0)
 
     # Compute HVP using compiler engine
-    _, tan = ensure_callable(hvp)(f, (x,), (v,))
-    computed_hvp = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(tan))[0])
+    _, tan = hvp(f, (x,), (v,))
+    computed_hvp = coerce_float(ensure_ndarray(get_active_backend().asarray(tan))[0])
 
     # Central finite difference of gradients: (g(x + eps) - g(x - eps)) / (2 * eps)
     g_fn = grad(f)
-    g_plus = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(ensure_callable(g_fn)(ensure_callable(make_tensor)(val + eps))))[0])
-    g_minus = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(ensure_callable(g_fn)(ensure_callable(make_tensor)(val - eps))))[0])
+    g_plus = coerce_float(ensure_ndarray(get_active_backend().asarray(g_fn(make_tensor(val + eps))))[0])
+    g_minus = coerce_float(ensure_ndarray(get_active_backend().asarray(g_fn(make_tensor(val - eps))))[0])
     fd_hvp = (g_plus - g_minus) / (2.0 * eps)
 
     # Analytical expected: d^2/dx^2 (x^3) = 6 * x
     analytical_hvp = 6.0 * val
 
-    ensure_callable(np.testing.assert_allclose)(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)
-    ensure_callable(np.testing.assert_allclose)(computed_hvp, fd_hvp, rtol=1e-2, atol=1e-2)
+    np.testing.assert_allclose(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)
+    np.testing.assert_allclose(computed_hvp, fd_hvp, rtol=1e-2, atol=1e-2)
 
 
 @settings(max_examples=10, deadline=None)
@@ -86,33 +87,33 @@ def test_hvp_trigonometric_vs_finite_difference(val: float) -> None:
     """
     eps = 1e-3
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return ops.sin(x)
 
     x = make_tensor(val)
     v = make_tensor(1.0)
 
-    _, tan = ensure_callable(hvp)(f, (x,), (v,))
-    computed_hvp = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(tan))[0])
+    _, tan = hvp(f, (x,), (v,))
+    computed_hvp = coerce_float(ensure_ndarray(get_active_backend().asarray(tan))[0])
 
     g_fn = grad(f)
-    g_plus = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(ensure_callable(g_fn)(ensure_callable(make_tensor)(val + eps))))[0])
-    g_minus = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(ensure_callable(g_fn)(ensure_callable(make_tensor)(val - eps))))[0])
+    g_plus = coerce_float(ensure_ndarray(get_active_backend().asarray(g_fn(make_tensor(val + eps))))[0])
+    g_minus = coerce_float(ensure_ndarray(get_active_backend().asarray(g_fn(make_tensor(val - eps))))[0])
     fd_hvp = (g_plus - g_minus) / (2.0 * eps)
 
     # Analytical: d^2/dx^2 sin(x) = -sin(x)
     analytical_hvp = -float(np.sin(val))
 
-    ensure_callable(np.testing.assert_allclose)(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)
-    ensure_callable(np.testing.assert_allclose)(computed_hvp, fd_hvp, rtol=1e-2, atol=1e-2)
+    np.testing.assert_allclose(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)
+    np.testing.assert_allclose(computed_hvp, fd_hvp, rtol=1e-2, atol=1e-2)
 
 
 @settings(max_examples=10, deadline=None)
@@ -124,31 +125,31 @@ def test_hvp_exponential_vs_analytical(val: float) -> None:
         val: Test parameter `val`.
     """
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return ops.exp(x)
 
     x = make_tensor(val)
     v = make_tensor(1.0)
 
-    _, tan = ensure_callable(hvp)(f, (x,), (v,))
-    computed_hvp = ensure_callable(float)(ensure_eager_tensor(ensure_callable(get_active_backend)().asarray(tan))[0])
+    _, tan = hvp(f, (x,), (v,))
+    computed_hvp = coerce_float(ensure_ndarray(get_active_backend().asarray(tan))[0])
     analytical_hvp = float(np.exp(val))
 
-    ensure_callable(np.testing.assert_allclose)(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)
+    np.testing.assert_allclose(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)
 
 
 def test_hessian_matrix_analytical() -> None:
     """Verify full Hessian computation for multi-step scalar function."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: BackendArg) -> BackendArg:
         # f(x) = x^4, H(x) = 12 * x^2
         """Test function f.
 
@@ -156,7 +157,7 @@ def test_hessian_matrix_analytical() -> None:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         x2 = ops.multiply(x, x)
         return ops.multiply(x2, x2)
@@ -164,7 +165,7 @@ def test_hessian_matrix_analytical() -> None:
     val = 2.0
     x = make_tensor(val)
     h_fn = hessian(f)
-    h_mat = ensure_callable(get_active_backend)().asarray(ensure_callable(h_fn)(x))
+    h_mat = get_active_backend().asarray(h_fn(x))
 
     expected = np.array([[12.0 * (val**2)]], dtype=np.float32)
-    ensure_callable(np.testing.assert_allclose)(h_mat, expected, rtol=1e-3, atol=1e-3)
+    np.testing.assert_allclose(ensure_ndarray(h_mat), expected, rtol=1e-3, atol=1e-3)

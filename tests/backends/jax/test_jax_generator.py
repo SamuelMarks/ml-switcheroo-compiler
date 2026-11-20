@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import typing
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_ir import LogicalGraph
@@ -12,7 +13,7 @@ from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_jaxget_fallback_prefix() -> None:
@@ -83,7 +84,7 @@ def test_jax_generate_function_signature() -> None:
     assert gen.indent_level == 1
 
 
-def test_jax_save_load(tmp_path: EagerTensorProtocol) -> None:
+def test_jax_save_load(tmp_path: Path) -> None:
     """Test function test_jax_save_load.
 
     Args:
@@ -104,7 +105,7 @@ def test_jax_save_load(tmp_path: EagerTensorProtocol) -> None:
         mock_jnp.load.assert_called_once_with(filepath, allow_pickle=False, fix_imports=True, encoding="ASCII")
 
 
-def test_jax_savez(tmp_path: EagerTensorProtocol) -> None:
+def test_jax_savez(tmp_path: Path) -> None:
     """Test function test_jax_savez.
 
     Args:
@@ -122,7 +123,7 @@ def test_jax_savez(tmp_path: EagerTensorProtocol) -> None:
         mock_jnp.savez.assert_called_once_with(filepath, a=arr)
 
 
-def test_jax_savez_compressed(tmp_path: EagerTensorProtocol) -> None:
+def test_jax_savez_compressed(tmp_path: Path) -> None:
     """Test function test_jax_savez_compressed.
 
     Args:

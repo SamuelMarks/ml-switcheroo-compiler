@@ -9,122 +9,129 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from ml_switcheroo_compiler.distributed.webrtc_signaling import SignalingServer, _answers, _candidates, _offers
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def _test_webrtc_signaling_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestWebrtcSignalingState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_webrtc_signaling` split helpers."""
+
+    base_url: str
+    req: Request
+    server: SignalingServer
+
+
+def _test_webrtc_signaling_sub_1(_state: _TestWebrtcSignalingState) -> None:
     """Execute sub-part 1 of test_webrtc_signaling.
 
     Args:
         _state: Shared test state dictionary.
     """
     base_url = _state["base_url"]
-    req = ensure_callable(Request)(base_url, method="OPTIONS")
-    with ensure_callable(urlopen)(req) as resp:
+    req = Request(base_url, method="OPTIONS")
+    with urlopen(req) as resp:
         assert resp.status == 200
         assert resp.headers.get("Access-Control-Allow-Origin") == "*"
 
     # Test POST /offer
     data = json.dumps({"peer_id": "p1", "offer": "offer1"}).encode("utf-8")
-    req = ensure_eager_tensor(Request(f"{base_url}/offer", data=data, method="POST"))
+    req = Request(f"{base_url}/offer", data=data, method="POST")
     req.add_header("Content-Length", str(len(data)))
-    with ensure_callable(urlopen)(req) as resp:
+    with urlopen(req) as resp:
         assert resp.status == 200
 
     # Test POST /answer
     data = json.dumps({"peer_id": "p1", "answer": "answer1"}).encode("utf-8")
-    req = ensure_eager_tensor(Request(f"{base_url}/answer", data=data, method="POST"))
+    req = Request(f"{base_url}/answer", data=data, method="POST")
     req.add_header("Content-Length", str(len(data)))
-    with ensure_callable(urlopen)(req) as resp:
+    with urlopen(req) as resp:
         assert resp.status == 200
 
     # Test POST /candidate
     data = json.dumps({"peer_id": "p1", "candidate": "cand1"}).encode("utf-8")
-    req = ensure_eager_tensor(Request(f"{base_url}/candidate", data=data, method="POST"))
+    req = Request(f"{base_url}/candidate", data=data, method="POST")
     req.add_header("Content-Length", str(len(data)))
-    _state.update(ensure_tensor_dict({"data": data, "req": req, "resp": resp}))
-    _state.update(ensure_tensor_dict({"base_url": base_url}))
+    _state.update({"req": req})
+    _state.update({"base_url": base_url})
 
 
-def _test_webrtc_signaling_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webrtc_signaling_sub_2(_state: _TestWebrtcSignalingState) -> None:
     """Execute sub-part 2 of test_webrtc_signaling.
 
     Args:
         _state: Shared test state dictionary.
     """
     base_url, req = _state["base_url"], _state["req"]
-    with ensure_callable(urlopen)(req) as resp:
+    with urlopen(req) as resp:
         assert resp.status == 200
 
     # Test POST second candidate
     data = json.dumps({"peer_id": "p1", "candidate": "cand2"}).encode("utf-8")
-    req = ensure_eager_tensor(Request(f"{base_url}/candidate", data=data, method="POST"))
+    req = Request(f"{base_url}/candidate", data=data, method="POST")
     req.add_header("Content-Length", str(len(data)))
-    with ensure_callable(urlopen)(req) as resp:
+    with urlopen(req) as resp:
         assert resp.status == 200
 
     # Test GET /offer
-    req = ensure_eager_tensor(Request(f"{base_url}/offer?peer_id=p1"))
-    with ensure_callable(urlopen)(req) as resp:
+    req = Request(f"{base_url}/offer?peer_id=p1")
+    with urlopen(req) as resp:
         assert resp.status == 200
-        res = ensure_callable(json.loads)(ensure_callable(resp.read)().decode())
+        res = json.loads(resp.read().decode())
         assert res["offer"] == "offer1"
 
     # Test GET /answer
-    req = ensure_eager_tensor(Request(f"{base_url}/answer?peer_id=p1"))
-    with ensure_callable(urlopen)(req) as resp:
+    req = Request(f"{base_url}/answer?peer_id=p1")
+    with urlopen(req) as resp:
         assert resp.status == 200
-        res = ensure_callable(json.loads)(ensure_callable(resp.read)().decode())
+        res = json.loads(resp.read().decode())
         assert res["answer"] == "answer1"
 
     # Test GET /candidate
-    req = ensure_eager_tensor(Request(f"{base_url}/candidate?peer_id=p1"))
-    _state.update(ensure_tensor_dict({"data": data, "req": req, "res": res, "resp": resp}))
-    _state.update(ensure_tensor_dict({"base_url": base_url}))
+    req = Request(f"{base_url}/candidate?peer_id=p1")
+    _state.update({"req": req})
+    _state.update({"base_url": base_url})
 
 
-def _test_webrtc_signaling_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webrtc_signaling_sub_3(_state: _TestWebrtcSignalingState) -> None:
     """Execute sub-part 3 of test_webrtc_signaling.
 
     Args:
         _state: Shared test state dictionary.
     """
     base_url, req = _state["base_url"], _state["req"]
-    with ensure_callable(urlopen)(req) as resp:
+    with urlopen(req) as resp:
         assert resp.status == 200
-        res = ensure_callable(json.loads)(ensure_callable(resp.read)().decode())
+        res = json.loads(resp.read().decode())
         assert res["candidates"] == ["cand1", "cand2"]
 
     # Test GET without peer_id
-    req = ensure_eager_tensor(Request(f"{base_url}/offer"))
+    req = Request(f"{base_url}/offer")
     try:
-        ensure_callable(urlopen)(req)
+        urlopen(req)
     except HTTPError as e:
         assert e.code == 400
 
     # Test GET not found path
-    req = ensure_eager_tensor(Request(f"{base_url}/invalid?peer_id=p1"))
+    req = Request(f"{base_url}/invalid?peer_id=p1")
     try:
-        ensure_callable(urlopen)(req)
+        urlopen(req)
     except HTTPError as e:
         assert e.code == 404
 
     # Test POST not found path
     data = json.dumps({"peer_id": "p1"}).encode("utf-8")
-    req = ensure_eager_tensor(Request(f"{base_url}/invalid", data=data, method="POST"))
+    req = Request(f"{base_url}/invalid", data=data, method="POST")
     req.add_header("Content-Length", str(len(data)))
     try:
-        ensure_callable(urlopen)(req)
+        urlopen(req)
     except HTTPError as e:
         assert e.code == 404
-    _state.update(ensure_tensor_dict({"data": data, "req": req, "res": res, "resp": resp}))
-    _state.update(ensure_tensor_dict({"base_url": base_url}))
+    _state.update({"req": req})
+    _state.update({"base_url": base_url})
 
 
-def _test_webrtc_signaling_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webrtc_signaling_sub_4(_state: _TestWebrtcSignalingState) -> None:
     """Execute sub-part 4 of test_webrtc_signaling.
 
     Args:
@@ -157,11 +164,11 @@ def _test_webrtc_signaling_sub_4(_state: dict[str, EagerTensorProtocol]) -> None
 
     # Test invalid JSON POST
     req = Request(f"{base_url}/offer", data=b"not-json", method="POST")
-    _state.update(ensure_tensor_dict({"req": req, "res": res, "resp": resp}))
-    _state.update(ensure_tensor_dict({"base_url": base_url}))
+    _state.update({"req": req})
+    _state.update({"base_url": base_url})
 
 
-def _test_webrtc_signaling_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webrtc_signaling_sub_5(_state: _TestWebrtcSignalingState) -> None:
     """Execute sub-part 5 of test_webrtc_signaling.
 
     Args:
@@ -170,32 +177,32 @@ def _test_webrtc_signaling_sub_5(_state: dict[str, EagerTensorProtocol]) -> None
     base_url, req = _state["base_url"], _state["req"]
     req.add_header("Content-Length", "8")
     try:
-        ensure_callable(urlopen)(req)
+        urlopen(req)
     except HTTPError as e:
         assert e.code == 400
 
     # Test POST without peer_id
-    req = ensure_eager_tensor(Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST"))
+    req = Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST")
     req.add_header("Content-Length", "20")
     try:
-        ensure_callable(urlopen)(req)
+        urlopen(req)
     except HTTPError as e:
         assert e.code == 400
         err_data = json.loads(e.read().decode())
         assert err_data["error"] == "Missing peer_id"
 
     # Test OPTIONS
-    req = ensure_eager_tensor(Request(f"{base_url}/offer", method="OPTIONS"))
-    with ensure_callable(urlopen)(req) as resp:
+    req = Request(f"{base_url}/offer", method="OPTIONS")
+    with urlopen(req) as resp:
         assert resp.status == 200
 
     # Test /ws upgrade path
-    req = ensure_eager_tensor(Request(f"{base_url}/ws"))
-    _state.update(ensure_tensor_dict({"req": req, "resp": resp}))
-    _state.update(ensure_tensor_dict({"base_url": base_url}))
+    req = Request(f"{base_url}/ws")
+    _state.update({"req": req})
+    _state.update({"base_url": base_url})
 
 
-def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webrtc_signaling_sub_6(_state: _TestWebrtcSignalingState) -> None:
     """Execute sub-part 6 of test_webrtc_signaling.
 
     Args:
@@ -203,7 +210,7 @@ def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None
     """
     base_url, req, server = _state["base_url"], _state["req"], _state["server"]
     try:
-        with ensure_callable(urlopen)(req) as resp:
+        with urlopen(req) as resp:
             assert resp.status in (101, 200)
     except HTTPError as e:
         assert e.code == 101
@@ -211,7 +218,7 @@ def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None
     # Test URLs
     assert server.get_url() == base_url
     assert "ws://" in server.get_websocket_url()
-    _state.update(ensure_tensor_dict({"base_url": base_url, "req": req, "server": server}))
+    _state.update({"base_url": base_url, "req": req, "server": server})
 
 
 def test_webrtc_signaling() -> None:
@@ -229,8 +236,8 @@ def test_webrtc_signaling() -> None:
 
     try:
         # Test OPTIONS
-        _state: dict[str, EagerTensorProtocol] = {}
-        _state.update(ensure_tensor_dict({"base_url": base_url, "server": server}))
+        _state: _TestWebrtcSignalingState = {}
+        _state.update({"base_url": base_url, "server": server})
         for _sub_fn in (
             _test_webrtc_signaling_sub_1,
             _test_webrtc_signaling_sub_2,

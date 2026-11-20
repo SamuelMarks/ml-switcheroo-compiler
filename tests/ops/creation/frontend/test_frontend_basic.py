@@ -6,30 +6,55 @@ import typing
 from unittest.mock import patch
 
 import pytest
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ops.creation.frontend_basic import _create_backend_array, _get_dtype_val, _infer_dtype, _try_create_array, array, asarray, convert_to_numpy, convert_to_tensor, empty, empty_like, frombuffer, full, full_like, ones, ones_like, zeros, zeros_like
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from ml_switcheroo_compiler.ops.creation.api_basic import (
+    _create_backend_array,
+    _get_dtype_val,
+    _infer_dtype,
+    _try_create_array,
+    array,
+    asarray,
+    convert_to_numpy,
+    convert_to_tensor,
+    empty,
+    empty_like,
+    frombuffer,
+    full,
+    full_like,
+    ones,
+    ones_like,
+    zeros,
+    zeros_like,
+)
+from tests.testing_utils import (
+    MockTensorStub,
+    MockTestStub,
+    adapt_backend_module,
+    extract_test_dtype,
+    extract_test_shape,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_frontend_basic() -> None:
     """Test function test_frontend_basic."""
 
-    class DummyItem:
+    class DummyItem(MockTensorStub):
         """Test class DummyItem."""
 
-        def item(self) -> EagerValue:
+        def item(self) -> float:
             """Test function item.
 
             Returns:
-                EagerValue: Computed output value from `item`.
+                float: Computed output value from `item`.
             """
             return 1
 
-    class DummyData:
+    class DummyData(MockTensorStub):
         """Test class DummyData."""
 
         data = DummyItem()
@@ -41,10 +66,10 @@ def test_frontend_basic() -> None:
     assert _get_dtype_val(DType.Float32) == "float32"
     assert _get_dtype_val(None) is None
 
-    class DummyBackend:
+    class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
 
-        def array(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def array(self, x: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function array.
 
             Args:
@@ -52,7 +77,7 @@ def test_frontend_basic() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `array`.
+                BackendArg: Computed output value from `array`.
             """
 
             class T:
@@ -63,7 +88,7 @@ def test_frontend_basic() -> None:
 
             return T()
 
-        def asarray(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def asarray(self, x: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function asarray.
 
             Args:
@@ -71,7 +96,7 @@ def test_frontend_basic() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `asarray`.
+                BackendArg: Computed output value from `asarray`.
             """
 
             class T:
@@ -82,25 +107,28 @@ def test_frontend_basic() -> None:
 
             return T()
 
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(_try_create_array)(ensure_callable(DummyBackend)(), [1], "int32")).dtype) == "float32"
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_callable(_try_create_array)(ensure_callable(DummyBackend)(), [1], None)).dtype) == "float32"
+    assert extract_test_dtype(_try_create_array(DummyBackend(), [1], "int32")) == "float32"
+    assert extract_test_dtype(_try_create_array(DummyBackend(), [1], None)) == "float32"
 
-    class DummyBackendThrow:
+    class DummyBackendThrow(MockTestStub):
         """Test class DummyBackendThrow."""
 
-        def array(self, x: EagerValue, dtype: EagerValue = None) -> None:
+        def array(self, x: BackendArg, dtype: BackendArg = None) -> None:
             """Test function array.
 
             Args:
                 x: Test parameter `x`.
                 dtype: Test parameter `dtype`.
+
+            Raises:
+                Exception: If execution or validation fails in `array`.
             """
-            raise Exception()
+            raise RuntimeError()
 
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        ensure_callable(_try_create_array)(ensure_callable(DummyBackendThrow)(), [1], None)
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend", return_value=DummyBackend()):
-        assert ensure_eager_tensor(ensure_eager_tensor(_create_backend_array([1], None)).dtype) == "float32"
+        _try_create_array(DummyBackendThrow(), [1], None)
+    with patch("ml_switcheroo_compiler.ops.creation.api_basic.get_active_backend", return_value=DummyBackend()):
+        assert extract_test_dtype(_create_backend_array([1], None)) == "float32"
         from ml_switcheroo_compiler.core.config import config
 
         config.eager_mode = True
@@ -121,9 +149,9 @@ def test_frontend_basic() -> None:
 
             def __init__(self) -> None:
                 """Test function __init__."""
-                self.nodes = ensure_tensor_dict({})
+                self.nodes: dict[str, LogicalNode] = {}
 
-            def add_node(self, node: EagerValue) -> None:
+            def add_node(self, node: BackendArg) -> None:
                 """Test function add_node.
 
                 Args:
@@ -132,8 +160,13 @@ def test_frontend_basic() -> None:
                 pass
 
         state.global_tracing_state.is_tracing = True
-        ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
+        pytest.MonkeyPatch().setattr(
+            state.global_tracing_state,
+            "add_node",
+            adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("add_node"),
+            raising=False,
+        )
         config.eager_mode = False
         array([1])
         asarray([1])
@@ -153,10 +186,10 @@ def test_frontend_basic_functions() -> None:
 
     config.eager_mode = True
 
-    class DummyBackend:
+    class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
 
-        def array(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def array(self, x: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function array.
 
             Args:
@@ -164,7 +197,7 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `array`.
+                BackendArg: Computed output value from `array`.
             """
 
             class T:
@@ -175,7 +208,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-        def asarray(self, x: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def asarray(self, x: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function asarray.
 
             Args:
@@ -183,7 +216,7 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `asarray`.
+                BackendArg: Computed output value from `asarray`.
             """
 
             class T:
@@ -194,7 +227,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-        def zeros(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def zeros(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function zeros.
 
             Args:
@@ -202,7 +235,7 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `zeros`.
+                BackendArg: Computed output value from `zeros`.
             """
 
             class T:
@@ -213,7 +246,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-        def ones(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def ones(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function ones.
 
             Args:
@@ -221,7 +254,7 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `ones`.
+                BackendArg: Computed output value from `ones`.
             """
 
             class T:
@@ -232,7 +265,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-        def full(self, s: EagerValue, v: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def full(self, s: BackendArg, v: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function full.
 
             Args:
@@ -241,7 +274,7 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `full`.
+                BackendArg: Computed output value from `full`.
             """
 
             class T:
@@ -252,7 +285,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-        def empty(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def empty(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function empty.
 
             Args:
@@ -260,7 +293,7 @@ def test_frontend_basic_functions() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `empty`.
+                BackendArg: Computed output value from `empty`.
             """
 
             class T:
@@ -271,7 +304,9 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-        def frombuffer(self, s: EagerValue, dtype: EagerValue = None, count: EagerValue = None, offset: EagerValue = None) -> EagerValue:
+        def frombuffer(
+            self, s: BackendArg, dtype: BackendArg = None, count: BackendArg = None, offset: BackendArg = None
+        ) -> BackendArg:
             """Test function frombuffer.
 
             Args:
@@ -281,7 +316,7 @@ def test_frontend_basic_functions() -> None:
                 offset: Test parameter `offset`.
 
             Returns:
-                EagerValue: Computed output value from `frombuffer`.
+                BackendArg: Computed output value from `frombuffer`.
             """
 
             class T:
@@ -292,7 +327,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBackend(), raising=False)
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -311,9 +346,9 @@ def test_frontend_basic_functions() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -322,8 +357,13 @@ def test_frontend_basic_functions() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
+    pytest.MonkeyPatch().setattr(
+        state.global_tracing_state,
+        "add_node",
+        adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("add_node"),
+        raising=False,
+    )
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -334,7 +374,7 @@ def test_frontend_basic_functions() -> None:
     full((1,), 0)
     empty((1,))
     frombuffer(np.zeros(10).tobytes(), count=10)
-    assert convert_to_numpy(zeros((1,))) is not None
+    assert tuple(extract_test_shape(convert_to_numpy(zeros((1,))))) == ()
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     t = Tensor(data="data", config=TensorConfig((1,), DType.Float32, "cpu"))
@@ -355,19 +395,19 @@ def test_frontend_basic_missing_branches() -> None:
     class DummyItem2:
         """Test class DummyItem2."""
 
-        def item(self) -> EagerValue:
+        def item(self) -> BackendArg:
             """Test function item.
 
             Returns:
-                EagerValue: Computed output value from `item`.
+                BackendArg: Computed output value from `item`.
             """
             return "item"
 
-        def __int__(self) -> EagerValue:
+        def __int__(self) -> BackendArg:
             """Test function __int__.
 
             Returns:
-                EagerValue: Computed output value from `__int__`.
+                BackendArg: Computed output value from `__int__`.
             """
             return 1
 
@@ -381,12 +421,12 @@ def test_frontend_basic_missing_branches() -> None:
     _infer_dtype(np.array([1], dtype="float16"))
     _infer_dtype(np.array([1], dtype="int16"))
     _infer_dtype(np.array([1], dtype="int8"))
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend") as m:
-        m.return_value.array.side_effect = Exception("test")
+    with patch("ml_switcheroo_compiler.ops.creation.api_basic.get_active_backend") as m:
+        m.return_value.array.side_effect = RuntimeError("test")
         with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
             _create_backend_array([1], None)
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend") as m:
-        m.return_value.asarray.side_effect = Exception("test")
+    with patch("ml_switcheroo_compiler.ops.creation.api_basic.get_active_backend") as m:
+        m.return_value.asarray.side_effect = RuntimeError("test")
 
         class DummyTensor3:
             """Test class DummyTensor3."""
@@ -401,7 +441,7 @@ def test_frontend_basic_missing_branches() -> None:
     class DummyBackend4:
         """Test class DummyBackend4."""
 
-        def empty(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def empty(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function empty.
 
             Args:
@@ -409,7 +449,7 @@ def test_frontend_basic_missing_branches() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `empty`.
+                BackendArg: Computed output value from `empty`.
             """
 
             class T:
@@ -420,7 +460,7 @@ def test_frontend_basic_missing_branches() -> None:
 
             return T()
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend4())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBackend4(), raising=False)
     empty((1,))
 
 
@@ -433,14 +473,14 @@ def test_frontend_basic_convert() -> None:
     class DummyBackend4:
         """Test class DummyBackend4."""
 
-        def convert_to_numpy(self, x: EagerValue) -> EagerValue:
+        def convert_to_numpy(self, x: BackendArg) -> BackendArg:
             """Test function convert_to_numpy.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `convert_to_numpy`.
+                BackendArg: Computed output value from `convert_to_numpy`.
             """
             return "numpy_arr"
 
@@ -455,10 +495,10 @@ def test_frontend_basic_kwargs() -> None:
     config.eager_mode = False
     import ml_switcheroo_compiler.backends.registry as reg
 
-    class DummyBackend:
+    class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
 
-        def zeros(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def zeros(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function zeros.
 
             Args:
@@ -466,7 +506,7 @@ def test_frontend_basic_kwargs() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `zeros`.
+                BackendArg: Computed output value from `zeros`.
             """
 
             class T:
@@ -477,7 +517,7 @@ def test_frontend_basic_kwargs() -> None:
 
             return T()
 
-        def ones(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def ones(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function ones.
 
             Args:
@@ -485,7 +525,7 @@ def test_frontend_basic_kwargs() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `ones`.
+                BackendArg: Computed output value from `ones`.
             """
 
             class T:
@@ -496,7 +536,7 @@ def test_frontend_basic_kwargs() -> None:
 
             return T()
 
-        def full(self, s: EagerValue, v: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def full(self, s: BackendArg, v: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function full.
 
             Args:
@@ -505,7 +545,7 @@ def test_frontend_basic_kwargs() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `full`.
+                BackendArg: Computed output value from `full`.
             """
 
             class T:
@@ -516,7 +556,7 @@ def test_frontend_basic_kwargs() -> None:
 
             return T()
 
-        def empty(self, s: EagerValue, dtype: EagerValue = None) -> EagerValue:
+        def empty(self, s: BackendArg, dtype: BackendArg = None) -> BackendArg:
             """Test function empty.
 
             Args:
@@ -524,7 +564,7 @@ def test_frontend_basic_kwargs() -> None:
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `empty`.
+                BackendArg: Computed output value from `empty`.
             """
 
             class T:
@@ -535,7 +575,9 @@ def test_frontend_basic_kwargs() -> None:
 
             return T()
 
-        def frombuffer(self, s: EagerValue, dtype: EagerValue = None, count: EagerValue = None, offset: EagerValue = None) -> EagerValue:
+        def frombuffer(
+            self, s: BackendArg, dtype: BackendArg = None, count: BackendArg = None, offset: BackendArg = None
+        ) -> BackendArg:
             """Test function frombuffer.
 
             Args:
@@ -545,7 +587,7 @@ def test_frontend_basic_kwargs() -> None:
                 offset: Test parameter `offset`.
 
             Returns:
-                EagerValue: Computed output value from `frombuffer`.
+                BackendArg: Computed output value from `frombuffer`.
             """
 
             class T:
@@ -556,7 +598,7 @@ def test_frontend_basic_kwargs() -> None:
 
             return T()
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBackend(), raising=False)
     import ml_switcheroo_compiler.tracing.state as state
 
     class DummyGraph:
@@ -564,9 +606,9 @@ def test_frontend_basic_kwargs() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -575,9 +617,16 @@ def test_frontend_basic_kwargs() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted") as mock_emit:
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
+    pytest.MonkeyPatch().setattr(
+        state.global_tracing_state,
+        "add_node",
+        adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("add_node"),
+        raising=False,
+    )
+    with patch(
+        "ml_switcheroo_compiler.ops.creation.api_basic._emit_creation_node", return_value="emitted"
+    ) as mock_emit:
         zeros((1,), dtype=DType.Float32)
         ones((1,), dtype=DType.Float32)
         full((1,), 0, dtype=DType.Float32)
@@ -592,36 +641,48 @@ def test_frontend_basic_coverage() -> None:
     import numpy as np
 
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.creation.frontend_basic import _extract_fill_value, _unpack_shape, empty, empty_like, frombuffer, full, full_like, ones, ones_like, zeros, zeros_like
+    from ml_switcheroo_compiler.ops.creation.api_basic import (
+        _extract_fill_value,
+        _unpack_shape,
+        empty,
+        empty_like,
+        frombuffer,
+        full,
+        full_like,
+        ones,
+        ones_like,
+        zeros,
+        zeros_like,
+    )
 
     assert _unpack_shape((1,)) == (1,)
 
-    class DummyItem:
+    class DummyItem(MockTensorStub):
         """Test class DummyItem."""
 
-        def item(self) -> EagerValue:
+        def item(self) -> float:
             """Test function item.
 
             Returns:
-                EagerValue: Computed output value from `item`.
+                float: Computed output value from `item`.
             """
             return 1
 
-    class DummyData:
+    class DummyData(MockTensorStub):
         """Test class DummyData."""
 
         data = DummyItem()
 
-    assert ensure_callable(_unpack_shape)((ensure_callable(DummyData)(), ensure_callable(DummyItem)(), 2)) == (1, 1, 2)
+    assert _unpack_shape((DummyData(), DummyItem(), 2)) == (1, 1, 2)
     assert _extract_fill_value(1) == 1
-    assert ensure_callable(_extract_fill_value)(ensure_callable(DummyData)()) == 1
-    assert ensure_callable(_extract_fill_value)(ensure_callable(DummyItem)()) == 1
+    assert _extract_fill_value(DummyData()) == 1
+    assert _extract_fill_value(DummyItem()) == 1
     import ml_switcheroo_compiler.backends.registry as reg
 
-    class DummyBackend:
+    class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
 
-        def execute_op(self, op: EagerValue, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def execute_op(self, op: BackendArg, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -630,11 +691,11 @@ def test_frontend_basic_coverage() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return op
 
-    ensure_mutable(reg)._ACTIVE_BACKEND = ensure_eager_tensor(DummyBackend())
+    pytest.MonkeyPatch().setattr(reg, "_ACTIVE_BACKEND", DummyBackend(), raising=False)
     pass
     from ml_switcheroo_compiler.core.config import config
 
@@ -646,9 +707,9 @@ def test_frontend_basic_coverage() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_dict({})
+            self.nodes: dict[str, LogicalNode] = {}
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -657,21 +718,28 @@ def test_frontend_basic_coverage() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(ensure_eager_tensor(state.global_tracing_state.active_graph).add_node)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
+    pytest.MonkeyPatch().setattr(
+        state.global_tracing_state,
+        "add_node",
+        adapt_backend_module(state.global_tracing_state.active_graph).require_symbol("add_node"),
+        raising=False,
+    )
     from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted"):
-        assert ensure_eager_tensor(zeros((1,), dtype=DType.Float32)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(ones((1,), dtype=DType.Float32)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(full((1,), 0, dtype=DType.Float32)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(empty((1,), dtype=DType.Float32)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(frombuffer(np.zeros(10).tobytes(), count=10)) == ensure_eager_tensor("emitted")
-        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    emitted_sentinel = Tensor(data="emitted", config=TensorConfig((1,), DType.Float32, "cpu"))
+    with patch("ml_switcheroo_compiler.ops.creation.api_basic._emit_creation_node", return_value=emitted_sentinel):
+        assert zeros((1,), dtype=DType.Float32) is emitted_sentinel
+        assert ones((1,), dtype=DType.Float32) is emitted_sentinel
+        assert full((1,), 0, dtype=DType.Float32) is emitted_sentinel
+        assert empty((1,), dtype=DType.Float32) is emitted_sentinel
+        assert frombuffer(np.zeros(10).tobytes(), count=10) is emitted_sentinel
 
         t = Tensor(data="data", config=TensorConfig((1,), DType.Float32, "cpu"))
-        assert ensure_eager_tensor(zeros_like(t)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(ones_like(t)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(full_like(t, 1)) == ensure_eager_tensor("emitted")
-        assert ensure_eager_tensor(empty_like(t)) == ensure_eager_tensor("emitted")
+        assert zeros_like(t) is emitted_sentinel
+        assert ones_like(t) is emitted_sentinel
+        assert full_like(t, 1) is emitted_sentinel
+        assert empty_like(t) is emitted_sentinel
     config.eager_mode = True

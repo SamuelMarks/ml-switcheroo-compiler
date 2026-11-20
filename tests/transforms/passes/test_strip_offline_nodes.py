@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import (
     export_graph_to_dot_string,
     strip_offline_diagnostic_nodes_pass,
 )
-from tests.testing_utils import ensure_eager_tensor
 
 
 def test_strip_offline_nodes_empty_and_no_ops() -> None:
@@ -48,7 +46,7 @@ def test_strip_offline_diagnostic_nodes_rewiring() -> None:
     assert "relu0" in res.nodes
     assert res.nodes["relu0"].inputs == ["x"]
     assert "dot_output" in n_diag.attributes
-    assert "digraph G" in ensure_eager_tensor(n_diag.attributes)["dot_output"]
+    assert "digraph G" in str(n_diag.attributes["dot_output"])
 
 
 def test_strip_offline_diagnostic_nodes_output_rewire() -> None:
@@ -138,7 +136,9 @@ def test_strip_offline_nodes_topological_sort_exception() -> None:
     g.inputs = ["x"]
     g.outputs = ["x"]
 
-    with patch("ml_switcheroo_compiler.transforms.passes.strip_offline_nodes.topological_sort", side_effect=ValueError("Cycle")):
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.strip_offline_nodes.topological_sort", side_effect=ValueError("Cycle")
+    ):
         res = strip_offline_diagnostic_nodes_pass(g)
         assert "d" not in res.nodes
         assert "x" in res.nodes

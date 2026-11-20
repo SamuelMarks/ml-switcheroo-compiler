@@ -1,6 +1,12 @@
-"""Decompositions."""
+"""Canonical matrix decompositions and linear-system re-exports (`ml_switcheroo_compiler.ops.linalg.decompositions`)."""
 
 from __future__ import annotations
+
+from ml_switcheroo_compiler.ops.linalg.solvers import lu_solve as lu_solve
+from ml_switcheroo_compiler.ops.linalg.solvers import solve as solve
+from ml_switcheroo_compiler.ops.linalg.solvers import solve_ex as solve_ex
+from ml_switcheroo_compiler.ops.linalg.solvers import solve_triangular as solve_triangular
+from ml_switcheroo_compiler.ops.linalg.solvers import tridiagonal_solve as tridiagonal_solve
 
 from .cholesky import cholesky as cholesky
 from .cholesky import cholesky_ex as cholesky_ex
@@ -14,6 +20,7 @@ from .inv import inv as inv
 from .inv import inv_ex as inv_ex
 from .inv import pinv as pinv
 from .inv import tri_inv as tri_inv
+from .lu import lu as lu
 from .lu import lu_factor as lu_factor
 from .lu import lu_pivots_to_permutation as lu_pivots_to_permutation
 from .norms import matrix_exponential as matrix_exponential
@@ -26,11 +33,5 @@ from .qr import qdwh as qdwh
 from .qr import qr as qr
 from .qr import schur as schur
 from .qr import tridiagonal as tridiagonal
-from .solve import solve as solve
-from .solve import solve_ex as solve_ex
-from .solve import solve_triangular as solve_triangular
-from .solvers import lu as lu
-from .solvers import lu_solve as lu_solve
-from .solvers import polar as polar
-from .solvers import tridiagonal_solve as tridiagonal_solve
+from .svd import polar as polar
 from .svd import svd as svd

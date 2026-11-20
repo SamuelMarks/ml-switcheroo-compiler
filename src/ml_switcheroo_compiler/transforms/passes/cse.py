@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import hashlib
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 COMMUTATIVE_OPS: frozenset[str] = frozenset(

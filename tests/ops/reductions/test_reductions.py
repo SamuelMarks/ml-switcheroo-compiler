@@ -8,14 +8,15 @@ import typing
 from unittest.mock import patch
 
 import numpy as np
+import pytest
+from ml_switcheroo_ir import LogicalNode
 
-import ml_switcheroo_compiler.ops.reductions.frontend as rd
+import ml_switcheroo_compiler.ops.reductions.api as rd
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_reductions_coverage() -> None:
@@ -25,9 +26,9 @@ def test_reductions_coverage() -> None:
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
-        assert rd.sum(t) is not None
-        assert rd.max(t) is not None
-        assert rd.min(t) is not None
+        assert tuple(rd.sum(t).shape) == ()
+        assert tuple(rd.max(t).shape) == ()
+        assert tuple(rd.min(t).shape) == ()
 
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -38,9 +39,9 @@ def test_reductions_coverage() -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = ensure_tensor_dict({})
+            nodes: dict[str, LogicalNode] = {}
 
-            def add_node(self, node: EagerValue) -> None:
+            def add_node(self, node: BackendArg) -> None:
                 """Test function add_node.
 
                 Args:
@@ -48,7 +49,7 @@ def test_reductions_coverage() -> None:
                 """
                 pass
 
-        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+        pytest.MonkeyPatch().setattr(global_tracing_state, "active_graph", DummyGraph(), raising=False)
 
         import ml_switcheroo_compiler.ops.shape.utils as shape_utils
 
@@ -57,7 +58,7 @@ def test_reductions_coverage() -> None:
         class DummyOp:
             """Test class DummyOp."""
 
-            def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def __call__(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function __call__.
 
                 Args:
@@ -65,11 +66,11 @@ def test_reductions_coverage() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `__call__`.
+                    BackendArg: Computed output value from `__call__`.
                 """
                 return "reduction"
 
-            def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function infer_shape.
 
                 Args:
@@ -77,15 +78,15 @@ def test_reductions_coverage() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `infer_shape`.
+                    BackendArg: Computed output value from `infer_shape`.
                 """
                 return ()
 
-        ensure_mutable(shape_utils)._emit_shape_node = ensure_eager_tensor(lambda *args, **kwargs: DummyOp())
+        pytest.MonkeyPatch().setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp(), raising=False)
         try:
-            assert rd.sum(t) is not None
-            assert rd.max(t) is not None
-            assert rd.min(t) is not None
+            assert type(rd.sum(t)).__name__ == "Tensor"
+            assert type(rd.max(t)).__name__ == "Tensor"
+            assert type(rd.min(t)).__name__ == "Tensor"
         finally:
             shape_utils._emit_shape_node = orig_emit
             config.eager_mode = True

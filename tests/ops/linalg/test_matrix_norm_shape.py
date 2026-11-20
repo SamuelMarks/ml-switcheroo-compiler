@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ops.linalg.solvers import MatrixNorm
+from ml_switcheroo_compiler.ops.linalg.decompositions.norms import MatrixNorm
 
 
 def test_matrix_norm_shape() -> None:

@@ -1,10 +1,11 @@
 let test = require('node:test');
 const assert = require('node:assert');
+const { MinimalJSDOM, runMinimalAxeAudit } = require('./support/headless_fallbacks');
 let JSDOM;
 try {
     JSDOM = require('jsdom').JSDOM;
 } catch {
-    JSDOM = null;
+    JSDOM = MinimalJSDOM;
 }
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +13,7 @@ let axe;
 try {
     axe = require('axe-core');
 } catch {
-    axe = null;
+    axe = { run: runMinimalAxeAudit };
 }
 
 const playgroundModule = require('../docs/_static/playground.js');

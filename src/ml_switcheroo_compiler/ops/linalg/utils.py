@@ -1,19 +1,19 @@
-"""Implementation of utils operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.utils`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.linalg.utils`."""
 
 from __future__ import annotations
 
 import typing
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import ensure_int
+from ml_switcheroo_compiler.backends.registry import coerce_int
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     DTypeHolderProtocol,
-    TensorOrScalar,
+    OpValue,
     extract_device,
     extract_dtype,
     extract_shape,
@@ -27,26 +27,26 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
 
 
-def _extract_linalg_shape(inp: TensorOrScalar) -> tuple[int, ...]:
+def _extract_linalg_shape(inp: OpValue) -> tuple[int, ...]:
     """Extract integer shape tuple from `.shape`, `.shape_metadata`, or a sequence.
 
     Args:
-        inp (TensorOrScalar): Input tensor, node, or shape sequence.
+        inp (OpValue): Input tensor, node, or shape sequence.
 
     Returns:
         tuple[int, ...]: Extracted integer shape tuple.
     """
-    return extract_shape(inp, tuple(ensure_int(d) for d in inp) if isinstance(inp, (list, tuple)) else ())
+    return extract_shape(inp, tuple(coerce_int(d) for d in inp) if isinstance(inp, (list, tuple)) else ())
 
 
 def _extract_linalg_dtype(
-    obj: TensorOrScalar,
+    obj: OpValue,
     default: DType | str | None = None,
 ) -> DType | str | None:
     """Safely extract `.dtype` from `obj`, falling back to `default`.
 
     Args:
-        obj (TensorOrScalar): Input tensor or array.
+        obj (OpValue): Input tensor or array.
         default (DType | str | None): Default dtype if `obj` has no dtype.
 
     Returns:
@@ -65,8 +65,9 @@ def _build_linalg_output_tensors(
 
     Args:
         out_ids (list[str]): Input `out_ids` argument (out ids).
-        out_shapes (Sequence): Input `out_shapes` argument (out shapes).
-        out_dtypes (Sequence): Input `out_dtypes` argument (out dtypes).
+        out_shapes (Sequence[Sequence[int | str | SymNode | SymInt | None]]):
+            Input `out_shapes` argument (out shapes).
+        out_dtypes (Sequence[DType | str | None]): Input `out_dtypes` argument (out dtypes).
         device: Input `device` argument (device).
 
     Returns:
@@ -83,8 +84,8 @@ def _build_linalg_output_tensors(
 
 def _emit_linalg_node(
     op_type: str,
-    inputs: Sequence[Tensor | TensorOrScalar],
-    attrs: dict[str, TensorOrScalar] | None,
+    inputs: Sequence[Tensor | OpValue],
+    attrs: Mapping[str, OpValue] | None,
     out_shapes: Sequence[Sequence[int | str | SymNode | SymInt | None]],
     out_dtypes: Sequence[DType | str | None],
 ) -> Tensor | tuple[Tensor, ...]:
@@ -92,10 +93,11 @@ def _emit_linalg_node(
 
     Args:
         op_type (str): Input `op_type` argument (op type).
-        inputs (Sequence): Input `inputs` argument (inputs).
-        attrs (dict): Input `attrs` argument (attrs).
-        out_shapes (Sequence): Input `out_shapes` argument (out shapes).
-        out_dtypes (Sequence): Input `out_dtypes` argument (out dtypes).
+        inputs (Sequence[Tensor | OpValue]): Input `inputs` argument (inputs).
+        attrs (Mapping[str, OpValue] | None): Input `attrs` argument (attrs).
+        out_shapes (Sequence[Sequence[int | str | SymNode | SymInt | None]]):
+            Input `out_shapes` argument (out shapes).
+        out_dtypes (Sequence[DType | str | None]): Input `out_dtypes` argument (out dtypes).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -108,7 +110,9 @@ def _emit_linalg_node(
         raise RuntimeError(msg)
 
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
-    shape_meta: tuple[int | str, ...] = tuple("?" if d is None else (d if isinstance(d, int) else str(d)) for d in out_shapes[0]) if out_shapes else ()
+    shape_meta: tuple[int | str, ...] = (
+        tuple("?" if d is None else (d if isinstance(d, int) else str(d)) for d in out_shapes[0]) if out_shapes else ()
+    )
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
     node = LogicalNode(
         id=out_ids[0],

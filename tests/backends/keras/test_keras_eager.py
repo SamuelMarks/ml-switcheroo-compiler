@@ -4,55 +4,64 @@ from __future__ import annotations
 
 import builtins
 import sys
+import types
 import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, global_eager_registry
 from ml_switcheroo_compiler.backends.keras.eager import (
     _convert_arg,
     _get_keras_module,
     _try_dispatch_mapped_op,
     execute_op,
 )
-from ml_switcheroo_compiler.backends.mapping_loader import (
-    BackendMappingSchema,
-    OpMappingSchema,
-)
+from ml_switcheroo_compiler.backends.mapping_loader import BackendMappingSchema, OpMappingSchema
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from tests.testing_utils import ensure_callable, ensure_tensor_list
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_get_keras_module_branches() -> None:
     """Test branches in _get_keras_module."""
-    import types
-
     # Case 1: keras already in sys.modules
     fake_keras = types.ModuleType("keras")
     with patch.dict(sys.modules, {"keras": fake_keras}):
         assert _get_keras_module() is fake_keras
 
     # Case 2: keras not in sys.modules and import fails
+    from collections.abc import Mapping, Sequence
+
     orig_import = builtins.__import__
 
-    def failing_import(name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def failing_import(
+        name: str,
+        globals_dict: Mapping[str, BackendArg] | None = None,
+        locals_dict: Mapping[str, BackendArg] | None = None,
+        fromlist: Sequence[str] | None = None,
+        level: int = 0,
+    ) -> types.ModuleType:
         """Test function failing_import.
 
         Args:
-            name: Test parameter `name`.
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
+            name: Module name to import.
+            globals_dict: Global namespace mapping.
+            locals_dict: Local namespace mapping.
+            fromlist: Imported symbol list.
+            level: Relative import level.
 
         Returns:
-            EagerValue: Computed output value from `failing_import`.
+            types.ModuleType: Imported module when not blocked.
+
+        Raises:
+            ImportError: When raised during `failing_import` (no keras).
         """
         if name == "keras":
             raise ImportError("no keras")
-        return ensure_callable(orig_import)(name, *args, **kwargs)
+        return orig_import(name, globals_dict, locals_dict, fromlist or (), level)
 
     clean_modules = {k: v for k, v in sys.modules.items() if k != "keras"}
     with patch.dict(sys.modules, clean_modules, clear=True):
@@ -99,10 +108,10 @@ def test_try_dispatch_mapped_op_branches() -> None:
         assert _try_dispatch_mapped_op(op_non_callable, None, [], {}) is None
 
     # Function dispatch with kwarg translations
-    called_args = ensure_tensor_list([])
+    called_args: list[BackendArg] = []
     called_kwargs = {}
 
-    def dummy_func(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def dummy_func(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function dummy_func.
 
         Args:
@@ -110,9 +119,9 @@ def test_try_dispatch_mapped_op_branches() -> None:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_func`.
+            BackendArg: Computed output value from `dummy_func`.
         """
-        ensure_callable(called_args.extend)(args)
+        called_args.extend(args)
         called_kwargs.update(kwargs)
         return "func_result"
 
@@ -128,10 +137,10 @@ def test_try_dispatch_mapped_op_branches() -> None:
         assert called_kwargs == {"axis": -1, "keep": True}
 
     # is_method is True with args and callable method
-    class MockTensor:
+    class MockTensor(MockTestStub):
         """Test class MockTensor."""
 
-        def my_method(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def my_method(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function my_method.
 
             Args:
@@ -139,7 +148,7 @@ def test_try_dispatch_mapped_op_branches() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `my_method`.
+                BackendArg: Computed output value from `my_method`.
             """
             return "method_called"
 
@@ -151,7 +160,7 @@ def test_try_dispatch_mapped_op_branches() -> None:
     )
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=dummy_func):
         # Successful method dispatch
-        res = ensure_callable(_try_dispatch_mapped_op)(op_method, None, [mock_obj, "extra"], {})
+        res = _try_dispatch_mapped_op(op_method, None, [mock_obj, "extra"], {})
         assert res == "method_called"
 
         # is_method is True but args is empty
@@ -159,10 +168,10 @@ def test_try_dispatch_mapped_op_branches() -> None:
         assert res == "func_result"
 
         # is_method is True but args[0] does not have method or it is not callable
-        class _BareDummy:
+        class _BareDummy(MockTestStub):
             """Empty dummy class."""
 
-        res = ensure_callable(_try_dispatch_mapped_op)(op_method, None, [ensure_callable(_BareDummy)()], {})
+        res = _try_dispatch_mapped_op(op_method, None, [_BareDummy()], {})
         assert res == "func_result"
 
 
@@ -170,11 +179,11 @@ def test_keras_eager_execute_op() -> None:
     """Test execute_op success and failure cases."""
     # Unknown op raises BackendNotSupportedError
     with pytest.raises(BackendNotSupportedError):
-        ensure_callable(execute_op)(None, "UnknownKerasOpThatDoesNotExist")
+        execute_op(None, "UnknownKerasOpThatDoesNotExist")
 
     # Global eager registry fallback
     @global_eager_registry.register("KerasGlobalDummy")
-    def _dummy_keras(keras_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def _dummy_keras(keras_module: BackendArg, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function _dummy_keras.
 
         Args:
@@ -183,12 +192,12 @@ def test_keras_eager_execute_op() -> None:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `_dummy_keras`.
+            BackendArg: Computed output value from `_dummy_keras`.
         """
         return "keras_global"
 
     try:
-        res = ensure_callable(execute_op)(None, "KerasGlobalDummy")
+        res = execute_op(None, "KerasGlobalDummy")
         assert res == "keras_global"
     finally:
         global_eager_registry._registry.pop("KerasGlobalDummy", None)
@@ -199,7 +208,7 @@ def test_keras_eager_execute_op() -> None:
         operations={"TestOp": OpMappingSchema(target_api="custom_op", custom_code="lambda *a, **k: 'mapped_ok'")},
     )
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings", return_value=mock_schema):
-        res = ensure_callable(execute_op)(None, "TestOp", [1, 2])
+        res = execute_op(None, "TestOp", [1, 2])
         assert res == "mapped_ok"
 
     # Mapped op where _try_dispatch_mapped_op returns None falls through
@@ -207,4 +216,4 @@ def test_keras_eager_execute_op() -> None:
     mock_schema_none = type("DummySchemaNone", (), {"operations": {"TestOpNone": mock_op_none}})()
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings", return_value=mock_schema_none):
         with pytest.raises(BackendNotSupportedError):
-            ensure_callable(execute_op)(None, "TestOpNone")
+            execute_op(None, "TestOpNone")

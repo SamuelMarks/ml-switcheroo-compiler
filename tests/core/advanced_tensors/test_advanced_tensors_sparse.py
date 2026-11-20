@@ -12,7 +12,7 @@ def test_sparse_tensor_coo() -> None:
     """Test the sparse tensor coo behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     indices = Tensor(np.array([[0, 0], [1, 2]]), TensorConfig((2, 2), "int32", None))
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
@@ -26,7 +26,7 @@ def test_sparse_tensor_csr() -> None:
     """Test the sparse tensor csr behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     row_pointers = Tensor(np.array([0, 1, 2, 2]), TensorConfig((4,), "int32", None))
     column_indices = Tensor(np.array([0, 2]), TensorConfig((2,), "int32", None))
@@ -42,7 +42,7 @@ def test_sparse_tensor_base() -> None:
     """Test the sparse tensor base behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
     sp = SparseTensor(values, (3, 3))

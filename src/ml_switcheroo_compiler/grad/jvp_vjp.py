@@ -1,550 +1,97 @@
-"""Forward-mode (JVP), reverse-mode (VJP), Jacobian, and Hessian autodiff transformations."""
+"""Forward-mode (JVP) and reverse-mode (VJP) autodiff transformations."""
 
 from __future__ import annotations
 
-import math
-import typing
 import uuid
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Sequence
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import ConfigContext, config
+from ml_switcheroo_compiler.backends.registry import get_active_backend as get_active_backend
+from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, invoke_callable
+from ml_switcheroo_compiler.core.shape import OpValue, TypedVariadicCallable, is_variadic_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode, as_node_list
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from ml_switcheroo_compiler.interpreter.environment import InterpreterValue, as_eval_value
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
+from ._jvp_vjp_helpers import (
+    _build_traced_logical_graph as _build_traced_logical_graph,
+)
+from ._jvp_vjp_helpers import (
+    _CompileGraphBackendProtocol as _CompileGraphBackendProtocol,
+)
+from ._jvp_vjp_helpers import (
+    _execute_autodiff_graph as _execute_autodiff_graph,
+)
+from ._jvp_vjp_helpers import (
+    _ExecuteGraphBackendProtocol as _ExecuteGraphBackendProtocol,
+)
+from ._jvp_vjp_helpers import (
+    _extract_node_id as _extract_node_id,
+)
+from ._jvp_vjp_helpers import (
+    _has_id_block_attr as _has_id_block_attr,
+)
+from ._jvp_vjp_helpers import (
+    _has_tolist_method as _has_tolist_method,
+)
+from ._jvp_vjp_helpers import (
+    _IdBlockProtocol as _IdBlockProtocol,
+)
+from ._jvp_vjp_helpers import (
+    _is_compile_graph_backend as _is_compile_graph_backend,
+)
+from ._jvp_vjp_helpers import (
+    _is_execute_graph_backend as _is_execute_graph_backend,
+)
+from ._jvp_vjp_helpers import (
+    _to_list_or_self as _to_list_or_self,
+)
+from ._jvp_vjp_helpers import (
+    _ToListProtocol as _ToListProtocol,
+)
+from ._jvp_vjp_helpers import (
+    _unpack_pair as _unpack_pair,
+)
+from .custom_jvp_ops import (
+    CustomJVPFunction,
+    _run_custom_jvp_rule,
+    _to_constant_attr,
+    custom_jvp,
+)
+from .jacobian import hessian, hvp, jacfwd, jacrev
 from .options import GradOptions
 from .utils import (
-    GradValue,
+    DifferentiableFn,
+    PrimalAuxValue,
+    PrimalTree,
     _convert_to_tensors,
     _ensure_grad_tensor,
-    _extract_shape,
     _get_fun_primal,
-    _IdDataProtocol,
     _unwrap_data,
+    as_primal_tree,
 )
 
 
-def _is_jvp_attr_dict(
-    val: dict[str, AttributeValue],
-) -> typing.TypeGuard[dict[str, TypedVariadicCallable[GradValue] | LogicalGraph | GradValue | AttributeValue]]:
-    """Type guard narrowing node attributes dict to accept JVP functions, subgraphs, or values.
-
-    Args:
-        val (dict[str, AttributeValue]): Attributes dict.
-
-    Returns:
-        bool: True if val is a dict.
-    """
-    return isinstance(val, dict)
-
-
-def _is_grad_callable(
-    val: GradValue,
-) -> typing.TypeGuard[TypedVariadicCallable[GradValue]]:
-    """Type guard narrowing `val` to `TypedVariadicCallable[GradValue]`.
-
-    Args:
-        val (GradValue): Candidate callable.
-
-    Returns:
-        bool: True if valid callable or subgraph rule.
-    """
-    return callable(val) or not isinstance(val, type(Ellipsis))
-
-
-def _ensure_grad_callable(val: GradValue) -> TypedVariadicCallable[GradValue]:
-    """Narrow `val` to `TypedVariadicCallable[GradValue]`.
-
-    Args:
-        val (GradValue): Candidate callable.
-
-    Returns:
-        TypedVariadicCallable[GradValue]: Narrowed callable.
-    """
-    assert _is_grad_callable(val)
-    return val
-
-
-@typing.runtime_checkable
-class _GraphHolderProtocol(typing.Protocol):
-    """Protocol for objects exposing a `.graph` attribute."""
-
-    graph: LogicalGraph
-
-
-@typing.runtime_checkable
-class _DTypeAttrProtocol(typing.Protocol):
-    """Protocol for objects exposing a `.dtype` attribute."""
-
-    dtype: TensorOrScalar
-
-
-@typing.runtime_checkable
-class _DTypeValueProtocol(typing.Protocol):
-    """Protocol for DType enum values exposing `.value`."""
-
-    value: str
-
-
-@typing.runtime_checkable
-class _ToListProtocol(typing.Protocol):
-    """Protocol for arrays supporting `.tolist()`."""
-
-    def tolist(self) -> GradValue:
-        """Convert array to nested Python list.
-
-        Returns:
-            GradValue: Nested Python list.
-        """
-        ...
-
-
-@typing.runtime_checkable
-class _ExecuteGraphBackendProtocol(typing.Protocol):
-    """Protocol for backends implementing `execute_graph`."""
-
-    def execute_graph(self, graph: LogicalGraph, inputs_dict: dict[str, GradValue]) -> Mapping[str, GradValue]:
-        """Execute graph with inputs.
-
-        Args:
-            graph (LogicalGraph): Target graph.
-            inputs_dict (dict[str, GradValue]): Concrete inputs mapping.
-
-        Returns:
-            Mapping[str, GradValue]: Outputs mapping.
-        """
-        ...
-
-
-@typing.runtime_checkable
-class _CompileGraphBackendProtocol(typing.Protocol):
-    """Protocol for backends implementing `compile_graph`."""
-
-    def compile_graph(self, graph: LogicalGraph) -> TypedVariadicCallable[Mapping[str, GradValue]]:
-        """Compile graph into a callable.
-
-        Args:
-            graph (LogicalGraph): Target graph.
-
-        Returns:
-            TypedVariadicCallable[Mapping[str, GradValue]]: Compiled callable.
-        """
-        ...
-
-
-@typing.runtime_checkable
-class _NamedBlockProtocol(typing.Protocol):
-    """Protocol for traced blocks exposing `.id` or `.name`."""
-
-    name: str
-
-
-@typing.runtime_checkable
-class _IdBlockProtocol(typing.Protocol):
-    """Protocol for traced blocks exposing `.id`."""
-
-    id: str
-
-
-def _has_graph_holder(val: TensorOrScalar) -> typing.TypeGuard[_GraphHolderProtocol]:
-    """Check whether `val` exposes `graph`.
-
-    Args:
-        val (TensorOrScalar): Candidate rule callable.
-
-    Returns:
-        bool: True if `val` has `graph`.
-    """
-    return has_backend_member(val, "graph")
-
-
-def _has_dtype_attr(val: TensorOrScalar) -> typing.TypeGuard[_DTypeAttrProtocol]:
-    """Check whether `val` exposes `dtype`.
-
-    Args:
-        val (TensorOrScalar): Candidate array or tensor.
-
-    Returns:
-        bool: True if `val` has `dtype`.
-    """
-    return has_backend_member(val, "dtype")
-
-
-def _has_dtype_value(val: TensorOrScalar) -> typing.TypeGuard[_DTypeValueProtocol]:
-    """Check whether `val` exposes `value`.
-
-    Args:
-        val (TensorOrScalar): Candidate dtype object.
-
-    Returns:
-        bool: True if `val` has `value`.
-    """
-    return has_backend_member(val, "value")
-
-
-def _has_tolist_method(val: TensorOrScalar) -> typing.TypeGuard[_ToListProtocol]:
-    """Check whether `val` exposes `tolist`.
-
-    Args:
-        val (TensorOrScalar): Candidate array.
-
-    Returns:
-        bool: True if `val` has `tolist`.
-    """
-    return has_backend_member(val, "tolist")
-
-
-def _is_execute_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_ExecuteGraphBackendProtocol]:
-    """Check whether `val` exposes `execute_graph`.
-
-    Args:
-        val (TensorOrScalar): Active backend.
-
-    Returns:
-        bool: True if `val` has `execute_graph`.
-    """
-    return has_backend_member(val, "execute_graph")
-
-
-def _is_compile_graph_backend(val: TensorOrScalar) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
-    """Check whether `val` exposes `compile_graph`.
-
-    Args:
-        val (TensorOrScalar): Active backend.
-
-    Returns:
-        bool: True if `val` has `compile_graph`.
-    """
-    return has_backend_member(val, "compile_graph")
-
-
-def _has_id_block_attr(val: TensorOrScalar) -> typing.TypeGuard[_IdBlockProtocol]:
-    """Check whether `val` exposes `id`.
-
-    Args:
-        val (TensorOrScalar): Traced block or data.
-
-    Returns:
-        bool: True if `val` has `id`.
-    """
-    return has_backend_member(val, "id")
-
-
-def _has_id_data_attr(val: TensorOrScalar) -> typing.TypeGuard[_IdDataProtocol]:
-    """Check whether `val` exposes `id`.
-
-    Args:
-        val (TensorOrScalar): Candidate proxy data.
-
-    Returns:
-        bool: True if `val` has `id`.
-    """
-    return has_backend_member(val, "id")
-
-
-def _resolve_dtype_value(val: GradValue) -> str:
-    """Resolve the string dtype value from `val.dtype` if present, else `'float32'`.
-
-    Args:
-        val (GradValue): Candidate tensor or array.
-
-    Returns:
-        str: Resolved dtype string.
-    """
-    raw: TensorOrScalar = val
-    return str(raw.dtype.value) if _has_dtype_attr(raw) and _has_dtype_value(raw.dtype) else "float32"
-
-
-def _to_list_or_self(val: GradValue) -> GradValue:
-    """Return `val.tolist()` if `val` supports `.tolist()`, otherwise `val`.
-
-    Args:
-        val (GradValue): Candidate array or scalar.
-
-    Returns:
-        GradValue: Python list or original value.
-    """
-    raw: TensorOrScalar = val
-    return raw.tolist() if _has_tolist_method(raw) else val
-
-
-def _extract_node_id(val: GradValue) -> str:
-    """Return `val.data.id` if `val` has a traced `.data.id`, else `str(val.data)`.
-
-    Args:
-        val (GradValue): Traced tensor or array.
-
-    Returns:
-        str: Node identifier string.
-    """
-    p_data = _unwrap_data(val)
-    raw_data: TensorOrScalar = p_data
-    return str(raw_data.id) if _has_id_data_attr(raw_data) else str(p_data)
-
-
-def _unpack_pair(val: GradValue) -> tuple[GradValue, GradValue]:
-    """Unpack a 2-element iterable or tuple into `(first, second)`.
-
-    Args:
-        val (GradValue): 2-element sequence or iterable.
-
-    Returns:
-        tuple[GradValue, GradValue]: Unpacked pair of elements.
-    """
-    assert isinstance(val, Iterable)
-    seq = list(val)
-    return seq[0], seq[1]
-
-
-class CustomJVPFunction:
-    """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules."""
-
-    def __init__(self, fun: GradValue) -> None:
-        """Initialize `CustomJVPFunction`.
-
-        Args:
-            fun (GradValue): Base primal function being wrapped.
-        """
-        self.fun: TypedVariadicCallable[GradValue] = _ensure_grad_callable(fun)
-        self.jvp_rule: TypedVariadicCallable[GradValue] | None = None
-        self.jvp_subgraph: LogicalGraph | None = None
-
-    def defjvp(
-        self,
-        jvp_rule: GradValue,
-        jvp_subgraph: LogicalGraph | None = None,
-    ) -> TypedVariadicCallable[GradValue]:
-        """Define the custom Jacobian-vector product (JVP) rule.
-
-        Args:
-            jvp_rule (GradValue): Custom JVP rule callable.
-            jvp_subgraph (Optional[LogicalGraph]): Optional declarative forward/tangent IR subgraph.
-
-        Returns:
-            TypedVariadicCallable[GradValue]: The registered `jvp_rule`.
-        """
-        rule_fn = _ensure_grad_callable(jvp_rule)
-        self.jvp_rule = rule_fn
-        raw_rule: TensorOrScalar = jvp_rule
-        if jvp_subgraph is not None:
-            self.jvp_subgraph = jvp_subgraph
-        elif isinstance(jvp_rule, LogicalGraph):
-            self.jvp_subgraph = jvp_rule
-        elif _has_graph_holder(raw_rule) and isinstance(raw_rule.graph, LogicalGraph):
-            self.jvp_subgraph = raw_rule.graph
-        else:
-            self.jvp_subgraph = None
-        return rule_fn
-
-    def defjvp_subgraph(self, jvp_subgraph: LogicalGraph) -> None:
-        """Attach a declarative forward/tangent IR subgraph directly.
-
-        Args:
-            jvp_subgraph (LogicalGraph): Custom forward/tangent IR subgraph.
-        """
-        self.jvp_subgraph = jvp_subgraph
-
-    def __eq__(self, other: CustomJVPFunction | TypedVariadicCallable[GradValue] | TensorOrScalar) -> bool:
-        """Check equality with another function or `CustomJVPFunction`.
-
-        Args:
-            other (CustomJVPFunction | TypedVariadicCallable[GradValue] | TensorOrScalar): Other object to compare.
-
-        Returns:
-            bool: True if equal, False otherwise.
-        """
-        if isinstance(other, CustomJVPFunction):
-            return self.fun == other.fun
-        return bool(self.fun == other)
-
-    def __call__(self, *args: GradValue, **kwargs: GradValue) -> GradValue:
-        """Execute the function, emitting a `CustomJVP` node when tracing with a registered rule.
-
-        Args:
-            *args (GradValue): Positional arguments.
-            **kwargs (GradValue): Keyword arguments.
-
-        Returns:
-            GradValue: Computed output tensor or value.
-        """
-        if config.eager_mode or not global_tracing_state.is_tracing or self.jvp_rule is None:
-            return self.fun(*args, **kwargs)
-
-        tensor_args = [a for a in args if isinstance(a, Tensor)]
-        if not tensor_args:
-            return self.fun(*args, **kwargs)
-
-        with ConfigContext(eager_mode=True):
-            sample_out = self.fun(*args, **kwargs)
-
-        out_shape = _extract_shape(sample_out)
-        out_dtype = _resolve_dtype_value(sample_out)
-        device = tensor_args[0].device
-
-        in_ids: list[str] = []
-        for a in tensor_args:
-            raw_data: TensorOrScalar = _unwrap_data(a)
-            if _has_id_data_attr(raw_data):
-                in_ids.append(str(raw_data.id))
-            else:
-                cid = str(uuid.uuid4())
-                arr = _unwrap_data(a)
-                c_attrs: dict[str, AttributeValue] = {}
-                c_node = LogicalNode(
-                    id=cid,
-                    op_type="Constant",
-                    inputs=[],
-                    attributes=c_attrs,
-                    shape_metadata=_extract_shape(arr),
-                )
-                assert _is_jvp_attr_dict(c_node.attributes)
-                c_node.attributes["value"] = arr
-                global_tracing_state.add_node(c_node)
-                in_ids.append(cid)
-
-        out_id = f"custom_jvp_{uuid.uuid4().hex[:6]}"
-        jvp_attrs: dict[str, TypedVariadicCallable[GradValue] | LogicalGraph | None] = {
-            "jvp_rule": self.jvp_rule,
-            "fun": self.fun,
-        }
-        subgraphs: dict[str, LogicalGraph] = {}
-        if self.jvp_subgraph is not None:
-            jvp_attrs["jvp_graph"] = self.jvp_subgraph
-            jvp_attrs["custom_forward_subgraph"] = self.jvp_subgraph
-            subgraphs["jvp"] = self.jvp_subgraph
-
-        node_attrs: dict[str, AttributeValue] = {}
-        node = LogicalNode(
-            id=out_id,
-            op_type="CustomJVP",
-            inputs=in_ids,
-            attributes=node_attrs,
-            subgraphs=subgraphs,
-            shape_metadata=out_shape,
-        )
-        assert _is_jvp_attr_dict(node.attributes)
-        for k, v in jvp_attrs.items():
-            node.attributes[k] = v
-        global_tracing_state.add_node(node)
-        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
-        return Tensor(proxy, TensorConfig(out_shape, DType(out_dtype), device))
-
-
-def custom_jvp(fun: GradValue) -> CustomJVPFunction:
-    """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules.
-
-    Args:
-        fun (GradValue): The original primal function.
-
-    Returns:
-        CustomJVPFunction: Wrapped callable supporting `.defjvp(...)`.
-    """
-    return CustomJVPFunction(fun)
-
-
-def _run_custom_jvp_rule(
-    fun: CustomJVPFunction,
-    primals_seq: Sequence[GradValue],
-    tangents_seq: Sequence[GradValue],
-) -> tuple[GradValue, GradValue]:
-    """Execute a registered custom JVP rule in eager mode.
-
-    Args:
-        fun (CustomJVPFunction): `CustomJVPFunction` with a registered `jvp_rule`.
-        primals_seq (Sequence[GradValue]): Sequence of primal arguments.
-        tangents_seq (Sequence[GradValue]): Sequence of tangent arguments.
-
-    Returns:
-        tuple[GradValue, GradValue]: Tuple of `(primal_output, tangent_output)`.
-    """
-    with ConfigContext(eager_mode=True):
-        assert fun.jvp_rule is not None
-        try:
-            res = fun.jvp_rule(primals_seq, tangents_seq)
-        except TypeError:
-            res = fun.jvp_rule(*primals_seq, *tangents_seq)
-
-        if isinstance(res, (tuple, list)) and len(res) == 2:
-            val, out_tan = res
-        else:
-            val = fun(*primals_seq)
-            out_tan = res
-    return val, out_tan
-
-
-def _build_traced_logical_graph(
-    fun_primal: TypedVariadicCallable[GradValue],
-    tensor_primals: list[Tensor],
-    prefix: str,
-) -> LogicalGraph:
-    """Trace a primal function and construct a `LogicalGraph` from the traced block.
-
-    Args:
-        fun_primal (TypedVariadicCallable[GradValue]): Primal function to trace.
-        tensor_primals (list[Tensor]): Tensor primal inputs.
-        prefix (str): Name prefix for the traced graph.
-
-    Returns:
-        LogicalGraph: Populated forward logical graph.
-    """
-    block = _trace_function(fun_primal, tuple(tensor_primals), f"{prefix}_{uuid.uuid4().hex[:6]}")
-    raw_b: TensorOrScalar = block
-    block_name = str(raw_b.id) if _has_id_block_attr(raw_b) and raw_b.id else (block.name or prefix)
-    forward_graph = LogicalGraph(name=block_name)
-    raw_nodes: TensorOrScalar = block.nodes
-    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if isinstance(raw_nodes, Mapping) else as_node_list(block.nodes)
-    for node in nodes_iter:
-        forward_graph.nodes[node.id] = node
-    forward_graph.inputs = block.inputs
-    forward_graph.outputs = block.outputs
-    return forward_graph
-
-
-def _execute_autodiff_graph(graph: LogicalGraph, inputs_dict: dict[str, GradValue]) -> dict[str, GradValue]:
-    """Execute an autodiff graph on the active backend or fallback interpreter.
-
-    Args:
-        graph (LogicalGraph): The JVP or VJP logical graph to execute.
-        inputs_dict (dict[str, GradValue]): Mapping of input node IDs to concrete arrays.
-
-    Returns:
-        dict[str, GradValue]: Mapping of output node IDs to evaluated results.
-    """
-    from ml_switcheroo_compiler.interpreter import evaluate_graph
-
-    backend: TensorOrScalar = get_active_backend()
-    if _is_execute_graph_backend(backend):
-        return dict(backend.execute_graph(graph, inputs_dict))
-    if _is_compile_graph_backend(backend):
-        compiled_fn = backend.compile_graph(graph)
-        return dict(compiled_fn(inputs_dict))
-    return evaluate_graph(graph, inputs_dict)
-
-
 def jvp(
-    fun: GradValue,
-    primals: GradValue,
-    tangents: GradValue,
+    fun: DifferentiableFn,
+    primals: Sequence[PrimalTree] | PrimalTree,
+    tangents: Sequence[PrimalTree] | PrimalTree,
     has_aux: bool = False,
-) -> GradValue:
+) -> tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], PrimalTree]:
     """Compute the Jacobian-vector product of `fun` at `primals` along `tangents`.
 
     Args:
-        fun (GradValue): Function to differentiate.
-        primals (GradValue): Primal input tensor or sequence of tensors.
-        tangents (GradValue): Tangent vector or sequence of tangent vectors.
+        fun (DifferentiableFn): Function to differentiate.
+        primals (Sequence[PrimalTree] | PrimalTree): Primal input tensor or sequence of tensors.
+        tangents (Sequence[PrimalTree] | PrimalTree): Tangent vector or sequence of tangent vectors.
         has_aux (bool): Whether `fun` returns `(output, aux)`.
 
     Returns:
-        GradValue: `(primal_out, tangent_out)` or `((primal_out, aux), tangent_out)`.
+        tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], PrimalTree]: `(primal_out, tangent_out)` or
+            `((primal_out, aux), tangent_out)`.
     """
     from ml_switcheroo_compiler.transforms.autodiff import jvp as graph_jvp
 
@@ -556,8 +103,12 @@ def jvp(
         return _run_custom_jvp_rule(fun, primals_seq, tangents_seq)
 
     with ConfigContext(eager_mode=True):
-        out_eager = invoke_callable(fn_callable, *primals_seq)
-        val, aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
+        _callable_fn_1: OpValue = fn_callable
+        assert is_variadic_callable(_callable_fn_1)
+        out_eager = _callable_fn_1(*primals_seq)
+        raw_val, raw_aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
+        val = as_primal_tree(raw_val)
+        aux: PrimalAuxValue = raw_aux if isinstance(raw_aux, str) else as_primal_tree(raw_aux)
 
     fun_primal = _get_fun_primal(fn_callable, has_aux)
     tensor_primals = _convert_to_tensors(primals_seq)
@@ -568,26 +119,26 @@ def jvp(
         t_id = f"tangent_{uuid.uuid4().hex[:6]}"
         raw_t = t.data if isinstance(t, Tensor) else t
         t_val = _to_list_or_self(raw_t)
-        t_attrs: dict[str, AttributeValue] = {}
         t_node = LogicalNode(
             id=t_id,
             op_type="Constant",
-            attributes=t_attrs,
+            attributes={"value": _to_constant_attr(t_val)},
             shape_metadata=forward_graph.nodes[p_id].shape_metadata,
         )
-        assert _is_jvp_attr_dict(t_node.attributes)
-        t_node.attributes["value"] = t_val
         forward_graph.nodes[t_id] = t_node
         tangent_ids.append(t_id)
 
     jvp_graph = graph_jvp(forward_graph, forward_graph.inputs, tangent_ids, forward_graph.outputs)
 
     backend = get_active_backend()
-    inputs_dict = {inp_id: backend.asarray(_unwrap_data(p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
+    inputs_dict: dict[str, InterpreterValue] = {
+        inp_id: as_eval_value(backend.asarray(_unwrap_data(p)))
+        for inp_id, p in zip(forward_graph.inputs, tensor_primals)
+    }
     outputs_dict = _execute_autodiff_graph(jvp_graph, inputs_dict)
 
-    out_tangent_values = [outputs_dict[out_id] for out_id in jvp_graph.outputs]
-    out_tan = out_tangent_values[0] if len(out_tangent_values) == 1 else tuple(out_tangent_values)
+    out_tangent_values = [as_primal_tree(outputs_dict[out_id]) for out_id in jvp_graph.outputs]
+    out_tan: PrimalTree = out_tangent_values[0] if len(out_tangent_values) == 1 else tuple(out_tangent_values)
 
     return ((val, aux), out_tan) if has_aux else (val, out_tan)
 
@@ -626,8 +177,8 @@ def _inline_vjp_into_active_trace(
     primal_input_ids: list[str],
     tensor_primals: list[Tensor],
     cotangent_ids_list: list[str],
-    flat_cot: list[GradValue],
-) -> list[GradValue]:
+    flat_cot: Sequence[OpValue],
+) -> list[OpValue]:
     """Symbolically inline a gradient graph into the currently active tracing graph.
 
     Args:
@@ -635,10 +186,10 @@ def _inline_vjp_into_active_trace(
         primal_input_ids (list[str]): Primal input node IDs in the forward graph.
         tensor_primals (list[Tensor]): Tensor primal inputs.
         cotangent_ids_list (list[str]): Cotangent input node IDs.
-        flat_cot (list[GradValue]): Flattened cotangent values.
+        flat_cot (Sequence[OpValue]): Flattened cotangent values.
 
     Returns:
-        list[GradValue]: List of proxy gradient `Tensor` objects corresponding to `grad_graph` outputs.
+        list[OpValue]: List of proxy gradient `Tensor` objects corresponding to `grad_graph` outputs.
     """
     from ml_switcheroo_compiler.core.device import Device
 
@@ -662,30 +213,35 @@ def _inline_vjp_into_active_trace(
             )
             global_tracing_state.add_node(cloned)
 
-    flat_grads: list[GradValue] = []
+    flat_grads: list[OpValue] = []
     for out_id in grad_graph.outputs:
         mapped_id = id_map.get(out_id, out_id)
         out_node = grad_graph.nodes.get(out_id)
-        out_shape: tuple[int, ...] = tuple(int(d) for d in out_node.shape_metadata if isinstance(d, int)) if out_node is not None and out_node.shape_metadata is not None else ()
+        out_shape: tuple[int, ...] = (
+            tuple(int(d) for d in out_node.shape_metadata if isinstance(d, int))
+            if out_node is not None and out_node.shape_metadata is not None
+            else ()
+        )
         proxy = ProxyTensor(id=mapped_id, shape=out_shape, dtype="float32")
         flat_grads.append(Tensor(proxy, TensorConfig(out_shape, DType.Float32, Device("cpu"))))
     return flat_grads
 
 
 def vjp(
-    fun: GradValue,
-    *primals: GradValue,
+    fun: DifferentiableFn,
+    *primals: PrimalTree | OpValue,
     has_aux: bool = False,
-) -> GradValue:
+) -> tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], TypedVariadicCallable[tuple[PrimalTree, ...]]]:
     """Compute the reverse-mode vector-Jacobian product (VJP) pullback of `fun` at `primals`.
 
     Args:
-        fun (GradValue): Differentiable function.
-        *primals (GradValue): Primal input arguments.
+        fun (DifferentiableFn): Differentiable function.
+        *primals (PrimalTree | OpValue): Primal input arguments.
         has_aux (bool): Whether `fun` returns `(output, aux)`.
 
     Returns:
-        GradValue: `(primal_out, vjp_fn)` or `((primal_out, aux), vjp_fn)`.
+        tuple[PrimalTree | tuple[PrimalTree, PrimalAuxValue], TypedVariadicCallable[tuple[PrimalTree, ...]]]:
+            `(primal_out, vjp_fn)` or `((primal_out, aux), vjp_fn)`.
     """
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
     from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
@@ -693,24 +249,30 @@ def vjp(
     fn_callable = fun
     flat_primals, tree_def = tree_flatten(primals)
 
-    def fun_flat(*flat_args: GradValue, **kwargs: GradValue) -> GradValue:
+    def fun_flat(*flat_args: OpValue, **kwargs: OpValue) -> PrimalTree:
         """Unflatten `flat_args` and evaluate `fun`.
 
         Args:
-            *flat_args (GradValue): Flattened primal leaves.
-            **kwargs (GradValue): Keyword arguments.
+            *flat_args (OpValue): Flattened primal leaves.
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
-            GradValue: Output of `fun(*unflat_args)`.
+            PrimalTree: Output of `fun(*unflat_args)`.
         """
         del kwargs
         unflat_args = tree_unflatten(tree_def, list(flat_args))
         seq_args = tuple(unflat_args) if isinstance(unflat_args, Iterable) else (unflat_args,)
-        return invoke_callable(fn_callable, *seq_args)
+        _callable_fn_2: OpValue = fn_callable
+        assert is_variadic_callable(_callable_fn_2)
+        return as_primal_tree(_callable_fn_2(*seq_args))
 
     with ConfigContext(eager_mode=True):
-        out_eager = invoke_callable(fn_callable, *primals)
-        val, aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
+        _callable_fn_3: OpValue = fn_callable
+        assert is_variadic_callable(_callable_fn_3)
+        out_eager = _callable_fn_3(*primals)
+        raw_val, raw_aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
+        val = as_primal_tree(raw_val)
+        aux: PrimalAuxValue = raw_aux if isinstance(raw_aux, str) else as_primal_tree(raw_aux)
 
     fun_primal = _get_fun_primal(fun_flat, has_aux)
     tensor_primals = _convert_to_tensors(flat_primals)
@@ -725,15 +287,18 @@ def vjp(
         cotangent_id=cotangent_mapping,
     )
 
-    def vjp_fn(cotangent: GradValue) -> GradValue:
-        """Evaluate the pullback function on upstream `cotangent`.
+    def vjp_fn(*cot_args: OpValue, **cot_kwargs: OpValue) -> tuple[PrimalTree, ...]:
+        """Evaluate the pullback function on upstream cotangent.
 
         Args:
-            cotangent (GradValue): Upstream cotangent matching the output of `fun`.
+            *cot_args (OpValue): Positional upstream cotangent argument.
+            **cot_kwargs (OpValue): Unused keyword arguments.
 
         Returns:
-            GradValue: Tuple of cotangents with respect to `primals`.
+            tuple[PrimalTree, ...]: Tuple of cotangents with respect to `primals`.
         """
+        _ = cot_kwargs
+        cotangent = cot_args[0] if cot_args else None
         flat_cot, _ = tree_flatten(cotangent)
         if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
             flat_grads = _inline_vjp_into_active_trace(
@@ -744,303 +309,37 @@ def vjp(
                 flat_cot,
             )
             unflat = tree_unflatten(tree_def, flat_grads)
-            return tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
+            seq_unflat = tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
+            return tuple(as_primal_tree(x) for x in seq_unflat)
 
         backend = get_active_backend()
-        inputs_dict = {inp_id: backend.asarray(_unwrap_data(p)) for inp_id, p in zip(primal_input_ids, tensor_primals)}
+        inputs_dict: dict[str, InterpreterValue] = {
+            inp_id: as_eval_value(backend.asarray(_unwrap_data(p)))
+            for inp_id, p in zip(primal_input_ids, tensor_primals)
+        }
         for cot_id, cot_val in zip(cotangent_ids_list, flat_cot):
-            inputs_dict[cot_id] = backend.asarray(_unwrap_data(cot_val))
+            inputs_dict[cot_id] = as_eval_value(backend.asarray(_unwrap_data(cot_val)))
 
         outputs_dict = _execute_autodiff_graph(grad_graph, inputs_dict)
-        flat_grads = [outputs_dict[out_id] for out_id in grad_graph.outputs]
-        unflat = tree_unflatten(tree_def, flat_grads)
-        return tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
+        flat_out_grads: list[OpValue] = [outputs_dict[out_id] for out_id in grad_graph.outputs]
+        unflat = tree_unflatten(tree_def, flat_out_grads)
+        seq_unflat = tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
+        return tuple(as_primal_tree(x) for x in seq_unflat)
 
     return ((val, aux), vjp_fn) if has_aux else (val, vjp_fn)
 
 
-def hvp(
-    fun: GradValue,
-    primals: GradValue,
-    tangents: GradValue,
-    has_aux: bool = False,
-    projected_tangents: Tensor | Sequence[Tensor] | None = None,
-    mode: str = "forward-over-reverse",
-) -> tuple[GradValue, GradValue]:
-    """Compute the Hessian-vector product of `fun` at `primals` along `tangents`.
-
-    Args:
-        fun (GradValue): Scalar or projected function to differentiate twice.
-        primals (GradValue): Primal point(s).
-        tangents (GradValue): Tangent vector(s) matching `primals`.
-        has_aux (bool): Whether `fun` returns auxiliary data `(val, aux)`.
-        projected_tangents (Optional[Union[Tensor, Sequence[Tensor]]]): Optional cotangent projection vectors.
-        mode (str): HVP mode (`'forward-over-reverse'` or `'reverse-over-forward'`).
-
-    Returns:
-        GradValue: Tuple of `(primal_out, hvp_out)` or `((primal_out, aux), hvp_out)`.
-    """
-    from ml_switcheroo_compiler.interpreter import evaluate_graph
-    from ml_switcheroo_compiler.transforms.autodiff import hvp as graph_hvp
-
-    fn_callable = fun
-    primals_seq = primals if isinstance(primals, (tuple, list)) else (primals,)
-    tangents_seq = tangents if isinstance(tangents, (tuple, list)) else (tangents,)
-
-    aux: GradValue = None
-    with ConfigContext(eager_mode=True):
-        if has_aux:
-            val, aux = _unpack_pair(invoke_callable(fn_callable, *primals_seq))
-        else:
-            val = invoke_callable(fn_callable, *primals_seq)
-
-    fun_primal = _get_fun_primal(fn_callable, has_aux)
-    tensor_primals = _convert_to_tensors(primals_seq)
-    forward_graph = _build_traced_logical_graph(fun_primal, tensor_primals, "hvp")
-
-    tangent_ids = []
-    for t, p_id in zip(tangents_seq, forward_graph.inputs):
-        t_id = f"tangent_{uuid.uuid4().hex[:6]}"
-        raw_t = t.data if isinstance(t, Tensor) else t
-        t_val = _to_list_or_self(raw_t)
-        t_attrs: dict[str, AttributeValue] = {}
-        t_node = LogicalNode(
-            id=t_id,
-            op_type="Constant",
-            attributes=t_attrs,
-            shape_metadata=forward_graph.nodes[p_id].shape_metadata,
-        )
-        assert _is_jvp_attr_dict(t_node.attributes)
-        t_node.attributes["value"] = t_val
-        forward_graph.nodes[t_id] = t_node
-        tangent_ids.append(t_id)
-
-    proj_tangent_ids = None
-    if projected_tangents is not None:
-        proj_seq = projected_tangents if isinstance(projected_tangents, (tuple, list)) else (projected_tangents,)
-        proj_tangent_ids = []
-        for pt, o_id in zip(proj_seq, forward_graph.outputs):
-            pt_id = f"proj_tangent_{uuid.uuid4().hex[:6]}"
-            raw_pt = pt.data if isinstance(pt, Tensor) else pt
-            pt_val = _to_list_or_self(raw_pt)
-            pt_attrs: dict[str, AttributeValue] = {}
-            pt_node = LogicalNode(
-                id=pt_id,
-                op_type="Constant",
-                attributes=pt_attrs,
-                shape_metadata=forward_graph.nodes[o_id].shape_metadata,
-            )
-            assert _is_jvp_attr_dict(pt_node.attributes)
-            pt_node.attributes["value"] = pt_val
-            forward_graph.nodes[pt_id] = pt_node
-            proj_tangent_ids.append(pt_id)
-
-    hvp_graph = graph_hvp(
-        forward_graph,
-        forward_graph.inputs,
-        tangent_ids,
-        forward_graph.outputs,
-        mode=mode,
-        projected_tangents=proj_tangent_ids,
-    )
-
-    inputs_dict = {inputs_id: get_active_backend().asarray(_unwrap_data(p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
-    outputs_dict = evaluate_graph(hvp_graph, inputs_dict)
-
-    out_tangent_values = [outputs_dict[out_id] for out_id in hvp_graph.outputs]
-    out_tan = out_tangent_values[0] if len(out_tangent_values) == 1 else tuple(out_tangent_values)
-
-    if has_aux:
-        return ((val, aux), out_tan)
-    return (val, out_tan)
-
-
-def jacfwd(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVariadicCallable[GradValue]:
-    """Create a function computing the full Jacobian of `fun` using forward-mode JVP pushforwards.
-
-    Args:
-        fun (GradValue): Function whose Jacobian is to be computed.
-        options (GradOptions | GradValue): Optional `GradOptions` configuration.
-
-    Returns:
-        TypedVariadicCallable[GradValue]: Callable returning the forward-mode Jacobian tensor.
-    """
-    opts = options if isinstance(options, GradOptions) else GradOptions()
-    fn_callable = fun
-
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
-        """Evaluate the forward-mode Jacobian of `fun` at `*args`.
-
-        Args:
-            *args (GradValue): Primal input arguments.
-            **kwargs (GradValue): Keyword arguments passed to `fun`.
-
-        Returns:
-            GradValue: Evaluated Jacobian tensor.
-        """
-        with ConfigContext(eager_mode=True):
-            out = invoke_callable(fn_callable, *args, **kwargs)
-            out_val = _unpack_pair(out)[0] if opts.has_aux else out
-        out_arr = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(out_val)))
-
-        arg0 = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(args[0])))
-        flat_arg0 = arg0.flatten()
-
-        jacobian_rows = []
-        for i in range(len(flat_arg0)):
-            tangent_flat = _ensure_grad_tensor(
-                get_active_backend().execute_op(
-                    "OneHot",
-                    get_active_backend().asarray(i),
-                    len(flat_arg0),
-                    on_value=1.0,
-                    off_value=0.0,
-                    axis=-1,
-                    dtype="float32",
-                )
-            )
-            tangent = tangent_flat.reshape(arg0.shape)
-
-            _, out_tangent = _unpack_pair(jvp(fn_callable, args, (tangent,), has_aux=opts.has_aux))
-            jacobian_rows.append(_ensure_grad_tensor(get_active_backend().asarray(out_tangent)).flatten())
-
-        res = get_active_backend().execute_op("Stack", jacobian_rows, axis=-1)
-        if out_arr.ndim > 0:
-            return get_active_backend().execute_op(
-                "Reshape",
-                res,
-                tuple(out_arr.shape) + tuple(arg0.shape),
-            )
-        return res
-
-    return wrapped
-
-
-def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVariadicCallable[GradValue]:
-    """Create a function computing the full Jacobian of `fun` using reverse-mode VJP pullbacks.
-
-    Args:
-        fun (GradValue): Function whose Jacobian is to be computed.
-        options (GradOptions | GradValue): Optional `GradOptions` configuration.
-
-    Returns:
-        TypedVariadicCallable[GradValue]: Callable returning the reverse-mode Jacobian tensor.
-    """
-    opts = options if isinstance(options, GradOptions) else GradOptions()
-
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
-        """Evaluate the reverse-mode Jacobian of `fun` at `*args`.
-
-        Args:
-            *args (GradValue): Primal input arguments.
-            **kwargs (GradValue): Unused keyword arguments.
-
-        Returns:
-            GradValue: Evaluated Jacobian tensor.
-        """
-        _ = kwargs
-        from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
-
-        out, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=opts.has_aux))
-        vjp_fn = vjp_fn_raw
-        out_val = _unpack_pair(out)[0] if opts.has_aux else out
-
-        flat_out, out_tree_def = tree_flatten(out_val)
-        flat_shapes = [_ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(o))).shape for o in flat_out]
-        flat_sizes = [int(math.prod(shp)) for shp in flat_shapes]
-        total_size = sum(flat_sizes)
-
-        arg0 = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(args[0])))
-        jacobian_rows = []
-
-        for i in range(total_size):
-            cotangent_flat = _ensure_grad_tensor(
-                get_active_backend().execute_op(
-                    "OneHot",
-                    get_active_backend().asarray(i),
-                    total_size,
-                    on_value=1.0,
-                    off_value=0.0,
-                    axis=-1,
-                    dtype="float32",
-                )
-            )
-
-            flat_cots = []
-            curr_idx = 0
-            for sz, shp in zip(flat_sizes, flat_shapes):
-                flat_cots.append(cotangent_flat[curr_idx : curr_idx + sz].reshape(shp))
-                curr_idx += sz
-
-            cotangent = tree_unflatten(out_tree_def, flat_cots)
-            grads = invoke_callable(vjp_fn, cotangent)
-            first_grad = grads[0] if isinstance(grads, (list, tuple)) else grads
-            jacobian_rows.append(_ensure_grad_tensor(get_active_backend().asarray(first_grad)).flatten())
-
-        res = get_active_backend().execute_op("Stack", jacobian_rows, axis=0)
-        if len(flat_sizes) > 1:
-            return get_active_backend().execute_op("Reshape", res, (total_size,) + tuple(arg0.shape))
-        out_arr = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(out_val)))
-        if out_arr.ndim > 0:
-            return get_active_backend().execute_op(
-                "Reshape",
-                res,
-                tuple(out_arr.shape) + tuple(arg0.shape),
-            )
-        return get_active_backend().execute_op("Reshape", res, arg0.shape)
-
-    return wrapped
-
-
-def hessian(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVariadicCallable[GradValue]:
-    """Create a function computing the full Hessian matrix of scalar function `fun`.
-
-    Args:
-        fun (TypedVariadicCallable[GradValue]): Scalar-valued function to differentiate twice.
-        options (GradOptions | GradValue): Optional `GradOptions` configuration.
-
-    Returns:
-        TypedVariadicCallable[GradValue]: Callable returning the Hessian tensor of shape `arg.shape + arg.shape`.
-    """
-    opts = options if isinstance(options, GradOptions) else GradOptions()
-
-    def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
-        """Evaluate the Hessian matrix of `fun` at `*args`.
-
-        Args:
-            *args (GradValue): Primal input arguments.
-            **kwargs (GradValue): Unused keyword arguments.
-
-        Returns:
-            GradValue: Evaluated Hessian matrix tensor.
-        """
-        _ = kwargs
-        arg0 = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(args[0])))
-        flat_arg0 = arg0.flatten()
-
-        hessian_rows = []
-        for i in range(len(flat_arg0)):
-            tangent_flat = _ensure_grad_tensor(
-                get_active_backend().execute_op(
-                    "OneHot",
-                    get_active_backend().asarray(i),
-                    len(flat_arg0),
-                    on_value=1.0,
-                    off_value=0.0,
-                    axis=-1,
-                    dtype="float32",
-                )
-            )
-            tangent = tangent_flat.reshape(arg0.shape)
-
-            _, out_tangent = _unpack_pair(hvp(fun, args, (tangent,), has_aux=opts.has_aux))
-            hessian_rows.append(_ensure_grad_tensor(get_active_backend().asarray(out_tangent)).flatten())
-
-        res = get_active_backend().execute_op("Stack", hessian_rows, axis=0)
-        return get_active_backend().execute_op(
-            "Reshape",
-            res,
-            tuple(arg0.shape) + tuple(arg0.shape),
-        )
-
-    return wrapped
+__all__ = [
+    "CustomJVPFunction",
+    "GradOptions",
+    "_ensure_grad_tensor",
+    "_unpack_pair",
+    "custom_jvp",
+    "get_active_backend",
+    "hessian",
+    "hvp",
+    "jacfwd",
+    "jacrev",
+    "jvp",
+    "vjp",
+]

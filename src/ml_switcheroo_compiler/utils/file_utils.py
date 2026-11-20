@@ -1,4 +1,4 @@
-"""File utilities."""
+"""Internal filesystem path utilities for the compiler."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ import os
 
 
 def exists(path: str) -> bool:
-    """Return True if path exists.
+    """Check whether a filesystem path exists on disk.
 
     Args:
-        path (str): Input `path` argument (path).
+        path (str): Target filesystem path to check.
 
     Returns:
-        bool: Computed `bool` output.
+        bool: True if ``path`` exists, False otherwise.
     """
     return os.path.exists(path)

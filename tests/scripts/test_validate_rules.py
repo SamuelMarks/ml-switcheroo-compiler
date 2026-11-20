@@ -9,12 +9,13 @@ import tempfile
 import typing
 from unittest.mock import patch
 
+import pytest
 import yaml
 
 from scripts.validate_rules import main, validate_n_to_m
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_validate_n_to_m() -> None:
@@ -28,7 +29,14 @@ def test_validate_n_to_m() -> None:
 
         # Valid op (supported by 2)
         # Invalid op (supported by 1)
-        be1_data = {"backend_name": "be1", "operations": {"op_valid": {"target_api": "something"}, "op_invalid": {"custom_code": "something"}, "op_empty": {}}}
+        be1_data = {
+            "backend_name": "be1",
+            "operations": {
+                "op_valid": {"target_api": "something"},
+                "op_invalid": {"custom_code": "something"},
+                "op_empty": {},
+            },
+        }
 
         be2_data = {"backend_name": "be2", "operations": {"op_valid": {"ast_template": "something"}}}
 
@@ -76,7 +84,7 @@ def test_validate_n_to_m() -> None:
         assert "Rule 4" in errors[0]
 
 
-def test_main(capsys: EagerTensorProtocol) -> None:
+def test_main(capsys: pytest.CaptureFixture[str]) -> None:
     """Test function test_main.
 
     Args:
@@ -88,7 +96,7 @@ def test_main(capsys: EagerTensorProtocol) -> None:
         assert "Found 2 operations violating" in captured.err
 
 
-def test_main_block(capsys: EagerTensorProtocol) -> None:
+def test_main_block(capsys: pytest.CaptureFixture[str]) -> None:
     """Test function test_main_block.
 
     Args:

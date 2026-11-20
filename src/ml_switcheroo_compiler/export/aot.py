@@ -8,16 +8,10 @@ from collections.abc import Iterable, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import (
-    AttrValue,
-    TensorOrScalar,
-    VariadicCallableProtocol,
-    invoke_callable,
-)
+from ml_switcheroo_compiler.core.shape import IRAttrValue, OpValue, VariadicCallableProtocol, is_variadic_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, _extract_dtype_str
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -53,11 +47,11 @@ class _TensorArgProtocol(typing.Protocol):
         ...
 
     @property
-    def dtype(self) -> TensorOrScalar:
+    def dtype(self) -> OpValue:
         """Return tensor dtype.
 
         Returns:
-            TensorOrScalar: Dtype value.
+            OpValue: Dtype value.
         """
         ...
 
@@ -67,11 +61,11 @@ class _HasDeviceProtocol(typing.Protocol):
     """Protocol for objects exposing a `.device` attribute."""
 
     @property
-    def device(self) -> TensorOrScalar:
+    def device(self) -> OpValue:
         """Return device object or string.
 
         Returns:
-            TensorOrScalar: Device specification.
+            OpValue: Device specification.
         """
         ...
 
@@ -81,11 +75,11 @@ class _CodeCallableProtocol(typing.Protocol):
     """Protocol for Python functions exposing `__code__` and `__name__`."""
 
     @property
-    def __code__(self) -> TensorOrScalar:
+    def __code__(self) -> OpValue:
         """Return function code object.
 
         Returns:
-            TensorOrScalar: Code object.
+            OpValue: Code object.
         """
         ...
 
@@ -103,11 +97,11 @@ class _CodeCallableProtocol(typing.Protocol):
 class _GetModuleProtocol(typing.Protocol):
     """Protocol for generator classes exposing `get_module()`."""
 
-    def get_module(self) -> TensorOrScalar:
+    def get_module(self) -> OpValue:
         """Return backend module.
 
         Returns:
-            TensorOrScalar: Backend module.
+            OpValue: Backend module.
         """
         ...
 
@@ -116,12 +110,12 @@ class _GetModuleProtocol(typing.Protocol):
 class _CompileAotProtocol(typing.Protocol):
     """Protocol for generators exposing `compile_aot(graph, **kwargs)`."""
 
-    def compile_aot(self, graph: LogicalGraph, **kwargs: AttrValue) -> VariadicCallableProtocol | None:
+    def compile_aot(self, graph: LogicalGraph, **kwargs: IRAttrValue) -> VariadicCallableProtocol | None:
         """Compile graph ahead-of-time.
 
         Args:
             graph (LogicalGraph): Graph to compile.
-            **kwargs (AttrValue): Compilation options.
+            **kwargs (IRAttrValue): Compilation options.
 
         Returns:
             VariadicCallableProtocol | None: Compiled callable.
@@ -142,138 +136,140 @@ class _GenerateCodeProtocol(typing.Protocol):
         ...
 
 
-def _is_tensor_arg(val: TensorOrScalar) -> typing.TypeGuard[_TensorArgProtocol]:
+def _is_tensor_arg(val: OpValue) -> typing.TypeGuard[_TensorArgProtocol]:
     """Check whether `val` exposes `shape` and `dtype`.
 
     Args:
-        val (TensorOrScalar): Candidate argument.
+        val (OpValue): Candidate argument.
 
     Returns:
         bool: True if `val` has `shape` and `dtype`.
     """
-    return has_backend_member(val, "shape") and has_backend_member(val, "dtype")
+    return isinstance(val, _TensorArgProtocol)
 
 
-def _has_device_attr(val: TensorOrScalar) -> typing.TypeGuard[_HasDeviceProtocol]:
+def _has_device_attr(val: OpValue) -> typing.TypeGuard[_HasDeviceProtocol]:
     """Check whether `val` exposes `device`.
 
     Args:
-        val (TensorOrScalar): Candidate argument.
+        val (OpValue): Candidate argument.
 
     Returns:
         bool: True if `val` has `device`.
     """
-    return has_backend_member(val, "device")
+    return isinstance(val, _HasDeviceProtocol)
 
 
-def _is_code_callable(val: TensorOrScalar) -> typing.TypeGuard[_CodeCallableProtocol]:
+def _is_code_callable(val: OpValue) -> typing.TypeGuard[_CodeCallableProtocol]:
     """Check whether `val` exposes `__code__` and `__name__`.
 
     Args:
-        val (TensorOrScalar): Candidate callable.
+        val (OpValue): Candidate callable.
 
     Returns:
         bool: True if `val` has `__code__` and `__name__`.
     """
-    return has_backend_member(val, "__code__") and has_backend_member(val, "__name__")
+    return isinstance(val, _CodeCallableProtocol)
 
 
-def _is_get_module_cls(val: TensorOrScalar) -> typing.TypeGuard[_GetModuleProtocol]:
+def _is_get_module_cls(val: OpValue) -> typing.TypeGuard[_GetModuleProtocol]:
     """Check whether `val` exposes `get_module`.
 
     Args:
-        val (TensorOrScalar): Candidate generator class.
+        val (OpValue): Candidate generator class.
 
     Returns:
         bool: True if `val` has `get_module`.
     """
-    return has_backend_member(val, "get_module")
+    return isinstance(val, _GetModuleProtocol)
 
 
-def _is_compile_aot_obj(val: TensorOrScalar) -> typing.TypeGuard[_CompileAotProtocol]:
+def _is_compile_aot_obj(val: OpValue) -> typing.TypeGuard[_CompileAotProtocol]:
     """Check whether `val` exposes `compile_aot`.
 
     Args:
-        val (TensorOrScalar): Candidate generator class or instance.
+        val (OpValue): Candidate generator class or instance.
 
     Returns:
         bool: True if `val` has `compile_aot`.
     """
-    return has_backend_member(val, "compile_aot")
+    return isinstance(val, _CompileAotProtocol)
 
 
-def _is_generate_code_obj(val: TensorOrScalar) -> typing.TypeGuard[_GenerateCodeProtocol]:
+def _is_generate_code_obj(val: OpValue) -> typing.TypeGuard[_GenerateCodeProtocol]:
     """Check whether `val` exposes `generate`.
 
     Args:
-        val (TensorOrScalar): Candidate generator instance.
+        val (OpValue): Candidate generator instance.
 
     Returns:
         bool: True if `val` has `generate`.
     """
-    return has_backend_member(val, "generate")
+    return isinstance(val, _GenerateCodeProtocol)
 
 
 def _fallback_eager(
-    fn: TensorOrScalar,
-    args: tuple[TensorOrScalar, ...],
-    kw: dict[str, AttrValue],
-) -> TensorOrScalar:
+    fn: OpValue,
+    args: tuple[OpValue, ...],
+    kw: dict[str, IRAttrValue],
+) -> OpValue:
     """Execute `fn` in eager mode as a fallback when compilation is bypassed.
 
     Args:
-        fn (TensorOrScalar): Target function to evaluate.
-        args (tuple[TensorOrScalar, ...]): Positional call arguments.
-        kw (dict[str, AttrValue]): Keyword call arguments.
+        fn (OpValue): Target function to evaluate.
+        args (tuple[OpValue, ...]): Positional call arguments.
+        kw (dict[str, IRAttrValue]): Keyword call arguments.
 
     Returns:
-        TensorOrScalar: Result of eager evaluation.
+        OpValue: Result of eager evaluation.
     """
     was_eager = config.eager_mode
     config.eager_mode = True
     try:
-        return invoke_callable(fn, *args, **kw)
+        _callable_fn_1: OpValue = fn
+        assert is_variadic_callable(_callable_fn_1)
+        return _callable_fn_1(*args, **kw)
     finally:
         config.eager_mode = was_eager
 
 
-def _build_signature_key(fn: TensorOrScalar, backend: str, args: TensorOrScalar) -> str:
+def _build_signature_key(fn: OpValue, backend: str, args: OpValue) -> str:
     """Build a deterministic cache key from function identity, target backend, and argument specs.
 
     Args:
-        fn (TensorOrScalar): Function being compiled.
+        fn (OpValue): Function being compiled.
         backend (str): Target backend identifier.
-        args (TensorOrScalar): Positional arguments tuple.
+        args (OpValue): Positional arguments tuple.
 
     Returns:
         str: Signature cache key string.
     """
     sig_parts = []
-    args_iter: Iterable[TensorOrScalar] = args if isinstance(args, Iterable) else ()
+    args_iter: Iterable[OpValue] = args if isinstance(args, Iterable) else ()
     for a in args_iter:
-        raw_a: TensorOrScalar = a
+        raw_a: OpValue = a
         if _is_tensor_arg(raw_a):
             sig_parts.append(f"T({raw_a.shape},{raw_a.dtype})")
         else:
             sig_parts.append(f"S({type(a).__name__})")
-    raw_fn: TensorOrScalar = fn
+    raw_fn: OpValue = fn
     code_sig = raw_fn.__code__ if _is_code_callable(raw_fn) else None
     fn_name = str(raw_fn.__name__) if _is_code_callable(raw_fn) else ""
     return f"{fn_name}_{id(fn)}_{id(code_sig)}_{backend}_" + "_".join(sig_parts)
 
 
-def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar]:
+def _prepare_proxy_args(args: tuple[OpValue, ...]) -> list[OpValue]:
     """Wrap tensor arguments in `ProxyTensor` instances and emit `Input` nodes in the active graph.
 
     Args:
-        args (tuple[TensorOrScalar, ...]): Raw call positional arguments.
+        args (tuple[OpValue, ...]): Raw call positional arguments.
 
     Returns:
-        list[TensorOrScalar]: Proxy-wrapped arguments ready for symbolic tracing.
+        list[OpValue]: Proxy-wrapped arguments ready for symbolic tracing.
     """
-    proxy_args: list[TensorOrScalar] = []
+    proxy_args: list[OpValue] = []
     for i, a in enumerate(args):
-        raw_a: TensorOrScalar = a
+        raw_a: OpValue = a
         if _is_tensor_arg(raw_a):
             arg_id = f"arg_{i}"
             shape = _extract_aot_shape(raw_a.shape)
@@ -299,11 +295,11 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
     return proxy_args
 
 
-def _capture_outputs(out: TensorOrScalar) -> None:
+def _capture_outputs(out: OpValue) -> None:
     """Record output tensor node IDs in the active tracing graph.
 
     Args:
-        out (TensorOrScalar): Traced function return value or sequence of tensors.
+        out (OpValue): Traced function return value or sequence of tensors.
     """
     active_graph = global_tracing_state.active_graph
     assert active_graph is not None
@@ -322,18 +318,18 @@ def _capture_outputs(out: TensorOrScalar) -> None:
             active_graph.outputs.append(out_node_id)
 
 
-def _get_namespace(backend: str, generator_cls: TensorOrScalar) -> dict[str, TensorOrScalar]:
+def _get_namespace(backend: str, generator_cls: OpValue) -> dict[str, OpValue]:
     """Construct the execution namespace dictionary for evaluating generated backend code.
 
     Args:
         backend (str): Target backend name.
-        generator_cls (TensorOrScalar): Backend generator class.
+        generator_cls (OpValue): Backend generator class.
 
     Returns:
-        dict[str, TensorOrScalar]: Namespace dictionary mapping the backend module.
+        dict[str, OpValue]: Namespace dictionary mapping the backend module.
     """
-    namespace: dict[str, TensorOrScalar] = {}
-    raw_gen_cls: TensorOrScalar = generator_cls
+    namespace: dict[str, OpValue] = {}
+    raw_gen_cls: OpValue = generator_cls
     if _is_get_module_cls(raw_gen_cls):
         namespace[backend] = raw_gen_cls.get_module()
     elif backend == "numpy":
@@ -370,16 +366,16 @@ def _run_optimization_pipeline(graph: LogicalGraph) -> LogicalGraph:
 
 
 def _trace_function_graph(
-    fn: TensorOrScalar,
-    args: tuple[TensorOrScalar, ...],
-    kw: dict[str, AttrValue],
+    fn: OpValue,
+    args: tuple[OpValue, ...],
+    kw: dict[str, IRAttrValue],
 ) -> LogicalGraph | None:
     """Trace a function call with proxy arguments and optimize the resulting graph.
 
     Args:
-        fn (TensorOrScalar): Target function to trace.
-        args (tuple[TensorOrScalar, ...]): Positional arguments.
-        kw (dict[str, AttrValue]): Keyword arguments.
+        fn (OpValue): Target function to trace.
+        args (tuple[OpValue, ...]): Positional arguments.
+        kw (dict[str, IRAttrValue]): Keyword arguments.
 
     Returns:
         LogicalGraph | None: Optimized graph if tracing succeeded with outputs, else None.
@@ -389,9 +385,21 @@ def _trace_function_graph(
     proxy_args = _prepare_proxy_args(args)
 
     try:
-        out = invoke_callable(fn, *proxy_args, **kw)
+        _callable_fn_2: OpValue = fn
+        assert is_variadic_callable(_callable_fn_2)
+        out = _callable_fn_2(*proxy_args, **kw)
         _capture_outputs(out)
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         tape.stop_tracing()
         return None
 
@@ -402,16 +410,16 @@ def _trace_function_graph(
 
 
 def _try_static_compile_aot(
-    generator_cls: TensorOrScalar,
+    generator_cls: OpValue,
     graph: LogicalGraph,
-    kwargs: dict[str, AttrValue],
+    kwargs: dict[str, IRAttrValue],
 ) -> VariadicCallableProtocol | None:
     """Attempt static or class-level `compile_aot` on the generator class.
 
     Args:
-        generator_cls (TensorOrScalar): Backend generator class.
+        generator_cls (OpValue): Backend generator class.
         graph (LogicalGraph): Optimized logical graph.
-        kwargs (dict[str, AttrValue]): Compilation options.
+        kwargs (dict[str, IRAttrValue]): Compilation options.
 
     Returns:
         VariadicCallableProtocol | None: Compiled callable if available, else None.
@@ -420,13 +428,14 @@ def _try_static_compile_aot(
 
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    raw_gen_cls: TensorOrScalar = generator_cls
+    raw_gen_cls: OpValue = generator_cls
     if not _is_compile_aot_obj(raw_gen_cls):
         return None
     try:
         is_base_gen_sub = isinstance(generator_cls, type) and issubclass(generator_cls, BaseGenerator)
-        if not is_base_gen_sub or inspect.ismethod(raw_gen_cls.compile_aot):
-            compiled_fn = raw_gen_cls.compile_aot(graph, **kwargs)
+        aot_member = raw_gen_cls.compile_aot
+        if not is_base_gen_sub or inspect.ismethod(aot_member) or aot_member.__name__ != "_bound":
+            compiled_fn = aot_member(graph, **kwargs)
             if callable(compiled_fn):
                 res_fn: VariadicCallableProtocol = compiled_fn
                 return res_fn
@@ -437,7 +446,7 @@ def _try_static_compile_aot(
 
 def _build_generated_entrypoint(
     code: str,
-    namespace: dict[str, TensorOrScalar],
+    namespace: dict[str, OpValue],
     backend: str,
     strict: bool,
 ) -> VariadicCallableProtocol | None:
@@ -445,7 +454,7 @@ def _build_generated_entrypoint(
 
     Args:
         code (str): Generated Python code string.
-        namespace (dict[str, TensorOrScalar]): Execution namespace dictionary.
+        namespace (dict[str, OpValue]): Execution namespace dictionary.
         backend (str): Target backend name.
         strict (bool): Whether to raise `CompilationError` when no entrypoint exists.
 
@@ -455,46 +464,52 @@ def _build_generated_entrypoint(
     Raises:
         CompilationError: If strict mode is enabled and no executable entrypoint is found.
     """
-    exec(code, namespace)
+    from ml_switcheroo_compiler.backends._module_loader import load_generated_code
+
+    load_generated_code(code, namespace)
     if "apply_model" in namespace:
 
         def apply_wrapper(
-            *w_args: TensorOrScalar,
-            **w_kw: TensorOrScalar,
-        ) -> TensorOrScalar:
+            *w_args: OpValue,
+            **w_kw: OpValue,
+        ) -> OpValue:
             """Invoke the generated `apply_model` entrypoint.
 
             Args:
-                *w_args (TensorOrScalar): Positional arguments.
-                **w_kw (TensorOrScalar): Keyword arguments.
+                *w_args (OpValue): Positional arguments.
+                **w_kw (OpValue): Keyword arguments.
 
             Returns:
-                TensorOrScalar: Evaluated model output.
+                OpValue: Evaluated model output.
             """
             entry_fn = namespace["apply_model"]
-            return invoke_callable(entry_fn, {}, *w_args, **w_kw)
+            _callable_fn_3: OpValue = entry_fn
+            assert is_variadic_callable(_callable_fn_3)
+            return _callable_fn_3({}, *w_args, **w_kw)
 
         return apply_wrapper
 
     if "evaluate" in namespace:
 
         def eval_wrapper(
-            *w_args: TensorOrScalar,
-            **w_kw: TensorOrScalar,
-        ) -> TensorOrScalar:
+            *w_args: OpValue,
+            **w_kw: OpValue,
+        ) -> OpValue:
             """Invoke the generated `evaluate` entrypoint.
 
             Args:
-                *w_args (TensorOrScalar): Positional arguments.
-                **w_kw (TensorOrScalar): Keyword arguments.
+                *w_args (OpValue): Positional arguments.
+                **w_kw (OpValue): Keyword arguments.
 
             Returns:
-                TensorOrScalar: Evaluated graph output.
+                OpValue: Evaluated graph output.
             """
             del w_kw
             numpy_args = [a.data if isinstance(a, Tensor) else a for a in w_args]
             entry_fn = namespace["evaluate"]
-            return invoke_callable(entry_fn, numpy_args)
+            _callable_fn_4: OpValue = entry_fn
+            assert is_variadic_callable(_callable_fn_4)
+            return _callable_fn_4(numpy_args)
 
         return eval_wrapper
 
@@ -507,28 +522,28 @@ def _build_generated_entrypoint(
 
 def _execute_generated_code(
     code: str,
-    generator_cls: TensorOrScalar,
+    generator_cls: OpValue,
     backend: str,
     key: str,
     strict: bool,
-    fn: TensorOrScalar,
-    args: tuple[TensorOrScalar, ...],
-    kw: dict[str, AttrValue],
-) -> TensorOrScalar:
+    fn: OpValue,
+    args: tuple[OpValue, ...],
+    kw: dict[str, IRAttrValue],
+) -> OpValue:
     """Build executable entrypoint from generated code and invoke with arguments.
 
     Args:
         code (str): Generated source code string.
-        generator_cls (TensorOrScalar): Backend generator class.
+        generator_cls (OpValue): Backend generator class.
         backend (str): Target backend name.
         key (str): Cache signature key.
         strict (bool): Whether strict compilation mode is enabled.
-        fn (TensorOrScalar): Original function for eager fallback.
-        args (tuple[TensorOrScalar, ...]): Call positional arguments.
-        kw (dict[str, AttrValue]): Call keyword arguments.
+        fn (OpValue): Original function for eager fallback.
+        args (tuple[OpValue, ...]): Call positional arguments.
+        kw (dict[str, IRAttrValue]): Call keyword arguments.
 
     Returns:
-        TensorOrScalar: Result of executing the compiled function or eager fallback.
+        OpValue: Result of executing the compiled function or eager fallback.
 
     Raises:
         CompilationError: If strict mode is enabled and execution fails.
@@ -546,36 +561,46 @@ def _execute_generated_code(
         return res
     except CompilationError:
         raise
-    except Exception as e:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ) as e:
         if strict:
             raise CompilationError(f"Execution of compiled code failed: {e}") from e
         return _fallback_eager(fn, args, kw)
 
 
 def _compile_with_generator_instance(
-    generator_cls: TensorOrScalar,
+    generator_cls: OpValue,
     graph: LogicalGraph,
     backend: str,
     key: str,
-    kwargs: dict[str, AttrValue],
-    fn: TensorOrScalar,
-    args: tuple[TensorOrScalar, ...],
-    kw: dict[str, AttrValue],
-) -> TensorOrScalar:
+    kwargs: dict[str, IRAttrValue],
+    fn: OpValue,
+    args: tuple[OpValue, ...],
+    kw: dict[str, IRAttrValue],
+) -> OpValue:
     """Instantiate backend generator, compile or exec generated code, and invoke with args.
 
     Args:
-        generator_cls (TensorOrScalar): Backend generator class.
+        generator_cls (OpValue): Backend generator class.
         graph (LogicalGraph): Optimized logical graph.
         backend (str): Target backend name.
         key (str): Cache signature key.
-        kwargs (dict[str, AttrValue]): Compilation options.
-        fn (TensorOrScalar): Original function for eager fallback.
-        args (tuple[TensorOrScalar, ...]): Call positional arguments.
-        kw (dict[str, AttrValue]): Call keyword arguments.
+        kwargs (dict[str, IRAttrValue]): Compilation options.
+        fn (OpValue): Original function for eager fallback.
+        args (tuple[OpValue, ...]): Call positional arguments.
+        kw (dict[str, IRAttrValue]): Call keyword arguments.
 
     Returns:
-        TensorOrScalar: Result of executing the compiled function or eager fallback.
+        OpValue: Result of executing the compiled function or eager fallback.
 
     Raises:
         CompilationError: If strict mode is enabled and compilation or execution fails.
@@ -585,13 +610,25 @@ def _compile_with_generator_instance(
     strict = bool(kwargs.get("strict", False))
 
     try:
-        generator = invoke_callable(generator_cls, graph)
-    except Exception as e:
+        _callable_fn_5: OpValue = generator_cls
+        assert is_variadic_callable(_callable_fn_5)
+        generator = _callable_fn_5(graph)
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ) as e:
         if strict:
             raise CompilationError(f"Failed to instantiate generator '{backend}': {e}") from e
         return _fallback_eager(fn, args, kw)
 
-    raw_gen: TensorOrScalar = generator
+    raw_gen: OpValue = generator
     if _is_compile_aot_obj(raw_gen):
         try:
             res_aot = raw_gen.compile_aot(graph, **kwargs)
@@ -601,7 +638,17 @@ def _compile_with_generator_instance(
                 return aot_fn(*args, **kw)
         except NotImplementedError:
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        except Exception as e:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ) as e:
             if strict:
                 raise CompilationError(f"AOT compilation failed: {e}") from e
             return _fallback_eager(fn, args, kw)
@@ -610,27 +657,30 @@ def _compile_with_generator_instance(
     return _execute_generated_code(code, generator_cls, backend, key, strict, fn, args, kw)
 
 
-def compile_function(fn: TensorOrScalar, backend: str = "numpy", **kwargs: AttrValue) -> TensorOrScalar:
+def compile_function(fn: OpValue, backend: str = "numpy", **kwargs: IRAttrValue) -> OpValue:
     """Compile a Python function into an optimized backend execution callable.
 
     Args:
-        fn (TensorOrScalar): Function to trace and compile.
+        fn (OpValue): Function to trace and compile.
         backend (str): Target backend name.
-        **kwargs (AttrValue): Additional compilation options (e.g., `strict=True`).
+        **kwargs (IRAttrValue): Additional compilation options (e.g., `strict=True`).
 
     Returns:
-        TensorOrScalar: Compiled callable wrapper.
+        OpValue: Compiled callable wrapper.
     """
 
-    def compiled_wrapper(*args: TensorOrScalar, **kw: AttrValue) -> TensorOrScalar:
+    def compiled_wrapper(*args: OpValue, **kw: IRAttrValue) -> OpValue:
         """Trace and compile `fn` on first call for a given input signature.
 
         Args:
-            *args (TensorOrScalar): Positional arguments for `fn`.
-            **kw (AttrValue): Keyword arguments for `fn`.
+            *args (OpValue): Positional arguments for `fn`.
+            **kw (IRAttrValue): Keyword arguments for `fn`.
 
         Returns:
-            TensorOrScalar: Evaluated output of the compiled (or fallback eager) function.
+            OpValue: Evaluated output of the compiled (or fallback eager) function.
+
+        Raises:
+            CompilationError: If compilation or binary verification fails in `compiled_wrapper`.
         """
         key = _build_signature_key(fn, backend, args)
         if key in _COMPILATION_CACHE:

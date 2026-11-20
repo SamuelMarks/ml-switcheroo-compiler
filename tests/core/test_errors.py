@@ -1,78 +1,116 @@
-"""Tests for core errors."""
+"""Unit tests for core compiler error hierarchy, metadata formatting, and template loading."""
 
 from __future__ import annotations
 
 import os
-import tempfile
-from unittest import mock
 
-import yaml
+import pytest
 
+import ml_switcheroo_compiler.core.errors as err_mod
 from ml_switcheroo_compiler.core.errors import (
+    AutodiffError,
+    AutodiffLinkageError,
+    BackendDecouplingError,
     BackendNotSupportedError,
     CompilationError,
+    CompilerError,
+    DependencyViolationError,
     DTypePromotionError,
+    DTypeValidationError,
+    EvaluationError,
+    FrontendBoundaryViolationError,
     MissingJVPRuleError,
+    ShapeInferenceError,
     ShapeMismatchError,
+    SnapshotGroundingError,
     SwitcherooError,
+    SymbolicDifferentiationError,
     TracingError,
     UnimplementedMathError,
 )
 
 
-def test_errors() -> None:
-    """Test that all errors can be instantiated and inherit from SwitcherooError."""
-    errors = [
-        SwitcherooError("test"),
-        TracingError("test"),
-        CompilationError("test"),
-        ShapeMismatchError("test"),
-        DTypePromotionError("test"),
-        BackendNotSupportedError("test"),
-        UnimplementedMathError("test"),
-        MissingJVPRuleError("test"),
+def test_error_subclasses_and_context_metadata() -> None:
+    """Verify all compiler error classes inherit from CompilerError and format diagnostic metadata."""
+    assert SwitcherooError is CompilerError
+
+    base_err = SwitcherooError("Direct message")
+    assert str(base_err) == "Direct message"
+
+    ctx_err = CompilerError(
+        "Ctx msg",
+        node_id="n1",
+        op_type="Add",
+        backend_target="numpy",
+        trace_context="line 1",
+    )
+    rendered = str(ctx_err)
+    assert rendered == "Ctx msg | Node ID: n1 | Op Type: Add | Backend: numpy | Context: line 1"
+    assert ctx_err.node_id == "n1"
+    assert ctx_err.op_type == "Add"
+    assert ctx_err.backend_target == "numpy"
+    assert ctx_err.trace_context == "line 1"
+
+    error_classes: list[type[CompilerError]] = [
+        FrontendBoundaryViolationError,
+        BackendDecouplingError,
+        DependencyViolationError,
+        UnimplementedMathError,
+        AutodiffError,
+        ShapeInferenceError,
+        SnapshotGroundingError,
+        TracingError,
+        CompilationError,
+        ShapeMismatchError,
+        DTypePromotionError,
+        DTypeValidationError,
+        BackendNotSupportedError,
+        MissingJVPRuleError,
+        EvaluationError,
+        AutodiffLinkageError,
+        SymbolicDifferentiationError,
     ]
-
-    for error in errors:
-        assert isinstance(error, Exception)
-        if type(error) is not SwitcherooError:
-            assert isinstance(error, SwitcherooError)
-        assert str(error) == "test"
+    for cls in error_classes:
+        inst = cls("Test error")
+        assert isinstance(inst, CompilerError)
+        assert str(inst) == "Test error"
 
 
-def test_error_templates() -> None:
-    """Test that error templates are loaded and used correctly."""
-    # Mock os.path.exists and open to return a temporary yaml file
-    yaml_content = {"SwitcherooError": "Error: {arg}"}
+def test_error_templates_from_yaml_and_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify real YAML template loading, keyword formatting, and KeyError/message fallbacks.
 
-    with tempfile.NamedTemporaryFile("w", delete=False) as f:
-        yaml.dump(yaml_content, f)
-        f.flush()
-        f.close()
-        temp_file_name = f.name
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for resetting cached templates.
+    """
+    monkeypatch.setattr(err_mod, "_ERROR_TEMPLATES", {})
 
-    with mock.patch("ml_switcheroo_compiler.core.errors._ERROR_TEMPLATES", {}), mock.patch("os.path.join", return_value=temp_file_name):
-        # Should use template
-        err1 = SwitcherooError(arg="test_arg")
-        assert str(err1) == "Error: test_arg"
+    # Real error_messages.yaml reload and formatting
+    err_shape = ShapeMismatchError(shape1="[2, 3]", shape2="[2, 4]")
+    assert str(err_shape) == "Shape mismatch during static inference: [2, 3] != [2, 4]"
 
-        # Should fall back to passed message if missing key
-        err2 = SwitcherooError(message="fallback message", missing_arg="val")
-        assert str(err2) == "fallback message"
+    # Cached _ERROR_TEMPLATES branch with missing template key falls back to unformatted template
+    err_missing_kw = ShapeMismatchError(shape1="[2, 3]")
+    assert str(err_missing_kw) == "Shape mismatch during static inference: {shape1} != {shape2}"
 
-        # Test no kwargs falls back
-        err3 = SwitcherooError("no kwargs message")
-        assert str(err3) == "no kwargs message"
+    # Explicit message takes precedence over template kwargs
+    err_explicit = ShapeMismatchError(message="explicit override", shape1="[1]", shape2="[2]")
+    assert str(err_explicit) == "explicit override"
 
-        # Test KeyError fallback when kwarg is missing
-        err4 = SwitcherooError(bad_arg="val")
-        assert str(err4) == "Error: {arg}"
-
-    os.remove(temp_file_name)
+    # Error class without its own entry falls back to SwitcherooError template if present
+    monkeypatch.setattr(err_mod, "_ERROR_TEMPLATES", {"SwitcherooError": "Generic: {detail}"})
+    err_fallback = SwitcherooError(detail="bad_input")
+    assert str(err_fallback) == "Generic: bad_input"
 
 
-def test_load_error_templates_no_file() -> None:
-    """Test loading templates when file does not exist."""
-    with mock.patch("ml_switcheroo_compiler.core.errors._ERROR_TEMPLATES", {}), mock.patch("os.path.exists", return_value=False):
-        err = SwitcherooError("message")
-        assert str(err) == "message"
+def test_error_templates_when_yaml_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify CompilerError gracefully handles missing error_messages.yaml file.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture for simulating missing YAML file.
+    """
+    monkeypatch.setattr(err_mod, "_ERROR_TEMPLATES", {})
+    monkeypatch.setattr(os.path, "exists", lambda _path: False)
+
+    err = SwitcherooError("no yaml message")
+    assert str(err) == "no yaml message"
+    assert err_mod._ERROR_TEMPLATES == {}

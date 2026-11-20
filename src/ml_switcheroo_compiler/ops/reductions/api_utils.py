@@ -1,0 +1,215 @@
+"""Frontend reductions ops."""
+
+from __future__ import annotations
+
+# ruff: noqa: E402
+import typing
+import uuid
+from collections.abc import Mapping, Sequence
+
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import (
+    DataHolderProtocol,
+    OpValue,
+    TracedDataProtocol,
+    extract_shape,
+)
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import ensure_attrs
+from ml_switcheroo_compiler.ops.configs import WindowConfig
+
+
+@typing.runtime_checkable
+class _ValueHolderProtocol(typing.Protocol):
+    """Protocol for objects exposing `.value`."""
+
+    value: OpValue
+
+
+def _extract_input_id(inp: OpValue) -> str:
+    """Extract tracing node identifier from `inp`.
+
+    Args:
+        inp (OpValue): Input tensor or proxy.
+
+    Returns:
+        str: Node identifier string or `'mock_id'`.
+    """
+    payload: OpValue = inp.data if isinstance(inp, DataHolderProtocol) else inp
+    return str(payload.id) if isinstance(payload, TracedDataProtocol) else "mock_id"
+
+
+class ReduceWindow:
+    """ReduceWindow class."""
+
+    def infer_shape(
+        self,
+        *args: Tensor | float | str | WindowConfig,
+        **kwargs: Tensor | float | str | WindowConfig | None,
+    ) -> tuple[int, ...]:
+        """Infer shape.
+
+        Args:
+            *args (Tensor | float | str | WindowConfig): Positional args.
+            **kwargs (Tensor | float | str | WindowConfig | None): Keyword args.
+
+        Returns:
+            tuple[int, ...]: Computed `tuple[int, ...]` output.
+        """
+        return ()
+
+
+from ml_switcheroo_compiler.core.shape import ShapeDim
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state
+
+
+def _emit_reduction_node(
+    op_type: str,
+    inputs: Sequence[Tensor],
+    attrs: Mapping[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None],
+    out_shape: Sequence[ShapeDim],
+    out_dtype: DType,
+) -> Tensor:
+    """Compute the emit reduction node tensor operation.
+
+    Args:
+        op_type (str): Canonical reduction operation name.
+        inputs (Sequence[Tensor]): Input tensor operands.
+        attrs: Mapping of reduction attribute names to attribute values.
+        out_shape (Sequence[ShapeDim]): Output shape specification.
+        out_dtype (DType): Output tensor dtype.
+
+    Returns:
+        Tensor: Computed `Tensor` output.
+    """
+    out_id = str(uuid.uuid4())
+    clean_shape = tuple(d for d in out_shape if d is not None)
+    node = LogicalNode(
+        id=out_id,
+        op_type=op_type,
+        inputs=[_extract_input_id(inp) for inp in inputs],
+        attributes=ensure_attrs(attrs),
+        shape_metadata=clean_shape,
+    )
+    global_tracing_state.add_node(node)
+
+    raw_dt: OpValue | _ValueHolderProtocol = out_dtype
+    dtype_val = raw_dt.value if isinstance(raw_dt, _ValueHolderProtocol) else out_dtype
+    proxy = ProxyTensor(id=out_id, shape=tuple(out_shape), dtype=str(dtype_val))
+    return Tensor(proxy, TensorConfig(tuple(out_shape), out_dtype, inputs[0].device))
+
+
+def _reduce_window_eager(
+    operand: Tensor,
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> Tensor:
+    """Compute the reduce window eager tensor operation.
+
+    Args:
+        operand (Tensor): Input `operand` argument (operand).
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
+
+    Returns:
+        Tensor: Computed `Tensor` output.
+    """
+    backend = get_active_backend()
+    init_val_data = init_value.data if isinstance(init_value, Tensor) else init_value
+    data = backend.execute_op(
+        "ReduceWindow",
+        operand.data,
+        init_val_data,
+        computation,
+        config=window_config,
+    )
+    return Tensor(backend.array(data), TensorConfig(extract_shape(backend.array(data)), operand.dtype, operand.device))
+
+
+def _build_reduce_window_attributes(
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]:
+    """Compute the build reduce window attributes tensor operation.
+
+    Args:
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
+
+    Returns:
+        dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]:
+            Computed `dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool |
+            None]` output.
+    """
+    attributes: dict[
+        str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None
+    ] = {
+        "computation": computation,
+        "window_dimensions": window_config.window_dimensions,
+        "window_strides": window_config.window_strides,
+        "padding": window_config.padding,
+        "base_dilation": window_config.base_dilation,
+        "window_dilation": window_config.window_dilation,
+    }
+    if not isinstance(init_value, Tensor):
+        attributes["init_value"] = init_value
+    return attributes
+
+
+def _reduce_window_trace(
+    operand: Tensor,
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> Tensor:
+    """Compute the reduce window trace tensor operation.
+
+    Args:
+        operand (Tensor): Input `operand` argument (operand).
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
+
+    Returns:
+        Tensor: Computed `Tensor` output.
+    """
+    inputs = [operand]
+    if isinstance(init_value, Tensor):
+        inputs.append(init_value)
+
+    attributes = _build_reduce_window_attributes(init_value, computation, window_config)
+
+    rw_op = ReduceWindow()
+    out_shape = rw_op.infer_shape(operand, init_value, computation, window_config)
+
+    return _emit_reduction_node("ReduceWindow", inputs, attributes, out_shape, operand.dtype)
+
+
+def reduce_window(
+    operand: Tensor,
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> Tensor:
+    """Apply a reduction function over a sliding window of the input.
+
+    Args:
+        operand (Tensor): Input `operand` argument (operand).
+        init_value (Tensor | float): Input `init_value` argument (init value).
+        computation (str): Input `computation` argument (computation).
+        window_config (WindowConfig): Input `window_config` argument (window config).
+
+    Returns:
+        Tensor: Computed `Tensor` output.
+    """
+    if config.eager_mode:
+        return _reduce_window_eager(operand, init_value, computation, window_config)
+    return _reduce_window_trace(operand, init_value, computation, window_config)

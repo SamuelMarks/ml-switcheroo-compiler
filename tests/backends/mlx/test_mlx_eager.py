@@ -2,21 +2,27 @@
 
 from __future__ import annotations
 
+import types
 import typing
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+import ml_switcheroo_compiler.backends.mlx.eager as mx_eager
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, mlx_eager_registry
 from ml_switcheroo_compiler.backends.mlx.eager import _mlx_partition, _mlx_zeros
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict, has_backend_member
+from tests.testing_utils import (
+    BackendModuleProtocol,
+    EagerBoundCallable,
+    MockTestStub,
+    adapt_backend_module,
+    extract_test_shape,
+    require_callable,
+)
 
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-
-def test_mlx_eager_dtype_resolution(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_eager_dtype_resolution(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test dtype resolution fallback logic.
 
     Args:
@@ -28,21 +34,21 @@ def test_mlx_eager_dtype_resolution(monkeypatch: EagerTensorProtocol) -> None:
     assert _mlx_zeros(mock_backend_module, [1], dtype="float64") == "mock_zeros"
 
 
-def test_mlx_eager_topk_fallback(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_eager_topk_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test partition/topk fallback when return_indices is False and topk is not available.
 
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
     mock_backend_module = MagicMock()
-    if has_backend_member(mock_backend_module, "topk"):
+    if adapt_backend_module(mock_backend_module).has_symbol("topk"):
         del mock_backend_module.topk
     mock_backend_module.partition = MagicMock(return_value=np.array([[1, 2, 3]]))
     res = _mlx_partition(mock_backend_module, np.array([[3, 1, 2]]), k=2, return_indices=False)
-    assert res is not None
+    assert tuple(extract_test_shape(res)) == (1, 2)
 
 
-def test_mlx_eager_dtype_resolution_not_str(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_eager_dtype_resolution_not_str(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test dtype resolution fallback logic when dtype is not a string.
 
     Args:
@@ -51,7 +57,7 @@ def test_mlx_eager_dtype_resolution_not_str(monkeypatch: EagerTensorProtocol) ->
     mock_backend_module = MagicMock()
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
 
-    class NonStrDtype:
+    class NonStrDtype(MockTestStub):
         """Test class NonStrDtype."""
 
         def __str__(self) -> str:
@@ -63,10 +69,10 @@ def test_mlx_eager_dtype_resolution_not_str(monkeypatch: EagerTensorProtocol) ->
             return "int32"
 
     dtype_obj = NonStrDtype()
-    assert _mlx_zeros(mock_backend_module, [1], dtype=ensure_eager_tensor(dtype_obj)) == "mock_zeros"
+    assert _mlx_zeros(mock_backend_module, [1], dtype=dtype_obj) == "mock_zeros"
 
 
-def test_mlx_eager_dtype_resolution_mapping_hit(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_eager_dtype_resolution_mapping_hit(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test dtype resolution fallback logic when mapping is hit.
 
     Args:
@@ -75,14 +81,14 @@ def test_mlx_eager_dtype_resolution_mapping_hit(monkeypatch: EagerTensorProtocol
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_zeros
 
     mock_backend_module = MagicMock()
-    if has_backend_member(mock_backend_module, "float64"):
+    if adapt_backend_module(mock_backend_module).has_symbol("float64"):
         del mock_backend_module.float64
     mock_backend_module.float32 = "mock_mlx_float32"
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
     assert _mlx_zeros(mock_backend_module, [1], dtype="float64") == "mock_zeros"
 
 
-def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test dtype resolution fallback logic when dtype is not a string.
 
     Args:
@@ -91,12 +97,12 @@ def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorPro
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_zeros
 
     mock_backend_module = MagicMock()
-    if has_backend_member(mock_backend_module, "float64"):
+    if adapt_backend_module(mock_backend_module).has_symbol("float64"):
         del mock_backend_module.float64
     mock_backend_module.float32 = "mock_float32"
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
 
-    class NonStrDtype:
+    class NonStrDtype(MockTestStub):
         """Test class NonStrDtype."""
 
         def __str__(self) -> str:
@@ -108,22 +114,22 @@ def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorPro
             return "float64"
 
     dtype_obj = NonStrDtype()
-    assert _mlx_zeros(mock_backend_module, [1], dtype=ensure_eager_tensor(dtype_obj)) == "mock_zeros"
+    assert _mlx_zeros(mock_backend_module, [1], dtype=dtype_obj) == "mock_zeros"
 
 
-def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: EagerTensorProtocol) -> None:
+def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test dtype resolution fallback logic when dtype is not a string.
 
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
     mock_backend_module = MagicMock()
-    if has_backend_member(mock_backend_module, "float64"):
+    if adapt_backend_module(mock_backend_module).has_symbol("float64"):
         del mock_backend_module.float64
     mock_backend_module.float32 = "mock_float32"
     mock_backend_module.zeros = MagicMock(return_value="mock_zeros")
 
-    class NonStrDtype:
+    class NonStrDtype(MockTestStub):
         """Test class NonStrDtype."""
 
         def __str__(self) -> str:
@@ -146,7 +152,16 @@ def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: EagerTensorPr
     assert mx_eager._MLX_DTYPE_FALLBACK_MAP is orig_dtype_map
 
 
-def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestMlxEagerMissingCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_mlx_eager_missing_coverage` split helpers."""
+
+    DummyShape: type[MockTestStub]
+    execute_op: EagerBoundCallable
+    func: EagerBoundCallable
+    orig_mx: types.ModuleType | BackendModuleProtocol | None
+
+
+def _test_mlx_eager_missing_coverage_part_1(_state: _TestMlxEagerMissingCoverageState) -> None:
     """Execute part 1 of test_mlx_eager_missing_coverage.
 
     Args:
@@ -156,124 +171,121 @@ def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtoco
     from ml_switcheroo_compiler.backends.mlx.eager import execute_op
 
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        ensure_callable(execute_op)(None, "FakeOp", dim=1)
+        execute_op(None, "FakeOp", dim=1)
     global_eager_registry.register("TestGlobalMlx")(lambda *args, **kwargs: "global_hit")
-    assert ensure_callable(execute_op)(None, "TestGlobalMlx") == "global_hit"
+    assert execute_op(None, "TestGlobalMlx") == "global_hit"
 
-    class MockMXMap:
+    class MockMXMap(MockTestStub):
         """Test class MockMXMap."""
 
-        def multiply(self) -> EagerValue:
+        def multiply(self) -> BackendArg:
             """Test function multiply.
 
             Returns:
-                EagerValue: Computed output value from `multiply`.
+                BackendArg: Computed output value from `multiply`.
             """
             return "mul"
 
-        def subtract(self) -> EagerValue:
+        def subtract(self) -> BackendArg:
             """Test function subtract.
 
             Returns:
-                EagerValue: Computed output value from `subtract`.
+                BackendArg: Computed output value from `subtract`.
             """
             return "sub"
 
-        def divide(self) -> EagerValue:
+        def divide(self) -> BackendArg:
             """Test function divide.
 
             Returns:
-                EagerValue: Computed output value from `divide`.
+                BackendArg: Computed output value from `divide`.
             """
             return "div"
 
-    import ml_switcheroo_compiler.backends.mlx.eager as mx_eager
-
-    orig_mx = ensure_eager_tensor(ensure_eager_tensor(mx_eager).mx)
-    ensure_mutable(mx_eager).mx = ensure_eager_tensor(MockMXMap())
-    _state.update(ensure_tensor_dict({"MockMXMap": MockMXMap, "execute_op": execute_op, "global_eager_registry": global_eager_registry, "mx_eager": mx_eager}))
-    _state.update(ensure_tensor_dict({"orig_mx": orig_mx}))
+    orig_mx = mx_eager.mx
+    pytest.MonkeyPatch().setattr(mx_eager, "mx", MockMXMap(), raising=False)
+    _state.update({"execute_op": require_callable(execute_op), "orig_mx": orig_mx})
 
 
-def _test_mlx_eager_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_mlx_eager_missing_coverage_part_2(_state: _TestMlxEagerMissingCoverageState) -> None:
     """Execute part 2 of test_mlx_eager_missing_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    (execute_op, mx_eager, orig_mx) = (_state["execute_op"], _state["mx_eager"], _state["orig_mx"])
+    (execute_op, orig_mx) = (_state["execute_op"], _state["orig_mx"])
     try:
         assert execute_op(None, "Mul") == "mul"
         assert execute_op(None, "Sub") == "sub"
         assert execute_op(None, "Div") == "div"
     finally:
-        ensure_mutable(mx_eager).mx = ensure_eager_tensor(orig_mx)
+        mx_eager.mx = orig_mx
 
-    class MockMXLinalg:
+    class MockMXLinalg(MockTestStub):
         """Test class MockMXLinalg."""
 
-        def my_linalg_func(self) -> EagerValue:
+        def my_linalg_func(self) -> BackendArg:
             """Test function my_linalg_func.
 
             Returns:
-                EagerValue: Computed output value from `my_linalg_func`.
+                BackendArg: Computed output value from `my_linalg_func`.
             """
             return "linalg"
 
-    class MockMXMain:
+    class MockMXMain(MockTestStub):
         """Test class MockMXMain."""
 
         linalg = MockMXLinalg()
 
-    ensure_mutable(mx_eager).mx = ensure_eager_tensor(MockMXMain())
+    pytest.MonkeyPatch().setattr(mx_eager, "mx", MockMXMain(), raising=False)
     try:
         assert execute_op(None, "MyLinalgFunc") == "linalg"
     finally:
-        ensure_mutable(mx_eager).mx = ensure_eager_tensor(orig_mx)
-    func = mx_eager.mlx_eager_registry.get("ScatterNd")
+        mx_eager.mx = orig_mx
+    func = require_callable(mlx_eager_registry.get("ScatterNd"))
 
-    class DummyShape:
+    class DummyShape(MockTestStub):
         """Test class DummyShape."""
 
         data = [1, 2]
 
-    _state.update(ensure_tensor_dict({"DummyShape": DummyShape, "MockMXLinalg": MockMXLinalg, "MockMXMain": MockMXMain, "func": func}))
-    _state.update(ensure_tensor_dict({"execute_op": execute_op, "mx_eager": mx_eager, "orig_mx": orig_mx}))
+    _state.update({"DummyShape": DummyShape, "func": func})
+    _state.update({"execute_op": require_callable(execute_op), "orig_mx": orig_mx})
 
 
-def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_mlx_eager_missing_coverage_part_3(_state: _TestMlxEagerMissingCoverageState) -> None:
     """Execute part 3 of test_mlx_eager_missing_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    (DummyShape, func, mx_eager) = (_state["DummyShape"], _state["func"], _state["mx_eager"])
+    (DummyShape, func) = (_state["DummyShape"], _state["func"])
 
-    class DummyUpdates:
+    class DummyUpdates(MockTestStub):
         """Test class DummyUpdates."""
 
         dtype = "float32"
 
-    class DummyIndices:
+    class DummyIndices(MockTestStub):
         """Test class DummyIndices."""
 
         shape = [2, 2]
 
-        def __getitem__(self, key: EagerValue) -> EagerValue:
+        def __getitem__(self, key: BackendArg) -> BackendArg:
             """Test function __getitem__.
 
             Args:
                 key: Test parameter `key`.
 
             Returns:
-                EagerValue: Computed output value from `__getitem__`.
+                BackendArg: Computed output value from `__getitem__`.
             """
             return 0
 
-    class MockMXScatter:
+    class MockMXScatter(MockTestStub):
         """Test class MockMXScatter."""
 
-        def zeros(self, shape: EagerValue, dtype: EagerValue) -> EagerValue:
+        def zeros(self, shape: BackendArg, dtype: BackendArg) -> BackendArg:
             """Test function zeros.
 
             Args:
@@ -281,13 +293,13 @@ def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtoco
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `zeros`.
+                BackendArg: Computed output value from `zeros`.
             """
 
-            class DummyRes:
+            class DummyRes(MockTestStub):
                 """Test class DummyRes."""
 
-                def __setitem__(self, key: EagerValue, value: EagerValue) -> None:
+                def __setitem__(self, key: BackendArg, value: BackendArg) -> None:
                     """Test function __setitem__.
 
                     Args:
@@ -296,38 +308,53 @@ def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtoco
                     """
                     pass
 
-            return ensure_eager_tensor(DummyRes())
+            return DummyRes()
 
-    assert ensure_callable(func)(ensure_callable(MockMXScatter)(), ensure_callable(DummyIndices)(), ensure_callable(DummyUpdates)(), ensure_callable(DummyShape)()) is not None
-    assert ensure_callable(func)(ensure_callable(MockMXScatter)(), ensure_callable(DummyIndices)(), ensure_callable(DummyUpdates)(), shape=ensure_callable(DummyShape)()) is not None
-    func = mx_eager.mlx_eager_registry.get("Reshape")
-    _state.update(ensure_tensor_dict({"DummyIndices": DummyIndices, "DummyUpdates": DummyUpdates, "MockMXScatter": MockMXScatter, "func": func}))
-    _state.update(ensure_tensor_dict({"DummyShape": DummyShape, "mx_eager": mx_eager}))
+    assert (
+        func(
+            MockMXScatter(),
+            DummyIndices(),
+            DummyUpdates(),
+            DummyShape(),
+        )
+        is not None
+    )
+    assert (
+        func(
+            MockMXScatter(),
+            DummyIndices(),
+            DummyUpdates(),
+            shape=DummyShape(),
+        )
+        is not None
+    )
+    func = require_callable(mlx_eager_registry.get("Reshape"))
+    _state.update({"DummyShape": DummyShape, "func": func})
 
 
-def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_mlx_eager_missing_coverage_part_4(_state: _TestMlxEagerMissingCoverageState) -> None:
     """Execute part 4 of test_mlx_eager_missing_coverage.
 
     Args:
         _state: Shared test state dictionary.
     """
-    (func, mx_eager) = (_state["func"], _state["mx_eager"])
+    func = _state["func"]
 
-    class DummyShapeList:
+    class DummyShapeList(MockTestStub):
         """Test class DummyShapeList."""
 
-        def tolist(self) -> EagerValue:
+        def tolist(self) -> BackendArg:
             """Test function tolist.
 
             Returns:
-                EagerValue: Computed output value from `tolist`.
+                BackendArg: Computed output value from `tolist`.
             """
             return [1, 2]
 
-    class MockMXReshape:
+    class MockMXReshape(MockTestStub):
         """Test class MockMXReshape."""
 
-        def reshape(self, x: EagerValue, shape: EagerValue) -> EagerValue:
+        def reshape(self, x: BackendArg, shape: BackendArg) -> BackendArg:
             """Test function reshape.
 
             Args:
@@ -335,19 +362,19 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
                 shape: Test parameter `shape`.
 
             Returns:
-                EagerValue: Computed output value from `reshape`.
+                BackendArg: Computed output value from `reshape`.
             """
             return shape
 
-    assert ensure_callable(func)(ensure_callable(MockMXReshape)(), "x", ensure_callable(DummyShapeList)()) == [1, 2]
-    assert ensure_callable(func)(ensure_callable(MockMXReshape)(), input="x", shape=ensure_callable(DummyShapeList)()) == [1, 2]
+    assert func(MockMXReshape(), "x", DummyShapeList()) == [1, 2]
+    assert func(MockMXReshape(), input="x", shape=DummyShapeList()) == [1, 2]
 
-    class DummyMXWithFloat32:
+    class DummyMXWithFloat32(MockTestStub):
         """Test class DummyMXWithFloat32."""
 
         float32 = "mock_float32"
 
-        def zeros(self, shape: EagerValue, dtype: EagerValue) -> EagerValue:
+        def zeros(self, shape: BackendArg, dtype: BackendArg) -> BackendArg:
             """Test function zeros.
 
             Args:
@@ -355,17 +382,16 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
                 dtype: Test parameter `dtype`.
 
             Returns:
-                EagerValue: Computed output value from `zeros`.
+                BackendArg: Computed output value from `zeros`.
             """
             return dtype
 
-    assert ensure_callable(mx_eager._mlx_zeros)(ensure_callable(DummyMXWithFloat32)(), [1], dtype="bfloat16") == "mock_float32"
-    func = mx_eager.mlx_eager_registry.get("NanToNum")
-    _state.update(ensure_tensor_dict({"DummyMXWithFloat32": DummyMXWithFloat32, "DummyShapeList": DummyShapeList, "MockMXReshape": MockMXReshape, "func": func}))
-    _state.update(ensure_tensor_dict({"mx_eager": mx_eager}))
+    assert mx_eager._mlx_zeros(DummyMXWithFloat32(), [1], dtype="bfloat16") == "mock_float32"
+    func = require_callable(mlx_eager_registry.get("NanToNum"))
+    _state.update({"func": func})
 
 
-def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_mlx_eager_missing_coverage_part_5(_state: _TestMlxEagerMissingCoverageState) -> None:
     """Execute part 5 of test_mlx_eager_missing_coverage.
 
     Args:
@@ -373,10 +399,10 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
     """
     func = _state["func"]
 
-    class MockMXNan:
+    class MockMXNan(MockTestStub):
         """Test class MockMXNan."""
 
-        def nan_to_num(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def nan_to_num(self, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function nan_to_num.
 
             Args:
@@ -384,39 +410,38 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `nan_to_num`.
+                BackendArg: Computed output value from `nan_to_num`.
             """
             return kwargs
 
-    res = ensure_callable(func)(ensure_callable(MockMXNan)(), "x", nan=None, posinf=None)
+    res = func(MockMXNan(), "x", nan=None, posinf=None)
     assert "nan" not in res or res["nan"] is None
 
-    class DummyItemData:
+    class DummyItemData(MockTestStub):
         """Test class DummyItemData."""
 
-        class DummyData:
+        class DummyData(MockTestStub):
             """Test class DummyData."""
 
-            def item(self) -> EagerValue:
+            def item(self) -> BackendArg:
                 """Test function item.
 
                 Returns:
-                    EagerValue: Computed output value from `item`.
+                    BackendArg: Computed output value from `item`.
                 """
                 return 1.0
 
         data = DummyData()
 
-    res = ensure_callable(func)(ensure_callable(MockMXNan)(), "x", posinf=ensure_callable(DummyItemData)())
+    res = func(MockMXNan(), "x", posinf=DummyItemData())
     assert res["posinf"] == 1.0
-    res = ensure_callable(func)(ensure_callable(MockMXNan)(), "x", invalid_key=1.0)
+    res = func(MockMXNan(), "x", invalid_key=1.0)
     assert "invalid_key" not in res
-    _state.update(ensure_tensor_dict({"DummyItemData": DummyItemData, "MockMXNan": MockMXNan, "res": res}))
 
 
 def test_mlx_eager_missing_coverage() -> None:
     """Test function test_mlx_eager_missing_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestMlxEagerMissingCoverageState = {}
     _test_mlx_eager_missing_coverage_part_1(_state)
     _test_mlx_eager_missing_coverage_part_2(_state)
     _test_mlx_eager_missing_coverage_part_3(_state)

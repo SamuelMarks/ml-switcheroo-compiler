@@ -10,10 +10,17 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.distributed.config_models import MeshMappingConfig, MicrobatchSplittingConfig, ScheduleConfig, SchedulePhaseConfig, StageCommunicationConfig, TopologyConfig
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.distributed.config_models import (
+    MeshMappingConfig,
+    MicrobatchSplittingConfig,
+    ScheduleConfig,
+    SchedulePhaseConfig,
+    StageCommunicationConfig,
+    TopologyConfig,
+)
 from ml_switcheroo_compiler.distributed.strategy import (
     Coordinator,
     DataParallelStrategy,
@@ -28,18 +35,17 @@ from ml_switcheroo_compiler.distributed.strategy import (
     Server,
     _load_webrtc_topology,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _make_graph() -> EagerValue:
+def _make_graph() -> LogicalGraph:
     """Test function _make_graph.
 
     Returns:
-        EagerValue: Computed output value from `_make_graph`.
+        LogicalGraph: Computed output value from `_make_graph`.
     """
     graph = IRGraph()
     for i in range(5):
@@ -56,19 +62,25 @@ def test_parameter_server_strategy() -> None:
     """Test function test_parameter_server_strategy."""
     strategy = ParameterServerStrategy()
     graph = _make_graph()
-    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["const_node"] = IRNode(id="const_node", op_type="Constant", inputs=[], attributes={})
-    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["scalar_const"] = IRNode(id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True})
-    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["node_1"].inputs.extend(["const_node", "scalar_const"])
-    ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["add_after"] = IRNode(id="add_after", op_type="Add", inputs=["grad_node"], attributes={})
-    ensure_callable(strategy.push_gradients)(graph)
-    ensure_callable(strategy.pull_weights)(graph)
+    adapt_backend_module(graph).require_symbol("nodes")["const_node"] = IRNode(
+        id="const_node", op_type="Constant", inputs=[], attributes={}
+    )
+    adapt_backend_module(graph).require_symbol("nodes")["scalar_const"] = IRNode(
+        id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True}
+    )
+    adapt_backend_module(graph).require_symbol("nodes")["node_1"].inputs.extend(["const_node", "scalar_const"])
+    adapt_backend_module(graph).require_symbol("nodes")["add_after"] = IRNode(
+        id="add_after", op_type="Add", inputs=["grad_node"], attributes={}
+    )
+    strategy.push_gradients(graph)
+    strategy.pull_weights(graph)
 
     # Verify scalar constant was NOT replaced by Recv
-    assert "scalar_const" in ensure_eager_tensor(ensure_eager_tensor(graph).nodes)
-    assert "scalar_const_recv" not in ensure_eager_tensor(ensure_eager_tensor(graph).nodes)
+    assert "scalar_const" in adapt_backend_module(graph).require_symbol("nodes")
+    assert "scalar_const_recv" not in adapt_backend_module(graph).require_symbol("nodes")
     # Verify parameter constant was replaced by Recv with correct attributes
-    assert "const_node_recv" in ensure_eager_tensor(ensure_eager_tensor(graph).nodes)
-    assert ensure_eager_tensor(ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["const_node_recv"].attributes)["src_rank"] == 0
+    assert "const_node_recv" in adapt_backend_module(graph).require_symbol("nodes")
+    assert adapt_backend_module(graph).require_symbol("nodes")["const_node_recv"].attributes["src_rank"] == 0
 
     assert not strategy.push_gradients(IRGraph())
     # Empty graph -> modified is False, covering branch 87->90
@@ -80,7 +92,9 @@ def test_is_parameter_node_branches() -> None:
     # is_parameter is False -> False
     assert not ParameterServerStrategy._is_parameter_node(IRNode("n1", "Constant", attributes={"is_parameter": False}))
     # is_scalar_constant is True -> False
-    assert not ParameterServerStrategy._is_parameter_node(IRNode("n2", "Constant", attributes={"is_scalar_constant": True}))
+    assert not ParameterServerStrategy._is_parameter_node(
+        IRNode("n2", "Constant", attributes={"is_scalar_constant": True})
+    )
     # op_type in ("Parameter", "Variable", "Weight") -> True
     assert ParameterServerStrategy._is_parameter_node(IRNode("n3", "Parameter"))
     assert ParameterServerStrategy._is_parameter_node(IRNode("n4", "Variable"))
@@ -110,8 +124,11 @@ def test_data_parallel_strategy() -> None:
     """Test function test_data_parallel_strategy."""
     strategy = DataParallelStrategy(mesh_axis="dp")
     graph = _make_graph()
-    assert ensure_callable(strategy.sync_gradients)(graph)
-    assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in ensure_eager_tensor(ensure_eager_tensor(graph).nodes).values())
+    assert strategy.sync_gradients(graph)
+    assert any(
+        n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp"
+        for n in adapt_backend_module(graph).require_symbol("nodes").values()
+    )
 
     # Try with empty graph
     assert not strategy.sync_gradients(IRGraph())
@@ -139,8 +156,8 @@ def test_pipeline_parallel_strategy() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=4, topology_name="invalid_one")
     # Will use fallback config
     graph = _make_graph()
-    assert ensure_callable(strategy.lower)(graph)
-    assert "pipeline_schedule" in ensure_eager_tensor(ensure_eager_tensor(graph).attributes)
+    assert strategy.lower(graph)
+    assert "pipeline_schedule" in adapt_backend_module(graph).require_symbol("attributes")
     assert not strategy.lower(IRGraph())
 
     strategy_browser = PipelineParallelismStrategy(target_env="browser")
@@ -148,7 +165,7 @@ def test_pipeline_parallel_strategy() -> None:
 
     with patch("ml_switcheroo_compiler.distributed.strategy._load_strategy_config", return_value={}):
         strategy_noyaml = PipelineParallelismStrategy(num_microbatches=4)
-        ensure_callable(strategy_noyaml.lower)(ensure_callable(_make_graph)())
+        strategy_noyaml.lower(_make_graph())
 
     # Test yaml driven schedule by mocking _load_strategy_config
     config = TopologyConfig(
@@ -158,7 +175,9 @@ def test_pipeline_parallel_strategy() -> None:
         schedule=ScheduleConfig(
             phases=[
                 SchedulePhaseConfig(type="warmup", count_expression="num_stages", operations=["forward"]),
-                SchedulePhaseConfig(type="steady", count_expression="num_microbatches", operations=["forward", "backward"]),
+                SchedulePhaseConfig(
+                    type="steady", count_expression="num_microbatches", operations=["forward", "backward"]
+                ),
                 SchedulePhaseConfig(type="cooldown", count_expression="num_stages", operations=["backward"]),
             ]
         ),
@@ -167,13 +186,13 @@ def test_pipeline_parallel_strategy() -> None:
         m.return_value = {"custom": config}
         strategy = PipelineParallelismStrategy(topology_name="custom")
         graph = _make_graph()
-        assert ensure_callable(strategy.lower)(graph)
+        assert strategy.lower(graph)
         assert isinstance(strategy.get_communication_protocol(), str)
     s2 = MultiWorkerMirroredStrategy(target_env="browser")
     assert s2.get_communication_protocol() == "webrtc"
 
     with pytest.raises(ValueError):
-        ensure_callable(strategy.split_into_stages)(graph, 0)
+        strategy.split_into_stages(graph, 0)
 
     with patch("ml_switcheroo_compiler.distributed.config_models.PipelineTopologiesConfig.get", return_value=None):
         with pytest.raises(ValueError):
@@ -185,12 +204,14 @@ def test_mesh_sharding_strategy() -> None:
     strategy = MeshShardingStrategy()
     graph = _make_graph()
     # propagate_layouts is pass
-    ensure_callable(strategy.propagate_layouts)(graph)
+    strategy.propagate_layouts(graph)
 
-    ensure_mutable(ensure_eager_tensor(ensure_eager_tensor(graph).nodes)["node_1"]).sharding = ensure_eager_tensor("shard1")
-    ensure_callable(strategy.lower_sharding)(graph)
+    pytest.MonkeyPatch().setattr(
+        adapt_backend_module(graph).require_symbol("nodes")["node_1"], "sharding", "shard1", raising=False
+    )
+    strategy.lower_sharding(graph)
     strategy.lower_sharding(IRGraph())
-    assert graph is not None
+    assert type(graph).__name__ == "LogicalGraph"
 
 
 def test_declarative_cluster_topology_and_cost_matrices() -> None:
@@ -212,9 +233,10 @@ def test_declarative_cluster_topology_and_cost_matrices() -> None:
 def test_server_and_coordinator() -> None:
     """Test function test_server_and_coordinator."""
     coord = Coordinator()
-    assert not ensure_eager_tensor(coord.joined)
+    joined_init: bool = coord.joined
+    assert not joined_init
     coord.join()
-    assert ensure_eager_tensor(coord.joined)
+    assert coord.joined
 
     server = Server(server_def={"hello": "world"})
     # Start and stop to cover thread
@@ -298,8 +320,8 @@ def test_backend_hooks() -> None:
     # Test server custom backend errors
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value = MagicMock()
-        mock_backend.return_value.start_server.side_effect = Exception("start err")
-        mock_backend.return_value.join_server.side_effect = Exception("join err")
+        mock_backend.return_value.start_server.side_effect = RuntimeError("start err")
+        mock_backend.return_value.join_server.side_effect = RuntimeError("join err")
 
         server2 = Server()
         server2.start()
@@ -315,7 +337,7 @@ def test_backend_hooks() -> None:
         server3 = Server()
         server3._server = MagicMock()
         server3._thread = MagicMock()
-        server3._server.close.side_effect = Exception("close err")
+        server3._server.close.side_effect = RuntimeError("close err")
         server3.join()
 
 
@@ -360,8 +382,9 @@ def test_server_early_return() -> None:
 
 def test_data_parallel_sync_gradients_with_consumer() -> None:
     """Test function test_data_parallel_sync_gradients_with_consumer."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     strategy = MultiWorkerMirroredStrategy()
     graph = IRGraph()
@@ -377,8 +400,9 @@ def test_data_parallel_sync_gradients_with_consumer() -> None:
 
 def test_parameter_server_pull_weights_non_matching_consumer() -> None:
     """Test pull_weights when graph has consumer node not consuming the weight."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.distributed.strategy import ParameterServerStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     strat = ParameterServerStrategy()
     graph = IRGraph()
@@ -411,14 +435,14 @@ def test_server_run_unknown_action_and_send_action() -> None:
         header = json.dumps({"action": "ping", "tensor_id": "test"}).encode("utf-8")
         header_len = len(header).to_bytes(4, "big")
 
-        def mock_recv_ping(size: EagerValue) -> EagerValue:
+        def mock_recv_ping(size: BackendArg) -> BackendArg:
             """Test function mock_recv_ping.
 
             Args:
                 size: Test parameter `size`.
 
             Returns:
-                EagerValue: Computed output value from `mock_recv_ping`.
+                BackendArg: Computed output value from `mock_recv_ping`.
             """
             if size == 4:
                 server._running = False
@@ -453,14 +477,14 @@ def test_server_run_unknown_action_and_send_action() -> None:
                 """Test function __init__."""
                 self.calls = 0
 
-            def __call__(self, size: EagerValue) -> EagerValue:
+            def __call__(self, size: BackendArg) -> BackendArg:
                 """Test function __call__.
 
                 Args:
                     size: Test parameter `size`.
 
                 Returns:
-                    EagerValue: Computed output value from `__call__`.
+                    BackendArg: Computed output value from `__call__`.
                 """
                 self.calls += 1
                 if self.calls == 1:
@@ -486,7 +510,7 @@ def test_server_run_unknown_action_and_send_action() -> None:
     server._server = mock_sock
     server._running = True
 
-    def toggle_not_ready(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def toggle_not_ready(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
         """Test function toggle_not_ready.
 
         Args:
@@ -494,7 +518,7 @@ def test_server_run_unknown_action_and_send_action() -> None:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            EagerValue: Computed output value from `toggle_not_ready`.
+            BackendArg: Computed output value from `toggle_not_ready`.
         """
         server._running = False
         return ([], [], [])
@@ -505,9 +529,10 @@ def test_server_run_unknown_action_and_send_action() -> None:
 
 def test_pipeline_engine_missing_branches() -> None:
     """Test missing branches in PipelineParallelismStrategy."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.distributed.config_models import SchedulePhaseConfig
     from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     engine = PipelineParallelismStrategy(num_microbatches=2)
 
@@ -541,16 +566,19 @@ def test_pipeline_engine_missing_branches() -> None:
     engine.generate_microbatch_loop(g3)
 
     # 739->724: custom phase type in generate_schedule
-    ensure_eager_tensor(ensure_eager_tensor(engine.config.schedule).phases).append(SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"]))
+    assert engine.config.schedule is not None
+    engine.config.schedule.phases.append(
+        SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"])
+    )
     sched = engine.generate_schedule(IRGraph())
     assert isinstance(sched, list)
 
     # 773->775: lower with graph having hasattr(graph, 'attributes') == True
     g4 = IRGraph()
-    ensure_mutable(g4).attributes = ensure_eager_tensor({"existing": 123})
+    g4.attributes = {"existing": 123}
     for i in range(12):
         g4.nodes[f"node_{i}"] = IRNode(id=f"node_{i}", op_type="Identity", inputs=[])
     res = engine.lower(g4)
     assert res is True
-    assert ensure_eager_tensor(ensure_eager_tensor(g4).attributes)["existing"] == 123
-    assert "pipeline_schedule" in ensure_eager_tensor(ensure_eager_tensor(g4).attributes)
+    assert g4.attributes["existing"] == 123
+    assert "pipeline_schedule" in g4.attributes

@@ -5,11 +5,13 @@ from __future__ import annotations
 import operator
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_list
+import pytest
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from tests.testing_utils import MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_tensor_array_at() -> None:
@@ -46,7 +48,7 @@ def test_variable_assign() -> None:
     class FakeBackend:
         """Test class FakeBackend."""
 
-        def execute_op(self, name: EagerValue, data1: EagerValue, data2: EagerValue) -> EagerValue:
+        def execute_op(self, name: BackendArg, data1: BackendArg, data2: BackendArg) -> BackendArg:
             """Test function execute_op.
 
             Args:
@@ -55,7 +57,7 @@ def test_variable_assign() -> None:
                 data2: Test parameter `data2`.
 
             Returns:
-                EagerValue: Computed output value from `execute_op`.
+                BackendArg: Computed output value from `execute_op`.
             """
             return data1
 
@@ -74,11 +76,14 @@ def test_variable_assign() -> None:
 
         id = "dummy"
 
-    ensure_mutable(v)._data = ensure_eager_tensor(FakeData())
-    ensure_mutable(t)._data = ensure_eager_tensor(FakeData())
+    pytest.MonkeyPatch().setattr(v, "_data", FakeData(), raising=False)
+    pytest.MonkeyPatch().setattr(t, "_data", FakeData(), raising=False)
 
-    with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value=None):
-        with patch("ml_switcheroo_compiler.ops.registry.get_util", return_value=lambda *a, **k: None):
+    import ml_switcheroo_compiler.ops.registry as ops_registry
+    import ml_switcheroo_compiler.ops.shape.utils as ops_shape_utils
+
+    with patch.object(ops_shape_utils, "_emit_shape_node", return_value=None):
+        with patch.object(ops_registry, "get_util", return_value=lambda *a, **k: None):
             assert v.assign(t) is v
             assert v.assign_add(t) is v
             assert v.assign_sub(t) is v
@@ -99,15 +104,15 @@ def test_parameter() -> None:
     class FakeData:
         """Test class FakeData."""
 
-        def __int__(self) -> EagerValue:
+        def __int__(self) -> BackendArg:
             """Test function __int__.
 
             Returns:
-                EagerValue: Computed output value from `__int__`.
+                BackendArg: Computed output value from `__int__`.
             """
             return 42
 
-    ensure_mutable(p).numpy = ensure_eager_tensor(lambda: 42)
+    pytest.MonkeyPatch().setattr(p, "numpy", lambda: 42, raising=False)
     assert operator.index(p) == 42
 
 
@@ -123,7 +128,7 @@ def test_tensor_config_list_shape_and_parse_dim() -> None:
 
     # 172, 173 - will happen when passing "dynamic" to Tensor config shape
     t = Tensor(np.array([1, 2]), c)
-    assert ensure_eager_tensor(t.shape) == ensure_eager_tensor((2, "dynamic"))
+    assert t.shape == (2, "dynamic")
 
 
 def test_tensor_eval_already_in_graph() -> None:
@@ -147,7 +152,7 @@ def test_tensor_eval_already_in_graph() -> None:
 
         id = "n1"
 
-    ensure_mutable(t)._data = ensure_eager_tensor(FakeData())
+    pytest.MonkeyPatch().setattr(t, "_data", FakeData(), raising=False)
     assert t.eval() is t
     config.eager_mode = True
     global_tracing_state.stop_tracing()
@@ -169,7 +174,7 @@ def test_tensor_eval_not_tracing() -> None:
 
         id = "n1"
 
-    ensure_mutable(t)._data = ensure_eager_tensor(FakeData())
+    pytest.MonkeyPatch().setattr(t, "_data", FakeData(), raising=False)
 
     # 190, 194 where global_tracing_state.is_tracing is False
     global_tracing_state.is_tracing = False
@@ -189,16 +194,20 @@ def test_tensor_view_list_shape() -> None:
     t = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig(shape=(2, 2), dtype="float32", device="cpu"))
     from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.ops.registry.get_frontend") as mock_get_frontend:
-        mock_get_frontend.return_value = lambda x, shape: Tensor(np.zeros(shape), TensorConfig(shape=shape, dtype="float32", device="cpu"))
-        res = ensure_callable(t.view)([4])
-        assert ensure_eager_tensor(res).shape == (4,)
+    import ml_switcheroo_compiler.ops.registry as ops_registry
+
+    with patch.object(ops_registry, "get_frontend") as mock_get_frontend:
+        mock_get_frontend.return_value = lambda x, shape: Tensor(
+            np.zeros(shape), TensorConfig(shape=shape, dtype="float32", device="cpu")
+        )
+        res = t.view([4])
+        assert extract_test_shape(res) == (4,)
 
         res2 = t.view(2, 2)
-        assert ensure_eager_tensor(res2).shape == (2, 2)
+        assert extract_test_shape(res2) == (2, 2)
 
-        res3 = ensure_callable(t.view)((4,))
-        assert ensure_eager_tensor(res3).shape == (4,)
+        res3 = t.view((4,))
+        assert extract_test_shape(res3) == (4,)
 
 
 def test_tensor_eval_branches() -> None:
@@ -222,19 +231,19 @@ def test_tensor_eval_branches() -> None:
 
         def __init__(self) -> None:
             """Initialize DummyGraph."""
-            self.outputs = ensure_tensor_list([])
+            self.outputs: list[str] = []
 
     graph_inst = DummyGraph()
     global_tracing_state.is_tracing = True
-    ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(graph_inst)
+    pytest.MonkeyPatch().setattr(global_tracing_state, "active_graph", graph_inst, raising=False)
 
     # Create an object with an id
-    class DummyData:
+    class DummyData(MockTestStub):
         """Test class DummyData."""
 
         id = "test_id"
 
-    t2 = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((), "float32", "cpu"))
+    t2 = Tensor(DummyData(), TensorConfig((), "float32", "cpu"))
 
     # Not in graph outputs -> append
     assert t2.eval() is t2
@@ -258,7 +267,7 @@ def test_tensor_contiguous() -> None:
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    class CustomDev:
+    class CustomDev(MockTestStub):
         """Custom device string representation."""
 
         def __str__(self) -> str:
@@ -269,11 +278,21 @@ def test_tensor_contiguous() -> None:
             """
             return "cpu"
 
+    class CustomDevProtocol(MockTestStub):
+        """Device-like stub exposing ``device_type``."""
+
+        device_type = "cpu"
+
     assert TensorConfig(shape=None, dtype=None, device=None).shape == ()
-    assert TensorConfig(shape=123, dtype="invalid_dtype_xyz", device=ensure_eager_tensor(CustomDev())).shape == ()
+    assert TensorConfig(shape=123, dtype="invalid_dtype_xyz", device=CustomDev()).shape == ()
+    t_fb = Tensor(np.array(1), TensorConfig(shape=(), dtype="invalid_dtype_xyz", device=CustomDevProtocol()))
+    assert t_fb.dtype.value == "float32"
+    assert "cpu" in str(t_fb.device)
+    import ml_switcheroo_compiler.ops.registry as ops_registry
+
     t = Tensor(np.array(1), TensorConfig((), "float32", "cpu"))
     assert t.contiguous() is t
-    with patch("ml_switcheroo_compiler.ops.registry.get_frontend", return_value=lambda x, shape: x):
+    with patch.object(ops_registry, "get_frontend", return_value=lambda x, shape: x):
         assert t.view(range(2)) is t
 
 
@@ -295,10 +314,11 @@ def test_tensor_backward() -> None:
 
     import numpy as np
 
+    import ml_switcheroo_compiler.ops.registry as ops_registry
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     t = Tensor(np.array(1), TensorConfig((), "float32", "cpu"))
-    with patch("ml_switcheroo_compiler.ops.registry.get_util") as mock_get_util:
+    with patch.object(ops_registry, "get_util") as mock_get_util:
         mock_func = mock_get_util.return_value
         t.backward(1, test=True)
         mock_func.assert_called_once_with(t, 1, test=True)

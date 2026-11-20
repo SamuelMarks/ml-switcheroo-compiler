@@ -76,7 +76,13 @@ def _is_callable_op_symbol(symbol: str) -> bool:
     """
     sym_lower = symbol.lower()
     last_part = symbol.split(".")[-1]
-    if "error" in sym_lower or "exception" in sym_lower or "warning" in sym_lower or last_part.startswith("_") or last_part.lower() == "charactertype":
+    if (
+        "error" in sym_lower
+        or "exception" in sym_lower
+        or "warning" in sym_lower
+        or last_part.startswith("_")
+        or last_part.lower() == "charactertype"
+    ):
         return False
     return True
 
@@ -143,14 +149,20 @@ def _load_method_rewrites(syntactic_patterns: SyntacticPatternsConfig) -> None:
     Args:
         syntactic_patterns (SyntacticPatternsConfig): Pattern configuration to populate.
     """
-    method_rewrites_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules", "method_rewrites.yaml")
+    method_rewrites_path: str = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "rules", "method_rewrites.yaml"
+    )
     if not os.path.isfile(method_rewrites_path):
         return
 
     try:
         with open(method_rewrites_path, encoding="utf-8") as rf:
             mdata: AttributeValue = yaml.safe_load(rf) or {}
-        if isinstance(mdata, dict) and "method_to_function_rewrites" in mdata and isinstance(mdata["method_to_function_rewrites"], list):
+        if (
+            isinstance(mdata, dict)
+            and "method_to_function_rewrites" in mdata
+            and isinstance(mdata["method_to_function_rewrites"], list)
+        ):
             for item in mdata["method_to_function_rewrites"]:
                 syntactic_patterns.method_to_function_rewrites.append(ASTPatternRule.model_validate(item))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -178,15 +190,33 @@ def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
         )
 
     raw_fw = data.get("frameworks", {})
-    frameworks: dict[str, FrameworkConfig] = {str(k): FrameworkConfig.model_validate(v) for k, v in raw_fw.items()} if isinstance(raw_fw, dict) else {}
+    frameworks: dict[str, FrameworkConfig] = (
+        {str(k): FrameworkConfig.model_validate(v) for k, v in raw_fw.items()} if isinstance(raw_fw, dict) else {}
+    )
     raw_a2i = data.get("ast_to_ir_ops", {})
     ast_to_ir_ops: dict[str, str] = {str(k): str(v) for k, v in raw_a2i.items()} if isinstance(raw_a2i, dict) else {}
     raw_i2a = data.get("ir_to_ast_ops", {})
-    ir_to_ast_ops: dict[str, dict[str, list[str]]] = {str(k): {str(sk): [str(x) for x in sv] for sk, sv in v.items() if isinstance(sv, list)} for k, v in raw_i2a.items() if isinstance(v, dict)} if isinstance(raw_i2a, dict) else {}
+    ir_to_ast_ops: dict[str, dict[str, list[str]]] = (
+        {
+            str(k): {str(sk): [str(x) for x in sv] for sk, sv in v.items() if isinstance(sv, list)}
+            for k, v in raw_i2a.items()
+            if isinstance(v, dict)
+        }
+        if isinstance(raw_i2a, dict)
+        else {}
+    )
     raw_imp = data.get("import_remappings")
-    import_remappings: dict[str, dict[str, str]] = {str(k): {str(sk): str(sv) for sk, sv in v.items()} for k, v in raw_imp.items() if isinstance(v, dict)} if isinstance(raw_imp, dict) else {}
+    import_remappings: dict[str, dict[str, str]] = (
+        {str(k): {str(sk): str(sv) for sk, sv in v.items()} for k, v in raw_imp.items() if isinstance(v, dict)}
+        if isinstance(raw_imp, dict)
+        else {}
+    )
     raw_patterns = data.get("syntactic_patterns", {})
-    syntactic_patterns: SyntacticPatternsConfig = SyntacticPatternsConfig.model_validate(raw_patterns) if isinstance(raw_patterns, dict) else SyntacticPatternsConfig()
+    syntactic_patterns: SyntacticPatternsConfig = (
+        SyntacticPatternsConfig.model_validate(raw_patterns)
+        if isinstance(raw_patterns, dict)
+        else SyntacticPatternsConfig()
+    )
 
     _load_domain_manifests(ast_to_ir_ops, ir_to_ast_ops)
     _load_framework_configs(frameworks)
@@ -368,12 +398,15 @@ class DefaultInsertionSpec(BaseModel):
     Attributes:
         op_name (str): Operation identifier.
         target_framework (str | None): Target framework.
-        default_kwargs (dict[str, object]): Keyword arguments to insert if missing.
+        default_kwargs (dict[str, AttributeValue]): Keyword arguments to insert if missing.
     """
 
     op_name: str
     target_framework: str | None = None
     default_kwargs: dict[str, AttributeValue] = Field(default_factory=dict)
+
+
+DefaultInsertionSpec.model_rebuild(_types_namespace={"OpValue": str, "IRAttrValue": str})
 
 
 class KeywordToPositionalSpec(BaseModel):

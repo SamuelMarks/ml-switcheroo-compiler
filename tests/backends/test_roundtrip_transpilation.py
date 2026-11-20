@@ -9,15 +9,18 @@ import numpy as np
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
 from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
 from ml_switcheroo_compiler.backends.ir_to_ast import emit_ir_to_ast
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
 
 
 def test_roundtrip_transpilation_pytorch_jax_mlx() -> None:
-    """Test full roundtrip transpilation: Source -> AST -> IR -> Target AST -> Target Source across PyTorch, JAX, and MLX."""
+    """Test full roundtrip transpilation: Source -> AST -> IR -> Target AST -> Target Source across PyTorch, JAX.
+
+    and MLX.
+    """
     # 1. Original PyTorch function
     pt_source = """def compute(x, y):
     h1 = torch.add(x, y)
@@ -69,16 +72,16 @@ def test_roundtrip_transpilation_pytorch_jax_mlx() -> None:
     y_val = np.array([[0.5, 0.5], [1.0, 1.0]], dtype=np.float32)
     input_map = {"x": x_val, "y": y_val}
 
-    res_pt = ensure_callable(evaluate_graph)(ir_from_pt, input_map)
-    res_jax = ensure_callable(evaluate_graph)(ir_from_jax, input_map)
-    res_mlx = ensure_callable(evaluate_graph)(ir_from_mlx, input_map)
+    res_pt = evaluate_graph(ir_from_pt, input_map)
+    res_jax = evaluate_graph(ir_from_jax, input_map)
+    res_mlx = evaluate_graph(ir_from_mlx, input_map)
 
     out_pt = res_pt[ir_from_pt.outputs[-1]]
     out_jax = res_jax[ir_from_jax.outputs[-1]]
     out_mlx = res_mlx[ir_from_mlx.outputs[-1]]
 
-    ensure_callable(np.testing.assert_allclose)(out_pt, out_jax)
-    ensure_callable(np.testing.assert_allclose)(out_jax, out_mlx)
+    np.testing.assert_allclose(ensure_ndarray(out_pt), ensure_ndarray(out_jax))
+    np.testing.assert_allclose(ensure_ndarray(out_jax), ensure_ndarray(out_mlx))
 
 
 def test_roundtrip_source_level_cst() -> None:
@@ -140,19 +143,19 @@ def test_roundtrip_mlp_parity() -> None:
         "b2": np.random.randn(2).astype(np.float32),
     }
 
-    res_pt = ensure_callable(evaluate_graph)(ir_pt, inputs)
-    res_jax = ensure_callable(evaluate_graph)(ir_jax, inputs)
-    res_mlx = ensure_callable(evaluate_graph)(ir_mlx, inputs)
-    res_rt = ensure_callable(evaluate_graph)(ir_pt_roundtrip, inputs)
+    res_pt = evaluate_graph(ir_pt, inputs)
+    res_jax = evaluate_graph(ir_jax, inputs)
+    res_mlx = evaluate_graph(ir_mlx, inputs)
+    res_rt = evaluate_graph(ir_pt_roundtrip, inputs)
 
     out_pt = res_pt[ir_pt.outputs[-1]]
     out_jax = res_jax[ir_jax.outputs[-1]]
     out_mlx = res_mlx[ir_mlx.outputs[-1]]
     out_rt = res_rt[ir_pt_roundtrip.outputs[-1]]
 
-    ensure_callable(np.testing.assert_allclose)(out_pt, out_jax, rtol=1e-5, atol=1e-5)
-    ensure_callable(np.testing.assert_allclose)(out_jax, out_mlx, rtol=1e-5, atol=1e-5)
-    ensure_callable(np.testing.assert_allclose)(out_mlx, out_rt, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_pt), ensure_ndarray(out_jax), rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_jax), ensure_ndarray(out_mlx), rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_mlx), ensure_ndarray(out_rt), rtol=1e-5, atol=1e-5)
 
 
 def test_roundtrip_attention_parity() -> None:
@@ -182,16 +185,16 @@ def test_roundtrip_attention_parity() -> None:
         "v": np.random.randn(2, 4, 8).astype(np.float32),
     }
 
-    res_pt = ensure_callable(evaluate_graph)(ir_pt, inputs)
-    res_jax = ensure_callable(evaluate_graph)(ir_jax, inputs)
-    res_rt = ensure_callable(evaluate_graph)(ir_pt_rt, inputs)
+    res_pt = evaluate_graph(ir_pt, inputs)
+    res_jax = evaluate_graph(ir_jax, inputs)
+    res_rt = evaluate_graph(ir_pt_rt, inputs)
 
     out_pt = res_pt[ir_pt.outputs[-1]]
     out_jax = res_jax[ir_jax.outputs[-1]]
     out_rt = res_rt[ir_pt_rt.outputs[-1]]
 
-    ensure_callable(np.testing.assert_allclose)(out_pt, out_jax, rtol=1e-5, atol=1e-5)
-    ensure_callable(np.testing.assert_allclose)(out_jax, out_rt, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_pt), ensure_ndarray(out_jax), rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_jax), ensure_ndarray(out_rt), rtol=1e-5, atol=1e-5)
 
 
 def test_roundtrip_keras_to_pytorch_parity() -> None:
@@ -220,13 +223,13 @@ def test_roundtrip_keras_to_pytorch_parity() -> None:
         "b": np.random.randn(4).astype(np.float32),
     }
 
-    res_keras = ensure_callable(evaluate_graph)(ir_keras, inputs)
-    res_pt = ensure_callable(evaluate_graph)(ir_pt, inputs)
+    res_keras = evaluate_graph(ir_keras, inputs)
+    res_pt = evaluate_graph(ir_pt, inputs)
 
     out_keras = res_keras[ir_keras.outputs[-1]]
     out_pt = res_pt[ir_pt.outputs[-1]]
 
-    ensure_callable(np.testing.assert_allclose)(out_keras, out_pt, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_keras), ensure_ndarray(out_pt), rtol=1e-5, atol=1e-5)
 
 
 def test_roundtrip_convnet_parity() -> None:
@@ -246,26 +249,26 @@ def test_roundtrip_convnet_parity() -> None:
         "b": np.random.randn(4).astype(np.float32),
     }
 
-    res_pt = ensure_callable(evaluate_graph)(ir_pt, inputs)
-    res_mlx = ensure_callable(evaluate_graph)(ir_mlx, inputs)
+    res_pt = evaluate_graph(ir_pt, inputs)
+    res_mlx = evaluate_graph(ir_mlx, inputs)
 
     out_pt = res_pt[ir_pt.outputs[-1]]
     out_mlx = res_mlx[ir_mlx.outputs[-1]]
 
-    ensure_callable(np.testing.assert_allclose)(out_pt, out_mlx, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(out_pt), ensure_ndarray(out_mlx), rtol=1e-5, atol=1e-5)
 
 
 def test_standard_architectures_code_generation_parity() -> None:
-    """Test compiling standard architectures (MLP, CNN, NanoGPT block) to PyTorch, JAX, and MLX with AST verification and evaluation."""
+    """Test compiling standard architectures (MLP, CNN, NanoGPT block) to PyTorch, JAX, and MLX with AST.
+
+    verification and evaluation.
+    """
     import ast
 
     from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
     from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
-    from ml_switcheroo_compiler.benchmarks.config_models import (
-        build_ir_graph_from_workload,
-        load_model_workloads,
-    )
+    from ml_switcheroo_compiler.benchmarks.config_models import build_ir_graph_from_workload, load_model_workloads
 
     manifest = load_model_workloads()
     models = ["mlp", "cnn_resnet_block", "nanogpt_transformer_block"]
@@ -294,5 +297,5 @@ def test_standard_architectures_code_generation_parity() -> None:
         for w_name, w_spec in workload.weights.items():
             sample_inputs[w_name] = np.ones(tuple(w_spec.shape), dtype=np.float32)
 
-        ref_result = ensure_callable(evaluate_graph)(graph, sample_inputs)
+        ref_result = evaluate_graph(graph, sample_inputs)
         assert len(ref_result) > 0

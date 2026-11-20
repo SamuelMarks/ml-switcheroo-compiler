@@ -15,6 +15,7 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeDim, is_variadic_callable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if typing.TYPE_CHECKING:
@@ -26,11 +27,11 @@ class _ShapedOutputProtocol(typing.Protocol):
     """Protocol for traced outputs exposing a `shape` attribute."""
 
     @property
-    def shape(self) -> Sequence[int | str | None]:
+    def shape(self) -> Sequence[ShapeDim]:
         """Return output shape.
 
         Returns:
-            Sequence[int | str | None]: Shape sequence.
+            Sequence[ShapeDim]: Shape sequence.
         """
         ...
 
@@ -50,13 +51,14 @@ def _load_formatters() -> None:
 
 
 def debug_shapes(
-    model_func: Callable[[Tensor], Tensor | tuple[int, ...] | None],
+    model_func: Callable[[Tensor], OpValue] | OpValue,
     input_shape: tuple[int, ...],
 ) -> str:
     """Trace the execution of a model function to debug and document tensor shapes.
 
     Args:
-        model_func (Callable[[Tensor], Tensor | tuple[int, ...] | None]): Input `model_func` argument (model func).
+        model_func (Callable[[Tensor], OpValue] | OpValue): Model callable taking a dummy input
+            tensor and returning an output.
         input_shape (tuple[int, ...]): Input `input_shape` argument (input shape).
 
     Returns:
@@ -73,6 +75,7 @@ def debug_shapes(
         dummy_input = ops.zeros(input_shape, dtype=DType.Float64)
         res += row_fmt.format(name="input", shape=input_shape, dtype="float64")
 
+        assert is_variadic_callable(model_func)
         raw_out = model_func(dummy_input)
         if isinstance(raw_out, _ShapedOutputProtocol):
             res += row_fmt.format(name="output", shape=raw_out.shape, dtype="float64")

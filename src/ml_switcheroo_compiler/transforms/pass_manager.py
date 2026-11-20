@@ -15,15 +15,17 @@ from collections.abc import Callable, Iterable, Mapping, Sequence  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue, NodeDict  # noqa: F401
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.ir.core import as_node_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCriteria
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import clone_logical_node
 
 
 @typing.runtime_checkable
@@ -108,8 +110,10 @@ class IRValidator:
         Raises:
             CompilationError: If a node is missing shape metadata.
         """
-        raw_nodes: TensorOrScalar = graph.nodes
-        nodes_iterable: Iterable[IRNode] = raw_nodes.values() if isinstance(raw_nodes, _NodesMappingProtocol) else as_node_list(raw_nodes)
+        raw_nodes: OpValue | _NodesMappingProtocol = graph.nodes
+        nodes_iterable: Iterable[IRNode] = (
+            raw_nodes.values() if isinstance(raw_nodes, _NodesMappingProtocol) else as_node_list(graph.nodes)
+        )
         for node in nodes_iterable:
             if node.shape_metadata is None:
                 msg = f"Node {node.id} is missing shape_metadata."
@@ -126,8 +130,10 @@ def _graph_hash(graph: IRGraph) -> str:
         str: MD5 hash digest of the serialized graph structure.
     """
     state: dict[str, dict[str, str | list[str]]] = {}
-    raw_nodes: TensorOrScalar = graph.nodes
-    nodes_iterable: Iterable[IRNode] = raw_nodes.values() if isinstance(raw_nodes, _NodesMappingProtocol) else as_node_list(raw_nodes)
+    raw_nodes: OpValue | _NodesMappingProtocol = graph.nodes
+    nodes_iterable: Iterable[IRNode] = (
+        raw_nodes.values() if isinstance(raw_nodes, _NodesMappingProtocol) else as_node_list(graph.nodes)
+    )
     for node in nodes_iterable:
         state[node.id] = {
             "op": str(node.op_type),
@@ -146,7 +152,7 @@ def _snapshot_graph(graph: IRGraph) -> dict[str, dict[str, IRNode] | list[str]]:
         dict[str, dict[str, IRNode] | list[str]]: Snapshot containing cloned nodes and io lists.
     """
     nodes_copy: dict[str, IRNode] = {}
-    nodes_iterable: TensorOrScalar = graph.nodes
+    nodes_iterable: OpValue | _NodesMappingProtocol = graph.nodes
     if isinstance(nodes_iterable, _NodesMappingProtocol):
         for nid, n in nodes_iterable.items():
             nodes_copy[nid] = clone_logical_node(n)
@@ -167,7 +173,7 @@ def _restore_graph(graph: IRGraph, snapshot: dict[str, dict[str, IRNode] | list[
         snapshot (dict[str, dict[str, IRNode] | list[str]]): The snapshot to restore from.
     """
     nodes_data = snapshot["nodes"]
-    raw_nodes: TensorOrScalar = graph.nodes
+    raw_nodes: OpValue | _NodesMappingProtocol | _MutableNodesMappingProtocol = graph.nodes
     if isinstance(nodes_data, dict):
         if isinstance(raw_nodes, _MutableNodesMappingProtocol):
             raw_nodes.clear()
@@ -209,12 +215,20 @@ class PassManager:
 
         Args:
             ir_pass (Callable[[IRGraph], IRGraph | bool]): The transformation pass.
-            name (str, optional): The name of the pass.
+            name (str | None): The name of the pass.
         """
         self.passes.append(ir_pass)
 
-        raw_pass: TensorOrScalar = ir_pass
-        pass_name = name if name is not None else (str(raw_pass.__name__) if isinstance(raw_pass, _NamedPassProtocol) and raw_pass.__name__ else "unknown_pass")
+        raw_pass: OpValue = ir_pass
+        pass_name = (
+            name
+            if name is not None
+            else (
+                str(raw_pass.__name__)
+                if isinstance(raw_pass, _NamedPassProtocol) and raw_pass.__name__
+                else "unknown_pass"
+            )
+        )
         self.pass_names.append(pass_name)
 
     @staticmethod
@@ -299,8 +313,8 @@ class PassManager:
         """Load passes based on pass pipeline configuration or pass_config.yaml.
 
         Args:
-            config_path (str, optional): Path to YAML configuration file.
-            opt_level (str, optional): Optimization level identifier ('O0', 'O1', 'O2', 'O3').
+            config_path (str | None): Path to YAML configuration file.
+            opt_level (str | None): Optimization level identifier ('O0', 'O1', 'O2', 'O3').
 
         Raises:
             CompilationError: If prerequisite passes are missing.

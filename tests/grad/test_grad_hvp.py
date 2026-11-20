@@ -2,78 +2,74 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
+import pytest
 from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import check_numerical_grads, hvp
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_hvp_robustness() -> None:
     """Test function test_hvp_robustness."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: Tensor) -> Tensor:
         """Test function f.
 
         Args:
-            x: Test parameter `x`.
+            x (Tensor): Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            Tensor: Computed output value from `f`.
         """
-        return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
+        return (x * x) * x
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, out_tan = ensure_callable(hvp)(f, x, v)
-    assert ensure_eager_tensor(ensure_eager_tensor(val).item)() == 8.0
-    assert ensure_eager_tensor(ensure_eager_tensor(out_tan).item)() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
+    val, out_tan = hvp(f, x, v)
+    assert ensure_ndarray(val).item() == 8.0
+    assert ensure_ndarray(out_tan).item() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
 
 
 def test_hessian() -> None:
     """Test function test_hessian."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: Tensor) -> Tensor:
         """Test function f.
 
         Args:
-            x: Test parameter `x`.
+            x (Tensor): Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            Tensor: Computed output value from `f`.
         """
-        return (ensure_eager_tensor(x) * ensure_eager_tensor(x)) * ensure_eager_tensor(x)
+        return (x * x) * x
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     from ml_switcheroo_compiler.grad import hessian
 
-    res = ensure_callable(hessian)(f)(x)
-    assert res is not None
+    res = hessian(f)(x)
+    np.testing.assert_allclose(np.asarray(res), [[12.0]])
 
 
 def test_check_numerical_grads() -> None:
     """Test function test_check_numerical_grads."""
 
-    def f(x: EagerValue) -> EagerValue:
+    def f(x: Tensor) -> Tensor:
         """Test function f.
 
         Args:
-            x: Test parameter `x`.
+            x (Tensor): Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            Tensor: Computed output value from `f`.
         """
-        return ensure_eager_tensor(x) * ensure_eager_tensor(x)
+        return x * x
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     check_numerical_grads(f, (x,))
@@ -82,7 +78,8 @@ def test_check_numerical_grads() -> None:
 
 def test_grad_of_grad() -> None:
     """Test function test_grad_of_grad."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff import grad
 
     g = IRGraph()
@@ -96,7 +93,7 @@ def test_grad_of_grad() -> None:
     grad_g = grad(g, ["x"], "mul2")
     # Take grad of grad with respect to x again
     grad_grad_g = grad(grad_g, ["x"], grad_g.outputs[0])
-    assert "x" in [n.id for n in grad_grad_g.nodes.values() if ensure_eager_tensor(n).op_type == "Input"]
+    assert "x" in [n.id for n in grad_grad_g.nodes.values() if n.op_type == "Input"]
     assert len(grad_grad_g.outputs) == 1
 
 
@@ -106,10 +103,9 @@ def _removed() -> None:
 
     # the function we are calling is hvp_graph (which is hvp inside autodiff)
     # it uses has_jvp and has_vjp from the module scope of autodiff!
-    import pytest
-
     # Let's bypass has_jvp and has_vjp by replacing them entirely!
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_ir import IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.transforms.autodiff import hvp as hvp_graph
 
     g = IRGraph()

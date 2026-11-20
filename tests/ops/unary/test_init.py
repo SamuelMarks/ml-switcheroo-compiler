@@ -7,4 +7,4 @@ def test_unary_init() -> None:
     """Test function test_unary_init."""
     import ml_switcheroo_compiler.ops.unary as unary
 
-    assert unary.abs is not None
+    assert type(unary.abs).__name__ == "Abs"

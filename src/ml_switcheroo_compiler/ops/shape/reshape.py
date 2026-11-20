@@ -7,80 +7,99 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int
+from ml_switcheroo_compiler.backends.registry import coerce_int
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
+from ml_switcheroo_compiler.core.shape import OpValue, broadcast_shapes
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 @typing.runtime_checkable
 class _ShapedOperandProtocol(typing.Protocol):
-    """Protocol for tensor-like operands exposing an integer `shape` sequence."""
+    """Protocol for tensor-like operands exposing a `shape` attribute."""
 
-    shape: Sequence[int]
+    shape: Sequence[int | None] | int | None
 
 
-def _has_valid_shape(x: TensorOrScalar) -> typing.TypeGuard[_ShapedOperandProtocol]:
-    """Return True if `x` implements `_ShapedOperandProtocol` with a non-None `shape`.
+def _extract_valid_shape(x: OpValue) -> Sequence[int | None] | None:
+    """Extract `.shape` from `x` as a sequence if non-None, otherwise return None.
 
     Args:
-        x (TensorOrScalar): Input operand to check.
+        x (OpValue): Input operand to check.
 
     Returns:
-        bool: True if `x` has a non-None `shape` attribute.
+        Sequence[int | None] | None: Extracted shape sequence or None.
     """
-    return isinstance(x, _ShapedOperandProtocol) and x.shape is not None
+    cand_x: OpValue | _ShapedOperandProtocol = x
+    if isinstance(cand_x, _ShapedOperandProtocol) and cand_x.shape is not None:
+        if isinstance(cand_x.shape, (tuple, list)):
+            return cand_x.shape
+        if isinstance(cand_x.shape, int):
+            return (cand_x.shape,)
+    return None
 
 
-def _iter_ints(val: TensorOrScalar) -> list[int]:
+def _has_valid_shape(x: OpValue) -> bool:
+    """Return True if `x` exposes a valid sequence `.shape` attribute.
+
+    Args:
+        x (OpValue): Input operand to check.
+
+    Returns:
+        bool: True if `x` has a non-None sequence `shape` attribute.
+    """
+    return _extract_valid_shape(x) is not None
+
+
+def _iter_ints(val: OpValue) -> list[int]:
     """Convert an iterable or sequence of integers into a list of ints.
 
     Args:
-        val (TensorOrScalar): Sequence or iterable of integer indices/dimensions.
+        val (OpValue): Sequence or iterable of integer indices/dimensions.
 
     Returns:
         list[int]: Extracted integer list.
     """
     if isinstance(val, (tuple, list, Sequence)) and not isinstance(val, (str, bytes)):
-        return [int(ensure_int(v)) for v in val]
-    return [int(ensure_int(val))]
+        return [int(coerce_int(v)) for v in val]
+    return [int(coerce_int(val))]
 
 
-def _get_shape_list(x: TensorOrScalar) -> list[int]:
+def _get_shape_list(x: OpValue) -> list[int]:
     """Help to convert shape to list.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
+        x (OpValue): Input `x` argument (x).
 
     Returns:
         list: Computed `list` output.
     """
-    s: Sequence[int] | TensorOrScalar = x.shape if _has_valid_shape(x) else x
+    valid_s = _extract_valid_shape(x)
+    s: Sequence[int | None] | OpValue = valid_s if valid_s is not None else x
     if isinstance(s, (tuple, list)):
-        return [ensure_int(d) for d in s]
+        return [coerce_int(d) for d in s]
     return [s] if isinstance(s, int) else []
 
 
-def _normalize_axes(axes: TensorOrScalar, length: int) -> list[int]:
+def _normalize_axes(axes: OpValue, length: int) -> list[int]:
     """Help to normalize axes.
 
     Args:
-        axes (TensorOrScalar): Input `axes` argument (axes).
+        axes (OpValue): Input `axes` argument (axes).
         length (int): Input `length` argument (length).
 
     Returns:
         list: Computed `list` output.
     """
     a = [axes] if isinstance(axes, int) else (list(axes) if isinstance(axes, (list, tuple)) else [])
-    return [ensure_int(x) + length if ensure_int(x) < 0 else ensure_int(x) for x in a]
+    return [coerce_int(x) + length if coerce_int(x) < 0 else coerce_int(x) for x in a]
 
 
 def _resolve_reshape_minus_one(x_shape: Sequence[int | None], newshape: list[int]) -> list[int]:
     """Resolve the -1 dimension in a reshape operation.
 
     Args:
-        x_shape (tuple): Input `x_shape` argument (x shape).
-        newshape (list): Input `newshape` argument (newshape).
+        x_shape (Sequence[int | None]): Input `x_shape` argument (x shape).
+        newshape (list[int]): Input `newshape` argument (newshape).
 
     Returns:
         list: Computed `list` output.
@@ -98,12 +117,12 @@ def _resolve_reshape_minus_one(x_shape: Sequence[int | None], newshape: list[int
 class Reshape(OpDef):
     """Provide an operator definition for reshaping a tensor to a new shape."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -111,12 +130,13 @@ class Reshape(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         newshape = args[1] if len(args) > 1 else kwargs["newshape"]
 
-        if not _has_valid_shape(x) or not isinstance(newshape, (tuple, list)):
+        x_shape = _extract_valid_shape(x)
+        if x_shape is None or not isinstance(newshape, (tuple, list)):
             return newshape
 
-        out_shape = [int(ensure_int(d)) for d in newshape]
+        out_shape = [int(coerce_int(d)) for d in newshape]
         if -1 in out_shape:
-            out_shape = _resolve_reshape_minus_one(x.shape, out_shape)
+            out_shape = _resolve_reshape_minus_one(x_shape, out_shape)
 
         return tuple(out_shape)
 
@@ -125,12 +145,12 @@ class Reshape(OpDef):
 class Transpose(OpDef):
     """Provide an operator definition for transposing the dimensions of a tensor."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape of the operation.
 
         Args:
-            *args (TensorOrScalar): The first input tensor and the axes.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            *args (OpValue): The first input tensor and the axes.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -141,12 +161,12 @@ class Transpose(OpDef):
             return tuple(x[i] for i in _iter_ints(axes))
         return tuple(reversed(x)) if isinstance(x, tuple) else None
 
-    def _format_args(self, x: str, axes: TensorOrScalar) -> str:
+    def _format_args(self, x: str, axes: OpValue) -> str:
         """Compute the format args tensor operation.
 
         Args:
         x (str): Input `x` argument (x).
-        axes (TensorOrScalar): Input `axes` argument (axes).
+        axes (OpValue): Input `axes` argument (axes).
 
         Returns:
         str: Computed `str` output.
@@ -158,13 +178,13 @@ class Transpose(OpDef):
 class BroadcastTo(OpDef):
     """Provide an operator definition for broadcasting a tensor to a new shape."""
 
-    def infer_shape(self, x: TensorOrScalar, shape: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: OpValue, shape: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape of the operation.
 
         Args:
-            x (EagerTensorProtocol): Input `x` argument (x).
-            shape (EagerTensorProtocol): Input `shape` argument (shape).
-            **kwargs (TensorOrScalar): Keyword args.
+            x (OpValue): Input `x` argument (x).
+            shape (OpValue): Input `shape` argument (shape).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -193,18 +213,18 @@ class BroadcastInDim(OpDef):
 
     def infer_shape(
         self,
-        x: TensorOrScalar,
-        shape: TensorOrScalar,
-        broadcast_dimensions: TensorOrScalar,
-        **kwargs: TensorOrScalar,
-    ) -> TensorOrScalar:
+        x: OpValue,
+        shape: OpValue,
+        broadcast_dimensions: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer the output shape of the broadcasting operation.
 
         Args:
-            x (EagerTensorProtocol): The input x tensor.
-            shape (EagerTensorProtocol): The target shape.
-            broadcast_dimensions (EagerTensorProtocol): The broadcast_dimensions parameter for the operation.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            x (OpValue): The input x tensor.
+            shape (OpValue): The target shape.
+            broadcast_dimensions (OpValue): The broadcast_dimensions parameter for the operation.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -219,24 +239,25 @@ class Resize(OpDef):
 
     def infer_shape(
         self,
-        image: EagerTensorProtocol,
-        shape: EagerTensorProtocol,
-        method: TensorOrScalar = "bilinear",
-        **kwargs: TensorOrScalar,
-    ) -> TensorOrScalar:
+        image: OpValue,
+        shape: OpValue,
+        method: OpValue = "bilinear",
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer the output shape of the resizing operation.
 
         Args:
-            image (EagerTensorProtocol): The image parameter for the operation.
-            shape (EagerTensorProtocol): The target shape.
-            method (TensorOrScalar): The method parameter for the operation.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            image (OpValue): The image parameter for the operation.
+            shape (OpValue): The target shape.
+            method (OpValue): The method parameter for the operation.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
-        if not _has_valid_shape(image) or not image.shape:
+        img_shape = _extract_valid_shape(image)
+        if img_shape is None or not img_shape:
             return ()
-        out_shape = list(image.shape)
+        out_shape = [coerce_int(d) for d in img_shape]
         # assuming shape is (new_h, new_w) and image is either (..., H, W, C) or something.
         # Often it's (..., H, W, C) in Keras.
         if len(out_shape) >= MIN_CONV_RANK:
@@ -252,12 +273,12 @@ class Atleast1d(OpDef):
 
     op_name = "Atleast1d"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -277,12 +298,12 @@ class Atleast2d(OpDef):
 
     op_name = "Atleast2d"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -304,12 +325,12 @@ class Atleast3d(OpDef):
 
     op_name = "Atleast3d"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -333,12 +354,12 @@ class ExpandDims(OpDef):
 
     op_name = "ExpandDims"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -350,7 +371,7 @@ class ExpandDims(OpDef):
         shape = _get_shape_list(x)
         if axis is None:
             return tuple(shape)
-        axis_idx = int(ensure_int(axis))
+        axis_idx = int(coerce_int(axis))
         if axis_idx < 0:
             axis_idx = axis_idx + len(shape) + 1
         shape.insert(axis_idx, 1)
@@ -363,12 +384,12 @@ class Block(OpDef):
 
     op_name = "Block"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -385,12 +406,12 @@ class C(OpDef):
 
     op_name = "C"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -404,12 +425,12 @@ class Collapse(OpDef):
 
     op_name = "Collapse"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -423,20 +444,21 @@ class Delete(OpDef):
 
     op_name = "Delete"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arr = args[0] if args else kwargs.get("arr")
-        if not _has_valid_shape(arr):
+        arr_shape = _extract_valid_shape(arr)
+        if arr_shape is None:
             return None
-        return tuple(arr.shape)  # Approximate
+        return tuple(arr_shape)  # Approximate
 
 
 @register_op("DiagIndices")
@@ -445,19 +467,19 @@ class DiagIndices(OpDef):
 
     op_name = "DiagIndices"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
-        return tuple([(n,)] * int(ensure_int(ndim)))
+        return tuple([(n,)] * int(coerce_int(ndim)))
 
 
 @register_op("DiagIndicesFrom")
@@ -466,20 +488,21 @@ class DiagIndicesFrom(OpDef):
 
     op_name = "DiagIndicesFrom"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arr = args[0] if args else kwargs.get("arr")
-        if not _has_valid_shape(arr):
+        arr_shape = _extract_valid_shape(arr)
+        if arr_shape is None:
             return None
-        return tuple([(arr.shape[0],)] * len(arr.shape))
+        return tuple([(arr_shape[0],)] * len(arr_shape))
 
 
 @register_op("Diagflat")
@@ -488,24 +511,25 @@ class Diagflat(OpDef):
 
     op_name = "Diagflat"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         v = args[0] if args else kwargs.get("v")
-        if not _has_valid_shape(v):
+        v_shape = _extract_valid_shape(v)
+        if v_shape is None:
             return None
         import math
 
-        size = math.prod(v.shape)
+        size = math.prod(coerce_int(d) for d in v_shape)
         k = args[1] if len(args) > 1 else kwargs.get("k", 0)
-        s = size + abs(int(ensure_int(k)))
+        s = size + abs(int(coerce_int(k)))
         return (s, s)
 
 
@@ -515,20 +539,21 @@ class FillDiagonal(OpDef):
 
     op_name = "FillDiagonal"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         a = args[0] if args else kwargs.get("a")
-        if not _has_valid_shape(a):
+        a_shape = _extract_valid_shape(a)
+        if a_shape is None:
             return None
-        return tuple(a.shape)
+        return tuple(a_shape)
 
 
 @register_op("Insert")
@@ -537,20 +562,21 @@ class Insert(OpDef):
 
     op_name = "Insert"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         arr = args[0] if args else kwargs.get("arr")
-        if not _has_valid_shape(arr):
+        arr_shape = _extract_valid_shape(arr)
+        if arr_shape is None:
             return None
-        return tuple(arr.shape)  # Approximate
+        return tuple(arr_shape)  # Approximate
 
 
 @register_op("Moveaxis")
@@ -559,12 +585,12 @@ class Moveaxis(OpDef):
 
     op_name = "Moveaxis"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -577,13 +603,13 @@ class Moveaxis(OpDef):
         destination = args[2] if len(args) > 2 else kwargs.get("destination")
         return self._calc_shape(shape, source, destination)
 
-    def _calc_shape(self, shape: list[int], source: TensorOrScalar, destination: TensorOrScalar) -> TensorOrScalar:
+    def _calc_shape(self, shape: list[int], source: OpValue, destination: OpValue) -> OpValue:
         """Calculate the output shape for a moveaxis operation.
 
         Args:
             shape (list[int]): The input shape.
-            source (TensorOrScalar): The source axes.
-            destination (TensorOrScalar): The destination axes.
+            source (OpValue): The source axes.
+            destination (OpValue): The destination axes.
 
         Returns:
             tuple: The calculated shape.
@@ -603,12 +629,12 @@ class Permute(OpDef):
 
     op_name = "Permute"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -629,12 +655,12 @@ class Roll(OpDef):
 
     op_name = "Roll"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -651,12 +677,12 @@ class Squeeze(OpDef):
 
     op_name = "Squeeze"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -668,12 +694,12 @@ class Squeeze(OpDef):
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         return self._calc_shape(shape, axis)
 
-    def _calc_shape(self, shape: list[int], axis: TensorOrScalar) -> TensorOrScalar:
+    def _calc_shape(self, shape: list[int], axis: OpValue) -> OpValue:
         """Calculate the output shape for a squeeze operation.
 
         Args:
             shape (list[int]): The input shape.
-            axis (TensorOrScalar): The axis or axes to squeeze.
+            axis (OpValue): The axis or axes to squeeze.
 
         Returns:
             tuple: The calculated shape.
@@ -690,12 +716,12 @@ class Swapaxes(OpDef):
 
     op_name = "Swapaxes"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -704,8 +730,8 @@ class Swapaxes(OpDef):
         if not isinstance(x, (tuple, list)) and not _has_valid_shape(x):
             return None
         shape = _get_shape_list(x)
-        axis1 = int(ensure_int(args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
-        axis2 = int(ensure_int(args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
+        axis1 = int(coerce_int(args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
+        axis2 = int(coerce_int(args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
         a1 = axis1 + len(shape) if axis1 < 0 else axis1
         a2 = axis2 + len(shape) if axis2 < 0 else axis2
         shape[a1], shape[a2] = shape[a2], shape[a1]
@@ -718,12 +744,12 @@ class Flip(OpDef):
 
     op_name = "Flip"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -740,12 +766,12 @@ class Fliplr(OpDef):
 
     op_name = "Fliplr"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -762,12 +788,12 @@ class Flipud(OpDef):
 
     op_name = "Flipud"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

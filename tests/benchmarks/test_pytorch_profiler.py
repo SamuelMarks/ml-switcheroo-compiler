@@ -7,14 +7,16 @@ import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_graph, ensure_mutable, ensure_tensor_dict, has_backend_member
+from ml_switcheroo_compiler.backends.pytorch.profiler import PyTorchProfiler
+from ml_switcheroo_compiler.ir.core import ensure_graph
+from tests.testing_utils import EagerTensorProtocol, adapt_backend_module, coerce_operand_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-if "torch" in sys.modules and has_backend_member(sys.modules["torch"], "Tensor"):
+if "torch" in sys.modules and adapt_backend_module(sys.modules["torch"]).has_symbol("Tensor"):
     torch = sys.modules["torch"]
 else:
     try:
@@ -30,7 +32,20 @@ except (ImportError, RuntimeError, TypeError, ValueError) as e:
     pytest.skip(f"PyTorch profiler not available: {e}", allow_module_level=True)
 
 
-def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestPytorchProfilerExhaustiveState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_pytorch_profiler_exhaustive` split helpers."""
+
+    g_no_out: LogicalGraph
+    g_ops: LogicalGraph
+    mock_cuda_device: EagerTensorProtocol
+    mock_ev1: EagerTensorProtocol
+    mock_ev2: EagerTensorProtocol
+    mock_mps_bare: EagerTensorProtocol
+    mps_device: EagerTensorProtocol
+    profiler: PyTorchProfiler
+
+
+def _test_pytorch_profiler_exhaustive_part_1(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 1 of test_pytorch_profiler_exhaustive.
 
     Args:
@@ -41,7 +56,7 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
     # 1. Non-darwin platform branch
     with patch("sys.platform", "linux"):
         res_linux = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-        assert ensure_eager_tensor(res_linux)["peak_memory_mb"] > 0.0
+        assert res_linux["peak_memory_mb"] > 0.0
 
     # 2. cuda device fallback when unavailable
     with patch("torch.cuda.is_available", return_value=False):
@@ -57,11 +72,11 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
     # 4. Existing torch.Tensor input branch
     t_in = torch.tensor([1.0, 2.0], dtype=torch.float32)
     res_tensor = profiler.profile_graph(IRGraph(), {"t": t_in, "list": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
-    assert ensure_callable(len)(res_tensor["latencies"]) == 2
+    assert len(coerce_operand_list(res_tensor["latencies"])) == 2
 
     # 5. Empty inputs branch
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
-    assert ensure_eager_tensor(res_empty)["latency_ms"] >= 0.0
+    assert res_empty["latency_ms"] >= 0.0
 
     # 6. Synchronize MPS hardware branch
     with patch.object(torch, "mps", create=True) as mock_mps_module:
@@ -70,12 +85,10 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
         mock_mps_dev.type = "mps"
         profiler._sync(mock_mps_dev)
         assert mock_mps_module.synchronize.called
-    _state.update(ensure_tensor_dict({"dev": dev, "mock_mps": mock_mps, "mock_mps_dev": mock_mps_dev, "mock_mps_module": mock_mps_module}))
-    _state.update(ensure_tensor_dict({"profiler": profiler, "res_empty": res_empty, "res_linux": res_linux, "res_tensor": res_tensor}))
-    _state.update(ensure_tensor_dict({"t_in": t_in}))
+    _state.update({"profiler": profiler})
 
 
-def _test_pytorch_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_pytorch_profiler_exhaustive_part_2(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 2 of test_pytorch_profiler_exhaustive.
 
     Args:
@@ -94,18 +107,20 @@ def _test_pytorch_profiler_exhaustive_part_2(_state: dict[str, EagerTensorProtoc
         mock_cuda_dev.type = "cuda"
         profiler._reset_cuda_stats(mock_cuda_dev)
         assert mock_reset.called
-    _state.update(ensure_tensor_dict({"mock_cuda_dev": mock_cuda_dev, "mock_cuda_sync": mock_cuda_sync, "mock_reset": mock_reset}))
-    _state.update(ensure_tensor_dict({"profiler": profiler}))
+    _state.update({"profiler": profiler})
 
 
-def _test_pytorch_profiler_exhaustive_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_pytorch_profiler_exhaustive_part_3(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 3 of test_pytorch_profiler_exhaustive.
 
     Args:
         _state: Shared test state dictionary.
     """
     profiler = _state["profiler"]
-    with patch("torch.cuda.is_available", return_value=True), patch("torch.cuda.max_memory_allocated", return_value=4194304):
+    with (
+        patch("torch.cuda.is_available", return_value=True),
+        patch("torch.cuda.max_memory_allocated", return_value=4194304),
+    ):
         mock_cuda_dev = MagicMock()
         mock_cuda_dev.type = "cuda"
         with patch.object(profiler, "_resolve_device", return_value=mock_cuda_dev):
@@ -135,12 +150,11 @@ def _test_pytorch_profiler_exhaustive_part_3(_state: dict[str, EagerTensorProtoc
     # TorchGraphModule.forward with no graph outputs
     g_no_out = IRGraph()
     g_no_out.nodes["x"] = IRNode(id="x", op_type="Input", shape_metadata=(2,))
-    _state.update(ensure_tensor_dict({"g_no_out": g_no_out, "g_ops": g_ops, "mock_cuda_dev": mock_cuda_dev, "out_fwd": out_fwd}))
-    _state.update(ensure_tensor_dict({"out_unmatched": out_unmatched, "res_cuda": res_cuda, "res_ops": res_ops, "tgm": tgm}))
-    _state.update(ensure_tensor_dict({"profiler": profiler}))
+    _state.update({"g_no_out": g_no_out, "g_ops": g_ops})
+    _state.update({"profiler": profiler})
 
 
-def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_pytorch_profiler_exhaustive_part_4(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 4 of test_pytorch_profiler_exhaustive.
 
     Args:
@@ -148,13 +162,15 @@ def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtoc
     """
     g_no_out, g_ops, profiler = _state["g_no_out"], _state["g_ops"], _state["profiler"]
     g_no_out.nodes["y"] = IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(2,))
-    ensure_mutable(g_no_out).outputs = ensure_eager_tensor([])
-    tgm_no_out = ensure_callable(TorchGraphModule)(g_no_out)
+    pytest.MonkeyPatch().setattr(g_no_out, "outputs", [], raising=False)
+    tgm_no_out = TorchGraphModule(g_no_out)
     out_no_out = tgm_no_out.forward({"x": torch.tensor([1.0, 2.0])})
-    assert ensure_eager_tensor(out_no_out) is None
+    assert out_no_out is None
 
     # TorchGraphModule TypeError when generator doesn't produce Module
-    with patch("ml_switcheroo_compiler.backends.pytorch.generator.PyTorchCodeGenerator.generate", return_value="# empty"):
+    with patch(
+        "ml_switcheroo_compiler.backends.pytorch.generator.PyTorchCodeGenerator.generate", return_value="# empty"
+    ):
         with pytest.raises(TypeError, match="Failed to generate valid torch.nn.Module"):
             TorchGraphModule(ensure_graph(g_ops))
 
@@ -168,11 +184,10 @@ def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtoc
         with patch.object(torch.jit, "trace", side_effect=RuntimeError("trace fail")):
             res_fail = profiler.profile_graph(g_ops, {"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
             assert len(res_fail["latencies"]) == 1
-    _state.update(ensure_tensor_dict({"out_no_out": out_no_out, "res_fail": res_fail, "res_no_compile": res_no_compile, "tgm_no_out": tgm_no_out}))
-    _state.update(ensure_tensor_dict({"g_no_out": g_no_out, "g_ops": g_ops, "profiler": profiler}))
+    _state.update({"g_no_out": g_no_out, "g_ops": g_ops, "profiler": profiler})
 
 
-def _test_pytorch_profiler_exhaustive_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_pytorch_profiler_exhaustive_part_5(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 5 of test_pytorch_profiler_exhaustive.
 
     Args:
@@ -195,7 +210,10 @@ def _test_pytorch_profiler_exhaustive_part_5(_state: dict[str, EagerTensorProtoc
     assert len(prepared) == 2
 
     # Call _reset_cuda_stats with exception
-    with patch("torch.cuda.is_available", return_value=True), patch("torch.cuda.reset_peak_memory_stats", side_effect=RuntimeError):
+    with (
+        patch("torch.cuda.is_available", return_value=True),
+        patch("torch.cuda.reset_peak_memory_stats", side_effect=RuntimeError),
+    ):
         cuda_dev = MagicMock()
         cuda_dev.type = "cuda"
         profiler._reset_cuda_stats(cuda_dev)
@@ -206,18 +224,23 @@ def _test_pytorch_profiler_exhaustive_part_5(_state: dict[str, EagerTensorProtoc
     mock_ev1 = MagicMock()
     mock_ev2 = MagicMock()
     mock_ev1.elapsed_time.return_value = 1.25
-    _state.update(ensure_tensor_dict({"compiled_empty": compiled_empty, "cuda_dev": cuda_dev, "mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1}))
-    _state.update(ensure_tensor_dict({"mock_ev2": mock_ev2, "mock_traced": mock_traced, "prepared": prepared, "res_traced": res_traced}))
-    _state.update(ensure_tensor_dict({"g_ops": g_ops, "profiler": profiler}))
+    _state.update({"mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1})
+    _state.update({"mock_ev2": mock_ev2})
+    _state.update({"g_ops": g_ops, "profiler": profiler})
 
 
-def _test_pytorch_profiler_exhaustive_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_pytorch_profiler_exhaustive_part_6(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 6 of test_pytorch_profiler_exhaustive.
 
     Args:
         _state: Shared test state dictionary.
     """
-    mock_cuda_device, mock_ev1, mock_ev2, profiler = _state["mock_cuda_device"], _state["mock_ev1"], _state["mock_ev2"], _state["profiler"]
+    mock_cuda_device, mock_ev1, mock_ev2, profiler = (
+        _state["mock_cuda_device"],
+        _state["mock_ev1"],
+        _state["mock_ev2"],
+        _state["profiler"],
+    )
     with patch("torch.cuda.is_available", return_value=True), patch("torch.cuda.synchronize"):
         with patch("torch.cuda.Event", side_effect=[mock_ev1, mock_ev2]):
             lats_cuda = profiler._measure_latencies(mock_cuda_device, lambda: None, num_iters=1)
@@ -251,13 +274,13 @@ def _test_pytorch_profiler_exhaustive_part_6(_state: dict[str, EagerTensorProtoc
 
     # mps without current_allocated_memory
     mock_mps_bare = MagicMock(spec=[])
-    _state.update(ensure_tensor_dict({"lats_cuda": lats_cuda, "lats_cuda_err": lats_cuda_err, "mock_mps_bare": mock_mps_bare, "mock_mps_mod": mock_mps_mod}))
-    _state.update(ensure_tensor_dict({"mps_device": mps_device, "res_empty_lats": res_empty_lats}))
-    _state.update(ensure_tensor_dict({"mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1, "mock_ev2": mock_ev2}))
-    _state.update(ensure_tensor_dict({"profiler": profiler}))
+    _state.update({"mock_mps_bare": mock_mps_bare})
+    _state.update({"mps_device": mps_device})
+    _state.update({"mock_cuda_device": mock_cuda_device, "mock_ev1": mock_ev1, "mock_ev2": mock_ev2})
+    _state.update({"profiler": profiler})
 
 
-def _test_pytorch_profiler_exhaustive_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_pytorch_profiler_exhaustive_part_7(_state: _TestPytorchProfilerExhaustiveState) -> None:
     """Execute part 7 of test_pytorch_profiler_exhaustive.
 
     Args:
@@ -270,7 +293,7 @@ def _test_pytorch_profiler_exhaustive_part_7(_state: dict[str, EagerTensorProtoc
 
 def test_pytorch_profiler_exhaustive() -> None:
     """Verify all branches and hardware synchronization paths in PyTorchProfiler."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestPytorchProfilerExhaustiveState = {}
     _test_pytorch_profiler_exhaustive_part_1(_state)
     _test_pytorch_profiler_exhaustive_part_2(_state)
     _test_pytorch_profiler_exhaustive_part_3(_state)

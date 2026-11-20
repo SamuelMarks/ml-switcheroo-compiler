@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.ops.linalg.conv import (
     conv_general_dilated_patches,
     conv_with_general_padding,
 )
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -32,9 +32,16 @@ def test_conv_general_dilated(mock_infer: EagerTensorProtocol, mock_emit: EagerT
     lhs.dtype = "float32"
     rhs = MagicMock()
     rhs.dtype = "float32"
-    config = ConvConfig(window_strides=[1, 1], padding="SAME", lhs_dilation=[1, 1], rhs_dilation=[1, 1], dimension_numbers=None, feature_group_count=1)
+    config = ConvConfig(
+        window_strides=[1, 1],
+        padding="SAME",
+        lhs_dilation=[1, 1],
+        rhs_dilation=[1, 1],
+        dimension_numbers=None,
+        feature_group_count=1,
+    )
 
-    ensure_eager_tensor(ensure_eager_tensor(conv_general_dilated).__wrapped__)(lhs, rhs, config)
+    conv_general_dilated.__wrapped__(lhs, rhs, config)
     mock_emit.assert_called()
 
 
@@ -53,7 +60,7 @@ def test_conv_general_dilated_local(mock_infer: EagerTensorProtocol, mock_emit: 
     rhs.dtype = "float32"
     config = ConvLocalHyperparams(window_strides=[1, 1], padding="SAME", filter_shape=(1, 1))
 
-    ensure_eager_tensor(ensure_eager_tensor(conv_general_dilated_local).__wrapped__)(lhs, rhs, config)
+    conv_general_dilated_local.__wrapped__(lhs, rhs, config)
     mock_emit.assert_called()
 
 
@@ -69,7 +76,7 @@ def test_conv_general_dilated_patches(mock_infer: EagerTensorProtocol, mock_emit
     lhs = MagicMock()
     lhs.dtype = "float32"
 
-    ensure_eager_tensor(ensure_eager_tensor(conv_general_dilated_patches).__wrapped__)(lhs, (1, 1), [1, 1], "SAME")
+    conv_general_dilated_patches.__wrapped__(lhs, (1, 1), [1, 1], "SAME")
     mock_emit.assert_called()
 
 
@@ -87,5 +94,5 @@ def test_conv_with_general_padding(mock_infer: EagerTensorProtocol, mock_emit: E
     rhs = MagicMock()
     rhs.dtype = "float32"
 
-    ensure_eager_tensor(ensure_eager_tensor(conv_with_general_padding).__wrapped__)(lhs, rhs, [1, 1], "SAME")
+    conv_with_general_padding.__wrapped__(lhs, rhs, [1, 1], "SAME")
     mock_emit.assert_called()

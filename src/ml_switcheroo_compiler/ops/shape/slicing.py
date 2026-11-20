@@ -6,12 +6,16 @@ import builtins
 import math
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_int
+from ml_switcheroo_compiler.backends.registry import (
+    adapt_backend_module,
+    coerce_int,
+    get_active_backend,
+)
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node, _extract_shape_or_seq
@@ -23,7 +27,7 @@ def slice(
     start: int | None = None,
     end: int | None = None,
     step: int | None = 1,
-) -> TensorOrScalar:
+) -> OpValue:
     """Slice the input tensor along a specific dimension.
 
     Args:
@@ -31,7 +35,7 @@ def slice(
         axis (int): Input `axis` argument (axis).
         start (int | None): Input `start` argument (start).
         end (int | None): Input `end` argument (end).
-        step (int): Input `step` argument (step).
+        step (int | None): Input `step` argument (step).
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -39,14 +43,14 @@ def slice(
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
         sl[axis] = builtins.slice(start, end, step)
-        data = ensure_eager_tensor(input.data)[tuple(sl)]
-        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
+        data = adapt_backend_module(get_active_backend()).asarray(input.data)[tuple(sl)]
+        return Tensor(data, TensorConfig(extract_shape(data), input.dtype, input.device))
     inputs = [input]
-    base_shape = inputs[0].shape
+    base_shape = extract_shape(inputs[0])
     rank = len(base_shape)
     norm_axis = axis if axis >= 0 else axis + rank
     if rank > 0 and 0 <= norm_axis < rank:
-        dim_len = int(base_shape[norm_axis])
+        dim_len = base_shape[norm_axis]
         s = step if step is not None else 1
         st = start if start is not None else (0 if s > 0 else dim_len - 1)
         if st < 0:
@@ -82,30 +86,30 @@ def strided_slice(
     begin: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
-) -> TensorOrScalar:
+) -> OpValue:
     """Extract a strided slice from the input tensor.
 
     Args:
         input (Tensor): Input `input` argument (input).
-        begin (Sequence): Input `begin` argument (begin).
-        end (Sequence): Input `end` argument (end).
-        strides (Sequence): Input `strides` argument (strides).
+        begin (Sequence[int]): Input `begin` argument (begin).
+        end (Sequence[int]): Input `end` argument (end).
+        strides (Sequence[int]): Input `strides` argument (strides).
 
     Returns:
         Tensor: Computed `Tensor` output.
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
-        data = ensure_eager_tensor(input.data)[idx]
-        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
+        data = adapt_backend_module(get_active_backend()).asarray(input.data)[idx]
+        return Tensor(data, TensorConfig(extract_shape(data), input.dtype, input.device))
     inputs = [input]
-    base_shape = inputs[0].shape
+    base_shape = extract_shape(inputs[0])
     out_dims = []
     for i, d in enumerate(base_shape):
         b = begin[i] if i < len(begin) else 0
         e = end[i] if i < len(end) else d
         s = strides[i] if i < len(strides) else 1
-        dim_val = int(d)
+        dim_val = d
         st = b if b >= 0 else max(0, b + dim_val)
         st = min(dim_val, st)
         en = e if e >= 0 else max(0, e + dim_val)
@@ -128,12 +132,12 @@ def strided_slice(
 class Slice(OpDef):
     """Slice operator definition."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -145,12 +149,12 @@ class Slice(OpDef):
 class StridedSlice(OpDef):
     """StridedSlice operator definition."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape for StridedSlice.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple: Computed `tuple` output.
@@ -165,15 +169,22 @@ class Choose(OpDef):
     op_name = "Choose"
     np_op_name = "choose"
 
-    def infer_shape(self, a: EagerTensorProtocol, choices: EagerTensorProtocol, out: TensorOrScalar = None, mode: str = "raise", **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        a: OpValue,
+        choices: OpValue,
+        out: OpValue = None,
+        mode: str = "raise",
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer the output shape.
 
         Args:
-            a (EagerTensorProtocol): Input `a` argument (a).
-            choices (EagerTensorProtocol): Input `choices` argument (choices).
-            out (TensorOrScalar): Input `out` argument (out).
+            a (OpValue): Input `a` argument (a).
+            choices (OpValue): Input `choices` argument (choices).
+            out (OpValue): Input `out` argument (out).
             mode (str): Input `mode` argument (mode).
-            **kwargs (TensorOrScalar): Keyword args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -187,19 +198,19 @@ class IndexInDim(OpDef):
 
     op_name = "IndexInDim"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
-        axis = int(ensure_int(kwargs.get("axis", 0)))
+        axis = int(coerce_int(kwargs.get("axis", 0)))
         keepdims = bool(kwargs.get("keepdims", True))
         shape = list(_extract_shape_or_seq(operand))
         if not shape:
@@ -227,12 +238,12 @@ class UpdateSlice(OpDef):
 
     op_name = "UpdateSlice"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -243,12 +254,12 @@ class UpdateSlice(OpDef):
         return _extract_shape_or_seq(operand)
 
 
-def index_in_dim(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def index_in_dim(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Return the index in a dimension.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -258,12 +269,12 @@ def index_in_dim(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSca
     return dispatch_op("IndexInDim", *args, **kwargs)
 
 
-def update_slice(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def update_slice(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Update a slice.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

@@ -7,6 +7,7 @@ import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
 from ml_switcheroo_compiler.backends.hardware_config_models import (
@@ -16,11 +17,9 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 def test_calculate_hardware_launch_config() -> None:
@@ -49,7 +48,8 @@ def test_calculate_hardware_launch_config() -> None:
     assert g3[2] >= 1
 
     # 4D with symbolic / string dim handling
-    b4, g4 = ensure_callable(calculate_hardware_launch_config)(["batch", 3, 32, 32])
+    sym_shape: list[int | str] = ["batch", 3, 32, 32]
+    b4, g4 = calculate_hardware_launch_config(sym_shape)
     assert b4[0] == 16
     assert g4[0] == 2
 
@@ -78,7 +78,7 @@ def test_generate_nd_coordinate_offset_logic() -> None:
     assert any("offset = c_idx_1" in ln for ln in lines_bcast)
 
     # Invalid non-integer shape elements fallback to 1
-    lines_invalid = ensure_callable(generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
+    lines_invalid = generate_nd_coordinate_offset_logic(("invalid", "bad_dim"), language="cuda")
     assert any("rem_idx" in ln for ln in lines_invalid)
 
 
@@ -118,16 +118,23 @@ def test_metal_generator_emits_nd_index_helpers() -> None:
     assert "inline int coords_to_offset_nd" in code
 
 
-def _mock_device_count(ptr: EagerValue) -> int:
+@typing.runtime_checkable
+class _CtypesByRefProtocol(typing.Protocol):
+    """Protocol for ctypes.byref(c_int) arguments exposing `_obj`."""
+
+    _obj: ctypes.c_int
+
+
+def _mock_device_count(ptr: _CtypesByRefProtocol) -> int:
     """Mock device count setter for ctypes pointer.
 
     Args:
-        ptr (EagerValue): Pointer object.
+        ptr (_CtypesByRefProtocol): Pointer object.
 
     Returns:
         int: Return code 0.
     """
-    ensure_mutable(ensure_eager_tensor(ptr)._obj).value = ensure_eager_tensor(1)
+    ptr._obj.value = 1
     return 0
 
 
@@ -331,7 +338,11 @@ def test_runner_execute_graph_input_types() -> None:
     mock_lib.cuModuleGetFunction.return_value = 0
     mock_lib.cuLaunchKernel.return_value = 0
     mock_lib.cuCtxSynchronize.return_value = 0
-    with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None), patch("ctypes.util.find_library", return_value="libcuda.so"), patch("ctypes.cdll.LoadLibrary", return_value=mock_lib):
+    with (
+        patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None),
+        patch("ctypes.util.find_library", return_value="libcuda.so"),
+        patch("ctypes.cdll.LoadLibrary", return_value=mock_lib),
+    ):
         c_runner = CUDARunner()
         with patch.object(c_runner, "compile_cuda_to_ptx", return_value="// PTX"):
             res_bytes = c_runner.execute_graph(graph, {"a": raw_bytes})
@@ -415,7 +426,9 @@ def test_hardware_emitters_multi_output() -> None:
     """Verify CUDA and ROCm emitters support multi-output kernel launch arguments."""
     g = IRGraph(name="multi_out_test")
     g.nodes["inp"] = IRNode(id="inp", op_type="Input", shape_metadata=[4])
-    g.nodes["split"] = IRNode(id="split", op_type="Relu", inputs=["inp"], outputs=["split_0", "split_1"], shape_metadata=[4])
+    g.nodes["split"] = IRNode(
+        id="split", op_type="Relu", inputs=["inp"], outputs=["split_0", "split_1"], shape_metadata=[4]
+    )
     g.outputs = ["split_0", "split_1"]
 
     cuda_gen = CudaCodeGenerator(g)

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.backends.registry import coerce_int
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeDim, extract_shape, extract_symbolic_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -14,9 +14,9 @@ class RawOp(OpDef):
 
     def infer_shape(
         self,
-        *args: EagerTensorProtocol,
-        **kwargs: TensorOrScalar,
-    ) -> TensorOrScalar:
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infer shape dynamically or fallback to unknown.
 
         Args:
@@ -24,7 +24,7 @@ class RawOp(OpDef):
             **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            TensorOrScalar: Computed result.
+            OpValue: Computed result.
         """
         if not args and "a" in kwargs:
             a = kwargs["a"]
@@ -41,7 +41,7 @@ class RawSwitch(RawOp):
 
     op_name = "RawSwitch"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
@@ -49,7 +49,7 @@ class RawSwitch(RawOp):
             **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            TensorOrScalar: Computed result.
+            OpValue: Computed result.
         """
         shape = super().infer_shape(*args, **kwargs)
         return (shape, shape)
@@ -61,7 +61,7 @@ class RawMerge(RawOp):
 
     op_name = "RawMerge"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
@@ -69,7 +69,7 @@ class RawMerge(RawOp):
             **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            TensorOrScalar: Computed result.
+            OpValue: Computed result.
         """
         shape = super().infer_shape(*args, **kwargs)
         return (shape, ())
@@ -81,7 +81,7 @@ class RawConv2D(RawOp):
 
     op_name = "RawConv2D"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
@@ -89,8 +89,9 @@ class RawConv2D(RawOp):
             **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            TensorOrScalar: Computed result.
+            OpValue: Computed result.
         """
+        inp_sym = extract_symbolic_shape(args[0])
         inp: tuple[int, ...] = extract_shape(args[0])
         filters: tuple[int, ...] = extract_shape(args[1])
         padding = kwargs.get("padding", "VALID")
@@ -100,9 +101,9 @@ class RawConv2D(RawOp):
         # inp: N, H, W, C
         # filters: FH, FW, C, K
         fh, fw = filters[0], filters[1]
-        sh, sw = int(ensure_int(strides_seq[1])), int(ensure_int(strides_seq[2]))
+        sh, sw = int(coerce_int(strides_seq[1])), int(coerce_int(strides_seq[2]))
 
-        out_shape = [inp[0], 0, 0, filters[3]]
+        out_shape: list[ShapeDim] = [inp_sym[0], 0, 0, filters[3]]
 
         for i, (dim, f, s) in enumerate(zip([inp[1], inp[2]], [fh, fw], [sh, sw])):
             if padding == "SAME":
@@ -119,7 +120,7 @@ class RawMatMul(RawOp):
 
     op_name = "RawMatMul"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
@@ -127,7 +128,7 @@ class RawMatMul(RawOp):
             **kwargs: Input `kwargs` argument (kwargs).
 
         Returns:
-            TensorOrScalar: Computed result.
+            OpValue: Computed result.
         """
         a: tuple[int, ...] = extract_shape(args[0])
         b: tuple[int, ...] = extract_shape(args[1])
@@ -141,3 +142,12 @@ class RawMatMul(RawOp):
 
         batch_shape = broadcast_shapes(a[:-2], b[:-2])
         return batch_shape + (a_m, b_p)
+
+
+__all__ = [
+    "RawConv2D",
+    "RawMatMul",
+    "RawMerge",
+    "RawOp",
+    "RawSwitch",
+]

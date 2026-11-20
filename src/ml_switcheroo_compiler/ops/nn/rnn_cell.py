@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add
-from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.unary import tanh
 
 

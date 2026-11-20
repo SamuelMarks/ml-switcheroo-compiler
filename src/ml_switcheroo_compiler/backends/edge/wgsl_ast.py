@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.protocols import get_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import CompilationError
 
 RESERVED_WGSL_KEYWORDS: set[str] = {
@@ -54,7 +54,9 @@ RESERVED_WGSL_KEYWORDS: set[str] = {
 }
 
 VALID_IDENTIFIER_PATTERN: re.Pattern[str] = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
-WORKGROUP_SIZE_PATTERN: re.Pattern[str] = re.compile(r"@workgroup_size\s*\(\s*(\d+)\s*(?:,\s*(\d+))?\s*(?:,\s*(\d+))?\s*\)")
+WORKGROUP_SIZE_PATTERN: re.Pattern[str] = re.compile(
+    r"@workgroup_size\s*\(\s*(\d+)\s*(?:,\s*(\d+))?\s*(?:,\s*(\d+))?\s*\)"
+)
 
 
 class WGSLValidationError(CompilationError, ValueError):
@@ -92,9 +94,13 @@ def validate_workgroup_size(x: int, y: int = 1, z: int = 1) -> None:
     if x < 1 or y < 1 or z < 1:
         raise WGSLValidationError(f"Workgroup dimensions must be >= 1, got ({x}, {y}, {z})")
     if x > 256 or y > 256 or z > 64:
-        raise WGSLValidationError(f"Workgroup dimension exceeds WebGPU limits (max: x<=256, y<=256, z<=64), got ({x}, {y}, {z})")
+        raise WGSLValidationError(
+            f"Workgroup dimension exceeds WebGPU limits (max: x<=256, y<=256, z<=64), got ({x}, {y}, {z})"
+        )
     if x * y * z > 256:
-        raise WGSLValidationError(f"Total workgroup invocations ({x * y * z}) exceed WebGPU minimum guaranteed limit of 256")
+        raise WGSLValidationError(
+            f"Total workgroup invocations ({x * y * z}) exceed WebGPU minimum guaranteed limit of 256"
+        )
 
 
 def validate_memory_layout(address_space: str, access_mode: str | None = None) -> None:
@@ -109,7 +115,9 @@ def validate_memory_layout(address_space: str, access_mode: str | None = None) -
     """
     valid_address_spaces: set[str] = {"storage", "uniform", "workgroup", "private", "function"}
     if address_space not in valid_address_spaces:
-        raise WGSLValidationError(f"Invalid WGSL address space qualifier '{address_space}', expected one of {valid_address_spaces}")
+        raise WGSLValidationError(
+            f"Invalid WGSL address space qualifier '{address_space}', expected one of {valid_address_spaces}"
+        )
     if access_mode is not None:
         valid_access_modes: set[str] = {"read", "write", "read_write"}
         if access_mode not in valid_access_modes:
@@ -117,9 +125,13 @@ def validate_memory_layout(address_space: str, access_mode: str | None = None) -
         if address_space == "uniform" and access_mode != "read":
             raise WGSLValidationError(f"Uniform address space only supports 'read' access mode, got '{access_mode}'")
         if address_space == "storage" and access_mode not in ("read", "read_write"):
-            raise WGSLValidationError(f"Storage buffer address space supports 'read' or 'read_write' access modes, got '{access_mode}'")
+            raise WGSLValidationError(
+                f"Storage buffer address space supports 'read' or 'read_write' access modes, got '{access_mode}'"
+            )
         if address_space == "workgroup" and access_mode != "read_write":
-            raise WGSLValidationError(f"Workgroup address space only supports 'read_write' access mode, got '{access_mode}'")
+            raise WGSLValidationError(
+                f"Workgroup address space only supports 'read_write' access mode, got '{access_mode}'"
+            )
 
 
 def validate_binding_limits(group: int, binding: int) -> None:
@@ -133,7 +145,9 @@ def validate_binding_limits(group: int, binding: int) -> None:
         WGSLValidationError: If group or binding index exceeds WebGPU guaranteed minimum limits.
     """
     if group < 0 or group >= 4:
-        raise WGSLValidationError(f"Bind group index {group} exceeds WebGPU minimum guaranteed limit of 4 (allowed: 0..3)")
+        raise WGSLValidationError(
+            f"Bind group index {group} exceeds WebGPU minimum guaranteed limit of 4 (allowed: 0..3)"
+        )
     if binding < 0 or binding >= 64:
         raise WGSLValidationError(f"Binding index {binding} exceeds WebGPU standard limit of 64 (allowed: 0..63)")
 
@@ -150,12 +164,12 @@ class WGSLNode:
         for attr_name in dir(self):
             if attr_name.startswith("_") or attr_name == "validate":
                 continue
-            attr_val: WGSLNode | EagerValue = get_backend_member(self, attr_name, None)
+            attr_val: WGSLNode | BackendArg = adapt_backend_module(self).get_symbol(attr_name, None)
             if isinstance(attr_val, WGSLNode):
                 attr_val.validate()
             elif isinstance(attr_val, (list, tuple)):
                 for item in attr_val:
-                    raw_item: WGSLNode | EagerValue = item
+                    raw_item: WGSLNode | BackendArg = item
                     if isinstance(raw_item, WGSLNode):
                         raw_item.validate()
 
@@ -224,7 +238,9 @@ class WGSLRaw(WGSLNode):
             if b_idx < 0 or b_idx >= 64:
                 raise WGSLValidationError(f"Binding index {b_idx} exceeds WebGPU limit of 64")
 
-        var_qual_pattern: re.Pattern[str] = re.compile(r"var\s*<\s*([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*))?\s*>")
+        var_qual_pattern: re.Pattern[str] = re.compile(
+            r"var\s*<\s*([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*))?\s*>"
+        )
         for v_match in var_qual_pattern.finditer(self.code):
             space = v_match.group(1)
             access = v_match.group(2)
@@ -431,14 +447,16 @@ class WGSLDecl(WGSLNode):
 
     VALID_KINDS: set[str] = {"let", "var", "const"}
 
-    def __init__(self, kind: str, name: str, value: str | WGSLNode | None = None, type_annotation: str | None = None) -> None:
+    def __init__(
+        self, kind: str, name: str, value: str | WGSLNode | None = None, type_annotation: str | None = None
+    ) -> None:
         """Initialize WGSLDecl.
 
         Args:
             kind (str): Declaration kind ('let', 'var', 'const').
             name (str): Identifier name.
-            value (Union[str, WGSLNode], optional): Initial value expression. Defaults to None.
-            type_annotation (str, optional): WGSL type annotation. Defaults to None.
+            value (str | WGSLNode | None): Initial value expression. Defaults to None.
+            type_annotation (str | None): WGSL type annotation. Defaults to None.
         """
         self.kind = kind
         self.name = name
@@ -528,7 +546,7 @@ class WGSLFunction(WGSLNode):
             name (str): Function name.
             params (list[str]): Function parameter declarations.
             body (list[WGSLNode]): List of body statements.
-            attrs (list[str], optional): Function attributes. Defaults to None.
+            attrs (list[str] | None): Function attributes. Defaults to None.
         """
         self.name = name
         self.params = params
@@ -647,11 +665,16 @@ class WGSLEmitter:
             header: str = f"if ({self.emit(node.condition, validate=validate)}) {{"
             result = self._emit_block(header, node.body, validate=validate, indent_closing=True)
         elif isinstance(node, WGSLFor):
-            header = f"for ({self.emit(node.init, validate=validate)} {self.emit(node.cond, validate=validate)}; {self.emit(node.step, validate=validate)}) {{"
+            header = (
+                f"for ({self.emit(node.init, validate=validate)} {self.emit(node.cond, validate=validate)}; "
+                f"{self.emit(node.step, validate=validate)}) {{"
+            )
             result = self._emit_block(header, node.body, validate=validate, indent_closing=True)
         elif isinstance(node, WGSLFunction):
             params_str: str = ", ".join(node.params)
-            block_str: str = self._emit_block(f"fn {node.name}({params_str}) {{", node.body, validate=validate, indent_closing=False)
+            block_str: str = self._emit_block(
+                f"fn {node.name}({params_str}) {{", node.body, validate=validate, indent_closing=False
+            )
             result = "\n".join([*node.attrs, block_str])
         return result
 

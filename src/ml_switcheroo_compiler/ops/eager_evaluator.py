@@ -5,32 +5,33 @@ from __future__ import annotations
 import abc
 import typing
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     TypedVariadicCallable,
     extract_shape,
-    has_backend_member,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
-EagerPayload = TensorOrScalar
+EagerPayload = OpValue
 
 
+@typing.runtime_checkable
 class _EagerEvalMethodProtocol(typing.Protocol):
     """Protocol for op classes/instances exposing `eager_eval`."""
 
     eager_eval: TypedVariadicCallable[EagerPayload]
 
 
+@typing.runtime_checkable
 class _ForwardMethodProtocol(typing.Protocol):
     """Protocol for op instances exposing `forward`."""
 
     forward: TypedVariadicCallable[EagerPayload]
 
 
+@typing.runtime_checkable
 class _ExecuteOpBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `execute_op`."""
 
@@ -55,9 +56,9 @@ def _has_eager_eval_method(val: EagerPayload | type) -> typing.TypeGuard[_EagerE
         val (EagerPayload | type): Operation class or instance.
 
     Returns:
-        bool: True if `val` has `eager_eval`.
+        bool: True if `val` satisfies `_EagerEvalMethodProtocol`.
     """
-    return has_backend_member(val, "eager_eval")
+    return isinstance(val, _EagerEvalMethodProtocol)
 
 
 def _has_forward_method(val: EagerPayload | type) -> typing.TypeGuard[_ForwardMethodProtocol]:
@@ -67,9 +68,9 @@ def _has_forward_method(val: EagerPayload | type) -> typing.TypeGuard[_ForwardMe
         val (EagerPayload | type): Operation class or instance.
 
     Returns:
-        bool: True if `val` has `forward`.
+        bool: True if `val` satisfies `_ForwardMethodProtocol`.
     """
-    return has_backend_member(val, "forward")
+    return isinstance(val, _ForwardMethodProtocol)
 
 
 def _has_execute_op_backend(val: EagerPayload | type) -> typing.TypeGuard[_ExecuteOpBackendProtocol]:
@@ -79,9 +80,9 @@ def _has_execute_op_backend(val: EagerPayload | type) -> typing.TypeGuard[_Execu
         val (EagerPayload | type): Backend class or instance.
 
     Returns:
-        bool: True if `val` has `execute_op`.
+        bool: True if `val` satisfies `_ExecuteOpBackendProtocol`.
     """
-    return has_backend_member(val, "execute_op")
+    return isinstance(val, _ExecuteOpBackendProtocol)
 
 
 class EvaluationContext:
@@ -123,6 +124,9 @@ class EvaluationStrategy(abc.ABC):
 
         Returns:
             EagerPayload: Evaluated raw tensor or scalar data.
+
+        Raises:
+            NotImplementedError: If `evaluate` is not implemented by the subclass or target backend.
         """
         raise NotImplementedError
 
@@ -145,9 +149,9 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         op_cls = ctx.op_cls
         op_inst: EagerPayload = op_cls() if isinstance(op_cls, type) else op_cls
         if _has_eager_eval_method(op_inst) and callable(op_inst.eager_eval):
-            return ensure_eager_tensor(op_inst.eager_eval(*ctx.args, **ctx.kwargs))
+            return op_inst.eager_eval(*ctx.args, **ctx.kwargs)
         if _has_forward_method(op_inst) and callable(op_inst.forward):
-            return ensure_eager_tensor(op_inst.forward(*ctx.args, **ctx.kwargs))
+            return op_inst.forward(*ctx.args, **ctx.kwargs)
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
 
@@ -165,7 +169,7 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         """
         raw_backend: EagerPayload = ctx.backend
         assert _has_execute_op_backend(raw_backend)
-        return ensure_eager_tensor(raw_backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs))
+        return raw_backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs)
 
 
 class EagerEvaluator:
@@ -224,13 +228,13 @@ class EagerEvaluator:
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod
-    def evaluate(op_type: str, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | tuple[Tensor, ...]:
+    def evaluate(op_type: str, *args: OpValue, **kwargs: OpValue) -> Tensor | tuple[Tensor, ...]:
         """Execute the eager evaluate operation on the active backend array.
 
         Args:
             op_type (str): Input `op_type` argument (op type).
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

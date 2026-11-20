@@ -1,4 +1,4 @@
-"""Implementation of hyperbolic operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.hyperbolic`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.unary.hyperbolic`."""
 
 from __future__ import annotations
 

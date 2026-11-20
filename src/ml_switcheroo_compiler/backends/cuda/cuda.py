@@ -2,424 +2,62 @@
 
 from __future__ import annotations
 
-import ctypes
-import ctypes.util
 import logging
-import os
-import re
-import typing
 from types import ModuleType
 
-import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.cuda._cuda_codegen_base import _CudaCodeGenBase as _CudaCodeGenBase
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    CUDA_SYNTH_MATH_MAP as CUDA_SYNTH_MATH_MAP,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    KernelArgType as KernelArgType,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _as_eager_dict as _as_eager_dict,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _as_tpl_opt as _as_tpl_opt,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _calculate_node_bytes as _calculate_node_bytes,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _evaluate_cuda_fallback as _evaluate_cuda_fallback,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _extract_kernel_name as _extract_kernel_name,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _marshall_kernel_params as _marshall_kernel_params,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _prepare_cuda_input_buffers as _prepare_cuda_input_buffers,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_helpers import (
+    _synthesize_cuda_kernel as _synthesize_cuda_kernel,
+)
+from ml_switcheroo_compiler.backends.cuda._cuda_runner_exec import CUDARunner as CUDARunner
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_bytes,
-    ensure_callable,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_int,
-    ensure_int_list,
-    ensure_shape,
-    ensure_str,
+    BackendArg,
+    coerce_int_list,
+    coerce_operand_list,
+    coerce_str,
 )
 from ml_switcheroo_compiler.backends.hardware_config_models import (
-    GridDimensionConfig,
-    HardwareTemplateConfig,
     compute_liveness,
-    load_hardware_templates,
-    query_optimal_launch_geometry,
     resolve_hardware_launch_grid_and_args,
 )
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 cupy: ModuleType | None = None
 
-KernelArgType = typing.Union[ctypes.c_void_p, int, float, str, "None"]
-
-
-CUDA_SYNTH_MATH_MAP: dict[str, str] = {
-    "cbrt": "cbrtf(A[id])",
-    "square": "A[id] * A[id]",
-    "cube": "A[id] * A[id] * A[id]",
-    "reciprocal": "1.0f / A[id]",
-    "hardsilu": "A[id] * fminf(fmaxf(A[id] + 3.0f, 0.0f), 6.0f) / 6.0f",
-    "squareplus": "0.5f * (A[id] + sqrtf(A[id] * A[id] + 4.0f))",
-    "softsign": "A[id] / (1.0f + fabsf(A[id]))",
-    "logsigmoid": "-log1pf(expf(-A[id]))",
-    "isnan": "isnan(A[id]) ? 1.0f : 0.0f",
-    "is_nan": "isnan(A[id]) ? 1.0f : 0.0f",
-    "isinf": "isinf(A[id]) ? 1.0f : 0.0f",
-    "is_inf": "isinf(A[id]) ? 1.0f : 0.0f",
-    "isfinite": "isfinite(A[id]) ? 1.0f : 0.0f",
-    "is_finite": "isfinite(A[id]) ? 1.0f : 0.0f",
-    "shift_left": "(float)((int)A[id] << (int)B[id])",
-    "shift_right": "(float)((int)A[id] >> (int)B[id])",
-    "fmod": "fmodf(A[id], B[id])",
-    "remainder": "remainderf(A[id], B[id])",
-    "hypot": "hypotf(A[id], B[id])",
-    "where": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
-    "select": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
-    "clamp": "fminf(fmaxf(in_0[id], in_1[id]), in_2[id])",
-    "fma": "fmaf(in_0[id], in_1[id], in_2[id])",
-}
-
-
-def _as_tpl_opt(val: EagerValue) -> HardwareTemplateConfig | None:
-    """Narrow candidate template value to `HardwareTemplateConfig | None`.
-
-    Args:
-        val (EagerValue): Candidate template object.
-
-    Returns:
-        HardwareTemplateConfig | None: Narrowed template or None.
-    """
-    raw: EagerValue = val
-
-    def _guard(cand: EagerValue) -> typing.TypeGuard[HardwareTemplateConfig | None]:
-        """Narrow candidate to `HardwareTemplateConfig | None`.
-
-        Args:
-            cand (EagerValue): Candidate object.
-
-        Returns:
-            bool: True for optional hardware templates.
-        """
-        return not isinstance(cand, type(Ellipsis))
-
-    assert _guard(raw)
-    return raw
-
-
-def _synthesize_cuda_kernel(clean_op: str, inps: list[str], scalar_expr: str | None = None) -> str:
-    """Synthesize a C++ CUDA kernel without fallback placeholder loops.
-
-    Args:
-        clean_op (str): Normalized op identifier.
-        inps (list[str]): Input argument names.
-        scalar_expr (Optional[str]): Explicit scalar math expression if provided.
-
-    Returns:
-        str: Synthesized C++ CUDA kernel source.
-    """
-    if len(inps) <= 1:
-        expr = scalar_expr or CUDA_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id])")
-        helper = f"__device__ inline float {clean_op}_op(float a) {{ return a; }}\n" if clean_op not in CUDA_SYNTH_MATH_MAP and not scalar_expr else ""
-        return f"{helper}__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
-    if len(inps) == 2:
-        expr = scalar_expr or CUDA_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id], B[id])")
-        helper = f"__device__ inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n" if clean_op not in CUDA_SYNTH_MATH_MAP and not scalar_expr else ""
-        return f"{helper}__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
-    params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
-    call_args = ", ".join([f"in_{i}[id]" for i in range(len(inps))])
-    fn_params = ", ".join([f"float in{i}" for i in range(len(inps))])
-    expr = scalar_expr or CUDA_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op({call_args})")
-    helper = f"__device__ inline float {clean_op}_op({fn_params}) {{ return in0; }}\n" if clean_op not in CUDA_SYNTH_MATH_MAP and not scalar_expr else ""
-    return f"{helper}__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
-
-
-def _as_eager_dict(val: EagerValue) -> dict[str, EagerValue]:
-    """Narrow candidate value to `dict[str, EagerValue]`.
-
-    Args:
-        val (EagerValue): Candidate dictionary.
-
-    Returns:
-        dict[str, EagerValue]: Dictionary or empty dict.
-    """
-    return val if isinstance(val, dict) else {}
-
-
-def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
-    """Calculate total number of elements and allocated byte size for an IRNode.
-
-    Args:
-        node (IRNode): The IR node.
-
-    Returns:
-        tuple[int, int]: (num_elements, total_bytes).
-    """
-    shape = ensure_shape(get_backend_member(node, "shape_metadata", None)) if get_backend_member(node, "shape_metadata", None) else None
-    if shape:
-        num_elements = 1
-        for d in shape:
-            num_elements *= int(d)
-    else:
-        num_elements = 1024
-    bytes_per_elem = 4
-    dtype = node.attributes.get("dtype", "float32") if has_backend_member(node, "attributes") else "float32"
-    if dtype in ("float64", "int64", "double"):
-        bytes_per_elem = 8
-    elif dtype in ("float16", "int16", "bfloat16"):
-        bytes_per_elem = 2
-    elif dtype in ("int8", "uint8", "bool"):
-        bytes_per_elem = 1
-    return num_elements, num_elements * bytes_per_elem
-
-
-def _extract_kernel_name(body: str, default: str) -> str:
-    """Extract kernel function name from C++ kernel body definition.
-
-    Args:
-        body (str): C++ kernel source.
-        default (str): Fallback kernel name.
-
-    Returns:
-        str: Extracted kernel identifier.
-    """
-    m = re.search(r"void\s+([a-zA-Z0-9_]+)\s*\(", body)
-    if m:
-        return m.group(1)
-    return default
-
-
-def _prepare_cuda_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -> dict[str, bytes]:
-    """Prepare raw byte buffers for CUDA execution.
-
-    Args:
-        graph (IRGraph): Graph being executed.
-        args (tuple[object, ...]): Input positional arguments.
-
-    Returns:
-        dict[str, bytes]: Mapping of input names to byte buffers.
-    """
-    input_buffers: dict[str, bytes] = {}
-    for idx, arg in enumerate(args):
-        input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if has_backend_member(arg, "tobytes"):
-            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(arg, "tobytes"))())
-        elif isinstance(arg, (bytes, bytearray, memoryview)):
-            input_buffers[input_name] = bytes(arg)
-        elif has_backend_member(arg, "data") and has_backend_member(get_backend_member(arg, "data"), "tobytes"):
-            input_buffers[input_name] = ensure_bytes(ensure_callable(get_backend_member(get_backend_member(arg, "data"), "tobytes"))())
-        else:
-            input_buffers[input_name] = ensure_bytes(arg)
-    return input_buffers
-
-
-def _evaluate_cuda_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> EagerValue:
-    """Evaluate graph using reference interpreter fallback.
-
-    Args:
-        graph (IRGraph): Computation graph to evaluate.
-        args (tuple[object, ...]): Input positional arguments.
-
-    Returns:
-        EagerValue: Resulting tensor or tuple of tensors.
-    """
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: get_backend_member(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
-    res_dict = evaluate_graph(graph, feed_dict)
-    if len(graph.outputs) == 1:
-        return res_dict.get(graph.outputs[0])
-    return ensure_eager_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
-
 
 @register_backend("cuda")
-class CudaCodeGenerator(BaseGenerator):
+class CudaCodeGenerator(_CudaCodeGenBase):
     """CUDA C++ Code Generator."""
-
-    def __init__(self, graph: IRGraph, delegates: list[CodeGeneratorVisitor] | None = None) -> None:
-        """Initialize CudaCodeGenerator.
-
-        Args:
-            graph (IRGraph): The IR graph to process.
-            delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
-        """
-        super().__init__(graph, delegates)
-        yaml_dir: str = os.path.join(os.path.dirname(__file__), "cuda_orchestration")
-        yaml_path: str = os.path.join(os.path.dirname(__file__), "cuda_templates.yaml")
-        self.config = load_hardware_templates(yaml_dir, yaml_path)
-
-    def _emit_nccl_node(
-        self,
-        node: IRNode,
-        node_idx: int,
-        node_buffers: dict[str, str],
-        last_consumer: dict[str, str],
-        outputs_set: set[str],
-        inputs_set: set[str],
-        cuda: list[str],
-    ) -> None:
-        """Emit NCCL collective communication call for a distributed IRNode.
-
-        Args:
-            node (IRNode): The collective IR node.
-            node_idx (int): Current node index.
-            node_buffers (dict[str, str]): Variable map for allocated device buffers.
-            last_consumer (dict[str, str]): Liveness map for last consumers.
-            outputs_set (set[str]): Graph output node names.
-            inputs_set (set[str]): Graph input node names.
-            cuda (list[str]): Output CUDA source lines.
-        """
-        op_type = str(get_backend_member(node, "op_type", ""))
-        out_name = f"d_out_{node_idx}"
-        node_buffers[node.id] = out_name
-        num_elements, bytes_alloc = _calculate_node_bytes(node)
-        cuda.append(f"    float* {out_name};")
-        cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
-        in_name = node_buffers.get(node.inputs[0], "inputs[0]") if get_backend_member(node, "inputs", None) else out_name
-        op_lower = op_type.lower()
-        if op_lower in ("allreduce", "ncclallreduce"):
-            cuda.append(f"    NCCL_CHECK(ncclAllReduce((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, ncclSum, comm, stream));")
-        elif op_lower == "allgather":
-            cuda.append(f"    NCCL_CHECK(ncclAllGather((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, comm, stream));")
-        elif op_lower == "reducescatter":
-            cuda.append(f"    NCCL_CHECK(ncclReduceScatter((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, ncclSum, comm, stream));")
-        elif op_lower == "broadcast":
-            root = _as_eager_dict(get_backend_member(node, "attributes", {})).get("root", 0)
-            cuda.append(f"    NCCL_CHECK(ncclBroadcast((const void*){in_name}, (void*){out_name}, {num_elements}, ncclFloat, {root}, comm, stream));")
-        self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
-
-    def _free_dead_buffers(
-        self,
-        node: IRNode,
-        node_buffers: dict[str, str],
-        last_consumer: dict[str, str],
-        outputs_set: set[str],
-        inputs_set: set[str],
-        cuda: list[str],
-    ) -> None:
-        """Emit cudaFree calls for dead input buffers whose lifetime has ended.
-
-        Args:
-            node (IRNode): The active IRNode.
-            node_buffers (dict[str, str]): Variable map for allocated device buffers.
-            last_consumer (dict[str, str]): Liveness map for last consumers.
-            outputs_set (set[str]): Graph output node names.
-            inputs_set (set[str]): Graph input node names.
-            cuda (list[str]): Output CUDA source lines.
-        """
-        for inp in [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []))]:
-            if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
-                buf_to_free = node_buffers.get(inp)
-                if buf_to_free:
-                    cuda.append(f"    CUDA_CHECK(cudaFree({buf_to_free}));")
-
-    def _emit_fused_node(
-        self,
-        node: IRNode,
-        node_idx: int,
-        node_buffers: dict[str, str],
-        last_consumer: dict[str, str],
-        outputs_set: set[str],
-        inputs_set: set[str],
-        cuda: list[str],
-    ) -> None:
-        """Emit fused elementwise CUDA kernel allocation, launch, and buffer freeing.
-
-        Args:
-            node (IRNode): Fused IR node to emit.
-            node_idx (int): Current node index.
-            node_buffers (dict[str, str]): Variable map for allocated device buffers.
-            last_consumer (dict[str, str]): Liveness map for last consumers.
-            outputs_set (set[str]): Graph output node names.
-            inputs_set (set[str]): Graph input node names.
-            cuda (list[str]): Output CUDA source lines.
-        """
-        out_name = f"d_out_{node_idx}"
-        node_buffers[node.id] = out_name
-        num_elements, bytes_alloc = _calculate_node_bytes(node)
-        cuda.append(f"    float* {out_name};")
-        cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
-        cuda.append(f"    dim3 block_{node_idx}(256, 1, 1);")
-        (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, {}, node_buffers, out_name, num_elements, node_idx, self.graph)
-        cuda.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
-        kernel_fn = f"fused_elementwise_kernel_{node_idx}"
-        cuda.append(f"    {kernel_fn}<<<grid_{node_idx}, block_{node_idx}>>>({', '.join(launch_args)});")
-        cuda.append("    CUDA_CHECK(cudaGetLastError());")
-        self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
-
-    def _emit_loop_node(
-        self,
-        node: IRNode,
-        node_idx: int,
-        node_buffers: dict[str, str],
-        last_consumer: dict[str, str],
-        outputs_set: set[str],
-        inputs_set: set[str],
-        cuda: list[str],
-    ) -> None:
-        """Emit CUDA host loop execution code for Loop and WhileLoop nodes with loop options.
-
-        Args:
-            node (IRNode): The loop IR node.
-            node_idx (int): Current node index.
-            node_buffers (dict[str, str]): Variable map for allocated device buffers.
-            last_consumer (dict[str, str]): Liveness map for last consumers.
-            outputs_set (set[str]): Graph output node names.
-            inputs_set (set[str]): Graph input node names.
-            cuda (list[str]): Output CUDA source lines.
-        """
-        clean_id = f"node_{node_idx}"
-        out_buf = f"d_out_{node_idx}"
-        node_buffers[str(get_backend_member(node, "id", clean_id))] = out_buf
-        _, bytes_alloc = _calculate_node_bytes(node)
-        cuda.append(f"    float* {out_buf};")
-        cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_buf}, {bytes_alloc}));")
-
-        attrs = _as_eager_dict(get_backend_member(node, "attributes", {}))
-        max_iters = attrs.get("maximum_iterations") or attrs.get("max_iters", 10)
-        parallel_iters = attrs.get("parallel_iterations")
-        swap_memory = attrs.get("swap_memory")
-        shape_invariants = attrs.get("shape_invariants")
-
-        annotations: list[str] = []
-        if parallel_iters is not None:
-            annotations.append(f"parallel_iterations={parallel_iters}")
-        if swap_memory is not None:
-            annotations.append(f"swap_memory={swap_memory}")
-        if max_iters is not None:
-            annotations.append(f"maximum_iterations={max_iters}")
-        if shape_invariants is not None:
-            annotations.append(f"shape_invariants={shape_invariants}")
-        if annotations:
-            cuda.append(f"    // Loop annotations: {', '.join(annotations)}")
-        if swap_memory:
-            cuda.append(f"    // Swap memory policy enabled for {out_buf}")
-        if parallel_iters is not None:
-            cuda.append(f"    #pragma unroll {parallel_iters}")
-
-        cuda.append(f"    for (int _iter_{node_idx} = 0; _iter_{node_idx} < {max_iters}; ++_iter_{node_idx}) {{")
-        cuda.append(f"        // Loop iteration body for {clean_id}")
-        cuda.append("    }")
-        self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
-
-    def _ensure_template(self, node: IRNode, node_idx: int) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
-        """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
-
-        Args:
-            node (IRNode): Target IR node.
-            node_idx (int): Current node index.
-
-        Returns:
-            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
-        """
-        op_type = str(get_backend_member(node, "op_type", ""))
-        if op_type.lower() in ("input", "output", "fusedelementwise", "loop", "whileloop"):
-            return None
-        if "unsupported" in op_type.lower():
-            raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by cuda backend.")
-        tpl = self.config.templates.get(op_type.lower())
-        if not tpl:
-            clean_op = op_type.lower().replace("-", "_").replace(".", "_")
-            inps = [str(x) for x in ensure_eager_list(get_backend_member(node, "inputs", []) or [])]
-            raw_se = _as_eager_dict(get_backend_member(node, "attributes", {})).get("scalar_expr")
-            scalar_expr = str(raw_se) if raw_se is not None else None
-            body = _synthesize_cuda_kernel(clean_op, inps, scalar_expr)
-            tpl = HardwareTemplateConfig(
-                body=body,
-                grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),
-                workgroup_size=[256, 1, 1],
-            )
-            self.config.templates[op_type.lower()] = tpl
-        return tpl
 
     def _emit_node(
         self,
@@ -442,7 +80,7 @@ class CudaCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             cuda (list[str]): Output CUDA source lines.
         """
-        op_type = str(get_backend_member(node, "op_type", ""))
+        op_type = str(adapt_backend_module(node).get_symbol("op_type", ""))
         if op_type.lower() in ("allreduce", "ncclallreduce", "allgather", "reducescatter", "broadcast"):
             self._emit_nccl_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
             return
@@ -458,7 +96,9 @@ class CudaCodeGenerator(BaseGenerator):
         tpl = self._ensure_template(node, node_idx)
         if not tpl:
             return
-        raw_outs = _as_eager_dict(get_backend_member(node, "attributes", {})).get("outputs") or (node.outputs if has_backend_member(node, "outputs") and len(node.outputs) > 1 else None)
+        raw_outs = _as_eager_dict(adapt_backend_module(node).get_symbol("attributes", {})).get("outputs") or (
+            node.outputs if adapt_backend_module(node).has_symbol("outputs") and len(node.outputs) > 1 else None
+        )
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         if raw_outs and isinstance(raw_outs, (list, tuple)) and len(raw_outs) > 1:
@@ -476,13 +116,17 @@ class CudaCodeGenerator(BaseGenerator):
             node_buffers[node.id] = out_name
             cuda.append(f"    float* {out_name};")
             cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
-        wg = ensure_int_list(ensure_callable(get_backend_member(tpl, "get"))("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = coerce_int_list(adapt_backend_module(tpl).require_op("get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         cuda.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
-        (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
+        (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(
+            node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph
+        )
         cuda.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
-        kernel_fn = _extract_kernel_name(ensure_str(ensure_callable(get_backend_member(tpl, "get"))("body", "")), op_type.lower())
+        kernel_fn = _extract_kernel_name(
+            coerce_str(adapt_backend_module(tpl).require_op("get")("body", "")), op_type.lower()
+        )
         cuda.append(f"    {kernel_fn}<<<grid_{node_idx}, block_{node_idx}>>>({', '.join(launch_args)});")
         cuda.append("    CUDA_CHECK(cudaGetLastError());")
 
@@ -494,7 +138,11 @@ class CudaCodeGenerator(BaseGenerator):
         Returns:
             str: Generated CUDA strings.
         """
-        has_collectives: bool = any(str(get_backend_member(n, "op_type", "")).lower() in ("allreduce", "ncclallreduce", "allgather", "reducescatter", "broadcast") for n in (self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ()))
+        has_collectives: bool = any(
+            str(adapt_backend_module(n).get_symbol("op_type", "")).lower()
+            in ("allreduce", "ncclallreduce", "allgather", "reducescatter", "broadcast")
+            for n in (self.graph.nodes.values() if adapt_backend_module(self.graph).get_symbol("nodes", None) else ())
+        )
 
         cuda: list[str] = [
             "// CUDA Generated by ml-switcheroo-compiler",
@@ -511,7 +159,10 @@ class CudaCodeGenerator(BaseGenerator):
                     "    do { ",
                     "        ncclResult_t r = cmd; ",
                     "        if (r != ncclSuccess) { ",
-                    '            std::cerr << "NCCL Error: " << ncclGetErrorString(r) << " at " << __FILE__ << ":" << __LINE__ << std::endl; ',
+                    (
+                        '            std::cerr << "NCCL Error: " << ncclGetErrorString(r) << " at " << __FILE__ << '
+                        '":" << __LINE__ << std::endl; '
+                    ),
                     "            exit(r); ",
                     "        } ",
                     "    } while (0)",
@@ -525,13 +176,19 @@ class CudaCodeGenerator(BaseGenerator):
                 "    do { ",
                 "        cudaError_t err = call; ",
                 "        if (err != cudaSuccess) { ",
-                '            std::cerr << "CUDA Error: " << cudaGetErrorString(err) << " at " << __FILE__ << ":" << __LINE__ << std::endl; ',
+                (
+                    '            std::cerr << "CUDA Error: " << cudaGetErrorString(err) << " at " << __FILE__ << '
+                    '":" << __LINE__ << std::endl; '
+                ),
                 "            exit(err); ",
                 "        } ",
                 "    } while (0)",
                 "",
                 "// Dynamic N-dimensional coordinate-to-linear-offset index calculation",
-                "__device__ inline int coords_to_offset_nd(int linear_idx, const int* shape, const int* strides, int ndim) {",
+                (
+                    "__device__ inline int coords_to_offset_nd(int linear_idx, const int* shape, const int* "
+                    "strides, int ndim) {"
+                ),
                 "    int offset = 0;",
                 "    int rem = linear_idx;",
                 "    for (int d = ndim - 1; d >= 0; --d) {",
@@ -545,8 +202,10 @@ class CudaCodeGenerator(BaseGenerator):
             ]
         )
 
-        for node_idx, node in enumerate(self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ()):
-            op_type: str = str(get_backend_member(node, "op_type", ""))
+        for node_idx, node in enumerate(
+            self.graph.nodes.values() if adapt_backend_module(self.graph).get_symbol("nodes", None) else ()
+        ):
+            op_type: str = str(adapt_backend_module(node).get_symbol("op_type", ""))
             if op_type.lower() == "fusedelementwise":
                 scalar_expr = str(node.attributes.get("scalar_expr", "in0"))
                 in_params = ", ".join([f"const float* in_{k}" for k in range(len(node.inputs))])
@@ -562,20 +221,30 @@ class CudaCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    cuda.append(ensure_str(ensure_callable(get_backend_member(tpl, "get"))("body", "")))
+                    cuda.append(coerce_str(adapt_backend_module(tpl).require_op("get")("body", "")))
 
-        eval_fn_sig: str = "void evaluate_cuda(const std::vector<float*>& inputs, std::vector<float*>& outputs, ncclComm_t comm = 0, cudaStream_t stream = 0) {" if has_collectives else "void evaluate_cuda(const std::vector<float*>& inputs, std::vector<float*>& outputs) {"
+        eval_fn_sig: str = (
+            (
+                "void evaluate_cuda(const std::vector<float*>& inputs, std::vector<float*>& outputs, "
+                "ncclComm_t comm = 0, cudaStream_t stream = 0) {"
+            )
+            if has_collectives
+            else "void evaluate_cuda(const std::vector<float*>& inputs, std::vector<float*>& outputs) {"
+        )
         cuda.append(eval_fn_sig)
         cuda.append("    // 1. Dynamic Memory Allocation and Kernel Dispatch")
 
-        node_buffers: dict[str, str] = {str(inp_name): f"inputs[{i}]" for i, inp_name in enumerate(ensure_eager_list(get_backend_member(self.graph, "inputs", [])))}
+        node_buffers: dict[str, str] = {
+            str(inp_name): f"inputs[{i}]"
+            for i, inp_name in enumerate(coerce_operand_list(adapt_backend_module(self.graph).get_symbol("inputs", [])))
+        }
         last_consumer = compute_liveness(self.graph)
-        outputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "outputs", []))}
-        inputs_set = {str(x) for x in ensure_eager_list(get_backend_member(self.graph, "inputs", []))}
+        outputs_set = {str(x) for x in coerce_operand_list(adapt_backend_module(self.graph).get_symbol("outputs", []))}
+        inputs_set = {str(x) for x in coerce_operand_list(adapt_backend_module(self.graph).get_symbol("inputs", []))}
 
         node_idx = 0
-        for node in self.graph.nodes.values() if get_backend_member(self.graph, "nodes", None) else ():
-            if get_backend_member(node, "op_type", "") == "Input":
+        for node in self.graph.nodes.values() if adapt_backend_module(self.graph).get_symbol("nodes", None) else ():
+            if adapt_backend_module(node).get_symbol("op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
             node_idx += 1
@@ -584,15 +253,15 @@ class CudaCodeGenerator(BaseGenerator):
         cuda.append("}")
         return "\n".join(cuda)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> BackendArg:
         """Compile IRGraph into ahead-of-time CUDA executable artifact.
 
         Args:
             graph (IRGraph): Target computation graph to compile.
-            **kwargs (EagerValue): Compiler options such as optimization levels and target arch.
+            **kwargs (BackendArg): Compiler options such as optimization levels and target arch.
 
         Returns:
-            EagerValue: Executable compiled artifact.
+            BackendArg: Executable compiled artifact.
         """
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
         from ml_switcheroo_compiler.backends.hardware_compilers import CUDACompiler
@@ -602,23 +271,25 @@ class CudaCodeGenerator(BaseGenerator):
         compile_opts = kwargs.get("compile_options", None)
         comp_res = compiler.compile(cuda_source, options=compile_opts if isinstance(compile_opts, list) else None)
 
-        def runner(*args: EagerValue, **runner_kwargs: EagerValue) -> EagerValue:
+        def runner(*args: BackendArg, **runner_kwargs: BackendArg) -> BackendArg:
             """Execute compiled CUDA artifact with runtime dispatch or fallback.
 
             Args:
-                *args (EagerValue): Input tensor or buffer arguments.
-                **runner_kwargs (EagerValue): Optional execution options.
+                *args (BackendArg): Input tensor or buffer arguments.
+                **runner_kwargs (BackendArg): Optional execution options.
 
             Returns:
-                EagerValue: Output tensor or tuple of output tensors.
+                BackendArg: Output tensor or tuple of output tensors.
             """
             if CUDARunner.is_available():
                 try:
                     runner_inst = CUDARunner()
                     input_buffers = _prepare_cuda_input_buffers(graph, args)
-                    out_dict = _as_eager_dict(ensure_callable(get_backend_member(runner_inst, "execute_graph"))(graph, input_buffers))
+                    out_dict = _as_eager_dict(
+                        adapt_backend_module(runner_inst).require_op("execute_graph")(graph, input_buffers)
+                    )
                     if len(graph.outputs) == 1:
-                        return ensure_eager_tensor(out_dict.get(graph.outputs[0]))
+                        return out_dict.get(graph.outputs[0])
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -631,540 +302,3 @@ class CudaCodeGenerator(BaseGenerator):
             source_code=cuda_source,
             metadata={"backend": "cuda", "compiler_cli": comp_res.compiler_cli, "success": comp_res.success},
         )
-
-
-def _marshall_kernel_params(args: list[KernelArgType] | None) -> ctypes.Array[ctypes.c_void_p] | None:
-    """Marshall Python objects into ctypes kernel parameter array.
-
-    Args:
-        args (Optional[list[KernelArgType]]): Kernel arguments.
-
-    Returns:
-        Optional[ctypes.Array]: ctypes array of pointers or None.
-    """
-    if not args:
-        return None
-    c_args: list[ctypes.c_void_p] = []
-    for a in args:
-        if isinstance(a, ctypes.c_void_p):
-            c_args.append(a)
-        elif isinstance(a, int):
-            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_int32(a))))
-        elif isinstance(a, float):
-            c_args.append(ctypes.c_void_p(ctypes.addressof(ctypes.c_float(a))))
-        elif has_backend_member(a, "value"):
-            c_args.append(ctypes.c_void_p(ensure_int(get_backend_member(a, "value"))))
-        else:
-            c_args.append(ctypes.c_void_p(int(a) if a is not None else 0))
-    return (ctypes.c_void_p * len(c_args))(*[ctypes.c_void_p(ctypes.addressof(arg_obj)).value for arg_obj in c_args])
-
-
-class CUDARunner:
-    """CUDA Runner utilizing cupy if available, fallback to ctypes driver API."""
-
-    @classmethod
-    def is_available(cls) -> bool:
-        """Check if CUDA driver and accelerator hardware are functional.
-
-        Returns:
-            bool: True if CUDA is functional, False otherwise.
-        """
-        if cupy is not None:
-            try:
-                return bool(cupy.cuda.is_available() and cupy.cuda.runtime.getDeviceCount() > 0)
-            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        try:
-            cuda_lib_path = ctypes.util.find_library("cuda")
-            if cuda_lib_path:
-                lib = ctypes.cdll.LoadLibrary(cuda_lib_path)
-                if has_backend_member(lib, "cuInit") and lib.cuInit(0) == 0:
-                    count = ctypes.c_int()
-                    if has_backend_member(lib, "cuDeviceGetCount") and lib.cuDeviceGetCount(ctypes.byref(count)) == 0:
-                        return count.value > 0
-        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        return False
-
-    def __init__(self) -> None:
-        """Initialize CUDARunner and load hardware limits."""
-        self.limits: dict[str, int | list[int] | str | None] = {}
-        limits_path: str = os.path.join(os.path.dirname(__file__), "hardware_limits.yaml")
-        if os.path.exists(limits_path):
-            with open(limits_path) as f:
-                self.limits = yaml.safe_load(f) or {}
-
-        self.cuda_lib: ctypes.CDLL | None = None
-        self._ctx: ctypes.c_void_p | None = None
-
-        if cupy is not None:
-            self.mode = "cupy"
-        else:
-            self.mode = "ctypes"
-            try:
-                cuda_lib_path = ctypes.util.find_library("cuda")
-                if cuda_lib_path:
-                    self.cuda_lib = ctypes.cdll.LoadLibrary(cuda_lib_path)
-                    self.cuda_lib.cuInit(0)
-                    device = ctypes.c_int()
-                    self.cuda_lib.cuDeviceGet(ctypes.byref(device), 0)
-                    self._ctx = ctypes.c_void_p()
-                    self.cuda_lib.cuCtxCreate_v2(ctypes.byref(self._ctx), 0, device)
-            except Exception:
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-
-    def allocate_buffer(self, size: int) -> ctypes.c_void_p | None:
-        """Allocate device memory.
-
-        Args:
-            size (int): Size in bytes.
-
-        Returns:
-            Optional[ctypes.c_void_p]: Pointer to device memory.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            mem = cupy.cuda.alloc(size)
-            return ctypes.c_void_p(mem.ptr)
-
-        if not self.cuda_lib:
-            return ctypes.c_void_p(0)
-
-        dptr = ctypes.c_void_p()
-        res = self.cuda_lib.cuMemAlloc_v2(ctypes.byref(dptr), size)
-        if res != 0:
-            raise RuntimeError(f"cuMemAlloc failed with error code {res}")
-        return dptr
-
-    def write_buffer(self, device_ptr: ctypes.c_void_p | None, host_data: bytes) -> None:
-        """Write to device buffer.
-
-        Args:
-            device_ptr (ctypes.c_void_p): Device pointer.
-            host_data (bytes): Data to write.
-        """
-        if device_ptr is None or not (get_backend_member(device_ptr, "value") if has_backend_member(device_ptr, "value") else device_ptr):
-            return
-
-        if self.mode == "cupy" and cupy is not None:
-            arr = cupy.asarray(bytearray(host_data), dtype="uint8")
-            dst = cupy.ndarray(arr.shape, dtype=arr.dtype, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, arr.nbytes, device_ptr), 0))
-            dst.set(arr)
-            return
-
-        if self.cuda_lib:
-            res = self.cuda_lib.cuMemcpyHtoD_v2(device_ptr, host_data, len(host_data))
-            if res != 0:
-                raise RuntimeError(f"cuMemcpyHtoD failed with error code {res}")
-
-    def read_buffer(self, device_ptr: ctypes.c_void_p | None, size: int) -> bytes:
-        """Read from device buffer.
-
-        Args:
-            device_ptr (ctypes.c_void_p): Device pointer.
-            size (int): Size to read.
-
-        Returns:
-            bytes: Read data.
-        """
-        if device_ptr is None or not (get_backend_member(device_ptr, "value") if has_backend_member(device_ptr, "value") else device_ptr):
-            return b"\x00" * size
-
-        if self.mode == "cupy" and cupy is not None:
-            src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
-            arr = src.get()
-            return ensure_bytes(arr.tobytes())
-
-        if self.cuda_lib:
-            host_data = ctypes.create_string_buffer(size)
-            res = self.cuda_lib.cuMemcpyDtoH_v2(host_data, device_ptr, size)
-            if res != 0:
-                raise RuntimeError(f"cuMemcpyDtoH failed with error code {res}")
-            return host_data.raw
-        return b"\x00" * size
-
-    def free_buffer(self, device_ptr: ctypes.c_void_p | None) -> None:
-        """Free device memory.
-
-        Args:
-            device_ptr (ctypes.c_void_p): Device pointer.
-        """
-        if device_ptr is None or not (get_backend_member(device_ptr, "value") if has_backend_member(device_ptr, "value") else device_ptr):
-            return
-
-        if self.mode == "cupy":
-            pass
-        elif self.cuda_lib:
-            self.cuda_lib.cuMemFree_v2(device_ptr)
-
-    def compile_cuda_to_ptx(
-        self,
-        cuda_source: str,
-        source_filename: str = "kernel.cu",
-        options: list[str] | None = None,
-    ) -> str:
-        """Compile CUDA source code to PTX string.
-
-        Args:
-            cuda_source (str): CUDA C++ source code.
-            source_filename (str): Virtual filename.
-            options (Optional[list[str]]): Compiler options.
-
-        Returns:
-            str: Compiled PTX code.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            try:
-                opts = tuple(options) if options else ()
-                if has_backend_member(cupy.cuda.nvrtc, "create_program"):
-                    cupy.cuda.nvrtc.create_program(cuda_source, source_filename)
-                ptx_bytes = cupy.cuda.nvrtc.get_ptx(cuda_source, options=opts)
-                if isinstance(ptx_bytes, bytes):
-                    return ptx_bytes.decode("utf-8")
-                return str(ptx_bytes)
-            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-
-        try:
-            nvrtc_path = ctypes.util.find_library("nvrtc") or "libnvrtc.so"
-            nvrtc_lib = ctypes.cdll.LoadLibrary(nvrtc_path)
-        except Exception as err:
-            raise RuntimeError("NVRTC library unavailable") from err
-
-        prog = ctypes.c_void_p()
-        res = nvrtc_lib.nvrtcCreateProgram(
-            ctypes.byref(prog),
-            cuda_source.encode("utf-8"),
-            source_filename.encode("utf-8"),
-            0,
-            None,
-            None,
-        )
-        if res != 0:
-            raise RuntimeError(f"nvrtcCreateProgram failed with error code {res}")
-
-        opt_list = options or []
-        c_opts = (ctypes.c_char_p * len(opt_list))(*[opt.encode("utf-8") for opt in opt_list])
-        res = nvrtc_lib.nvrtcCompileProgram(prog, len(opt_list), c_opts)
-        if res != 0:
-            log_size = ctypes.c_size_t()
-            nvrtc_lib.nvrtcGetProgramLogSize(prog, ctypes.byref(log_size))
-            log_buf = ctypes.create_string_buffer(log_size.value)
-            nvrtc_lib.nvrtcGetProgramLog(prog, log_buf)
-            log_msg = log_buf.value.decode("utf-8", errors="replace")
-            if has_backend_member(nvrtc_lib, "nvrtcDestroyProgram"):
-                nvrtc_lib.nvrtcDestroyProgram(ctypes.byref(prog))
-            raise RuntimeError(f"NVRTC compilation failed: {log_msg}")
-
-        ptx_size = ctypes.c_size_t()
-        nvrtc_lib.nvrtcGetPTXSize(prog, ctypes.byref(ptx_size))
-        ptx_buf = ctypes.create_string_buffer(ptx_size.value)
-        nvrtc_lib.nvrtcGetPTX(prog, ptx_buf)
-        if has_backend_member(nvrtc_lib, "nvrtcDestroyProgram"):
-            nvrtc_lib.nvrtcDestroyProgram(ctypes.byref(prog))
-        return ptx_buf.value.decode("utf-8", errors="replace")
-
-    def compile_and_dispatch(
-        self,
-        ptx_source: str,
-        entry_point: str,
-        grid_size: list[int],
-        block_size: list[int],
-        args: list[KernelArgType] | None = None,
-        shared_memory_bytes: int = 0,
-        stream: ctypes.c_void_p | None = None,
-    ) -> None:
-        """Compile PTX modules and launch kernels with dynamic shared memory and stream support.
-
-        Args:
-            ptx_source (str): PTX source code.
-            entry_point (str): Kernel entry point.
-            grid_size (list[int]): Grid sizing.
-            block_size (list[int]): Block sizing.
-            args (Optional[list[KernelArgType]]): Kernel arguments to marshall to device.
-            shared_memory_bytes (int): Dynamic shared memory allocation size in bytes.
-            stream (Optional[ctypes.c_void_p]): Asynchronous CUDA stream.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            module = cupy.RawModule(code=ptx_source)
-            kernel = module.get_function(entry_point)
-            kernel(tuple(grid_size), tuple(block_size), tuple(args) if args else ())
-            return
-
-        if self.cuda_lib:
-            module = ctypes.c_void_p()
-            ptx_bytes = ptx_source.encode("utf-8")
-            res = self.cuda_lib.cuModuleLoadData(ctypes.byref(module), ptx_bytes)
-            if res != 0:
-                raise RuntimeError(f"cuModuleLoadData failed with error code {res}")
-
-            kernel = ctypes.c_void_p()
-            res = self.cuda_lib.cuModuleGetFunction(ctypes.byref(kernel), module, entry_point.encode("utf-8"))
-            if res != 0:
-                raise RuntimeError(f"cuModuleGetFunction failed with error code {res}")
-
-            kernel_params = _marshall_kernel_params(args)
-
-            h_stream = stream if stream is not None else ctypes.c_void_p(0)
-            res = self.cuda_lib.cuLaunchKernel(
-                kernel,
-                grid_size[0],
-                grid_size[1] if len(grid_size) > 1 else 1,
-                grid_size[2] if len(grid_size) > 2 else 1,
-                block_size[0],
-                block_size[1] if len(block_size) > 1 else 1,
-                block_size[2] if len(block_size) > 2 else 1,
-                shared_memory_bytes,
-                h_stream,
-                kernel_params,
-                0,
-            )
-            if res != 0:
-                raise RuntimeError(f"cuLaunchKernel failed with error code {res}")
-
-    def create_stream(self) -> ctypes.c_void_p | None:
-        """Create an asynchronous CUDA stream.
-
-        Returns:
-            Optional[ctypes.c_void_p]: Pointer to created CUDA stream.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            stream = cupy.cuda.Stream()
-            ptr_val = get_backend_member(stream, "ptr", 1000)
-            return ctypes.c_void_p(int(ptr_val) if ptr_val else 1000)
-        if self.cuda_lib:
-            stream = ctypes.c_void_p()
-            res = self.cuda_lib.cuStreamCreate(ctypes.byref(stream), 0)
-            if res != 0:
-                raise RuntimeError(f"cuStreamCreate failed with error code {res}")
-            return stream
-        return None
-
-    def synchronize_stream(self, stream: ctypes.c_void_p | None = None) -> None:
-        """Synchronize an asynchronous CUDA stream.
-
-        Args:
-            stream (Optional[ctypes.c_void_p]): Stream to synchronize. Defaults to None (default stream).
-
-        Raises:
-            RuntimeError: If stream synchronization fails.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            if stream is not None and stream.value:
-                cupy.cuda.Stream(null=False).synchronize()
-            else:
-                cupy.cuda.Device().synchronize()
-            return
-        if self.cuda_lib:
-            st = stream if stream is not None else ctypes.c_void_p(0)
-            res = self.cuda_lib.cuStreamSynchronize(st)
-            if res != 0:
-                raise RuntimeError(f"cuStreamSynchronize failed with error code {res}")
-
-    def create_event(self) -> ctypes.c_void_p | None:
-        """Create a CUDA event for timing and synchronization.
-
-        Returns:
-            Optional[ctypes.c_void_p]: Pointer to created CUDA event.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            event = cupy.cuda.Event()
-            ptr_val = get_backend_member(event, "ptr", 1000)
-            return ctypes.c_void_p(int(ptr_val) if ptr_val else 1000)
-        if self.cuda_lib:
-            event = ctypes.c_void_p()
-            res = self.cuda_lib.cuEventCreate(ctypes.byref(event), 0)
-            if res != 0:
-                raise RuntimeError(f"cuEventCreate failed with error code {res}")
-            return event
-        return None
-
-    def record_event(self, event: ctypes.c_void_p | None, stream: ctypes.c_void_p | None = None) -> None:
-        """Record a CUDA event into a stream.
-
-        Args:
-            event (Optional[ctypes.c_void_p]): CUDA event.
-            stream (Optional[ctypes.c_void_p]): CUDA stream.
-
-        Raises:
-            RuntimeError: If recording event fails.
-        """
-        if event is None:
-            return
-        if self.mode == "cupy" and cupy is not None:
-            pass
-        elif self.cuda_lib:
-            st = stream if stream is not None else ctypes.c_void_p(0)
-            res = self.cuda_lib.cuEventRecord(event, st)
-            if res != 0:
-                raise RuntimeError(f"cuEventRecord failed with error code {res}")
-
-    def elapsed_time(self, start_event: ctypes.c_void_p | None, end_event: ctypes.c_void_p | None) -> float:
-        """Calculate elapsed time in milliseconds between two CUDA events.
-
-        Args:
-            start_event (Optional[ctypes.c_void_p]): Start event.
-            end_event (Optional[ctypes.c_void_p]): End event.
-
-        Returns:
-            float: Elapsed time in milliseconds.
-
-        Raises:
-            RuntimeError: If querying elapsed time fails.
-        """
-        if start_event is None or end_event is None:
-            return 0.0
-        if self.cuda_lib:
-            millis = ctypes.c_float()
-            res = self.cuda_lib.cuEventElapsedTime(ctypes.pointer(millis), start_event, end_event)
-            if res != 0:
-                raise RuntimeError(f"cuEventElapsedTime failed with error code {res}")
-            return float(millis.value)
-        return 0.0
-
-    def synchronize(self) -> None:
-        """Synchronize the active CUDA stream or device barrier.
-
-        Raises:
-            RuntimeError: If device synchronization fails.
-        """
-        if self.mode == "cupy" and cupy is not None:
-            try:
-                cupy.cuda.Stream.null.synchronize()
-            except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-                logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-            return
-
-        if not self.cuda_lib:
-            return
-
-        if has_backend_member(self.cuda_lib, "cuCtxSynchronize"):
-            res = self.cuda_lib.cuCtxSynchronize()
-            if res != 0:
-                raise RuntimeError(f"cuCtxSynchronize failed with error code {res}")
-        elif has_backend_member(self.cuda_lib, "cudaDeviceSynchronize"):
-            res = self.cuda_lib.cudaDeviceSynchronize()
-            if res != 0:
-                raise RuntimeError(f"cudaDeviceSynchronize failed with error code {res}")
-
-    def _prepare_device_buffers(
-        self,
-        inputs: dict[str, bytes | memoryview | list[float]],
-    ) -> dict[str, ctypes.c_void_p]:
-        """Allocate and populate device memory buffers for inputs.
-
-        Args:
-            inputs (dict[str, Union[bytes, memoryview, list[float]]]): Host input payloads.
-
-        Returns:
-            dict[str, ctypes.c_void_p]: Allocated device pointers by input name.
-        """
-        device_buffers: dict[str, ctypes.c_void_p] = {}
-        for inp_name, data in inputs.items():
-            if isinstance(data, list):
-                float_arr = (ctypes.c_float * len(data))(*data)
-                raw_bytes = bytes(float_arr)
-            else:
-                raw_bytes = bytes(data)
-
-            dptr = self.allocate_buffer(len(raw_bytes))
-            if dptr is not None:
-                self.write_buffer(dptr, raw_bytes)
-                device_buffers[inp_name] = dptr
-        return device_buffers
-
-    def _dispatch_compute_node(
-        self,
-        node: IRNode,
-        node_idx: int,
-        generator: CudaCodeGenerator,
-        ptx_source: str,
-        device_buffers: dict[str, ctypes.c_void_p],
-    ) -> None:
-        """Dispatch compute kernel execution for a single IRNode.
-
-        Args:
-            node (IRNode): The IR node to execute.
-            node_idx (int): Current node execution index.
-            generator (CudaCodeGenerator): CUDA code generator holding op templates.
-            ptx_source (str): Compiled PTX source string.
-            device_buffers (dict[str, ctypes.c_void_p]): Active device buffer allocations.
-        """
-        num_elements, byte_size = _calculate_node_bytes(node)
-        out_ptr = self.allocate_buffer(byte_size)
-        if out_ptr is not None:
-            device_buffers[node.id] = out_ptr
-
-        op_type = str(get_backend_member(node, "op_type", "")).lower()
-        if op_type == "fusedelementwise":
-            kernel_fn = f"fused_elementwise_kernel_{node_idx}"
-            tpl = HardwareTemplateConfig(body="", workgroup_size=[256, 1, 1])
-        else:
-            tpl_opt = _as_tpl_opt(generator.config.templates.get(op_type))
-            if tpl_opt is None:
-                return
-            tpl = tpl_opt
-            kernel_fn = _extract_kernel_name(ensure_str(tpl.get("body", "")), op_type)
-
-        block_cfg, grid_cfg = query_optimal_launch_geometry(
-            ensure_shape(get_backend_member(node, "shape_metadata", None) or (num_elements,)),
-        )
-        block_size = [block_cfg[0], block_cfg[1], block_cfg[2]]
-        grid_size = [grid_cfg[0], grid_cfg[1], grid_cfg[2]]
-
-        kernel_args: list[KernelArgType] = [device_buffers[str(inp)] for inp in ensure_eager_list(get_backend_member(node, "inputs", [])) if str(inp) in device_buffers]
-        if out_ptr is not None:
-            kernel_args.append(out_ptr)
-        kernel_args.append(num_elements)
-
-        if ptx_source and out_ptr is not None:
-            self.compile_and_dispatch(ptx_source, kernel_fn, grid_size, block_size, kernel_args)
-
-    def execute_graph(
-        self,
-        graph: IRGraph,
-        inputs: dict[str, bytes | memoryview | list[float]],
-    ) -> dict[str, bytes]:
-        """Execute multi-node IRGraph through dynamic JIT compilation and kernel dispatch.
-
-        Args:
-            graph (IRGraph): Target computation graph.
-            inputs (dict[str, Union[bytes, memoryview, list[float]]]): Host input buffers.
-
-        Returns:
-            dict[str, bytes]: Result dictionary of output buffers.
-
-        Raises:
-            BackendNotSupportedError: When CUDA hardware or driver is unavailable.
-        """
-        if not self.is_available() and not self.cuda_lib and (self.mode != "cupy" or cupy is None):
-            raise BackendNotSupportedError("CUDA accelerator hardware or driver is not available.")
-
-        cuda_source = CudaCodeGenerator(graph).generate()
-        ptx_source = self.compile_cuda_to_ptx(cuda_source)
-        device_buffers = self._prepare_device_buffers(inputs)
-        generator = CudaCodeGenerator(graph)
-
-        node_idx: int = 0
-        for node in graph.nodes.values() if get_backend_member(graph, "nodes", None) else ():
-            if get_backend_member(node, "op_type", "") == "Input":
-                continue
-            self._dispatch_compute_node(node, node_idx, generator, ptx_source, device_buffers)
-            node_idx += 1
-
-        self.synchronize()
-
-        outputs_set = [str(x) for x in ensure_eager_list(get_backend_member(graph, "outputs", []))]
-        output_data: dict[str, bytes] = {}
-
-        for out_name in outputs_set:
-            out_node = graph.nodes.get(out_name)
-            _, byte_size = _calculate_node_bytes(out_node) if out_node is not None else (1024, 4096)
-            out_buf = device_buffers.get(out_name)
-            if out_buf is not None:
-                output_data[out_name] = self.read_buffer(out_buf, byte_size)
-
-        for ptr in device_buffers.values():
-            if ptr is not None:
-                self.free_buffer(ptr)
-
-        return output_data

@@ -1,12 +1,12 @@
-"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.dask.types`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.dask.types`."""
 
 from __future__ import annotations
 
 import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float
-from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_float
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
 da: ModuleType | None
 try:
@@ -21,63 +21,67 @@ except ImportError:
 class _ValueHolderProtocol(typing.Protocol):
     """Protocol for dtype objects exposing `.value`."""
 
-    value: EagerValue
+    value: BackendArg
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
+def zeros(cls: type | None, shape: tuple[int, ...]) -> BackendArg:
     """Create a tensor of zeros.
 
     Args:
-        cls (type): The backend class.
+        cls (type | None): The backend class.
         shape (tuple[int, ...]): The shape of the tensor.
 
     Returns:
-        EagerValue: The zeros tensor.
+        BackendArg: The zeros tensor.
     """
-    return ensure_eager_tensor(ensure_mod(da).zeros(shape, chunks="auto"))
+    assert da is not None
+    return adapt_backend_module(da).require_op("zeros")(shape, chunks="auto")
 
 
-def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+def array(cls: type | None, data: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
     """Create a tensor from data.
 
     Args:
-        cls (type): The backend class.
-        data: The input data.
-        dtype: The target dtype.
+        cls (type | None): The backend class.
+        data (BackendArg): The input data.
+        dtype (BackendArg | None): The target dtype.
 
     Returns:
-        EagerValue: The array tensor.
+        BackendArg: The array tensor.
     """
+    assert da is not None
     if dtype is not None:
-        raw_dt: EagerValue = dtype
+        raw_dt: BackendArg | _ValueHolderProtocol = dtype
         dt_val = raw_dt.value if isinstance(raw_dt, _ValueHolderProtocol) else dtype
-        return ensure_eager_tensor(ensure_mod(da).array(data, dtype=dt_val))
-    return ensure_eager_tensor(ensure_mod(da).array(data))
+        return adapt_backend_module(da).require_op("array")(data, dtype=dt_val)
+    return adapt_backend_module(da).require_op("array")(data)
 
 
-def asarray(cls: type, data: EagerValue) -> EagerValue:
+def asarray(cls: type | None, data: BackendArg) -> BackendArg:
     """Convert data to an array.
 
     Args:
-        cls (type): The backend class.
-        data: The input data.
+        cls (type | None): The backend class.
+        data (BackendArg): The input data.
 
     Returns:
-        EagerValue: The array tensor.
+        BackendArg: The array tensor.
     """
-    return ensure_eager_tensor(ensure_mod(da).asarray(data))
+    assert da is not None
+    return adapt_backend_module(da).require_op("asarray")(data)
 
 
-def item(cls: type, data: EagerValue) -> float:
+def item(cls: type | None, data: BackendArg) -> float:
     """Get scalar item from tensor.
 
     Args:
-        cls (type): The backend class.
-        data: The input tensor data.
+        cls (type | None): The backend class.
+        data (BackendArg): The input tensor data.
 
     Returns:
         float: The scalar value.
     """
-    arr = ensure_mod(da).asarray(data)
+    assert da is not None
+    arr = da.asarray(data)
     comp = arr.compute()
-    return float(ensure_float(comp.item()))
+    return float(coerce_float(comp.item()))

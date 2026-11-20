@@ -6,7 +6,7 @@ import logging
 import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, global_eager_registry, require_callable
 from ml_switcheroo_compiler.backends.sparse import kernels, types
 from ml_switcheroo_compiler.backends.sparse.types import (
     _SP_BACKEND,
@@ -74,15 +74,15 @@ _DIRECT_OPS = {
 }
 
 
-def _dispatch_sparse_matmul(a: EagerValue, b: EagerValue) -> tuple[bool, EagerValue]:
+def _dispatch_sparse_matmul(a: BackendArg, b: BackendArg) -> tuple[bool, BackendArg]:
     """Dispatch sparse matrix multiplication (SpMM, Dense-SpMM, and SpGEMM) by operand types.
 
     Args:
-        a (EagerValue): Left matrix operand.
-        b (EagerValue): Right matrix operand.
+        a (BackendArg): Left matrix operand.
+        b (BackendArg): Right matrix operand.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and computed matrix product.
+        tuple[bool, BackendArg]: Handled flag and computed matrix product.
     """
     if isinstance(a, (COOTensor, CSRTensor, CSCTensor)) and isinstance(b, _SP_BACKEND.ndarray):
         coo_a = a if isinstance(a, COOTensor) else a.to_coo()
@@ -101,18 +101,18 @@ def _dispatch_sparse_matmul(a: EagerValue, b: EagerValue) -> tuple[bool, EagerVa
 
 def _dispatch_sparse_linalg(
     op_type: str,
-    a: EagerValue,
-    b: EagerValue,
-) -> tuple[bool, EagerValue]:
+    a: BackendArg,
+    b: BackendArg,
+) -> tuple[bool, BackendArg]:
     """Dispatch sparse linear algebra and arithmetic based on operand format types.
 
     Args:
         op_type (str): Name of the operation.
-        a (EagerValue): First operand.
-        b (EagerValue): Second operand.
+        a (BackendArg): First operand.
+        b (BackendArg): Second operand.
 
     Returns:
-        tuple[bool, EagerValue]: Handled flag and computed result.
+        tuple[bool, BackendArg]: Handled flag and computed result.
     """
     if op_type in ("MatMul", "matmul", "Dot", "dot"):
         return _dispatch_sparse_matmul(a, b)
@@ -133,22 +133,22 @@ def _dispatch_sparse_linalg(
 
 
 def execute_op(
-    cls: type[_T],
+    cls: type[_T] | None,
     /,
     op_type: str,
-    *args: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute operation eagerly on the Sparse COO backend.
 
     Args:
-        cls (type): The caller class or context.
+        cls (type | None): The caller class or context.
         op_type (str): The name of the operation.
-        *args (EagerValue): Positional arguments for the op.
-        **kwargs (EagerValue): Keyword arguments for the op.
+        *args (BackendArg): Positional arguments for the op.
+        **kwargs (BackendArg): Keyword arguments for the op.
 
     Returns:
-        EagerValue: Result of sparse COO kernel evaluation.
+        BackendArg: Result of sparse COO kernel evaluation.
 
     Raises:
         BackendNotSupportedError: If op is unmapped and not in eager registry.
@@ -160,8 +160,8 @@ def execute_op(
             return linalg_res
 
     if op_type in _DIRECT_OPS:
-        handler = ensure_callable(_DIRECT_OPS[op_type])
-        return handler(*args, **kwargs)
+        handler = _DIRECT_OPS[op_type]
+        return require_callable(handler)(*args, **kwargs)
 
     schema = mapping_loader.load_backend_mappings("sparse")
     if op_type in schema.operations:
@@ -178,7 +178,7 @@ def execute_op(
 
     func = global_eager_registry.get(op_type)
     if func is not None:
-        processed_args: list[EagerValue | EagerValue] = []
+        processed_args: list[BackendArg | BackendArg] = []
         for a in args:
             if isinstance(a, (COOTensor, CSRTensor, CSCTensor)):
                 processed_args.append(a.to_dense())

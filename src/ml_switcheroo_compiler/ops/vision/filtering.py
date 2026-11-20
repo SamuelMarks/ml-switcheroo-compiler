@@ -5,20 +5,20 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def gaussian_blur(images: Tensor, config_obj: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def gaussian_blur(images: Tensor, config_obj: OpValue = None, **kwargs: OpValue) -> OpValue:
     """Apply Gaussian blur to the image(s).
 
     Args:
         images (Tensor): Input `images` argument (images).
-        config_obj (TensorOrScalar): Input `config_obj` argument (config obj).
-        **kwargs (TensorOrScalar): Keyword args.
+        config_obj (OpValue): Input `config_obj` argument (config obj).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -57,7 +57,7 @@ def median_filter(
     kernel_size: int | tuple[int, int],
     padding: str = "same",
     data_format: str | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Apply a median filter to the image(s).
 
     Args:
@@ -99,7 +99,7 @@ def iou(
     boxes1: Tensor,
     boxes2: Tensor,
     bounding_box_format: str = "xyxy",
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute Intersection-Over-Union between two sets of bounding boxes.
 
     Args:
@@ -137,7 +137,7 @@ def non_max_suppression(
     max_output_size: int,
     iou_threshold: float = 0.5,
     score_threshold: float = float("-inf"),
-) -> TensorOrScalar:
+) -> OpValue:
     """Greedily selects a subset of bounding boxes in descending order of score.
 
     Args:
@@ -175,7 +175,7 @@ def non_max_suppression(
     )
 
 
-def sharpen(images: Tensor, factor: float = 1.0) -> TensorOrScalar:
+def sharpen(images: Tensor, factor: float = 1.0) -> OpValue:
     """Sharpen images.
 
     Args:
@@ -200,15 +200,15 @@ def random_gaussian_blur(
     images: Tensor,
     kernel_size: int | tuple[int, int],
     sigma: float | tuple[float, float],
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    **kwargs: OpValue,
+) -> OpValue:
     """Randomly apply Gaussian blur.
 
     Args:
         images (Tensor): Input `images` argument (images).
         kernel_size (int | tuple[int, int]): Input `kernel_size` argument (kernel size).
         sigma (float | tuple[float, float]): Input `sigma` argument (sigma).
-        **kwargs (TensorOrScalar): Keyword args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -239,13 +239,13 @@ def random_gaussian_blur(
     )
 
 
-def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: TensorOrScalar) -> TensorOrScalar:
+def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: OpValue) -> OpValue:
     """Randomly adjust sharpness.
 
     Args:
         images (Tensor): Input `images` argument (images).
         factor (float | tuple[float, float]): Input `factor` argument (factor).
-        **kwargs (TensorOrScalar): Keyword args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.
@@ -272,3 +272,14 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
         (),
         images.dtype,
     )
+
+
+__all__ = [
+    "gaussian_blur",
+    "iou",
+    "median_filter",
+    "non_max_suppression",
+    "random_gaussian_blur",
+    "random_sharpness",
+    "sharpen",
+]

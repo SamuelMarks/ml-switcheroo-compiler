@@ -39,7 +39,8 @@ class CompilerError(RuntimeError):
             op_type (str | None): Optional canonical IR operation type.
             backend_target (str | None): Optional target backend identifier.
             trace_context (str | None): Optional source or graph tracing context.
-            **kwargs (str | int | float | bool | None): Placeholder values injected into `error_messages.yaml` templates.
+            **kwargs (str | int | float | bool | None): Placeholder values injected into `error_messages.yaml`
+                templates.
         """
         _load_error_templates()
         template = _ERROR_TEMPLATES.get(type(self).__name__) or _ERROR_TEMPLATES.get("SwitcherooError")

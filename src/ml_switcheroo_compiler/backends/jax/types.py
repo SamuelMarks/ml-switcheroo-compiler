@@ -1,10 +1,11 @@
-"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.jax.types`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.jax.types`."""
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import sys
-import typing
+import types
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -12,38 +13,18 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+
+_has_jax = sys.modules.get("jax") is not None or (
+    "jax" not in sys.modules and importlib.util.find_spec("jax") is not None
+)
+jnp: types.ModuleType | BackendModuleProtocol | None = importlib.import_module("jax.numpy") if _has_jax else None
 
 
-class _JaxTypesModProtocol(typing.Protocol):
-    """Protocol for binding `jnp` onto `types` module."""
-
-    jnp: BackendModuleProtocol
-
-
-def _is_jax_types_mod(mod: EagerValue) -> typing.TypeGuard[_JaxTypesModProtocol]:
-    """Type guard narrowing `mod` to `_JaxTypesModProtocol`.
-
-    Args:
-        mod (EagerValue): Module instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return mod is not None
-
-
-if typing.TYPE_CHECKING:
-    import jax.numpy as jnp
-
-_has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-_jt_mod: EagerValue = sys.modules[__name__]
-assert _is_jax_types_mod(_jt_mod)
-_jt_mod.jnp = ensure_mod(importlib.import_module("jax.numpy") if _has_jax else None)
-
-
-def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
+def zeros(cls: type | None, shape: tuple[int, ...]) -> BackendArg:
     """Execute zeros for compiler processing.
 
     Args:
@@ -51,12 +32,12 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
         shape (tuple[int, ...]): Shape.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(ensure_callable(generic_zeros)(jnp, shape))
+    return generic_zeros(jnp, shape)
 
 
-def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+def array(cls: type | None, data: BackendArg, dtype: BackendArg | None = None) -> BackendArg:
     """Execute array for compiler processing.
 
     Args:
@@ -65,12 +46,12 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         dtype: Dtype.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(ensure_callable(generic_array)(jnp, data, dtype))
+    return generic_array(jnp, data, dtype)
 
 
-def asarray(cls: type, data: EagerValue) -> EagerValue:
+def asarray(cls: type | None, data: BackendArg) -> BackendArg:
     """Execute asarray for compiler processing.
 
     Args:
@@ -78,12 +59,12 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         data: Data.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(ensure_callable(generic_asarray)(jnp, data))
+    return generic_asarray(jnp, data)
 
 
-def item(cls: type, data: EagerValue) -> float:
+def item(cls: type | None, data: BackendArg) -> float:
     """Execute item for compiler processing.
 
     Args:
@@ -93,4 +74,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Computed `float` output.
     """
-    return ensure_float(ensure_callable(generic_item)(jnp, data))
+    return generic_item(jnp, data)

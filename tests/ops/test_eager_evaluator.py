@@ -7,10 +7,9 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.eager_evaluator import EvaluationContext, EvaluationStrategy
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_evaluation_strategy_base() -> None:
@@ -19,17 +18,17 @@ def test_evaluation_strategy_base() -> None:
     class DummyStrategy(EvaluationStrategy):
         """Test class DummyStrategy."""
 
-        def evaluate(self, ctx: EagerValue) -> EagerValue:
+        def evaluate(self, ctx: EvaluationContext) -> BackendArg:
             """Test function evaluate.
 
             Args:
-                ctx: Test parameter `ctx`.
+                ctx (EvaluationContext): Test parameter `ctx`.
 
             Returns:
-                EagerValue: Computed output value from `evaluate`.
+                BackendArg: Computed output value from `evaluate`.
             """
-            return ensure_callable(ensure_eager_tensor(ensure_eager_tensor(super()).evaluate))(ctx)
+            return EvaluationStrategy.evaluate(self, ctx)
 
-    ctx = ensure_callable(EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
+    ctx = EvaluationContext(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
     with pytest.raises(NotImplementedError):
         DummyStrategy().evaluate(ctx)

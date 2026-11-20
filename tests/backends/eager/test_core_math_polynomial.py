@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.eager.core_math_ops.math_polynomial import (
-    _np_polyint,
-    _polyval,
-)
+from ml_switcheroo_compiler.backends.eager.core_math_ops.math_polynomial import _np_polyint, _polyval
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from tests.testing_utils import ensure_callable, ensure_mod
+from tests.testing_utils import MockTestStub, coerce_operand_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_math_polynomial_coverage() -> None:
@@ -24,10 +21,10 @@ def test_math_polynomial_coverage() -> None:
 
     # _polyval
     # Case A: backend has polyval
-    class PolyvalBackend:
+    class PolyvalBackend(MockTestStub):
         """Backend with polyval."""
 
-        def polyval(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def polyval(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock polyval.
 
             Args:
@@ -39,22 +36,22 @@ def test_math_polynomial_coverage() -> None:
             """
             return "polyval_val"
 
-    assert _polyval(ensure_mod(PolyvalBackend()), [1, 2], 3) == "polyval_val"
+    assert _polyval(PolyvalBackend(), [1, 2], 3) == "polyval_val"
 
     # Case B: backend lacks polyval (returns None)
-    class EmptyBackend:
+    class EmptyBackend(MockTestStub):
         """Empty backend."""
 
         pass
 
-    assert _polyval(ensure_mod(EmptyBackend()), [1, 2], 3) is None
+    assert _polyval(EmptyBackend(), [1, 2], 3) is None
 
     # _np_polyint
     # Case A: backend has polyint
-    class PolyintBackend:
+    class PolyintBackend(MockTestStub):
         """Backend with polyint."""
 
-        def polyint(self, *args: EagerValue, **kwargs: EagerValue) -> str:
+        def polyint(self, *args: BackendArg, **kwargs: BackendArg) -> str:
             """Mock polyint.
 
             Args:
@@ -66,11 +63,11 @@ def test_math_polynomial_coverage() -> None:
             """
             return "polyint_val"
 
-    assert _np_polyint(ensure_mod(PolyintBackend()), [1, 2]) == "polyint_val"
+    assert _np_polyint(PolyintBackend(), [1, 2]) == "polyint_val"
 
     # Case B: backend lacks polyint -> fallback to np.polyint
-    p_int = _np_polyint(ensure_mod(EmptyBackend()), [3, 2, 1])
-    assert ensure_callable(list)(p_int) == [1.0, 1.0, 1.0, 0.0]
+    p_int = _np_polyint(EmptyBackend(), [3, 2, 1])
+    assert coerce_operand_list(p_int) == [1.0, 1.0, 1.0, 0.0]
 
     # Registry
     assert global_eager_registry.get("Polyval") is not None

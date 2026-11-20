@@ -18,10 +18,9 @@ from ml_switcheroo_compiler.backends.numpy.eager._indexing_parsing_utils import 
     _is_np_array_call,
     _safe_parse_key,
 )
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_eval_constant() -> None:
@@ -49,17 +48,16 @@ def test_eval_slice_call() -> None:
         keywords=[],
     )
 
-    def dummy_eval(n: ast.AST) -> EagerValue:
+    def dummy_eval(n: ast.AST) -> BackendArg:
         """Test function dummy_eval.
 
         Args:
             n: Test parameter `n`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_eval`.
+            BackendArg: Computed output value from `dummy_eval`.
         """
-        _typed_ret_1: EagerValue = ensure_eager_tensor(n).value
-        return _typed_ret_1
+        return _eval_constant(n)
 
     s = _eval_slice_call(node, dummy_eval)
     assert isinstance(s, slice)
@@ -80,17 +78,16 @@ def test_eval_array_call() -> None:
         keywords=[],
     )
 
-    def dummy_eval(n: ast.AST) -> EagerValue:
+    def dummy_eval(n: ast.AST) -> BackendArg:
         """Test function dummy_eval.
 
         Args:
             n: Test parameter `n`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_eval`.
+            BackendArg: Computed output value from `dummy_eval`.
         """
-        _typed_ret_2: EagerValue = ensure_eager_tensor(n).value
-        return _typed_ret_2
+        return _eval_constant(n)
 
     arr = _eval_array_call(node, dummy_eval)
     assert isinstance(arr, np.ndarray)
@@ -121,17 +118,16 @@ def test_eval_call() -> None:
         None
     """
 
-    def dummy_eval(n: ast.AST) -> EagerValue:
+    def dummy_eval(n: ast.AST) -> BackendArg:
         """Test function dummy_eval.
 
         Args:
             n: Test parameter `n`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_eval`.
+            BackendArg: Computed output value from `dummy_eval`.
         """
-        _typed_ret_3: EagerValue = ensure_eager_tensor(n).value
-        return _typed_ret_3
+        return _eval_constant(n)
 
     node_slice = ast.Call(func=ast.Name(id="slice", ctx=ast.Load()), args=[ast.Constant(value=1)], keywords=[])
     assert isinstance(_eval_call(node_slice, dummy_eval), slice)
@@ -175,17 +171,16 @@ def test_eval_unary_op() -> None:
         None
     """
 
-    def dummy_eval(n: ast.AST) -> EagerValue:
+    def dummy_eval(n: ast.AST) -> BackendArg:
         """Test function dummy_eval.
 
         Args:
             n: Test parameter `n`.
 
         Returns:
-            EagerValue: Computed output value from `dummy_eval`.
+            BackendArg: Computed output value from `dummy_eval`.
         """
-        _typed_ret_4: EagerValue = ensure_eager_tensor(n).value
-        return _typed_ret_4
+        return _eval_constant(n)
 
     node = ast.UnaryOp(op=ast.USub(), operand=ast.Constant(value=5))
     assert _eval_unary_op(node, dummy_eval) == -5

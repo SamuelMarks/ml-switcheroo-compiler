@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Sequence
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     _determine_node_shape,
     _infer_constant_shape,
@@ -19,10 +20,10 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     _prepare_op_kwargs,
     shape_inference_pass,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_infer_constant_shape() -> None:
@@ -61,7 +62,7 @@ def test_infer_op_shape() -> None:
     class MockOp:
         """Mock op implementation."""
 
-        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
+        def infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> tuple[int, ...]:
             """Return static shape.
 
             Args:
@@ -74,7 +75,7 @@ def test_infer_op_shape() -> None:
             return (1, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp()):
-        assert ensure_callable(_infer_op_shape)(node1, shapes) == (1, 2)
+        assert _infer_op_shape(node1, shapes) == (1, 2)
 
 
 def test_determine_node_shape() -> None:
@@ -90,7 +91,7 @@ def test_determine_node_shape() -> None:
     class MockOp2:
         """Mock op that raises error."""
 
-        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
+        def infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> tuple[int, ...]:
             """Raise error.
 
             Args:
@@ -99,6 +100,9 @@ def test_determine_node_shape() -> None:
 
             Returns:
                 tuple[int, ...]: Computed output value from `infer_shape`.
+
+            Raises:
+                ValueError: When raised during `infer_shape` (boom).
             """
             raise ValueError("boom")
 
@@ -119,7 +123,7 @@ def test_shape_inference_pass() -> None:
     class MockOp3:
         """Mock op for pass execution."""
 
-        def infer_shape(self, *args: EagerValue, **kwargs: EagerValue) -> tuple[int, ...]:
+        def infer_shape(self, *args: BackendArg, **kwargs: BackendArg) -> tuple[int, ...]:
             """Return static shape.
 
             Args:
@@ -143,15 +147,22 @@ def test_determine_node_shape_keyerror_and_not_found() -> None:
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1", "in2"], attributes={}, shape_metadata=(1, 2))
 
     # Test KeyError
-    with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape", side_effect=KeyError("boom")):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape", side_effect=KeyError("boom")
+    ):
         assert _determine_node_shape(node1, {}) == (1, 2)
 
     # Test ValueError "Operation ... not found"
-    with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape", side_effect=ValueError("Operation X not found")):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape",
+        side_effect=ValueError("Operation X not found"),
+    ):
         assert _determine_node_shape(node1, {}) == (1, 2)
 
     # Test TypeError
-    with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape", side_effect=TypeError("boom")):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape", side_effect=TypeError("boom")
+    ):
         with pytest.raises(CompilationError):
             _determine_node_shape(node1, {})
 
@@ -171,12 +182,15 @@ def test_shape_inference_valueerror_not_found(monkeypatch: pytest.MonkeyPatch) -
     """
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
+    def mock_infer_op_shape(*args: BackendArg, **kwargs: BackendArg) -> None:
         """Mock raising not found.
 
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Raises:
+            ValueError: When raised during `mock_infer_op_shape` (Operation 'Foo' not found).
         """
         raise ValueError("Operation 'Foo' not found")
 
@@ -194,12 +208,15 @@ def test_shape_inference_valueerror_other(monkeypatch: pytest.MonkeyPatch) -> No
     """
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
+    def mock_infer_op_shape(*args: BackendArg, **kwargs: BackendArg) -> None:
         """Mock raising other error.
 
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Raises:
+            ValueError: When raised during `mock_infer_op_shape` (Some other error).
         """
         raise ValueError("Some other error")
 
@@ -218,12 +235,15 @@ def test_shape_inference_keyerror_explicit(monkeypatch: pytest.MonkeyPatch) -> N
     """
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args: EagerValue, **kwargs: EagerValue) -> None:
+    def mock_infer_op_shape(*args: BackendArg, **kwargs: BackendArg) -> None:
         """Mock raising KeyError.
 
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Raises:
+            KeyError: When raised during `mock_infer_op_shape` (foo).
         """
         raise KeyError("foo")
 
@@ -242,12 +262,12 @@ def test_annotate_learned_shapes_feedback_loop() -> None:
     graph = IRGraph(name="learned_test", nodes={"in1": node1, "add": node2}, outputs=["add"])
 
     # First annotation updates in1
-    modified = ensure_callable(annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
+    modified = annotate_learned_shapes(graph, {"in1": (8, 16), "missing_node": (1, 2)})
     assert bool(modified) is True
     assert graph.nodes["in1"].shape_metadata == (8, 16)
 
     # Subsequent annotation with identical shape does not modify
-    modified_again = ensure_callable(annotate_learned_shapes)(graph, {"in1": (8, 16)})
+    modified_again = annotate_learned_shapes(graph, {"in1": (8, 16)})
     assert bool(modified_again) is False
 
 
@@ -269,7 +289,17 @@ def test_shape_learning_protocol_models_and_payload() -> None:
 
     import os
 
-    explicit_protocol_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "src", "ml_switcheroo_compiler", "transforms", "passes", "shape_learning_protocol.yaml")
+    explicit_protocol_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "..",
+        "src",
+        "ml_switcheroo_compiler",
+        "transforms",
+        "passes",
+        "shape_learning_protocol.yaml",
+    )
     if os.path.exists(explicit_protocol_path):
         protocol2 = load_shape_learning_protocol(path=explicit_protocol_path)
         assert protocol2.protocol_version == "1.0.0"
@@ -279,7 +309,9 @@ def test_shape_learning_protocol_models_and_payload() -> None:
     assert obs_node.node_id == "x"
     assert obs_node.shape == [2, 8]
 
-    rt_meta = RuntimeTensorMetadata(buffer_id="buf_0", element_count=16, is_gradient=False, aliased_to=None, is_contiguous=True)
+    rt_meta = RuntimeTensorMetadata(
+        buffer_id="buf_0", element_count=16, is_gradient=False, aliased_to=None, is_contiguous=True
+    )
     assert rt_meta.element_count == 16
 
     payload = ShapeInspectionPayload(
@@ -303,10 +335,7 @@ def test_shape_learning_protocol_models_and_payload() -> None:
 def test_record_runtime_observation_and_packet() -> None:
     """Verify recording runtime observations with validation, packets, and history."""
     from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-    from ml_switcheroo_compiler.transforms.passes.config_models import (
-        ObservedNodeShape,
-        RuntimeShapePacket,
-    )
+    from ml_switcheroo_compiler.transforms.passes.config_models import ObservedNodeShape, RuntimeShapePacket
     from ml_switcheroo_compiler.transforms.passes.shape_inference import (
         annotate_learned_shapes,
         get_shape_learning_protocol_config,
@@ -322,8 +351,8 @@ def test_record_runtime_observation_and_packet() -> None:
     # Valid observation matching current shape
     record_runtime_observation(graph, "n1", [4, 8], observed_dtype="float32")
     assert graph.nodes["n1"].shape_metadata == (4, 8)
-    assert ensure_eager_tensor(graph).annotations is not None
-    assert len(ensure_eager_tensor(ensure_eager_tensor(graph).annotations)["learned_shapes_history"]) == 1
+    assert graph.annotations is not None
+    assert len(coerce_operand_list(graph.annotations["learned_shapes_history"])) == 1
 
     # Missing node raises KeyError
     with pytest.raises(KeyError, match="not found in computation graph"):
@@ -354,17 +383,14 @@ def test_record_runtime_observation_and_packet() -> None:
     modified = annotate_learned_shapes(graph, packet)
     assert modified is True
     assert graph.nodes["n2"].shape_metadata == (4, 16)
-    assert bool(ensure_eager_tensor(graph).annotations.get("convergence_converged")) is True
+    assert bool(graph.annotations.get("convergence_converged")) is True
 
 
 def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
     """Verify multi-pass shape refinement, downstream propagation, and conflict handling."""
     from ml_switcheroo_compiler.core.errors import ShapeMismatchError
     from ml_switcheroo_compiler.ir.shape_system import ShapeTracker
-    from ml_switcheroo_compiler.transforms.passes.config_models import (
-        ObservedNodeShape,
-        RuntimeShapePacket,
-    )
+    from ml_switcheroo_compiler.transforms.passes.config_models import ObservedNodeShape, RuntimeShapePacket
     from ml_switcheroo_compiler.transforms.passes.shape_inference import (
         annotate_learned_shapes,
         record_runtime_observation,
@@ -392,7 +418,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
     modified = annotate_learned_shapes(graph, packet_pass1)
     assert modified is True
     assert graph.nodes["inp"].shape_metadata == (8, 32)
-    assert bool(ensure_eager_tensor(ensure_eager_tensor(graph).annotations)["convergence_converged"]) is True
+    assert bool(graph.annotations["convergence_converged"]) is True
 
     # Multi-pass: second observation with different batch size
     packet_pass2 = RuntimeShapePacket(
@@ -413,26 +439,27 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
 
     # ShapeTracker telemetry resolution integration
     telemetry = {"inp": [16, 32], "add": [16, 32]}
-    resolved = ensure_callable(ShapeTracker.update_from_feedback)(telemetry)
+    resolved = ShapeTracker.update_from_feedback(telemetry)
     assert resolved["inp"] == (16, 32)
     assert resolved["add"] == (16, 32)
 
 
 def test_shape_inference_annotation_branches() -> None:
     """Test annotate_learned_shapes when annotations is missing or non-dict, and non-dict shapes."""
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+    from ml_switcheroo_ir import LogicalNode
 
     from ml_switcheroo_compiler.transforms.passes.shape_inference import annotate_learned_shapes
+    from tests.testing_utils import MockGraphStub
 
-    graph = LogicalGraph(name="test_graph")
+    graph = MockGraphStub(name="test_graph")
     node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
     graph.nodes[node.id] = node
-    ensure_mutable(graph).annotations = ensure_eager_tensor("invalid_annotations")
-    res1 = ensure_callable(annotate_learned_shapes)(graph, {"n1": (4, 4)})
+    pytest.MonkeyPatch().setattr(graph, "annotations", "invalid_annotations", raising=False)
+    res1 = annotate_learned_shapes(graph, {"n1": (4, 4)})
     assert bool(res1) is False
-    assert isinstance(ensure_eager_tensor(ensure_eager_tensor(graph).annotations), dict)
-    assert bool(ensure_eager_tensor(ensure_eager_tensor(graph).annotations).get("convergence_converged")) is True
-    res2 = ensure_callable(annotate_learned_shapes)(graph, None)
+    assert isinstance(graph.annotations, dict)
+    assert bool(graph.annotations.get("convergence_converged")) is True
+    res2 = annotate_learned_shapes(graph, None)
     assert bool(res2) is False
 
 
@@ -440,9 +467,8 @@ def test_shape_inference_pass_attribute_error_and_none_branches() -> None:
     """Test shape_inference_pass with unhandled op (None shape) and node raising AttributeError on setting strides."""
     from unittest.mock import patch
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import IRGraph, LogicalNode
 
-    from ml_switcheroo_compiler.ir.core import IRGraph
     from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 
     class NodeWithAttributeErrorStrides(LogicalNode):
@@ -458,19 +484,22 @@ def test_shape_inference_pass_attribute_error_and_none_branches() -> None:
             return ()
 
         @strides.setter
-        def strides(self, value: tuple[int, ...]) -> None:
+        def strides(self, value: Sequence[int] | None) -> None:
             """Raise AttributeError on set.
 
             Args:
-                value (tuple[int, ...]): New strides.
+                value (Sequence[int] | None): New strides.
 
             Raises:
                 AttributeError: Always raised.
             """
+            del value
             raise AttributeError("Read only strides")
 
     node_none = LogicalNode(id="n_none", op_type="UnknownOpForNoneShape", inputs=[], attributes={}, shape_metadata=None)
-    node_custom = NodeWithAttributeErrorStrides(id="n_custom", op_type="Input", inputs=[], attributes={}, shape_metadata=(2, 3))
+    node_custom = NodeWithAttributeErrorStrides(
+        id="n_custom", op_type="Input", inputs=[], attributes={}, shape_metadata=(2, 3)
+    )
     graph = IRGraph(name="test_attr_err", nodes={"n_none": node_none, "n_custom": node_custom}, outputs=["n_custom"])
     with patch("ml_switcheroo_compiler.ops.shape_inference.infer_shape", side_effect=[None, (2, 3)]):
         modified = shape_inference_pass(graph)
@@ -481,11 +510,13 @@ def test_normalize_shape_edge_cases() -> None:
     """Verify edge cases of _normalize_shape_tuple utility."""
     assert _normalize_shape_tuple(None) is None
     assert _normalize_shape_tuple([1, 2, 3]) == (1, 2, 3)
+    from tests.testing_utils import require_callable
+
     assert _normalize_shape_tuple((4, 5)) == (4, 5)
     assert _normalize_shape_tuple(["invalid", "str"]) is None
-    assert ensure_callable(_normalize_shape_tuple)(12345) is None
-    assert ensure_callable(_normalize_shape_tuple)("not_a_list") is None
-    assert ensure_callable(_normalize_shape_tuple)([[]]) is None
+    assert require_callable(_normalize_shape_tuple)(12345) is None
+    assert _normalize_shape_tuple("not_a_list") is None
+    assert _normalize_shape_tuple([[]]) is None
 
 
 def test_shape_inference_subgraphs() -> None:

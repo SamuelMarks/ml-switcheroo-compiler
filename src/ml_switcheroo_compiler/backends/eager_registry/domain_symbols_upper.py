@@ -1,0 +1,115 @@
+"""Uppercase operator, configuration, and runtime class attributes on backend namespaces."""
+
+from __future__ import annotations
+
+import typing
+
+if typing.TYPE_CHECKING:
+    from .protocols import EagerTensorProtocol
+
+
+class _UpperCaseSymbolProto(typing.Protocol):
+    """Uppercase operator, configuration, and runtime class attributes on backend namespaces."""
+
+    AVG: EagerTensorProtocol
+    AbsMaxQuantizeOp: EagerTensorProtocol
+    AdadeltaConfig: EagerTensorProtocol
+    AdagradConfig: EagerTensorProtocol
+    AdamHyperparams: EagerTensorProtocol
+    AdamWHyperparams: EagerTensorProtocol
+    AdamaxHyperparams: EagerTensorProtocol
+    Array: EagerTensorProtocol
+    BenchmarkOrchestrator: EagerTensorProtocol
+    BenchmarkPlan: EagerTensorProtocol
+    BenchmarkRunResult: EagerTensorProtocol
+    BidirectionalConfig: EagerTensorProtocol
+    BidirectionalInputs: EagerTensorProtocol
+    BlurConfig: EagerTensorProtocol
+    BytesIO: EagerTensorProtocol
+    COOTensor: EagerTensorProtocol
+    Client: EagerTensorProtocol
+    CodeGeneratorVisitor: EagerTensorProtocol
+    ComputeFloat8AmaxHistoryOp: EagerTensorProtocol
+    ComputeFloat8ScaleOp: EagerTensorProtocol
+    ConvLSTMConfig: EagerTensorProtocol
+    Copy: EagerTensorProtocol
+    CppGenerator: EagerTensorProtocol
+    CustomJVPFunction: EagerTensorProtocol
+    CustomObjectScope: EagerTensorProtocol
+    DecodeImage: EagerTensorProtocol
+    Device: EagerTensorProtocol
+    DeviceMesh: EagerTensorProtocol
+    DropoutWrapperConfig: EagerTensorProtocol
+    DummyBackend: EagerTensorProtocol
+    EagerEvaluator: EagerTensorProtocol
+    Environment: EagerTensorProtocol
+    Event: EagerTensorProtocol
+    ExportArchive: EagerTensorProtocol
+    FakeQuantWithMinMaxVarsOp: EagerTensorProtocol
+    Float32: EagerTensorProtocol
+    GatherQMMOp: EagerTensorProtocol
+    GenericConvConfig: EagerTensorProtocol
+    GradOptions: EagerTensorProtocol
+    H5WeightFormat: EagerTensorProtocol
+    IRNode: EagerTensorProtocol
+    InitializerConfig: EagerTensorProtocol
+    Int32: EagerTensorProtocol
+    JAXCodeGenerator: EagerTensorProtocol
+    JAXProfiler: EagerTensorProtocol
+    KerasCodeGenerator: EagerTensorProtocol
+    LLVMCPPRunner: EagerTensorProtocol
+    LayoutMap: EagerTensorProtocol
+    LionConfig: EagerTensorProtocol
+    MAX: EagerTensorProtocol
+    MIN: EagerTensorProtocol
+    MLIRBytecodeEncoder: EagerTensorProtocol
+    MagicMock: EagerTensorProtocol
+    MultivariateNormalOptions: EagerTensorProtocol
+    NONE: EagerTensorProtocol
+    NamedTemporaryFile: EagerTensorProtocol
+    NpzWeightFormat: EagerTensorProtocol
+    NumbaGenerator: EagerTensorProtocol
+    ONNXCodeGenerator: EagerTensorProtocol
+    OpDef: EagerTensorProtocol
+    PRODUCT: EagerTensorProtocol
+    PassManager: EagerTensorProtocol
+    Path: EagerTensorProtocol
+    PickleWeightFormat: EagerTensorProtocol
+    PurePythonGenerator: EagerTensorProtocol
+    PurePythonTensor: EagerTensorProtocol
+    PyTorchCodeGenerator: EagerTensorProtocol
+    QuantizationConfig: EagerTensorProtocol
+    QuantizationParams: EagerTensorProtocol
+    QuantizeAndDequantizeOp: EagerTensorProtocol
+    QuantizeOp: EagerTensorProtocol
+    QuantizedMatmulOp: EagerTensorProtocol
+    QuantizedOpsConfig: EagerTensorProtocol
+    RMSPropHyperparams: EagerTensorProtocol
+    RNNCellDeviceWrapper: EagerTensorProtocol
+    RNNCellDropoutWrapper: EagerTensorProtocol
+    RNNCellResidualWrapper: EagerTensorProtocol
+    RNNConfig: EagerTensorProtocol
+    RawMatMul: EagerTensorProtocol
+    RecordBatch: EagerTensorProtocol
+    SGDConfig: EagerTensorProtocol
+    SUM: EagerTensorProtocol
+    SafetensorsWeightFormat: EagerTensorProtocol
+    ScanConfig: EagerTensorProtocol
+    SignalingHandler: EagerTensorProtocol
+    SignalingServer: EagerTensorProtocol
+    SparseDenseMatMul: EagerTensorProtocol
+    SparseGenerator: EagerTensorProtocol
+    StableHLOCodeGenerator: EagerTensorProtocol
+    Stream: EagerTensorProtocol
+    Table: EagerTensorProtocol
+    TemporaryDirectory: EagerTensorProtocol
+    Tensor: EagerTensorProtocol
+    TensorFlowCodeGenerator: EagerTensorProtocol
+    UnconnectedGradients: EagerTensorProtocol
+    UnimplementedMathError: EagerTensorProtocol
+    UnpoolOptions: EagerTensorProtocol
+    WasmCodeGenerator: EagerTensorProtocol
+    WebGLCodeGenerator: EagerTensorProtocol
+    WebGPUCodeGenerator: EagerTensorProtocol
+    WebRTCDataChannelStream: EagerTensorProtocol
+    WindowConfig: EagerTensorProtocol

@@ -6,12 +6,20 @@ import ctypes
 import resource
 import sys
 import time
+from collections.abc import Mapping
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, ensure_opt_callable
+from ml_switcheroo_ir import IRGraph
+
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    EagerCallableProtocol,
+    EagerOpCallable,
+    coerce_opt_callable,
+)
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
-from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict, compute_statistical_metrics
+from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
 
 
 def _get_process_memory_mb() -> float:
@@ -27,11 +35,11 @@ def _get_process_memory_mb() -> float:
     return float(rusage) / 1024.0
 
 
-def _flatten_input_values(val: EagerValue) -> list[float]:
+def _flatten_input_values(val: BackendArg) -> list[float]:
     """Recursively flatten input values into a flat list of floats.
 
     Args:
-        val (EagerValue): Scalar or nested container of numbers.
+        val (BackendArg): Scalar or nested container of numbers.
 
     Returns:
         list[float]: Flattened floats.
@@ -43,53 +51,69 @@ def _flatten_input_values(val: EagerValue) -> list[float]:
         for elem in val:
             result.extend(_flatten_input_values(elem))
         return result
-    if has_backend_member(val, "tolist") and callable(get_backend_member(val, "tolist")):
-        return _flatten_input_values(get_backend_member(val, "tolist")())
+    if adapt_backend_module(val).has_symbol("tolist") and callable(adapt_backend_module(val).require_symbol("tolist")):
+        return _flatten_input_values(adapt_backend_module(val).require_symbol("tolist")())
     return []
 
 
 class CppProfiler:
     """Provides genuine execution timing and peak memory profiling for native C++ compilation."""
 
-    def _compile_graph(self, graph: IRGraph) -> EagerCallableProtocol | None:
+    def _compile_graph(
+        self, graph: IRGraph
+    ) -> VariadicCallableProtocol | EagerOpCallable | EagerCallableProtocol | None:
         """Compile an IRGraph into an executable C++ shared library callable.
 
         Args:
             graph (IRGraph): Target computation graph.
 
         Returns:
-            Optional[TypedVariadicCallable[str]]: Native callable executing the compiled C++ graph.
+            VariadicCallableProtocol | EagerOpCallable | EagerCallableProtocol | None: Native C++ graph callable.
         """
         generator = CppGenerator(graph=graph)
         try:
-            return ensure_opt_callable(generator._compile_aot_impl(graph))
-        except Exception:
+            return coerce_opt_callable(generator._compile_aot_impl(graph))
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             return None
 
     def _marshal_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> tuple[EagerValue | None, list[EagerValue]]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> tuple[BackendArg | None, list[BackendArg]]:
         """Marshal input tensors into C-contiguous float buffers and ctypes pointer array.
 
         Args:
             graph (IRGraph): Target computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named inputs.
+            inputs: Named inputs.
 
         Returns:
             tuple[Optional[object], list[object]]: Ctypes pointers array and buffer handles.
         """
         c_in_ptrs: list[ctypes.c_void_p] = []
-        raw_in_buffers: list[EagerValue] = []
-        in_nodes = [n for n in graph.nodes.values() if get_backend_member(n, "op_type", "") == "Input"] if get_backend_member(graph, "nodes", None) else []
+        raw_in_buffers: list[BackendArg] = []
+        in_nodes = (
+            [n for n in graph.nodes.values() if adapt_backend_module(n).get_symbol("op_type", "") == "Input"]
+            if adapt_backend_module(graph).get_symbol("nodes", None)
+            else []
+        )
         for inp_node in in_nodes:
             val = inputs.get(inp_node.id)
             if val is not None:
                 flat_vals = _flatten_input_values(val)
                 buf_len = max(1, len(flat_vals))
                 c_arr = (ctypes.c_float * buf_len)(*flat_vals)
-                get_backend_member(raw_in_buffers, "append")(c_arr)
+                adapt_backend_module(raw_in_buffers).require_symbol("append")(c_arr)
                 c_in_ptrs.append(ctypes.c_void_p(ctypes.addressof(c_arr)))
 
         c_inputs = (ctypes.c_void_p * len(c_in_ptrs))(*c_in_ptrs) if c_in_ptrs else None
@@ -98,7 +122,7 @@ class CppProfiler:
     def _allocate_outputs(
         self,
         graph: IRGraph,
-    ) -> tuple[EagerValue | None, list[EagerValue]]:
+    ) -> tuple[BackendArg | None, list[BackendArg]]:
         """Allocate output float buffers and ctypes pointer array for graph outputs.
 
         Args:
@@ -108,18 +132,18 @@ class CppProfiler:
             tuple[Optional[object], list[object]]: Ctypes pointers array and buffer handles.
         """
         c_out_ptrs: list[ctypes.c_void_p] = []
-        raw_out_buffers: list[EagerValue] = []
-        raw_outs = get_backend_member(graph, "outputs", [])
+        raw_out_buffers: list[BackendArg] = []
+        raw_outs = adapt_backend_module(graph).get_symbol("outputs", [])
         for out_name in raw_outs if isinstance(raw_outs, (list, tuple)) else []:
-            out_node = graph.nodes.get(str(out_name)) if get_backend_member(graph, "nodes", None) else None
-            raw_shape = get_backend_member(out_node, "shape_metadata", None)
+            out_node = graph.nodes.get(str(out_name)) if adapt_backend_module(graph).get_symbol("nodes", None) else None
+            raw_shape = adapt_backend_module(out_node).get_symbol("shape_metadata", None)
             shape = raw_shape if isinstance(raw_shape, (list, tuple)) and raw_shape else (1,)
             num_elem: int = 1
             for d in shape:
                 if isinstance(d, int) and d > 0:
                     num_elem *= d
             buf = (ctypes.c_float * num_elem)()
-            get_backend_member(raw_out_buffers, "append")(buf)
+            adapt_backend_module(raw_out_buffers).require_symbol("append")(buf)
             c_out_ptrs.append(ctypes.c_void_p(ctypes.addressof(buf)))
 
         c_outputs = (ctypes.c_void_p * len(c_out_ptrs))(*c_out_ptrs) if c_out_ptrs else None
@@ -128,31 +152,34 @@ class CppProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on C++ backend with ABI tensor marshalling.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input structures.
+            inputs: Named input structures.
             device (Optional[str]): Target execution device ('cpu').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         del device
 
-        has_ops: bool = bool(get_backend_member(graph, "nodes", None) and any(get_backend_member(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(
+            adapt_backend_module(graph).get_symbol("nodes", None)
+            and any(adapt_backend_module(n).get_symbol("op_type", "") != "Input" for n in graph.nodes.values())
+        )
 
         c_inputs, _ = self._marshal_inputs(graph, inputs)
         c_outputs, _ = self._allocate_outputs(graph)
 
-        compiled_fn: EagerCallableProtocol | None = None
+        compiled_fn: VariadicCallableProtocol | EagerOpCallable | EagerCallableProtocol | None = None
         if has_ops:
             compiled_fn = self._compile_graph(graph)
 

@@ -21,49 +21,326 @@ class Tensor:
     def reshape(self, shape: Sequence[int]) -> Tensor: ...
     def transpose(self, axes: Sequence[int] | None = ...) -> Tensor: ...
 
-def Array(data: Tensor, *, behavior: Tensor = ..., with_name: Tensor = ..., check_valid: Tensor = ..., backend: Tensor = ..., attrs: Tensor = ..., named_axis: Tensor = ...) -> Tensor: ...
-def ArrayBuilder(*, behavior: Tensor = ..., attrs: Tensor = ..., initial: Tensor = ..., resize: Tensor = ...) -> Tensor: ...
-def Record(data: Tensor, *, behavior: Tensor = ..., with_name: Tensor = ..., check_valid: Tensor = ..., backend: Tensor = ..., attrs: Tensor = ..., named_axis: Tensor = ...) -> Tensor: ...
-def all(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def almost_equal(left: Tensor, right: Tensor, *, rtol: Tensor = ..., atol: Tensor = ..., dtype_exact: Tensor = ..., check_parameters: Tensor = ..., check_regular: Tensor = ..., check_named_axis: Tensor = ...) -> Tensor: ...
-def angle(val: Tensor, deg: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def any(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def argcartesian(arrays: Tensor, axis: Tensor = ..., *, nested: Tensor = ..., parameters: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def argcombinations(array: Tensor, n: Tensor, *, replacement: Tensor = ..., axis: Tensor = ..., fields: Tensor = ..., parameters: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def argmax(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def argmin(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def argsort(array: Tensor, axis: Tensor = ..., *, ascending: Tensor = ..., stable: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def array_equal(a1: Tensor, a2: Tensor, equal_nan: Tensor = ..., dtype_exact: Tensor = ..., same_content_types: Tensor = ..., check_parameters: Tensor = ..., check_regular: Tensor = ..., check_named_axis: Tensor = ...) -> Tensor: ...
-def backend(*arrays: Tensor) -> Tensor: ...
-def broadcast_arrays(*arrays: Tensor, depth_limit: Tensor = ..., broadcast_parameters_rule: Tensor = ..., left_broadcast: Tensor = ..., right_broadcast: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def broadcast_fields(*arrays: Tensor, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def cartesian(arrays: Tensor, axis: Tensor = ..., *, nested: Tensor = ..., parameters: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def categories(array: Tensor, highlevel: Tensor = ..., *, behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def combinations(array: Tensor, n: Tensor, *, replacement: Tensor = ..., axis: Tensor = ..., fields: Tensor = ..., parameters: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def concatenate(arrays: Tensor, axis: Tensor = ..., *, mergebool: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def copy(array: Tensor) -> Tensor: ...
-def corr(x: Tensor, y: Tensor, weight: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def count(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def count_nonzero(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def covar(x: Tensor, y: Tensor, weight: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def drop_none(array: Tensor, axis: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def enforce_type(array: Tensor, type: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def fields(array: Tensor) -> Tensor: ...
-def fill_none(array: Tensor, value: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def firsts(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def flatten(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_arrow(array: Tensor, *, generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_arrow_schema(schema: Tensor) -> Tensor: ...
-def from_avro_file(file: Tensor, limit_entries: Tensor = ..., *, debug_forth: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_buffers(
-    form: Tensor, length: Tensor, container: Tensor, buffer_key: Tensor = ..., *, backend: Tensor = ..., byteorder: Tensor = ..., allow_noncanonical_form: Tensor = ..., enable_virtualarray_caching: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+def Array(
+    data: Tensor,
+    *,
+    behavior: Tensor = ...,
+    with_name: Tensor = ...,
+    check_valid: Tensor = ...,
+    backend: Tensor = ...,
+    attrs: Tensor = ...,
+    named_axis: Tensor = ...,
 ) -> Tensor: ...
-def from_categorical(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_cupy(array: Tensor, *, regulararray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., primitive_policy: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_dlpack(array: Tensor, *, prefer_cpu: Tensor = ..., regulararray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., primitive_policy: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_feather(path: Tensor, *, columns: Tensor = ..., use_threads: Tensor = ..., memory_map: Tensor = ..., generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_iter(iterable: Tensor, *, allow_record: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ..., initial: Tensor = ..., resize: Tensor = ...) -> Tensor: ...
-def from_jax(array: Tensor, *, regulararray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ..., primitive_policy: Tensor = ...) -> Tensor: ...
+def ArrayBuilder(
+    *, behavior: Tensor = ..., attrs: Tensor = ..., initial: Tensor = ..., resize: Tensor = ...
+) -> Tensor: ...
+def Record(
+    data: Tensor,
+    *,
+    behavior: Tensor = ...,
+    with_name: Tensor = ...,
+    check_valid: Tensor = ...,
+    backend: Tensor = ...,
+    attrs: Tensor = ...,
+    named_axis: Tensor = ...,
+) -> Tensor: ...
+def all(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def almost_equal(
+    left: Tensor,
+    right: Tensor,
+    *,
+    rtol: Tensor = ...,
+    atol: Tensor = ...,
+    dtype_exact: Tensor = ...,
+    check_parameters: Tensor = ...,
+    check_regular: Tensor = ...,
+    check_named_axis: Tensor = ...,
+) -> Tensor: ...
+def angle(
+    val: Tensor, deg: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def any(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def argcartesian(
+    arrays: Tensor,
+    axis: Tensor = ...,
+    *,
+    nested: Tensor = ...,
+    parameters: Tensor = ...,
+    with_name: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def argcombinations(
+    array: Tensor,
+    n: Tensor,
+    *,
+    replacement: Tensor = ...,
+    axis: Tensor = ...,
+    fields: Tensor = ...,
+    parameters: Tensor = ...,
+    with_name: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def argmax(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def argmin(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def argsort(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    ascending: Tensor = ...,
+    stable: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def array_equal(
+    a1: Tensor,
+    a2: Tensor,
+    equal_nan: Tensor = ...,
+    dtype_exact: Tensor = ...,
+    same_content_types: Tensor = ...,
+    check_parameters: Tensor = ...,
+    check_regular: Tensor = ...,
+    check_named_axis: Tensor = ...,
+) -> Tensor: ...
+def backend(*arrays: Tensor) -> Tensor: ...
+def broadcast_arrays(
+    *arrays: Tensor,
+    depth_limit: Tensor = ...,
+    broadcast_parameters_rule: Tensor = ...,
+    left_broadcast: Tensor = ...,
+    right_broadcast: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def broadcast_fields(
+    *arrays: Tensor, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def cartesian(
+    arrays: Tensor,
+    axis: Tensor = ...,
+    *,
+    nested: Tensor = ...,
+    parameters: Tensor = ...,
+    with_name: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def categories(array: Tensor, highlevel: Tensor = ..., *, behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def combinations(
+    array: Tensor,
+    n: Tensor,
+    *,
+    replacement: Tensor = ...,
+    axis: Tensor = ...,
+    fields: Tensor = ...,
+    parameters: Tensor = ...,
+    with_name: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def concatenate(
+    arrays: Tensor,
+    axis: Tensor = ...,
+    *,
+    mergebool: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def copy(array: Tensor) -> Tensor: ...
+def corr(
+    x: Tensor,
+    y: Tensor,
+    weight: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def count(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def count_nonzero(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def covar(
+    x: Tensor,
+    y: Tensor,
+    weight: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def drop_none(
+    array: Tensor, axis: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def enforce_type(
+    array: Tensor, type: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def fields(array: Tensor) -> Tensor: ...
+def fill_none(
+    array: Tensor,
+    value: Tensor,
+    axis: Tensor = ...,
+    *,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def firsts(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def flatten(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def from_arrow(
+    array: Tensor,
+    *,
+    generate_bitmasks: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_arrow_schema(schema: Tensor) -> Tensor: ...
+def from_avro_file(
+    file: Tensor,
+    limit_entries: Tensor = ...,
+    *,
+    debug_forth: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_buffers(
+    form: Tensor,
+    length: Tensor,
+    container: Tensor,
+    buffer_key: Tensor = ...,
+    *,
+    backend: Tensor = ...,
+    byteorder: Tensor = ...,
+    allow_noncanonical_form: Tensor = ...,
+    enable_virtualarray_caching: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_categorical(
+    array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def from_cupy(
+    array: Tensor,
+    *,
+    regulararray: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    primitive_policy: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_dlpack(
+    array: Tensor,
+    *,
+    prefer_cpu: Tensor = ...,
+    regulararray: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    primitive_policy: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_feather(
+    path: Tensor,
+    *,
+    columns: Tensor = ...,
+    use_threads: Tensor = ...,
+    memory_map: Tensor = ...,
+    generate_bitmasks: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_iter(
+    iterable: Tensor,
+    *,
+    allow_record: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+    initial: Tensor = ...,
+    resize: Tensor = ...,
+) -> Tensor: ...
+def from_jax(
+    array: Tensor,
+    *,
+    regulararray: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+    primitive_policy: Tensor = ...,
+) -> Tensor: ...
 def from_json(
     source: Tensor,
     *,
@@ -80,67 +357,420 @@ def from_json(
     behavior: Tensor = ...,
     attrs: Tensor = ...,
 ) -> Tensor: ...
-def from_numpy(array: Tensor, *, regulararray: Tensor = ..., recordarray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., primitive_policy: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def from_numpy(
+    array: Tensor,
+    *,
+    regulararray: Tensor = ...,
+    recordarray: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    primitive_policy: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def from_parquet(
-    path: Tensor, *, columns: Tensor = ..., row_groups: Tensor = ..., storage_options: Tensor = ..., max_gap: Tensor = ..., max_block: Tensor = ..., footer_sample_size: Tensor = ..., generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+    path: Tensor,
+    *,
+    columns: Tensor = ...,
+    row_groups: Tensor = ...,
+    storage_options: Tensor = ...,
+    max_gap: Tensor = ...,
+    max_block: Tensor = ...,
+    footer_sample_size: Tensor = ...,
+    generate_bitmasks: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
 ) -> Tensor: ...
 def from_raggedtensor(array: Tensor) -> Tensor: ...
-def from_rdataframe(rdf: Tensor, columns: Tensor, *, keep_order: Tensor = ..., offsets_type: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_regular(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_safetensors(source: Tensor, *, storage_options: Tensor = ..., virtual: Tensor = ..., buffer_key: Tensor = ..., backend: Tensor = ..., byteorder: Tensor = ..., allow_noncanonical_form: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def from_rdataframe(
+    rdf: Tensor,
+    columns: Tensor,
+    *,
+    keep_order: Tensor = ...,
+    offsets_type: Tensor = ...,
+    with_name: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def from_regular(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def from_safetensors(
+    source: Tensor,
+    *,
+    storage_options: Tensor = ...,
+    virtual: Tensor = ...,
+    buffer_key: Tensor = ...,
+    backend: Tensor = ...,
+    byteorder: Tensor = ...,
+    allow_noncanonical_form: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def from_tensorflow(array: Tensor) -> Tensor: ...
 def from_torch(array: Tensor) -> Tensor: ...
-def full_like(array: Tensor, fill_value: Tensor, *, dtype: Tensor = ..., including_unknown: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def full_like(
+    array: Tensor,
+    fill_value: Tensor,
+    *,
+    dtype: Tensor = ...,
+    including_unknown: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def imag(val: Tensor, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def is_categorical(array: Tensor) -> Tensor: ...
-def is_none(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def is_none(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
 def is_tuple(array: Tensor) -> Tensor: ...
 def is_valid(array: Tensor, *, exception: Tensor = ...) -> Tensor: ...
-def isclose(a: Tensor, b: Tensor, rtol: Tensor = ..., atol: Tensor = ..., equal_nan: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def linear_fit(x: Tensor, y: Tensor, weight: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def local_index(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def mask(array: Tensor, mask: Tensor, *, valid_when: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def isclose(
+    a: Tensor,
+    b: Tensor,
+    rtol: Tensor = ...,
+    atol: Tensor = ...,
+    equal_nan: Tensor = ...,
+    *,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def linear_fit(
+    x: Tensor,
+    y: Tensor,
+    weight: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def local_index(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def mask(
+    array: Tensor,
+    mask: Tensor,
+    *,
+    valid_when: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def materialize(array: Tensor, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def max(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., initial: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def mean(x: Tensor, weight: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def merge_option_of_records(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def merge_union_of_records(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def metadata_from_parquet(path: Tensor, *, storage_options: Tensor = ..., row_groups: Tensor = ..., ignore_metadata: Tensor = ..., scan_files: Tensor = ...) -> Tensor: ...
-def min(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., initial: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def max(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    initial: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def mean(
+    x: Tensor,
+    weight: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def merge_option_of_records(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def merge_union_of_records(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def metadata_from_parquet(
+    path: Tensor,
+    *,
+    storage_options: Tensor = ...,
+    row_groups: Tensor = ...,
+    ignore_metadata: Tensor = ...,
+    scan_files: Tensor = ...,
+) -> Tensor: ...
+def min(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    initial: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def mixin_class(registry: Tensor, name: Tensor = ...) -> Tensor: ...
 def mixin_class_method(ufunc: Tensor, rhs: Tensor = ..., *, transpose: Tensor = ...) -> Tensor: ...
-def moment(x: Tensor, n: Tensor, weight: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def moment(
+    x: Tensor,
+    n: Tensor,
+    weight: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def nan_to_none(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nan_to_num(array: Tensor, copy: Tensor = ..., nan: Tensor = ..., posinf: Tensor = ..., neginf: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanargmax(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanargmin(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanmax(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., initial: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanmean(x: Tensor, weight: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanmin(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., initial: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanprod(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanstd(x: Tensor, weight: Tensor = ..., ddof: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nansum(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def nanvar(x: Tensor, weight: Tensor = ..., ddof: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def num(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def ones_like(array: Tensor, *, dtype: Tensor = ..., including_unknown: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def pad_none(array: Tensor, target: Tensor, axis: Tensor = ..., *, clip: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def nan_to_num(
+    array: Tensor,
+    copy: Tensor = ...,
+    nan: Tensor = ...,
+    posinf: Tensor = ...,
+    neginf: Tensor = ...,
+    *,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanargmax(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanargmin(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanmax(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    initial: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanmean(
+    x: Tensor,
+    weight: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanmin(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    initial: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanprod(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanstd(
+    x: Tensor,
+    weight: Tensor = ...,
+    ddof: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nansum(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def nanvar(
+    x: Tensor,
+    weight: Tensor = ...,
+    ddof: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def num(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def ones_like(
+    array: Tensor,
+    *,
+    dtype: Tensor = ...,
+    including_unknown: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def pad_none(
+    array: Tensor,
+    target: Tensor,
+    axis: Tensor = ...,
+    *,
+    clip: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def parameters(array: Tensor) -> Tensor: ...
-def prod(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def ptp(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def prod(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def ptp(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def ravel(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def real(array: Tensor, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def round(array: Tensor, decimals: Tensor = ..., out: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def round(
+    array: Tensor,
+    decimals: Tensor = ...,
+    out: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def run_lengths(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def singletons(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def softmax(x: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def sort(array: Tensor, axis: Tensor = ..., *, ascending: Tensor = ..., stable: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def std(x: Tensor, weight: Tensor = ..., ddof: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def strings_astype(array: Tensor, to: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def sum(array: Tensor, axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def to_arrow(array: Tensor, *, list_to32: Tensor = ..., string_to32: Tensor = ..., bytestring_to32: Tensor = ..., emptyarray_to: Tensor = ..., categorical_as_dictionary: Tensor = ..., extensionarray: Tensor = ..., count_nulls: Tensor = ...) -> Tensor: ...
-def to_arrow_table(array: Tensor, *, list_to32: Tensor = ..., string_to32: Tensor = ..., bytestring_to32: Tensor = ..., emptyarray_to: Tensor = ..., categorical_as_dictionary: Tensor = ..., extensionarray: Tensor = ..., count_nulls: Tensor = ...) -> Tensor: ...
-def to_backend(array: Tensor, backend: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def to_buffers(array: Tensor, container: Tensor = ..., buffer_key: Tensor = ..., form_key: Tensor = ..., *, id_start: Tensor = ..., backend: Tensor = ..., byteorder: Tensor = ...) -> Tensor: ...
+def singletons(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def softmax(
+    x: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def sort(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    ascending: Tensor = ...,
+    stable: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def std(
+    x: Tensor,
+    weight: Tensor = ...,
+    ddof: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def strings_astype(
+    array: Tensor, to: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def sum(
+    array: Tensor,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def to_arrow(
+    array: Tensor,
+    *,
+    list_to32: Tensor = ...,
+    string_to32: Tensor = ...,
+    bytestring_to32: Tensor = ...,
+    emptyarray_to: Tensor = ...,
+    categorical_as_dictionary: Tensor = ...,
+    extensionarray: Tensor = ...,
+    count_nulls: Tensor = ...,
+) -> Tensor: ...
+def to_arrow_table(
+    array: Tensor,
+    *,
+    list_to32: Tensor = ...,
+    string_to32: Tensor = ...,
+    bytestring_to32: Tensor = ...,
+    emptyarray_to: Tensor = ...,
+    categorical_as_dictionary: Tensor = ...,
+    extensionarray: Tensor = ...,
+    count_nulls: Tensor = ...,
+) -> Tensor: ...
+def to_backend(
+    array: Tensor, backend: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def to_buffers(
+    array: Tensor,
+    container: Tensor = ...,
+    buffer_key: Tensor = ...,
+    form_key: Tensor = ...,
+    *,
+    id_start: Tensor = ...,
+    backend: Tensor = ...,
+    byteorder: Tensor = ...,
+) -> Tensor: ...
 def to_cudf(array: Tensor) -> Tensor: ...
 def to_cupy(array: Tensor) -> Tensor: ...
 def to_dataframe(array: Tensor, *, how: Tensor = ..., levelname: Tensor = ..., anonymous: Tensor = ...) -> Tensor: ...
@@ -175,7 +805,17 @@ def to_json(
     convert_bytes: Tensor = ...,
     convert_other: Tensor = ...,
 ) -> Tensor: ...
-def to_layout(array: Tensor, *, allow_record: Tensor = ..., allow_unknown: Tensor = ..., none_policy: Tensor = ..., use_from_iter: Tensor = ..., primitive_policy: Tensor = ..., string_policy: Tensor = ..., regulararray: Tensor = ...) -> Tensor: ...
+def to_layout(
+    array: Tensor,
+    *,
+    allow_record: Tensor = ...,
+    allow_unknown: Tensor = ...,
+    none_policy: Tensor = ...,
+    use_from_iter: Tensor = ...,
+    primitive_policy: Tensor = ...,
+    string_policy: Tensor = ...,
+    regulararray: Tensor = ...,
+) -> Tensor: ...
 def to_list(array: Tensor) -> Tensor: ...
 def to_numpy(array: Tensor, *, allow_missing: Tensor = ...) -> Tensor: ...
 def to_packed(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
@@ -236,8 +876,21 @@ def to_parquet_row_groups(
 ) -> Tensor: ...
 def to_raggedtensor(array: Tensor) -> Tensor: ...
 def to_rdataframe(arrays: Tensor, *, flatlist_as_rvec: Tensor = ...) -> Tensor: ...
-def to_regular(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def to_safetensors(array: Tensor, destination: Tensor, *, storage_options: Tensor = ..., container: Tensor = ..., buffer_key: Tensor = ..., form_key: Tensor = ..., id_start: Tensor = ..., backend: Tensor = ..., byteorder: Tensor = ...) -> Tensor: ...
+def to_regular(
+    array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def to_safetensors(
+    array: Tensor,
+    destination: Tensor,
+    *,
+    storage_options: Tensor = ...,
+    container: Tensor = ...,
+    buffer_key: Tensor = ...,
+    form_key: Tensor = ...,
+    id_start: Tensor = ...,
+    backend: Tensor = ...,
+    byteorder: Tensor = ...,
+) -> Tensor: ...
 def to_tensorflow(array: Tensor) -> Tensor: ...
 def to_torch(array: Tensor) -> Tensor: ...
 def transform(
@@ -259,20 +912,109 @@ def transform(
     attrs: Tensor = ...,
 ) -> Tensor: ...
 def type(array: Tensor, *, behavior: Tensor = ...) -> Tensor: ...
-def unflatten(array: Tensor, counts: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def unzip(array: Tensor, *, how: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def unflatten(
+    array: Tensor,
+    counts: Tensor,
+    axis: Tensor = ...,
+    *,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def unzip(
+    array: Tensor, *, how: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
 def validity_error(array: Tensor, *, exception: Tensor = ...) -> Tensor: ...
-def values_astype(array: Tensor, to: Tensor, *, including_unknown: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def var(x: Tensor, weight: Tensor = ..., ddof: Tensor = ..., axis: Tensor = ..., *, keepdims: Tensor = ..., mask_identity: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def where(condition: Tensor, *args: Tensor, mergebool: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def with_field(array: Tensor, what: Tensor, where: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def with_name(array: Tensor, name: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def with_named_axis(array: Tensor, named_axis: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def with_parameter(array: Tensor, parameter: Tensor, value: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def without_field(array: Tensor, where: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def without_named_axis(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def without_parameters(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def zeros_like(array: Tensor, *, dtype: Tensor = ..., including_unknown: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def zip(arrays: Tensor, depth_limit: Tensor = ..., *, parameters: Tensor = ..., with_name: Tensor = ..., right_broadcast: Tensor = ..., optiontype_outside_record: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def zip_no_broadcast(arrays: Tensor, *, parameters: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
+def values_astype(
+    array: Tensor,
+    to: Tensor,
+    *,
+    including_unknown: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def var(
+    x: Tensor,
+    weight: Tensor = ...,
+    ddof: Tensor = ...,
+    axis: Tensor = ...,
+    *,
+    keepdims: Tensor = ...,
+    mask_identity: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def where(
+    condition: Tensor,
+    *args: Tensor,
+    mergebool: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def with_field(
+    array: Tensor,
+    what: Tensor,
+    where: Tensor = ...,
+    *,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def with_name(
+    array: Tensor, name: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def with_named_axis(
+    array: Tensor, named_axis: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def with_parameter(
+    array: Tensor,
+    parameter: Tensor,
+    value: Tensor,
+    *,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def without_field(
+    array: Tensor, where: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def without_named_axis(
+    array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def without_parameters(
+    array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
+) -> Tensor: ...
+def zeros_like(
+    array: Tensor,
+    *,
+    dtype: Tensor = ...,
+    including_unknown: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def zip(
+    arrays: Tensor,
+    depth_limit: Tensor = ...,
+    *,
+    parameters: Tensor = ...,
+    with_name: Tensor = ...,
+    right_broadcast: Tensor = ...,
+    optiontype_outside_record: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
+def zip_no_broadcast(
+    arrays: Tensor,
+    *,
+    parameters: Tensor = ...,
+    with_name: Tensor = ...,
+    highlevel: Tensor = ...,
+    behavior: Tensor = ...,
+    attrs: Tensor = ...,
+) -> Tensor: ...
 def __getattr__(name: str) -> Tensor: ...

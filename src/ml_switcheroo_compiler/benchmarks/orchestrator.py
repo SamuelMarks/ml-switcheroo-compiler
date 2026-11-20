@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import importlib
-import inspect
 import multiprocessing
 import pathlib
 import typing
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+
+from ml_switcheroo_ir import IRGraph
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.benchmarks.config_models import (
@@ -16,13 +16,12 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     ProfilerProfileModel,
     load_backend_profiles,
 )
-from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict, compute_statistical_metrics
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.core.shape import OpValue
+from ml_switcheroo_compiler.interpreter.evaluator import InterpreterValue
 
-ProfilerMetrics = dict[str, typing.Union[list[float], "float"]]
+ProfilerMetrics = ProfileMetricsDict
 BenchmarkResult = tuple[str, typing.Union[ProfilerMetrics, "str"]]
 
 
@@ -58,7 +57,7 @@ class _ProfilerProtocol(typing.Protocol):
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, EvalValue],
+        inputs: Mapping[str, InterpreterValue],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -82,53 +81,43 @@ class _ProfilerProtocol(typing.Protocol):
 class _ExecuteOpBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `execute_op`."""
 
-    def execute_op(self, op_name: str, *args: int | EvalValue, **kwargs: str) -> EvalValue:
+    def execute_op(self, op_name: str, *args: int | InterpreterValue, **kwargs: str) -> InterpreterValue:
         """Execute a backend operation by name.
 
         Args:
             op_name (str): Operation name.
-            *args (int | EvalValue): Positional arguments.
+            *args (int | InterpreterValue): Positional arguments.
             **kwargs (str): Keyword arguments.
 
         Returns:
-            EvalValue: Operation output.
+            InterpreterValue: Operation output.
         """
         ...
 
 
-def _is_profiler_factory(val: TensorOrScalar) -> typing.TypeGuard[_ProfilerFactoryProtocol]:
-    """Type guard narrowing `val` to `_ProfilerFactoryProtocol`.
-
-    Args:
-        val (TensorOrScalar): Candidate profiler class.
-
-    Returns:
-        bool: True if callable.
-    """
-    return callable(val)
-
-
 def _instantiate_profiler(mod_name: str, cls_name: str) -> _ProfilerProtocol:
-    """Import `mod_name` and instantiate profiler class `cls_name`.
+    """Import ``mod_name`` and instantiate profiler class ``cls_name``.
 
     Args:
         mod_name (str): Module path.
-        cls_name (str): Class name inside `mod_name`.
+        cls_name (str): Class name inside ``mod_name``.
 
     Returns:
         _ProfilerProtocol: Instantiated profiler.
     """
-    mod = importlib.import_module(mod_name)
-    members = dict(inspect.getmembers(mod))
-    profiler_cls: TensorOrScalar = members[cls_name]
-    assert _is_profiler_factory(profiler_cls)
-    return profiler_cls()
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+    mod = BackendRegistry.load_scoped_module(mod_name)
+    cls_fn = adapt_backend_module(mod).require_op(cls_name)
+    inst: OpValue | _ProfilerProtocol = cls_fn()
+    assert isinstance(inst, _ProfilerProtocol)
+    return inst
 
 
 def _isolated_worker(
     profiler_cls_tuple: tuple[str, str],
     graph: IRGraph,
-    inputs: dict[str, EvalValue],
+    inputs: dict[str, InterpreterValue],
     device: str | None,
     num_iters: int,
     warmup_iters: int,
@@ -139,11 +128,11 @@ def _isolated_worker(
     Args:
         profiler_cls_tuple (tuple[str, str]): Module and class names for profiler.
         graph (IRGraph): Computational graph.
-        inputs (dict[str, EvalValue]): Input arrays.
+        inputs (dict[str, InterpreterValue]): Input arrays.
         device (Optional[str]): Device identifier.
         num_iters (int): Measurement iteration count.
         warmup_iters (int): Warmup iteration count.
-        output_queue (multiprocessing.Queue): Queue to communicate results back.
+        output_queue (multiprocessing.Queue[BenchmarkResult]): Queue to communicate results back.
     """
     try:
         profiler = _instantiate_profiler(profiler_cls_tuple[0], profiler_cls_tuple[1])
@@ -155,7 +144,17 @@ def _isolated_worker(
             warmup_iters=warmup_iters,
         )
         output_queue.put(("ok", metrics))
-    except Exception as exc:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ) as exc:
         output_queue.put(("error", str(exc)))
 
 
@@ -187,7 +186,17 @@ class BenchmarkOrchestrator:
                 if profile.profiler_module and profile.profiler_class:
                     specs[str(bname)] = (str(profile.profiler_module), str(profile.profiler_class))
             return specs
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             return {}
 
     def _get_profiler(self, backend_name: str) -> _ProfilerProtocol:
@@ -210,7 +219,9 @@ class BenchmarkOrchestrator:
             try:
                 return _instantiate_profiler(profile.profiler_module, profile.profiler_class)
             except ImportError as err:
-                raise BackendNotSupportedError(f"Profiler for backend '{backend_name}' could not be imported: {err}") from err
+                raise BackendNotSupportedError(
+                    f"Profiler for backend '{backend_name}' could not be imported: {err}"
+                ) from err
 
         raise BackendNotSupportedError(f"Backend '{backend_name}' does not have a supported profiler.")
 
@@ -218,7 +229,7 @@ class BenchmarkOrchestrator:
         self,
         graph: IRGraph,
         backend_name: str,
-        inputs: dict[str, EvalValue],
+        inputs: dict[str, InterpreterValue],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -228,7 +239,7 @@ class BenchmarkOrchestrator:
         Args:
             graph (IRGraph): The computation graph.
             backend_name (str): Target backend name.
-            inputs (dict[str, EvalValue]): Inputs mapping.
+            inputs (dict[str, InterpreterValue]): Inputs mapping.
             device (Optional[str]): Device identifier.
             num_iters (int): Measurement iterations.
             warmup_iters (int): Warmup iterations.
@@ -254,7 +265,7 @@ class BenchmarkOrchestrator:
             args=(spec, graph, inputs, device, num_iters, warmup_iters, queue),
         )
         proc.start()
-        proc.join(timeout=30)
+        proc.join(timeout=120)
         if proc.is_alive():
             proc.terminate()
             proc.join()
@@ -304,15 +315,19 @@ class BenchmarkOrchestrator:
         # Construct inputs from plan or graph declarations
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        inputs_dict: dict[str, EvalValue] = {}
+        inputs_dict: dict[str, InterpreterValue] = {}
         input_names: list[str] = list(graph.inputs) if graph.inputs else ["in_0"]
 
-        active_backend: TensorOrScalar = get_active_backend()
+        active_backend: OpValue = get_active_backend()
         for inp in input_names:
             node = graph.nodes.get(inp) if graph.nodes else None
             node_attrs = (node.attributes or {}) if node is not None else {}
             raw_shape = node_attrs.get("shape")
-            node_shape: list[int] = [int(d) for d in raw_shape if isinstance(d, int)] if isinstance(raw_shape, (list, tuple, Sequence)) and not isinstance(raw_shape, (str, bytes)) else []
+            node_shape: list[int] = (
+                [int(d) for d in raw_shape if isinstance(d, int)]
+                if isinstance(raw_shape, (list, tuple, Sequence)) and not isinstance(raw_shape, (str, bytes))
+                else []
+            )
             is_weight = bool(node_attrs.get("is_weight", False))
 
             if is_weight and node_shape:
@@ -320,8 +335,11 @@ class BenchmarkOrchestrator:
             else:
                 extra_dims: list[int] = self.plan.input_shapes.get(inp, node_shape if node_shape else [10])
                 full_shape = (batch_size, *extra_dims)
-            if isinstance(active_backend, _ExecuteOpBackendProtocol):
-                inputs_dict[inp] = active_backend.execute_op("Cast", active_backend.execute_op("Randn", *full_shape), dtype="float32")
+            cand_backend: OpValue | _ExecuteOpBackendProtocol = active_backend
+            if isinstance(cand_backend, _ExecuteOpBackendProtocol):
+                inputs_dict[inp] = cand_backend.execute_op(
+                    "Cast", cand_backend.execute_op("Randn", *full_shape), dtype="float32"
+                )
             else:
                 inputs_dict[inp] = [0.0]
 
@@ -356,7 +374,17 @@ class BenchmarkOrchestrator:
 
         try:
             workload_manifest = load_model_workloads()
-        except Exception:
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
             workload_manifest = {}
 
         for model_name in self.plan.models:
@@ -387,7 +415,7 @@ class BenchmarkOrchestrator:
                         )
 
                     raw_latencies = metrics.get("latencies", [])
-                    lat_list: list[float] = [float(x) for x in raw_latencies] if isinstance(raw_latencies, list) and raw_latencies else [0.0]
+                    lat_list: list[float] = [float(x) for x in raw_latencies] if raw_latencies else [0.0]
                     stat_metrics = compute_statistical_metrics(lat_list)
                     mean_lat: float = _to_metric_float(stat_metrics["mean_ms"])
 

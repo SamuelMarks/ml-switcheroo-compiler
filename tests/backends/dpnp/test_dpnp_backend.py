@@ -8,15 +8,22 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 import ml_switcheroo_compiler.backends.dpnp as dpnp_pkg
 from ml_switcheroo_compiler.backends.dpnp.generator import DPNPGenerator
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import (
+    MockTestStub,
+    extract_test_dtype,
+    extract_test_shape,
+    require_callable,
+    unpack_pair,
+)
 
 if typing.TYPE_CHECKING:
     pass
@@ -74,46 +81,45 @@ def test_dpnp_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = ensure_callable(runner)(t_in1, in2=ensure_callable(np.array)([[5.0, 6.0], [7.0, 8.0]]))
-    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(res)), [[6.0, 8.0], [10.0, 12.0]])
+    res = require_callable(runner)(t_in1, in2=np.array([[5.0, 6.0], [7.0, 8.0]]))
+    np.testing.assert_allclose(np.asarray(res), [[6.0, 8.0], [10.0, 12.0]])
 
     # AOT compile multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = ensure_callable(runner_multi)(t_in1, t_in2)
-    assert isinstance(ensure_eager_tensor(res_multi), tuple)
+    res_multi = unpack_pair(require_callable(runner_multi)(t_in1, t_in2))
     assert len(res_multi) == 2
 
     # AOT compile no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = ensure_callable(runner_no_out)(t_in1, t_in2)
-    assert isinstance(ensure_eager_tensor(res_no_out), dict)
+    res_no_out: OpValue = require_callable(runner_no_out)(t_in1, t_in2)
+    assert isinstance(res_no_out, dict)
 
 
 def test_dpnp_types() -> None:
     """Verify DPNP types creation functions and fallback handling."""
     # Direct calls with tuples / sequences
     z = dpnp_pkg.zeros((2, 3))
-    assert ensure_eager_tensor(z).shape == (2, 3)
+    assert extract_test_shape(z) == (2, 3)
     z_cls = dpnp_pkg.DPNPGenerator.zeros((2, 3))
-    assert ensure_eager_tensor(z_cls).shape == (2, 3)
+    assert extract_test_shape(z_cls) == (2, 3)
 
     arr = dpnp_pkg.array([1.0, 2.0])
-    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(arr)), [1.0, 2.0])
+    np.testing.assert_allclose(np.asarray(arr), [1.0, 2.0])
     arr_cls = dpnp_pkg.DPNPGenerator.array([1.0, 2.0])
-    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(arr_cls)), [1.0, 2.0])
+    np.testing.assert_allclose(np.asarray(arr_cls), [1.0, 2.0])
 
     # Custom dtype branch
     arr_dtype = dpnp_pkg.array([1.0, 2.0], dtype="float64")
-    assert str(ensure_eager_tensor(arr_dtype).dtype) == "float64"
+    assert str(extract_test_dtype(arr_dtype)) == "float64"
     arr_dtype_cls = dpnp_pkg.DPNPGenerator.array([1.0, 2.0], dtype="float32")
-    assert str(ensure_eager_tensor(arr_dtype_cls).dtype) == "float32"
+    assert str(extract_test_dtype(arr_dtype_cls)) == "float32"
 
     as_arr = dpnp_pkg.asarray([3.0, 4.0])
-    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(as_arr)), [3.0, 4.0])
+    np.testing.assert_allclose(np.asarray(as_arr), [3.0, 4.0])
     as_arr_cls = dpnp_pkg.DPNPGenerator.asarray([3.0, 4.0])
-    np.testing.assert_allclose(np.asarray(ensure_eager_tensor(as_arr_cls)), [3.0, 4.0])
+    np.testing.assert_allclose(np.asarray(as_arr_cls), [3.0, 4.0])
 
     # item extraction
     val = dpnp_pkg.item(np.array([4.2]))
@@ -122,10 +128,15 @@ def test_dpnp_types() -> None:
     assert np.isclose(val_cls, 4.2)
 
     # item fallback when object lacks .item()
-    class NoItemObj:
+    class NoItemObj(MockTestStub):
         """Object without .item() method implementing __array__."""
 
-        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+        def __array__(
+            self,
+        ) -> np.ndarray[
+            tuple[int, ...],
+            np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        ]:
             """Convert to array.
 
             Returns:
@@ -133,8 +144,8 @@ def test_dpnp_types() -> None:
             """
             return np.array(7.5)
 
-    val_no_item = ensure_callable(dpnp_pkg.item)(ensure_callable(NoItemObj)())
-    assert ensure_callable(np.isclose)(val_no_item, 7.5)
+    val_no_item = dpnp_pkg.item(NoItemObj())
+    assert np.isclose(val_no_item, 7.5)
 
     # When dpnp is mock-imported
     mock_dpnp = mock.MagicMock()
@@ -151,23 +162,23 @@ def test_dpnp_eager_dispatch() -> None:
     """Verify DPNP eager op dispatching, class context, aliases, and errors."""
     # Normal dispatch
     res = dpnp_pkg.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    ensure_callable(np.testing.assert_allclose)(res, [4.0, 6.0])
+    np.testing.assert_allclose(ensure_ndarray(res), [4.0, 6.0])
 
     # Classmethod invocation: cls_or_op is class
     res_cls = dpnp_pkg.DPNPGenerator.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    ensure_callable(np.testing.assert_allclose)(res_cls, [4.0, 6.0])
+    np.testing.assert_allclose(ensure_ndarray(res_cls), [4.0, 6.0])
 
     # Alias mapping branch: Sub -> subtract, Mul -> multiply, Div -> divide, Neg -> negative
     sub_res = dpnp_pkg.execute_op("Sub", np.array([5.0]), np.array([2.0]))
-    ensure_callable(np.testing.assert_allclose)(sub_res, [3.0])
+    np.testing.assert_allclose(ensure_ndarray(sub_res), [3.0])
     mul_res = dpnp_pkg.execute_op("Mul", np.array([5.0]), np.array([2.0]))
-    ensure_callable(np.testing.assert_allclose)(mul_res, [10.0])
+    np.testing.assert_allclose(ensure_ndarray(mul_res), [10.0])
     div_res = dpnp_pkg.execute_op("Div", np.array([6.0]), np.array([2.0]))
-    ensure_callable(np.testing.assert_allclose)(div_res, [3.0])
+    np.testing.assert_allclose(ensure_ndarray(div_res), [3.0])
     neg_res = dpnp_pkg.execute_op("Neg", np.array([5.0]))
-    ensure_callable(np.testing.assert_allclose)(neg_res, [-5.0])
+    np.testing.assert_allclose(ensure_ndarray(neg_res), [-5.0])
     truediv_res = dpnp_pkg.execute_op("TrueDivide", np.array([7.0]), np.array([2.0]))
-    ensure_callable(np.testing.assert_allclose)(truediv_res, [3.5])
+    np.testing.assert_allclose(ensure_ndarray(truediv_res), [3.5])
 
     # Unsupported op
     with pytest.raises(BackendNotSupportedError, match="not supported"):

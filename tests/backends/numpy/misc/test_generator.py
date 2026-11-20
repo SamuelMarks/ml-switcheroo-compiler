@@ -3,27 +3,28 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, NodeDict
 
 import ml_switcheroo_compiler.backends.numpy.generator as gen
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict, ensure_tensor_list
+from tests.testing_utils import MockGraphStub, MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_numpy_generator_visit_kwargs_only() -> None:
     """Test the numpy generator visit kwargs only behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
 
     class Gen(gen.NumpyGenerator):
@@ -33,7 +34,7 @@ def test_numpy_generator_visit_kwargs_only() -> None:
             """Initialize the instance.
 
             Returns:
-                TensorOrScalar: The inferred shape or computed result.
+                OpValue: The inferred shape or computed result.
             """
             pass
 
@@ -48,7 +49,7 @@ def test_numpy_generator_visit_no_kwargs() -> None:
     """Test the numpy generator visit no kwargs behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
 
     class Gen(gen.NumpyGenerator):
@@ -58,7 +59,7 @@ def test_numpy_generator_visit_no_kwargs() -> None:
             """Initialize the instance.
 
             Returns:
-                TensorOrScalar: The inferred shape or computed result.
+                OpValue: The inferred shape or computed result.
             """
             pass
 
@@ -72,11 +73,11 @@ def test_numpy_generator_kwargs_only() -> None:
     """Test the numpy generator kwargs only behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     op_type = "Zeros"
-    input_vars = ensure_tensor_list([])
-    kwargs = {"shape": "(2, 2)"}
+    input_vars: list[str] = []
+    kwargs: dict[str, BackendArg] = {"shape": "(2, 2)"}
 
     class Gen(gen.NumpyGenerator):
         """Configuration class for gen."""
@@ -85,12 +86,14 @@ def test_numpy_generator_kwargs_only() -> None:
             """Initialize the instance.
 
             Returns:
-                TensorOrScalar: The inferred shape or computed result.
+                OpValue: The inferred shape or computed result.
             """
             pass
 
     Gen()
-    res = ensure_callable(OpFormatter.format_generic_fallback)(ensure_callable(FormatterContext)(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs))
+    res = OpFormatter.format_generic_fallback(
+        FormatterContext(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs)
+    )
     assert "zeros" in str(res)
 
 
@@ -98,7 +101,7 @@ def test_cupy_generator_kwargs_only() -> None:
     """Test the cupy generator kwargs only behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
 
     class Gen(CupyGenerator):
@@ -108,12 +111,14 @@ def test_cupy_generator_kwargs_only() -> None:
             """Initialize the instance.
 
             Returns:
-                TensorOrScalar: The inferred shape or computed result.
+                OpValue: The inferred shape or computed result.
             """
             pass
 
     Gen()
-    _out = OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
+    _out = OpFormatter.format_generic_fallback(
+        FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"})
+    )
     assert _out == "out.zeros(shape=(2, 2))"
 
 
@@ -121,7 +126,7 @@ def test_dask_generator_kwargs_only() -> None:
     """Test the dask generator kwargs only behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
 
     class Gen(DaskGenerator):
@@ -131,12 +136,14 @@ def test_dask_generator_kwargs_only() -> None:
             """Initialize the instance.
 
             Returns:
-                TensorOrScalar: The inferred shape or computed result.
+                OpValue: The inferred shape or computed result.
             """
             pass
 
     Gen()
-    _out = OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
+    _out = OpFormatter.format_generic_fallback(
+        FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"})
+    )
     assert _out == "out.zeros(shape=(2, 2))"
 
 
@@ -144,7 +151,7 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
     """Test the cupy generator fallback empty args str with kwargs behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
 
     class Gen(CupyGenerator):
@@ -154,26 +161,28 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
             """Initialize the instance.
 
             Returns:
-                TensorOrScalar: The inferred shape or computed result.
+                OpValue: The inferred shape or computed result.
             """
             pass
 
     Gen()
-    _out = OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
+    _out = OpFormatter.format_generic_fallback(
+        FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"})
+    )
     assert _out == "out.zeros(shape=(2, 2))"
 
 
-def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
+def test_numpy_generator_coverage(tmp_path: Path) -> None:
     """Test function test_numpy_generator_coverage.
 
     Args:
         tmp_path: Test parameter `tmp_path`.
     """
 
-    class DummyNode:
+    class DummyNode(MockTestStub):
         """Test class DummyNode."""
 
-        def __init__(self, op_type: EagerValue, id: EagerValue = "test_id") -> None:
+        def __init__(self, op_type: BackendArg, id: BackendArg = "test_id") -> None:
             """Test function __init__.
 
             Args:
@@ -182,27 +191,27 @@ def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
             """
             self.op_type = op_type
             self.id = id
-            self.attributes = ensure_tensor_dict({})
+            self.attributes: dict[str, AttributeValue] = {}
 
-    class DummyGraph:
+    class DummyGraph(MockGraphStub):
         """Test class DummyGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = ensure_tensor_list([])
+            self.nodes: NodeDict = NodeDict()
 
-    assert ensure_eager_tensor(NumpyTypeTranslator.get_fallback_prefix()) == "np"
-    assert ensure_eager_tensor(NumpyASTVisitor._format_kwargs({"a": 1})) == "a=1"
-    assert ensure_callable(NumpyASTVisitor.generic_visit)(ensure_callable(DummyNode)("Unknown"), []) == "np.unknown()"
-    gen = ensure_callable(NumpyGenerator)(ensure_callable(DummyGraph)())
+    assert NumpyTypeTranslator.get_fallback_prefix() == "np"
+    assert NumpyASTVisitor._format_kwargs({"a": 1}) == "a=1"
+    assert NumpyASTVisitor.generic_visit(DummyNode("Unknown"), []) == "np.unknown()"
+    gen = NumpyGenerator(DummyGraph())
     DummyNode("Einsum")
     DummyNode("PowerIteration")
-    assert ensure_eager_tensor(gen.get_fallback_prefix()) == "np"
+    assert gen.get_fallback_prefix() == "np"
     ops = gen.get_ops_map({})
-    assert isinstance(ensure_eager_tensor(ops), dict)
-    assert ensure_eager_tensor(gen.get_fallback_prefix()) == "np"
+    assert isinstance(ops, dict)
+    assert gen.get_fallback_prefix() == "np"
     helpers = gen.get_helper_functions()
-    assert isinstance(ensure_eager_tensor(helpers), list)
+    assert isinstance(helpers, list)
     with pytest.raises(Exception, match=".*"):
         NumpyGenerator.load("")
     dummy_npy = str(tmp_path / "dummy.npy")
@@ -215,8 +224,9 @@ def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
 
 def test_numpy_power_iteration() -> None:
     """Test function test_numpy_power_iteration."""
+    from ml_switcheroo_ir import IRNode
+
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
-    from ml_switcheroo_compiler.ir.core import IRNode
 
     gen = NumpyGenerator(graph=IRGraph())
     node = IRNode(id="pi", op_type="PowerIteration", inputs=["a", "u"], attributes={"num_iters": 5})

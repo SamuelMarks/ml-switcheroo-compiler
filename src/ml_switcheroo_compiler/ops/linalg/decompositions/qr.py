@@ -1,18 +1,16 @@
-"""Implementation of qr operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.qr`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.linalg.decompositions.qr`."""
 
 from __future__ import annotations
 
 import typing
 
 from ml_switcheroo_compiler.backends.registry import (
-    EagerTensorProtocol,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_tensor_pair,
-    ensure_tensor_triple,
+    coerce_operand_list,
+    unpack_pair,
+    unpack_triple,
 )
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
@@ -25,19 +23,19 @@ if typing.TYPE_CHECKING:
 class Qr(OpDef):
     """Qr Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        *args (EagerTensorProtocol): Positional args.
-        **kwargs (EagerTensorProtocol): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         if not args:
             return ()
-        a_shape = args[0].shape
+        a_shape = extract_shape(args[0])
         mode = kwargs.get("mode", "reduced")
         m, n = a_shape[-2], a_shape[-1]
         k = min(m, n)
@@ -52,29 +50,29 @@ class Qr(OpDef):
 class Hessenberg(OpDef):
     """Hessenberg Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        return args[0].shape, args[0].shape
+        return extract_shape(args[0]), extract_shape(args[0])
 
 
 @register_op("HouseholderProduct")
 class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape for HouseholderProduct.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape (..., M, N).
@@ -88,40 +86,40 @@ class HouseholderProduct(OpDef):
 class Schur(OpDef):
     """Schur Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        return args[0].shape, args[0].shape
+        return extract_shape(args[0]), extract_shape(args[0])
 
 
 @register_op("Tridiagonal")
 class Tridiagonal(OpDef):
     """Tridiagonal Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        a_shape = args[0].shape
+        a_shape = extract_shape(args[0])
         diag_shape = a_shape[:-1]
         off_diag_shape = a_shape[:-2] + (a_shape[-1] - 1,) if a_shape[-1] > 0 else a_shape[:-1]
         return diag_shape, off_diag_shape, a_shape
 
 
-def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
+def qr(input: Tensor, mode: str = "reduced") -> OpValue:
     """Compute the QR decomposition of a matrix.
 
     Args:
@@ -137,26 +135,27 @@ def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
         backend = get_active_backend()
         res = backend.execute_op("Qr", input.data, mode=mode)
         if mode == "r":
-            res_t = ensure_eager_tensor(res)
-            return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
-        q, r = ensure_tensor_pair(res)
+            res_t = res
+            return Tensor(res_t, TensorConfig(extract_shape(res_t), input.dtype, input.device))
+        q, r = unpack_pair(res)
         return (
-            Tensor(q, TensorConfig(q.shape, input.dtype, input.device)),
-            Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
+            Tensor(q, TensorConfig(extract_shape(q), input.dtype, input.device)),
+            Tensor(r, TensorConfig(extract_shape(r), input.dtype, input.device)),
         )
-    m, n = int(input.shape[-2]), int(input.shape[-1])
+    in_shape = extract_shape(input)
+    m, n = in_shape[-2], in_shape[-1]
     k = min(m, n)
     if mode == "complete":
-        q_shape, r_shape = input.shape[:-2] + (m, m), input.shape[:-2] + (m, n)
+        q_shape, r_shape = in_shape[:-2] + (m, m), in_shape[:-2] + (m, n)
     elif mode == "r":
-        r_shape = input.shape[:-2] + (k, n)
+        r_shape = in_shape[:-2] + (k, n)
         return _emit_linalg_node("Qr", [input], {"mode": mode}, [r_shape], [input.dtype])
     else:
-        q_shape, r_shape = input.shape[:-2] + (m, k), input.shape[:-2] + (k, n)
+        q_shape, r_shape = in_shape[:-2] + (m, k), in_shape[:-2] + (k, n)
     return _emit_linalg_node("Qr", [input], {"mode": mode}, [q_shape, r_shape], [input.dtype] * 2)
 
 
-def hessenberg(a: Tensor) -> TensorOrScalar:
+def hessenberg(a: Tensor) -> OpValue:
     """Compute the Hessenberg decomposition of a matrix.
 
     Args:
@@ -169,15 +168,15 @@ def hessenberg(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        h, q = ensure_tensor_pair(backend.execute_op("Hessenberg", a.data))
+        h, q = unpack_pair(backend.execute_op("Hessenberg", a.data))
         return (
-            Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
-            Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
+            Tensor(h, TensorConfig(extract_shape(h), a.dtype, a.device)),
+            Tensor(q, TensorConfig(extract_shape(q), a.dtype, a.device)),
         )
     return _emit_linalg_node("Hessenberg", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
+def householder_product(a: Tensor, tau: Tensor) -> OpValue:
     """Compute the product of Householder reflectors.
 
     Args:
@@ -191,12 +190,12 @@ def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = ensure_eager_tensor(backend.execute_op("HouseholderProduct", a.data, tau.data))
-        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+        data = backend.execute_op("HouseholderProduct", a.data, tau.data)
+        return Tensor(data, TensorConfig(extract_shape(data), a.dtype, a.device))
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
 
-def schur(a: Tensor) -> TensorOrScalar:
+def schur(a: Tensor) -> OpValue:
     """Compute the Schur decomposition of a matrix.
 
     Args:
@@ -209,15 +208,15 @@ def schur(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        t, z = ensure_tensor_pair(backend.execute_op("Schur", a.data))
+        t, z = unpack_pair(backend.execute_op("Schur", a.data))
         return (
-            Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
-            Tensor(z, TensorConfig(z.shape, a.dtype, a.device)),
+            Tensor(t, TensorConfig(extract_shape(t), a.dtype, a.device)),
+            Tensor(z, TensorConfig(extract_shape(z), a.dtype, a.device)),
         )
     return _emit_linalg_node("Schur", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal(a: Tensor) -> TensorOrScalar:
+def tridiagonal(a: Tensor) -> OpValue:
     """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
@@ -230,14 +229,15 @@ def tridiagonal(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        diag, off_diag, q = ensure_tensor_triple(backend.execute_op("Tridiagonal", a.data))
+        diag, off_diag, q = unpack_triple(backend.execute_op("Tridiagonal", a.data))
         return (
-            Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
-            Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),
-            Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
+            Tensor(diag, TensorConfig(extract_shape(diag), a.dtype, a.device)),
+            Tensor(off_diag, TensorConfig(extract_shape(off_diag), a.dtype, a.device)),
+            Tensor(q, TensorConfig(extract_shape(q), a.dtype, a.device)),
         )
-    diag_shape = a.shape[:-1]
-    off_diag_shape = a.shape[:-2] + (int(a.shape[-1]) - 1,) if int(a.shape[-1]) > 0 else a.shape[:-1]
+    a_shape = extract_shape(a)
+    diag_shape = a_shape[:-1]
+    off_diag_shape = a_shape[:-2] + (a_shape[-1] - 1,) if a_shape[-1] > 0 else a_shape[:-1]
     return _emit_linalg_node("Tridiagonal", [a], {}, [diag_shape, off_diag_shape, a.shape], [a.dtype] * 3)
 
 
@@ -245,20 +245,20 @@ def tridiagonal(a: Tensor) -> TensorOrScalar:
 class Qdwh(OpDef):
     """Qdwh Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
+        return extract_shape(args[0]), extract_shape(args[0]), extract_shape(args[0])[:-2], extract_shape(args[0])[:-2]
 
 
-def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> TensorOrScalar:
+def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> OpValue:
     """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:
@@ -273,13 +273,20 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Ten
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        parts = ensure_eager_list(backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations))
-        q, h, num_iters, is_converged = ensure_eager_tensor(parts[0]), ensure_eager_tensor(parts[1]), ensure_eager_tensor(parts[2]), ensure_eager_tensor(parts[3])
+        parts = coerce_operand_list(
+            backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations)
+        )
+        q, h, num_iters, is_converged = (
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+        )
         return (
-            Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
-            Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
-            Tensor(num_iters, TensorConfig(num_iters.shape, "int32", a.device)),
-            Tensor(is_converged, TensorConfig(is_converged.shape, "bool", a.device)),
+            Tensor(q, TensorConfig(extract_shape(q), a.dtype, a.device)),
+            Tensor(h, TensorConfig(extract_shape(h), a.dtype, a.device)),
+            Tensor(num_iters, TensorConfig(extract_shape(num_iters), "int32", a.device)),
+            Tensor(is_converged, TensorConfig(extract_shape(is_converged), "bool", a.device)),
         )
     return _emit_linalg_node(
         "Qdwh",

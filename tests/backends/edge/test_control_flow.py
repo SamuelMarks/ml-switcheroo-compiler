@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_webgpu_while_loop() -> None:

@@ -163,8 +163,12 @@ def validate_backend_mappings_parameters(
 
         for op_name, spec in ops.items():
             if isinstance(spec, dict):
-                errors.extend(_validate_expr_calls(engine, backend_name, str(spec.get("ast_template") or ""), rel_path, op_name))
-                errors.extend(_validate_expr_calls(engine, backend_name, str(spec.get("custom_code") or ""), rel_path, op_name))
+                errors.extend(
+                    _validate_expr_calls(engine, backend_name, str(spec.get("ast_template") or ""), rel_path, op_name)
+                )
+                errors.extend(
+                    _validate_expr_calls(engine, backend_name, str(spec.get("custom_code") or ""), rel_path, op_name)
+                )
 
     return errors
 
@@ -225,7 +229,9 @@ def main() -> int:
     Returns:
         int: Process return code (0 for pass, 1 for fail).
     """
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Validate framework parameter contracts against static snapshot schemas.")
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description="Validate framework parameter contracts against static snapshot schemas."
+    )
     parser.add_argument(
         "--backend",
         type=str,

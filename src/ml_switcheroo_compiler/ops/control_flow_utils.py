@@ -10,15 +10,14 @@ from __future__ import annotations
 
 import typing
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo_ir.types import TensorSpec
+from ml_switcheroo_ir import InitializerValue, LogicalGraph, LogicalNode, NodeDict, TensorSpec
 
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
-    invoke_callable,
+    OpValue,
     is_traced_data,
+    is_variadic_callable,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -30,6 +29,35 @@ if typing.TYPE_CHECKING:
 
 class SubgraphWithId(LogicalGraph):
     """LogicalGraph subclass carrying an explicit subgraph id property."""
+
+    def __init__(
+        self,
+        name: str = "Model",
+        nodes: Mapping[str, LogicalNode] | NodeDict | None = None,
+        outputs: Sequence[str] | None = None,
+        *,
+        inputs: Sequence[str] | None = None,
+        input_specs: Mapping[str, TensorSpec] | None = None,
+        initializers: Mapping[str, InitializerValue] | None = None,
+    ) -> None:
+        """Initialize ``SubgraphWithId`` forwarding graph fields to ``LogicalGraph``.
+
+        Args:
+            name (str): Subgraph name.
+            nodes (Mapping[str, LogicalNode] | NodeDict | None): Subgraph nodes mapping.
+            outputs (Sequence[str] | None): Subgraph output identifiers.
+            inputs (Sequence[str] | None): Subgraph input identifiers.
+            input_specs (Mapping[str, TensorSpec] | None): Input tensor specs.
+            initializers (Mapping[str, InitializerValue] | None): Subgraph initializers.
+        """
+        super().__init__(
+            name=name,
+            nodes=nodes,
+            outputs=outputs,
+            inputs=inputs,
+            input_specs=input_specs,
+            initializers=initializers,
+        )
 
     @property
     def id(self) -> str:
@@ -58,19 +86,19 @@ class _HasInputSpecsProtocol(typing.Protocol):
 
 
 def _wrap_proxy_inputs(
-    args: Sequence[TensorOrScalar],
+    args: Sequence[OpValue],
     subgraph: LogicalGraph,
-) -> tuple[list[str], list[TensorOrScalar]]:
+) -> tuple[list[str], list[OpValue]]:
     """Compute the wrap proxy inputs tensor operation.
 
     Args:
-        args (Sequence[TensorOrScalar]): Input `args` argument (args).
+        args (Sequence[OpValue]): Input `args` argument (args).
         subgraph (LogicalGraph): Input `subgraph` argument (subgraph).
 
     Returns:
-        tuple[list[str], list[TensorOrScalar]]: Computed `tuple[list[str], list[TensorOrScalar]]` output.
+        tuple[list[str], list[OpValue]]: Computed `tuple[list[str], list[OpValue]]` output.
     """
-    proxy_args: list[TensorOrScalar] = []
+    proxy_args: list[OpValue] = []
     input_ids: list[str] = []
     for _i, arg in enumerate(args):
         if isinstance(arg, tuple):
@@ -88,9 +116,11 @@ def _wrap_proxy_inputs(
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
             if isinstance(subgraph, _HasInputSpecsProtocol):
-                from ml_switcheroo_ir.types import DType as IRDType
+                from ml_switcheroo_ir import DType as IRDType
 
-                ir_dt: IRDType | str = IRDType(arg.dtype.value) if arg.dtype.value in IRDType._value2member_map_ else str(arg.dtype.value)
+                ir_dt: IRDType | str = (
+                    IRDType(arg.dtype.value) if arg.dtype.value in IRDType._value2member_map_ else str(arg.dtype.value)
+                )
                 subgraph.input_specs[in_id] = TensorSpec(shape=arg.shape, dtype=ir_dt)
             proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
             proxy.concrete_value = arg.data
@@ -115,11 +145,11 @@ class _HasIdProtocol(typing.Protocol):
         ...
 
 
-def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
+def _get_tensor_ids(obj: OpValue) -> list[str]:
     """Compute the get tensor ids tensor operation.
 
     Args:
-        obj (TensorOrScalar): Input `obj` argument (obj).
+        obj (OpValue): Input `obj` argument (obj).
 
     Returns:
         list[str]: Computed `list[str]` output.
@@ -133,7 +163,7 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
             cur = cur.data
         if is_traced_data(cur.data):
             return [str(cur.data.id)]
-        raw_cur: TensorOrScalar | _HasIdProtocol = cur
+        raw_cur: OpValue | _HasIdProtocol = cur
         if isinstance(raw_cur, _HasIdProtocol):
             return [str(raw_cur.id)]
         return [str(uuid.uuid4())]
@@ -147,11 +177,11 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
     raise TypeError(msg)
 
 
-def _process_trace_outputs(out: TensorOrScalar, subgraph: LogicalGraph) -> str:
+def _process_trace_outputs(out: OpValue, subgraph: LogicalGraph) -> str:
     """Compute the process trace outputs tensor operation.
 
     Args:
-        out (TensorOrScalar): Input `out` argument (out).
+        out (OpValue): Input `out` argument (out).
         subgraph (LogicalGraph): Input `subgraph` argument (subgraph).
 
     Returns:
@@ -170,12 +200,12 @@ def _process_trace_outputs(out: TensorOrScalar, subgraph: LogicalGraph) -> str:
     return str(out_node.id)
 
 
-def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: str) -> LogicalGraph:
+def _trace_function(func: OpValue, args: Sequence[OpValue], name: str) -> LogicalGraph:
     """Trace a Python function's execution into a LogicalGraph.
 
     Args:
-        func (TensorOrScalar): Input `func` argument (func).
-        args (Sequence[TensorOrScalar]): Input `args` argument (args).
+        func (OpValue): Input `func` argument (func).
+        args (Sequence[OpValue]): Input `args` argument (args).
         name (str): Input `name` argument (name).
 
     Returns:
@@ -204,7 +234,9 @@ def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: 
     subgraph.inputs = input_ids
 
     try:
-        out = invoke_callable(func, *proxy_args)
+        _callable_fn_1: OpValue = func
+        assert is_variadic_callable(_callable_fn_1)
+        out = _callable_fn_1(*proxy_args)
         out_node_id = _process_trace_outputs(out, subgraph)
     finally:
         global_tracing_state.stop_tracing()

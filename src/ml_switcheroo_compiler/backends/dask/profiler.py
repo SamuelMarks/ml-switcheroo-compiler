@@ -6,13 +6,15 @@ import resource
 import sys
 import time
 import typing
+from collections.abc import Mapping
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
+from ml_switcheroo_ir import IRGraph
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.benchmarks.metrics import ProfileMetricsDict
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 da: ModuleType | None
 try:
@@ -23,28 +25,29 @@ except ImportError:
     da = None
 
 
+@typing.runtime_checkable
 class _ComputableDaskProtocol(typing.Protocol):
     """Protocol for lazy Dask arrays exposing `.compute()`."""
 
-    def compute(self) -> EagerValue:
+    def compute(self) -> BackendArg:
         """Compute lazy Dask task graph.
 
         Returns:
-            EagerValue: Concrete array result.
+            BackendArg: Concrete array result.
         """
         ...
 
 
-def _is_computable_dask(val: EagerValue) -> typing.TypeGuard[_ComputableDaskProtocol]:
+def _is_computable_dask(val: BackendArg) -> typing.TypeGuard[_ComputableDaskProtocol]:
     """Check whether `val` exposes a `.compute` attribute.
 
     Args:
-        val (EagerValue): Candidate lazy Dask array.
+        val (BackendArg): Candidate lazy Dask array.
 
     Returns:
         bool: True if `val` has a `.compute` attribute.
     """
-    return has_backend_member(val, "compute")
+    return isinstance(val, _ComputableDaskProtocol)
 
 
 def _get_process_memory_mb() -> float:
@@ -60,14 +63,17 @@ def _get_process_memory_mb() -> float:
     return float(rusage) / 1024.0
 
 
-def _sync_dask_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ...] | dict[str, EagerValue]) -> EagerValue:
+def _sync_dask_result(
+    result: BackendArg | list[BackendArg] | tuple[BackendArg, ...] | dict[str, BackendArg],
+) -> BackendArg:
     """Force computation and synchronization of Dask computation graph.
 
     Args:
-        result (Union[object, list[object], tuple[object, ...], dict[str, object]]): Lazy Dask array or container.
+        result (BackendArg | list[BackendArg] | tuple[BackendArg, ...] | dict[str, BackendArg]):
+            Lazy Dask array or container.
 
     Returns:
-        EagerValue: Computed concrete array or structure.
+        BackendArg: Computed concrete array or structure.
     """
     if da is None:
         return result
@@ -76,12 +82,22 @@ def _sync_dask_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, 
     if isinstance(result, (list, tuple)):
         computed = [_sync_dask_result(item) for item in result]
         return type(result)(computed)
-    raw_res: EagerValue = result
+    raw_res: BackendArg = result
     if _is_computable_dask(raw_res) and callable(raw_res.compute):
         try:
-            return ensure_eager_tensor(raw_res.compute())
-        except Exception:
-            _typed_ret_1: EagerValue = result
+            return raw_res.compute()
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ):
+            _typed_ret_1: BackendArg = result
             return _typed_ret_1
     return result
 
@@ -92,13 +108,13 @@ class DaskProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
-    ) -> list[EagerValue]:
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
+    ) -> list[BackendArg]:
         """Convert input structures into topologically ordered Dask arrays.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Input structures.
+            inputs: Input structures.
 
         Returns:
             list[object]: Topologically ordered list of Dask arrays.
@@ -106,9 +122,9 @@ class DaskProfiler:
         if da is None:
             return []
 
-        da_inputs_dict: dict[str, EagerValue] = {}
+        da_inputs_dict: dict[str, BackendArg] = {}
         for k, val in inputs.items():
-            raw_val: EagerValue = val
+            raw_val: BackendArg = val
             if _is_computable_dask(raw_val):
                 da_inputs_dict[k] = val
             else:
@@ -120,7 +136,7 @@ class DaskProfiler:
             return [da_inputs_dict[k] for k in input_keys]
         return list(da_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[BackendArg] | None:
         """Compile an IRGraph into an executable Dask function.
 
         Args:
@@ -132,11 +148,11 @@ class DaskProfiler:
         Raises:
             TypeError: If evaluate cannot be loaded from the generated code.
         """
+        from ml_switcheroo_compiler.backends._module_loader import load_generated_code
         from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 
         code: str = DaskGenerator(graph).generate()
-        ns: dict[str, EagerValue] = {}
-        exec(code, ns)
+        ns = load_generated_code(code)
         evaluate_fn = ns.get("evaluate")
         if not callable(evaluate_fn):
             raise TypeError("Failed to generate valid evaluate function from DaskGenerator")
@@ -145,22 +161,22 @@ class DaskProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        inputs: Mapping[str, list[float] | list[list[float]] | BackendArg],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, list[float] | float]:
+    ) -> ProfileMetricsDict:
         """Profile a graph execution on Dask backend with concrete computation.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], object]]): Named input structures.
+            inputs: Named input structures.
             device (Optional[str]): Device identifier.
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and peak memory metrics.
+            ProfileMetricsDict: Latency and peak memory metrics.
         """
         del device
 
@@ -179,18 +195,28 @@ class DaskProfiler:
         da_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(graph.nodes and any(n.op_type != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
+        compiled_fn: TypedVariadicCallable[BackendArg] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
-            except Exception:
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 compiled_fn = None
 
-        def _execute_step() -> EagerValue:
+        def _execute_step() -> BackendArg:
             """Execute a single evaluation step on Dask backend with compute synchronization.
 
             Returns:
-                EagerValue: Concrete evaluated array or structure.
+                BackendArg: Concrete evaluated array or structure.
             """
             if has_ops and compiled_fn is not None:
                 lazy_res = compiled_fn(da_inputs)

@@ -5,14 +5,18 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.keras.eager import execute_op
-from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, KerasSignatureBuilder, KerasTensorManipulator
+from ml_switcheroo_compiler.backends.keras.generator import (
+    KerasCodeGenerator,
+    KerasSignatureBuilder,
+    KerasTensorManipulator,
+)
 from ml_switcheroo_compiler.backends.keras.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
 try:
     import keras.ops as kops
@@ -26,11 +30,17 @@ def test_keras_generator_coverage() -> None:
     """Test the keras generator coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     gen = KerasCodeGenerator(g)
-    n_conv = IRNode(id="n1", op_type="ConvTranspose", inputs=["x", "w"], attributes={"strides": 2, "padding": "SAME"}, shape_metadata=None)
+    n_conv = IRNode(
+        id="n1",
+        op_type="ConvTranspose",
+        inputs=["x", "w"],
+        attributes={"strides": 2, "padding": "SAME"},
+        shape_metadata=None,
+    )
     assert "keras_conv_transpose" in gen.visit(n_conv, ["x", "w"])
     n_ragged = IRNode(id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None)
     assert "keras_ragged_dot" in gen.visit(n_ragged, ["x", "y"])
@@ -40,7 +50,7 @@ def test_keras_generator_full() -> None:
     """Test the keras generator full behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     n_in = IRNode(id="n_in", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
@@ -73,28 +83,36 @@ def test_keras_eager_coverage() -> None:
     import pytest
 
     with pytest.raises(Exception, match=".*"):
-        ensure_callable(execute_op)(None, "UnknownFakeOp", None)
-    assert ensure_callable(zeros)(None, (2,)) is not None
-    assert ensure_callable(array)(None, [1, 2]) is not None
-    assert ensure_callable(asarray)(None, [3, 4]) is not None
-    assert ensure_callable(item)(None, ensure_callable(kops.array)([5])) == 5
+        execute_op(None, "UnknownFakeOp", None)
+    assert zeros(None, (2,)) is not None
+    assert array(None, [1, 2]) is not None
+    assert asarray(None, [3, 4]) is not None
+    assert item(None, kops.array([5])) == 5
 
 
 def test_mlx_generator_coverage() -> None:
     """Test the mlx generator coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     gen = MLXCodeGenerator(g)
-    n_conv = IRNode(id="n1", op_type="ConvTranspose", inputs=["x", "w"], attributes={"strides": 2, "padding": "SAME"}, shape_metadata=None)
+    n_conv = IRNode(
+        id="n1",
+        op_type="ConvTranspose",
+        inputs=["x", "w"],
+        attributes={"strides": 2, "padding": "SAME"},
+        shape_metadata=None,
+    )
     assert "mx.convtranspose" in gen.visit(n_conv, ["x", "w"])
     n_ragged = IRNode(id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None)
     assert "mx.matmul" in gen.visit(n_ragged, ["x", "y"])
     n_chol = IRNode(id="n_chol", op_type="Cholesky", inputs=["x"], attributes={}, shape_metadata=None)
     assert "cholesky" in gen.visit(n_chol, ["x"])
-    n_power = IRNode(id="n_pi", op_type="PowerIteration", inputs=["x", "u"], attributes={"num_iters": 2}, shape_metadata=None)
+    n_power = IRNode(
+        id="n_pi", op_type="PowerIteration", inputs=["x", "u"], attributes={"num_iters": 2}, shape_metadata=None
+    )
     assert "mlx_power_iteration" in gen.visit(n_power, ["x", "u"])
     assert "mlx_power_iteration" in gen.visit(n_power, ["x"])
     n_zeros = IRNode(id="n_zeros", op_type="Zeros", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(2, 3))
@@ -110,33 +128,37 @@ def test_mlx_generator_coverage() -> None:
 
 
 def test_numpy_generator_coverage() -> None:
-    """Test the numpy generator coverage behavior.
-
-    Returns:
-        TensorOrScalar: The inferred shape or computed result.
-    """
+    """Test the numpy generator coverage behavior."""
+    visitor_adapter = adapt_backend_module(NumpyASTVisitor)
     with pytest.raises(AttributeError):
         g = IRGraph()
         gen = NumpyGenerator(g)
         n_triinv = IRNode(id="n1", op_type="TriInv", inputs=["x"], attributes={}, shape_metadata=None)
-        assert "np.linalg.inv" in ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TriInv)(n_triinv, ["x"])
+        assert "np.linalg.inv" in str(visitor_adapter.require_op("visit_TriInv")(n_triinv, ["x"]))
         n_trunc_div = IRNode(id="n2", op_type="TruncateDiv", inputs=["x", "y"], attributes={}, shape_metadata=None)
-        assert "np.trunc(np.divide(x, y))" in ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TruncateDiv)(n_trunc_div, ["x", "y"])
+        assert "np.trunc(np.divide(x, y))" in str(
+            visitor_adapter.require_op("visit_TruncateDiv")(n_trunc_div, ["x", "y"])
+        )
         n_trunc_mod = IRNode(id="n3", op_type="TruncateMod", inputs=["x", "y"], attributes={}, shape_metadata=None)
-        assert "np.fmod(x, y)" in ensure_eager_tensor(ensure_eager_tensor(NumpyASTVisitor).visit_TruncateMod)(n_trunc_mod, ["x", "y"])
+        assert "np.fmod(x, y)" in str(visitor_adapter.require_op("visit_TruncateMod")(n_trunc_mod, ["x", "y"]))
         n_generic = IRNode(id="n4", op_type="UnknownOp", inputs=["x"], attributes={}, shape_metadata=None)
         assert "np.unknownop(x)" in NumpyASTVisitor.generic_visit(n_generic, ["x"])
-        n_generic2 = IRNode(id="n5", op_type="UnknownOp", inputs=["x"], attributes={"dimension": 1}, shape_metadata=None)
+        n_generic2 = IRNode(
+            id="n5", op_type="UnknownOp", inputs=["x"], attributes={"dimension": 1}, shape_metadata=None
+        )
         assert "np.unknownop(x, axis=1)" in NumpyASTVisitor.generic_visit(n_generic2, ["x"], dimension=1)
-        n_pi = IRNode(id="n_pi", op_type="PowerIteration", inputs=["x", "u"], attributes={"num_iters": 2}, shape_metadata=None)
+        n_pi = IRNode(
+            id="n_pi", op_type="PowerIteration", inputs=["x", "u"], attributes={"num_iters": 2}, shape_metadata=None
+        )
         assert "np_power_iteration" in gen.visit(n_pi, ["x", "u"])
         assert "np_power_iteration" in gen.visit(n_pi, ["x"])
 
 
 def test_keras_generator_body_return() -> None:
     """Test body return."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = KerasCodeGenerator(IRGraph())
     gen._emit_body_return(["x"])
@@ -145,8 +167,9 @@ def test_keras_generator_body_return() -> None:
 
 def test_keras_generator_body_return2() -> None:
     """Test body return 2."""
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = KerasCodeGenerator(IRGraph())
     gen._emit_body_return(["x"])
@@ -160,4 +183,4 @@ def test_mlx_eager_scatter_nd() -> None:
     with pytest.raises(AttributeError):
         import numpy as np
 
-        _mlx_scatter_nd(ensure_mod(None), np.array([0]), np.array([1]), np.array((1,)))
+        _mlx_scatter_nd(None, np.array([0]), np.array([1]), np.array((1,)))

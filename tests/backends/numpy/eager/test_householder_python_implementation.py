@@ -5,11 +5,10 @@ from __future__ import annotations
 import typing
 
 import numpy as np
-
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+import pytest
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_householder_product_fallback() -> None:
@@ -22,7 +21,7 @@ def test_householder_product_fallback() -> None:
         """Test class MockTorch."""
 
         @staticmethod
-        def householder_product(v: EagerValue, tau: EagerValue) -> EagerValue:
+        def householder_product(v: BackendArg, tau: BackendArg) -> BackendArg:
             """Test function householder_product.
 
             Args:
@@ -30,7 +29,7 @@ def test_householder_product_fallback() -> None:
                 tau: Test parameter `tau`.
 
             Returns:
-                EagerValue: Computed output value from `householder_product`.
+                BackendArg: Computed output value from `householder_product`.
             """
             return v
 
@@ -39,6 +38,6 @@ def test_householder_product_fallback() -> None:
 
         householder_product = MockTorch.householder_product
 
-    ensure_mutable(MockTorch).linalg = ensure_eager_tensor(MockTorchLinalg)
+    pytest.MonkeyPatch().setattr(MockTorch, "linalg", MockTorchLinalg, raising=False)
 
     assert tau.shape == (2,)

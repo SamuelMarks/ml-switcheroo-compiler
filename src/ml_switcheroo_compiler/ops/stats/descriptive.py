@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list, ensure_int
+from ml_switcheroo_compiler.backends.registry import coerce_int, coerce_operand_list
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_shape,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -30,18 +30,18 @@ class ApplyOverAxes(OpDef):
 
     def infer_shape(
         self,
-        func: TensorOrScalar = None,
-        a: TensorOrScalar = None,
-        axes: TensorOrScalar = None,
-        **kwargs: TensorOrScalar,
+        func: OpValue = None,
+        a: OpValue = None,
+        axes: OpValue = None,
+        **kwargs: OpValue,
     ) -> tuple[int, ...]:
         """Infer shape after reducing specified axes to size 1.
 
         Args:
-            func (TensorOrScalar): Applied reduction callable.
-            a (TensorOrScalar): Input tensor.
-            axes (TensorOrScalar): Sequence of axes to reduce.
-            **kwargs (TensorOrScalar): Optional keyword arguments.
+            func (OpValue): Applied reduction callable.
+            a (OpValue): Input tensor.
+            axes (OpValue): Sequence of axes to reduce.
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Axis-reduced shape with reduced dimensions set to 1.
@@ -60,26 +60,30 @@ class ApplyOverAxes(OpDef):
         if inp_a is None:
             return ()
 
-        def _get_shape(obj: TensorOrScalar) -> tuple[int, ...]:
+        def _get_shape(obj: OpValue) -> tuple[int, ...]:
             """Extract integer shape tuple from a tensor or sequence.
 
             Args:
-                obj (TensorOrScalar): Target tensor or shape sequence.
+                obj (OpValue): Target tensor or shape sequence.
 
             Returns:
                 tuple[int, ...]: Extracted shape tuple.
             """
             extracted = extract_shape(obj)
             if extracted:
-                return tuple(int(ensure_int(d)) for d in extracted)
+                return tuple(int(coerce_int(d)) for d in extracted)
             if isinstance(obj, (list, tuple)):
-                return tuple(int(ensure_int(d)) for d in obj)
+                return tuple(int(coerce_int(d)) for d in obj)
             return ()
 
         shape = list(_get_shape(inp_a))
         ax = axes if axes is not None else kwargs.get("axes")
         if ax is not None and shape:
-            axes_list = [int(ax)] if isinstance(ax, int) else [int(ensure_int(x)) for x in (ensure_eager_list(ax) if isinstance(ax, Iterable) else ())]
+            axes_list = (
+                [int(ax)]
+                if isinstance(ax, int)
+                else [int(coerce_int(x)) for x in (coerce_operand_list(ax) if isinstance(ax, Iterable) else ())]
+            )
             for a_idx in axes_list:
                 norm_idx = a_idx + len(shape) if a_idx < 0 else a_idx
                 if 0 <= norm_idx < len(shape):
@@ -93,15 +97,15 @@ class Bincount(OpDef):
 
     op_name = "Bincount"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer dynamic 1D output shape for Bincount.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Dynamic 1-tuple `(None,)`.
+            OpValue: Dynamic 1-tuple `(None,)`.
         """
         _ = (args, kwargs)
         return (None,)
@@ -138,15 +142,15 @@ class Corrcoef(OpDef):
     op_name = "Corrcoef"
     np_op_name = "corrcoef"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 2D output shape for Corrcoef.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Dynamic 2D shape tuple `(None, None)`.
+            OpValue: Dynamic 2D shape tuple `(None, None)`.
         """
         _ = (args, kwargs)
         return (None, None)
@@ -159,15 +163,15 @@ class Correlate(OpDef):
     op_name = "Correlate"
     np_op_name = "correlate"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D output shape for Correlate.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Dynamic 1D shape tuple `(None,)`.
+            OpValue: Dynamic 1D shape tuple `(None,)`.
         """
         _ = (args, kwargs)
         return (None,)
@@ -180,15 +184,15 @@ class Cov(OpDef):
     op_name = "Cov"
     np_op_name = "cov"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 2D output shape for Cov.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Dynamic 2D shape tuple `(None, None)`.
+            OpValue: Dynamic 2D shape tuple `(None, None)`.
         """
         _ = (args, kwargs)
         return (None, None)
@@ -198,19 +202,19 @@ class Cov(OpDef):
 class TrapezoidalIntegral(OpDef):
     """Integrate along the given axis using the composite trapezoidal rule."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape after integrating along `axis`.
 
         Args:
-            *args (TensorOrScalar): Positional input shape tuple `(y_shape, ...)`.
-            **kwargs (TensorOrScalar): Keyword attributes including `axis`.
+            *args (OpValue): Positional input shape tuple `(y_shape, ...)`.
+            **kwargs (OpValue): Keyword attributes including `axis`.
 
         Returns:
-            TensorOrScalar: Reduced output shape tuple.
+            OpValue: Reduced output shape tuple.
         """
         y = args[0] if len(args) > 0 else kwargs.get("y")
         shape = list(y) if isinstance(y, Iterable) else []
-        axis = int(ensure_int(kwargs.get("axis", -1)))
+        axis = int(coerce_int(kwargs.get("axis", -1)))
         if axis < 0:
             axis += len(shape)
         shape.pop(axis)
@@ -218,17 +222,17 @@ class TrapezoidalIntegral(OpDef):
 
 
 @dispatch_eager("TrapezoidalIntegral")
-def trapezoidal_integral(y: Tensor, x: TensorOrScalar = None, dx: TensorOrScalar = 1.0, axis: TensorOrScalar = -1) -> TensorOrScalar:
+def trapezoidal_integral(y: Tensor, x: OpValue = None, dx: OpValue = 1.0, axis: OpValue = -1) -> OpValue:
     """Integrate `y` along `axis` using the composite trapezoidal rule.
 
     Args:
         y (Tensor): Input tensor to integrate.
-        x (TensorOrScalar): Optional sample point coordinates corresponding to `y`.
-        dx (TensorOrScalar): Spacing between sample points when `x` is None.
-        axis (TensorOrScalar): Axis along which to integrate.
+        x (OpValue): Optional sample point coordinates corresponding to `y`.
+        dx (OpValue): Spacing between sample points when `x` is None.
+        axis (OpValue): Axis along which to integrate.
 
     Returns:
-        TensorOrScalar: Definite integral approximated by the trapezoidal rule.
+        OpValue: Definite integral approximated by the trapezoidal rule.
     """
     return get_op("TrapezoidalIntegral")()(y, x=x, dx=dx, axis=axis)
 
@@ -237,15 +241,15 @@ def trapezoidal_integral(y: Tensor, x: TensorOrScalar = None, dx: TensorOrScalar
 class ConfusionMatrix(OpDef):
     """Compute the confusion matrix from predictions and ground-truth labels."""
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer `(num_classes, num_classes)` output shape for ConfusionMatrix.
 
         Args:
-            *args (TensorOrScalar): Positional arguments.
-            **kwargs (TensorOrScalar): Keyword attributes including `num_classes`.
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword attributes including `num_classes`.
 
         Returns:
-            TensorOrScalar: 2D shape tuple `(num_classes, num_classes)`.
+            OpValue: 2D shape tuple `(num_classes, num_classes)`.
         """
         _ = args
         num_classes = kwargs.get("num_classes", 0)
@@ -257,32 +261,32 @@ def confusion_matrix(
     labels: Tensor,
     predictions: Tensor,
     num_classes: int,
-    weights: TensorOrScalar = None,
-) -> TensorOrScalar:
+    weights: OpValue = None,
+) -> OpValue:
     """Compute a `(num_classes, num_classes)` confusion matrix for classification evaluation.
 
     Args:
         labels (Tensor): 1D tensor of ground-truth class labels.
         predictions (Tensor): 1D tensor of predicted class labels.
         num_classes (int): Total number of classification categories.
-        weights (TensorOrScalar): Optional sample weight tensor.
+        weights (OpValue): Optional sample weight tensor.
 
     Returns:
-        TensorOrScalar: Confusion matrix tensor of shape `(num_classes, num_classes)`.
+        OpValue: Confusion matrix tensor of shape `(num_classes, num_classes)`.
     """
     return get_op("ConfusionMatrix")()(labels, predictions, num_classes=num_classes, weights=weights)
 
 
-def moments(x: TensorOrScalar, axes: TensorOrScalar = None, keepdims: bool = False) -> TensorOrScalar:
+def moments(x: OpValue, axes: OpValue = None, keepdims: bool = False) -> OpValue:
     """Calculate the mean and variance of `x` across `axes`.
 
     Args:
-        x (TensorOrScalar): Input tensor.
-        axes (TensorOrScalar): Axis or sequence of axes along which to compute moments.
+        x (OpValue): Input tensor.
+        axes (OpValue): Axis or sequence of axes along which to compute moments.
         keepdims (bool): Whether to retain reduced dimensions with length 1.
 
     Returns:
-        TensorOrScalar: Tuple of `(mean_tensor, variance_tensor)`.
+        OpValue: Tuple of `(mean_tensor, variance_tensor)`.
     """
     mean_op = get_op("Mean")()
     variance_op = get_op("Variance")()
@@ -298,19 +302,19 @@ class Descriptive(OpDef):
 
     op_name = "Descriptive"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 4-tuple of output shapes for Descriptive statistics.
 
         Args:
-            *args (TensorOrScalar): Positional input tensor arguments.
-            **kwargs (TensorOrScalar): Keyword attributes (`axis`, `keepdims`).
+            *args (OpValue): Positional input tensor arguments.
+            **kwargs (OpValue): Keyword attributes (`axis`, `keepdims`).
 
         Returns:
-            TensorOrScalar: 4-tuple of reduced shape tuples.
+            OpValue: 4-tuple of reduced shape tuples.
         """
         a = args[0]
         raw_a_shape = extract_shape(a)
-        shape = tuple(int(ensure_int(d)) for d in raw_a_shape)
+        shape = tuple(int(coerce_int(d)) for d in raw_a_shape)
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
 
@@ -322,24 +326,26 @@ class Descriptive(OpDef):
         if keepdims:
             out_shape_list = list(shape)
             for d in axes_seq:
-                out_shape_list[int(ensure_int(d))] = 1
+                out_shape_list[int(coerce_int(d))] = 1
             out_shape = tuple(out_shape_list)
         else:
-            dim_indices = [int(ensure_int(d)) if int(ensure_int(d)) >= 0 else len(shape) + int(ensure_int(d)) for d in axes_seq]
+            dim_indices = [
+                int(coerce_int(d)) if int(coerce_int(d)) >= 0 else len(shape) + int(coerce_int(d)) for d in axes_seq
+            ]
             out_shape = tuple(s for i, s in enumerate(shape) if i not in dim_indices)
 
         return (out_shape, out_shape, out_shape, out_shape)
 
 
 @dispatch_eager("Descriptive")
-def descriptive(a: TensorOrScalar) -> TensorOrScalar:
+def descriptive(a: OpValue) -> OpValue:
     """Compute descriptive statistics for input tensor `a`.
 
     Args:
-        a (TensorOrScalar): Input tensor.
+        a (OpValue): Input tensor.
 
     Returns:
-        TensorOrScalar: Descriptive summary statistics result.
+        OpValue: Descriptive summary statistics result.
     """
     return get_op("Descriptive")()(a)
 
@@ -350,35 +356,35 @@ class Distributions(OpDef):
 
     op_name = "Distributions"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape combining `sample_shape` with input batch/event shape.
 
         Args:
-            *args (TensorOrScalar): Positional input arguments.
-            **kwargs (TensorOrScalar): Keyword attributes including `sample_shape`.
+            *args (OpValue): Positional input arguments.
+            **kwargs (OpValue): Keyword attributes including `sample_shape`.
 
         Returns:
-            TensorOrScalar: Concatenated `(sample_shape + event_shape)` tuple.
+            OpValue: Concatenated `(sample_shape + event_shape)` tuple.
         """
         a = args[0]
         raw_a_shape = extract_shape(a)
-        shape = tuple(int(ensure_int(d)) for d in raw_a_shape)
+        shape = tuple(int(coerce_int(d)) for d in raw_a_shape)
         sample_shape = kwargs.get("sample_shape", ())
         if isinstance(sample_shape, int):
             sample_shape_tuple: tuple[int, ...] = (sample_shape,)
         else:
-            sample_shape_tuple = tuple(int(ensure_int(d)) for d in ensure_eager_list(sample_shape or ()))
+            sample_shape_tuple = tuple(int(coerce_int(d)) for d in coerce_operand_list(sample_shape or ()))
         return sample_shape_tuple + shape
 
 
 @dispatch_eager("Distributions")
-def distributions(a: TensorOrScalar) -> TensorOrScalar:
+def distributions(a: OpValue) -> OpValue:
     """Evaluate probability distribution operation on `a`.
 
     Args:
-        a (TensorOrScalar): Input distribution parameter tensor.
+        a (OpValue): Input distribution parameter tensor.
 
     Returns:
-        TensorOrScalar: Distribution evaluation result.
+        OpValue: Distribution evaluation result.
     """
     return get_op("Distributions")()(a)

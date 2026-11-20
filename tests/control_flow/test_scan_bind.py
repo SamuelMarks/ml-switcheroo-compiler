@@ -10,7 +10,7 @@ def test_scan_bind_coverage() -> None:
     """Test the scan bind coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     res = scan_bind(lambda x: x, [1, 2, 3])
     assert isinstance(res, tuple) and len(res) == 2

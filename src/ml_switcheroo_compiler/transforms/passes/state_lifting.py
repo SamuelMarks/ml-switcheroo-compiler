@@ -1,27 +1,28 @@
-"""State Lifting Pass for functionalization of stateful IR graphs and variable containers."""
+"""Canonical State Lifting Pass for functionalizing stateful IR graphs and variable containers."""
 
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
+    ShapeDim,
     ShapeProtocol,
-    TensorOrScalar,
     TypedVariadicCallable,
+    is_variadic_callable,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _extract_state_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+def _extract_state_shape(seq: Sequence[ShapeDim]) -> tuple[int, ...]:
     """Convert a shape sequence into a concrete integer shape tuple.
 
     Args:
-        seq (Sequence[int | str | None]): Shape sequence.
+        seq (Sequence[ShapeDim]): Shape sequence.
 
     Returns:
         tuple[int, ...]: Concrete integer shape tuple.
@@ -29,12 +30,68 @@ def _extract_state_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
     return tuple(int(d) for d in seq if isinstance(d, int))
 
 
-StateEntry = TensorOrScalar
+StateEntry = OpValue
+StateValue = StateEntry
+
+
+@typing.runtime_checkable
+class StatefulContainerProtocol(typing.Protocol):
+    """Universal protocol for stateful containers exposing ``parameters()`` and ``buffers()``."""
+
+    def parameters(self) -> Mapping[str, StateEntry]:
+        """Return trainable parameter mapping keyed by parameter name.
+
+        Returns:
+            Mapping[str, StateEntry]: Trainable parameter dictionary.
+        """
+        ...
+
+    def buffers(self) -> Mapping[str, StateEntry]:
+        """Return non-trainable buffer mapping keyed by buffer name.
+
+        Returns:
+            Mapping[str, StateEntry]: Non-trainable buffer dictionary.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class StateDictContainerProtocol(typing.Protocol):
+    """Protocol for containers exposing ``state_dict()`` mapping."""
+
+    def state_dict(self) -> Mapping[str, StateEntry]:
+        """Return complete state dictionary mapping names to tensors or nested containers.
+
+        Returns:
+            Mapping[str, StateEntry]: State dictionary.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class MutableStateDictContainerProtocol(typing.Protocol):
+    """Protocol for containers supporting in-place state replacement via ``load_state_dict``."""
+
+    def load_state_dict(self, state: Mapping[str, StateEntry]) -> None:
+        """Apply updated state entries onto the container.
+
+        Args:
+            state (Mapping[str, StateEntry]): Updated state dictionary.
+        """
+        ...
+
+
+StateContainerInput = typing.Union[
+    StateEntry,
+    StatefulContainerProtocol,
+    StateDictContainerProtocol,
+    "MutableStateDictContainerProtocol",
+]
 
 
 @typing.runtime_checkable
 class _StateContainerCallableProtocol(typing.Protocol):
-    """Protocol for callable stateful containers accepting `StateEntry` arguments."""
+    """Protocol for callable stateful containers accepting ``StateEntry`` arguments."""
 
     def __call__(self, *args: StateEntry, **kwargs: StateEntry) -> StateEntry:
         """Invoke the container.
@@ -44,75 +101,42 @@ class _StateContainerCallableProtocol(typing.Protocol):
             **kwargs (StateEntry): Keyword arguments.
 
         Returns:
-            StateEntry: Computed `StateEntry` output.
+            StateEntry: Computed ``StateEntry`` output.
         """
         ...
 
 
-def _is_state_container_callable(
-    val: TypedVariadicCallable[TensorOrScalar] | StateEntry,
-) -> typing.TypeGuard[_StateContainerCallableProtocol]:
-    """Type guard narrowing `val` to `_StateContainerCallableProtocol`.
-
-    Args:
-        val (TypedVariadicCallable[TensorOrScalar] | StateEntry): Candidate callable container.
-
-    Returns:
-        bool: True if `val` is callable.
-    """
-    return callable(val)
-
-
 @typing.runtime_checkable
 class _BlockNodesProtocol(typing.Protocol):
-    """Protocol for graph/block containers exposing `nodes`."""
+    """Protocol for graph/block containers exposing ``nodes``."""
 
     nodes: list[LogicalNode] | dict[str, LogicalNode]
 
 
 @typing.runtime_checkable
 class _BlockOutputsProtocol(typing.Protocol):
-    """Protocol for graph/block containers exposing `outputs`."""
+    """Protocol for graph/block containers exposing ``outputs``."""
 
     outputs: list[str]
 
 
 @typing.runtime_checkable
 class _RequiresGradProtocol(typing.Protocol):
-    """Protocol for tensor-like objects exposing `requires_grad`."""
+    """Protocol for tensor-like objects exposing ``requires_grad``."""
 
     requires_grad: bool
 
 
 @typing.runtime_checkable
 class _DTypeProtocol(typing.Protocol):
-    """Protocol for tensor-like objects exposing `dtype`."""
+    """Protocol for tensor-like objects exposing ``dtype``."""
 
     dtype: DType | str | None
 
 
 @typing.runtime_checkable
-class _DictShapeMetadataNodeProtocol(typing.Protocol):
-    """Protocol for state input nodes storing a shape dictionary in `shape_metadata`."""
-
-    shape_metadata: dict[str, tuple[int, ...]] | tuple[int | str, ...] | None
-
-
-def _is_dict_shape_node(val: TensorOrScalar) -> typing.TypeGuard[_DictShapeMetadataNodeProtocol]:
-    """Type guard narrowing `val` to `_DictShapeMetadataNodeProtocol`.
-
-    Args:
-        val (TensorOrScalar): Node instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
-@typing.runtime_checkable
 class PureStateCallableProtocol(typing.Protocol):
-    """Protocol for pure functional state callables `(state, *args, **kwargs) -> (out, new_state)`."""
+    """Protocol for pure functional state callables ``(state, *args, **kwargs) -> (out, new_state)``."""
 
     def __call__(
         self,
@@ -133,410 +157,36 @@ class PureStateCallableProtocol(typing.Protocol):
         ...
 
 
-def _is_pure_state_callable(
-    fn: PureStateCallableProtocol,
-) -> typing.TypeGuard[PureStateCallableProtocol]:
-    """Type guard narrowing `fn` to `PureStateCallableProtocol`.
+def _iter_container_attrs(container: StateContainerInput) -> list[tuple[str, StateEntry]]:
+    """Extract structural attributes from a container via ``StatefulContainerProtocol``.
+
+    ``StateDictContainerProtocol``, or ``Mapping``.
 
     Args:
-        fn (PureStateCallableProtocol): Callable function.
+        container (StateContainerInput): Container object to inspect.
 
     Returns:
-        bool: True if callable.
+        list[tuple[str, StateEntry]]: Ordered ``(attribute_name, attribute_value)`` pairs.
     """
-    return callable(fn)
-
-
-@typing.runtime_checkable
-class _AttrXProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `x`."""
-
-    x: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrChildProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `child`."""
-
-    child: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrValProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `val`."""
-
-    val: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrWProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `w`."""
-
-    w: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrBProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `b`."""
-
-    b: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrWeightProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `weight`."""
-
-    weight: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrBiasProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `bias`."""
-
-    bias: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrRunningMeanProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `running_mean`."""
-
-    running_mean: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrRealTensorProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `real_tensor`."""
-
-    real_tensor: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrPrivateValProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `_private_val`."""
-
-    _private_val: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrBuffersExplicitProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `_buffers_explicit`."""
-
-    _buffers_explicit: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrDictParamsProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `dict_params`."""
-
-    dict_params: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrSubProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `sub`."""
-
-    sub: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrSubParamProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `sub_param`."""
-
-    sub_param: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrSubBufProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `sub_buf`."""
-
-    sub_buf: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrPrimitiveIntProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `primitive_int`."""
-
-    primitive_int: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrInstanceFnProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `instance_fn`."""
-
-    instance_fn: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrCounterProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `counter`."""
-
-    counter: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrPProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `p`."""
-
-    p: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrInnerProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `inner`."""
-
-    inner: StateEntry
-
-
-@typing.runtime_checkable
-class _AttrParamProtocol(typing.Protocol):
-    """Protocol for containers exposing attribute `param`."""
-
-    param: StateEntry
-
-
-def _is_attr_x(obj: StateEntry) -> typing.TypeGuard[_AttrXProtocol]:
-    """Type guard narrowing `obj` to `_AttrXProtocol`.
+    if isinstance(container, StatefulContainerProtocol):
+        entries: list[tuple[str, StateEntry]] = list(container.parameters().items())
+        entries.extend(container.buffers().items())
+        return entries
+    if isinstance(container, StateDictContainerProtocol):
+        return list(container.state_dict().items())
+    if isinstance(container, Mapping):
+        return [(str(k), v) for k, v in container.items()]
+    return []
+
+
+def _get_node_items(block: LogicalGraph | _BlockNodesProtocol | None) -> Iterable[tuple[str, LogicalNode]]:
+    """Get all ``(node_id, node)`` pairs from a block or graph.
 
     Args:
-        obj (StateEntry): Target container.
+        block (LogicalGraph | _BlockNodesProtocol | None): The block or graph to inspect.
 
     Returns:
-        bool: True if `obj` implements `_AttrXProtocol`.
-    """
-    return isinstance(obj, _AttrXProtocol)
-
-
-def _is_attr_w(obj: StateEntry) -> typing.TypeGuard[_AttrWProtocol]:
-    """Type guard narrowing `obj` to `_AttrWProtocol`.
-
-    Args:
-        obj (StateEntry): Target container.
-
-    Returns:
-        bool: True if `obj` implements `_AttrWProtocol`.
-    """
-    return isinstance(obj, _AttrWProtocol)
-
-
-def _is_attr_b(obj: StateEntry) -> typing.TypeGuard[_AttrBProtocol]:
-    """Type guard narrowing `obj` to `_AttrBProtocol`.
-
-    Args:
-        obj (StateEntry): Target container.
-
-    Returns:
-        bool: True if `obj` implements `_AttrBProtocol`.
-    """
-    return isinstance(obj, _AttrBProtocol)
-
-
-def _is_attr_weight(obj: StateEntry) -> typing.TypeGuard[_AttrWeightProtocol]:
-    """Type guard narrowing `obj` to `_AttrWeightProtocol`.
-
-    Args:
-        obj (StateEntry): Target container.
-
-    Returns:
-        bool: True if `obj` implements `_AttrWeightProtocol`.
-    """
-    return isinstance(obj, _AttrWeightProtocol)
-
-
-def _is_attr_counter(obj: StateEntry) -> typing.TypeGuard[_AttrCounterProtocol]:
-    """Type guard narrowing `obj` to `_AttrCounterProtocol`.
-
-    Args:
-        obj (StateEntry): Target container.
-
-    Returns:
-        bool: True if `obj` implements `_AttrCounterProtocol`.
-    """
-    return isinstance(obj, _AttrCounterProtocol)
-
-
-def _is_attr_p(obj: StateEntry) -> typing.TypeGuard[_AttrPProtocol]:
-    """Type guard narrowing `obj` to `_AttrPProtocol`.
-
-    Args:
-        obj (StateEntry): Target container.
-
-    Returns:
-        bool: True if `obj` implements `_AttrPProtocol`.
-    """
-    return isinstance(obj, _AttrPProtocol)
-
-
-def _is_attr_param(obj: StateEntry) -> typing.TypeGuard[_AttrParamProtocol]:
-    """Type guard narrowing `obj` to `_AttrParamProtocol`.
-
-    Args:
-        obj (StateEntry): Target container.
-
-    Returns:
-        bool: True if `obj` implements `_AttrParamProtocol`.
-    """
-    return isinstance(obj, _AttrParamProtocol)
-
-
-def _set_x(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `x` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_x(obj)
-    obj.x = val
-
-
-def _set_w(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `w` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_w(obj)
-    obj.w = val
-
-
-def _set_b(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `b` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_b(obj)
-    obj.b = val
-
-
-def _set_weight(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `weight` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_weight(obj)
-    obj.weight = val
-
-
-def _set_counter(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `counter` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_counter(obj)
-    obj.counter = val
-
-
-def _set_p(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `p` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_p(obj)
-    obj.p = val
-
-
-def _set_param(obj: StateEntry, val: StateEntry) -> None:
-    """Assign attribute `param` on `obj`.
-
-    Args:
-        obj (StateEntry): Target container.
-        val (StateEntry): Value to assign.
-    """
-    assert _is_attr_param(obj)
-    obj.param = val
-
-
-_STATE_GETTER_DISPATCH: dict[str, Callable[[StateEntry], StateEntry]] = {
-    "x": lambda o: o.x if isinstance(o, _AttrXProtocol) else None,
-    "child": lambda o: o.child if isinstance(o, _AttrChildProtocol) else None,
-    "val": lambda o: o.val if isinstance(o, _AttrValProtocol) else None,
-    "w": lambda o: o.w if isinstance(o, _AttrWProtocol) else None,
-    "b": lambda o: o.b if isinstance(o, _AttrBProtocol) else None,
-    "weight": lambda o: o.weight if isinstance(o, _AttrWeightProtocol) else None,
-    "bias": lambda o: o.bias if isinstance(o, _AttrBiasProtocol) else None,
-    "running_mean": lambda o: o.running_mean if isinstance(o, _AttrRunningMeanProtocol) else None,
-    "real_tensor": lambda o: o.real_tensor if isinstance(o, _AttrRealTensorProtocol) else None,
-    "_private_val": lambda o: o._private_val if isinstance(o, _AttrPrivateValProtocol) else None,
-    "_buffers_explicit": lambda o: o._buffers_explicit if isinstance(o, _AttrBuffersExplicitProtocol) else None,
-    "dict_params": lambda o: o.dict_params if isinstance(o, _AttrDictParamsProtocol) else None,
-    "sub": lambda o: o.sub if isinstance(o, _AttrSubProtocol) else None,
-    "sub_param": lambda o: o.sub_param if isinstance(o, _AttrSubParamProtocol) else None,
-    "sub_buf": lambda o: o.sub_buf if isinstance(o, _AttrSubBufProtocol) else None,
-    "primitive_int": lambda o: o.primitive_int if isinstance(o, _AttrPrimitiveIntProtocol) else None,
-    "instance_fn": lambda o: o.instance_fn if isinstance(o, _AttrInstanceFnProtocol) else None,
-    "counter": lambda o: o.counter if isinstance(o, _AttrCounterProtocol) else None,
-    "p": lambda o: o.p if isinstance(o, _AttrPProtocol) else None,
-    "inner": lambda o: o.inner if isinstance(o, _AttrInnerProtocol) else None,
-    "param": lambda o: o.param if isinstance(o, _AttrParamProtocol) else None,
-}
-
-_STATE_SETTER_DISPATCH: dict[str, Callable[[StateEntry, StateEntry], None]] = {
-    "x": _set_x,
-    "w": _set_w,
-    "b": _set_b,
-    "weight": _set_weight,
-    "counter": _set_counter,
-    "p": _set_p,
-    "param": _set_param,
-}
-
-_CONTAINER_EXTRACT_PROBES: tuple[tuple[str, type], ...] = (
-    ("w", _AttrWProtocol),
-    ("b", _AttrBProtocol),
-    ("weight", _AttrWeightProtocol),
-    ("bias", _AttrBiasProtocol),
-    ("running_mean", _AttrRunningMeanProtocol),
-    ("real_tensor", _AttrRealTensorProtocol),
-    ("_private_val", _AttrPrivateValProtocol),
-    ("_buffers_explicit", _AttrBuffersExplicitProtocol),
-    ("dict_params", _AttrDictParamsProtocol),
-    ("sub", _AttrSubProtocol),
-    ("sub_param", _AttrSubParamProtocol),
-    ("sub_buf", _AttrSubBufProtocol),
-    ("primitive_int", _AttrPrimitiveIntProtocol),
-    ("instance_fn", _AttrInstanceFnProtocol),
-    ("counter", _AttrCounterProtocol),
-    ("p", _AttrPProtocol),
-    ("inner", _AttrInnerProtocol),
-    ("param", _AttrParamProtocol),
-)
-
-
-def _iter_container_attrs(container: StateEntry) -> list[tuple[str, StateEntry]]:
-    """Extract known structural attributes from a container object.
-
-    Args:
-        container (StateEntry): Container object to inspect.
-
-    Returns:
-        list[tuple[str, StateEntry]]: List of (attribute_name, attribute_value) pairs.
-    """
-    entries: list[tuple[str, StateEntry]] = []
-    for attr_name, proto_cls in _CONTAINER_EXTRACT_PROBES:
-        cand: StateEntry = container
-        if isinstance(container, proto_cls):
-            val: StateEntry = _STATE_GETTER_DISPATCH[attr_name](cand)
-            entries.append((attr_name, val))
-    return entries
-
-
-def _get_node_items(block: LogicalGraph | _BlockNodesProtocol) -> Iterable[tuple[str, LogicalNode]]:
-    """Get all (node_id, node) pairs from a block or graph.
-
-    Args:
-        block (LogicalGraph | _BlockNodesProtocol): The block or graph to inspect.
-
-    Returns:
-        Iterable[tuple[str, LogicalNode]]: Sequence of node ID and LogicalNode pairs.
+        Iterable[tuple[str, LogicalNode]]: Sequence of node ID and ``LogicalNode`` pairs.
     """
     if not isinstance(block, _BlockNodesProtocol):
         return []
@@ -547,7 +197,7 @@ def _get_node_items(block: LogicalGraph | _BlockNodesProtocol) -> Iterable[tuple
 
 
 def _lift_node_state(node: LogicalNode, nid: str, block: LogicalGraph | _BlockNodesProtocol) -> bool:
-    """Lift stateful ReadVariable/AssignVariable/Assign operations into pure functional inputs/outputs.
+    """Lift stateful ``ReadVariable``/``AssignVariable``/``Assign`` operations into functional I/O.
 
     Args:
         node (LogicalNode): Node being inspected.
@@ -596,58 +246,66 @@ def _lift_block(block: LogicalGraph | _BlockNodesProtocol | AttributeValue) -> b
         for sub in node.subgraphs.values():
             block_mod = _lift_block(sub) or block_mod
         for raw_attr in node.attributes.values():
-            attr_val: LogicalGraph | _BlockNodesProtocol | AttributeValue = raw_attr
-            if isinstance(attr_val, _BlockNodesProtocol):
-                block_mod = _lift_block(attr_val) or block_mod
+            cand_attr: AttributeValue | _BlockNodesProtocol = raw_attr
+            if isinstance(cand_attr, _BlockNodesProtocol):
+                block_mod = _lift_block(cand_attr) or block_mod
     return block_mod
 
 
-def _get_val(curr_obj: StateEntry, key: str) -> StateEntry:
-    """Retrieve value from dictionary or object attribute.
+def _get_val(
+    curr_obj: StateContainerInput,
+    key: str,
+) -> StateEntry:
+    """Retrieve value from a dictionary or ``StateDictContainerProtocol`` container.
 
     Args:
-        curr_obj (StateEntry): Object or dictionary container.
-        key (str): Attribute name or dictionary key.
+        curr_obj (StateContainerInput): Mapping or protocol container.
+        key (str): State entry key.
 
     Returns:
-        StateEntry: Retrieved value or None.
+        StateEntry: Retrieved value or ``None``.
     """
     if isinstance(curr_obj, dict):
         return curr_obj.get(key)
-    getter = _STATE_GETTER_DISPATCH.get(key)
-    return getter(curr_obj) if getter is not None else None
+    if not isinstance(curr_obj, Tensor) and isinstance(curr_obj, StateDictContainerProtocol):
+        sd_map: Mapping[str, StateEntry] = curr_obj.state_dict()
+        return sd_map.get(key)
+    if not isinstance(curr_obj, Tensor) and isinstance(curr_obj, StatefulContainerProtocol):
+        params: Mapping[str, StateEntry] = curr_obj.parameters()
+        if key in params:
+            return params[key]
+        bufs: Mapping[str, StateEntry] = curr_obj.buffers()
+        return bufs.get(key)
+    return None
 
 
-def _set_val(curr_obj: StateEntry, key: str, val: StateEntry) -> None:
-    """Set value on dictionary or object attribute.
+def _set_val(curr_obj: StateContainerInput, key: str, val: StateEntry) -> None:
+    """Update value on a dictionary or ``MutableStateDictContainerProtocol`` container.
 
     Args:
-        curr_obj (StateEntry): Target container.
-        key (str): Key or attribute name.
+        curr_obj (StateContainerInput): Target dictionary or mutable protocol container.
+        key (str): Key or state entry name.
         val (StateEntry): Value to assign.
     """
     if isinstance(curr_obj, dict):
         curr_obj[key] = val
-    else:
-        _STATE_SETTER_DISPATCH[key](curr_obj, val)
+    elif isinstance(curr_obj, MutableStateDictContainerProtocol):
+        curr_obj.load_state_dict({key: val})
 
 
-def _navigate(curr_obj: StateEntry, parts: list[str]) -> StateEntry:
+def _navigate(curr_obj: StateContainerInput, parts: list[str]) -> StateContainerInput:
     """Traverse nested dictionary or object hierarchy along path parts.
 
     Args:
-        curr_obj (StateEntry): Root object.
+        curr_obj (StateContainerInput): Root object.
         parts (list[str]): Dot-separated path components.
 
     Returns:
-        StateEntry: Navigated nested object.
+        StateContainerInput: Navigated nested object.
     """
-    curr: StateEntry = curr_obj
+    curr: StateContainerInput = curr_obj
     for p in parts:
-        if isinstance(curr, dict):
-            curr = curr[p]
-        else:
-            curr = _get_val(curr, p)
+        curr = curr[p] if isinstance(curr, dict) else _get_val(curr, p)
     return curr
 
 
@@ -665,7 +323,7 @@ class StateLiftingPass:
         params: dict[str, StateEntry],
         buffers: dict[str, StateEntry],
     ) -> None:
-        """Record a tensor-like entry into either params or buffers and update identity_map.
+        """Record a tensor-like entry into either ``params`` or ``buffers`` and update ``identity_map``.
 
         Args:
             name (str): Fully qualified state entry name.
@@ -673,7 +331,8 @@ class StateLiftingPass:
             params (dict[str, StateEntry]): Parameter dictionary to populate.
             buffers (dict[str, StateEntry]): Buffer dictionary to populate.
         """
-        req_grad = val.requires_grad if isinstance(val, _RequiresGradProtocol) else True
+        cand_val: StateEntry | _RequiresGradProtocol = val
+        req_grad = cand_val.requires_grad if isinstance(cand_val, _RequiresGradProtocol) else True
         if req_grad:
             params[name] = val
         else:
@@ -701,32 +360,44 @@ class StateLiftingPass:
             for k, v in attr_val.items():
                 if isinstance(v, (Tensor, ShapeProtocol)):
                     self._record_tensor_entry(f"{full_name}.{k}", v, params, buffers)
-        elif not callable(attr_val) and not isinstance(attr_val, (int, float, str, bool, list, tuple)):
+        elif (
+            not callable(attr_val)
+            and not isinstance(attr_val, (int, float, str, bool, list, tuple))
+            and attr_val is not None
+        ):
             sub_p, sub_b = self.extract_state(attr_val, prefix=f"{full_name}.")
             params.update(sub_p)
             buffers.update(sub_b)
 
     def extract_state(
         self,
-        container: StateEntry,
+        container: StateContainerInput,
         prefix: str = "",
     ) -> tuple[dict[str, StateEntry], dict[str, StateEntry]]:
-        """Extract trainable parameters and non-trainable buffers from a generic variable container.
+        """Extract trainable parameters and non-trainable buffers from a variable container.
 
         Args:
-            container (StateEntry): Stateful variable container.
+            container (StateContainerInput): Stateful variable container.
             prefix (str): Prefix path for nested containers.
 
         Returns:
-            tuple[dict[str, StateEntry], dict[str, StateEntry]]: (params_dict, buffers_dict).
+            tuple[dict[str, StateEntry], dict[str, StateEntry]]: ``(params_dict, buffers_dict)``.
         """
         params: dict[str, StateEntry] = {}
         buffers: dict[str, StateEntry] = {}
 
-        entries = _iter_container_attrs(container)
-        if not entries:
+        if isinstance(container, StatefulContainerProtocol):
+            for p_name, p_val in container.parameters().items():
+                full_p = f"{prefix}{p_name}" if prefix else p_name
+                params[full_p] = p_val
+                self.identity_map[id(p_val)] = full_p
+            for b_name, b_val in container.buffers().items():
+                full_b = f"{prefix}{b_name}" if prefix else b_name
+                buffers[full_b] = b_val
+                self.identity_map[id(b_val)] = full_b
             return params, buffers
 
+        entries = _iter_container_attrs(container)
         for attr_name, attr_val in entries:
             if attr_name.startswith("_") and not attr_name.startswith("_buffers"):
                 continue
@@ -735,11 +406,11 @@ class StateLiftingPass:
 
         return params, buffers
 
-    def lift(self, container: StateEntry) -> tuple[dict[str, StateEntry], IRGraph]:
-        """Lift container parameters and buffers into an IRGraph with functional input nodes.
+    def lift(self, container: StateContainerInput) -> tuple[dict[str, StateEntry], IRGraph]:
+        """Lift container parameters and buffers into an ``IRGraph`` with typed ``shape_metadata`` tuples.
 
         Args:
-            container (StateEntry): Stateful container instance.
+            container (StateContainerInput): Stateful container instance.
 
         Returns:
             tuple[dict[str, StateEntry], IRGraph]: Combined state dictionary and functional graph.
@@ -754,26 +425,26 @@ class StateLiftingPass:
         graph.outputs = []
         for name, tensor in combined_state.items():
             nid = f"param_{name.replace('.', '_')}"
-            shape_meta: tuple[int, ...] = _extract_state_shape(tensor.shape) if isinstance(tensor, ShapeProtocol) else ()
+            shape_meta: tuple[int, ...] = (
+                _extract_state_shape(tensor.shape) if isinstance(tensor, ShapeProtocol) else ()
+            )
             dtype_meta = str(tensor.dtype) if isinstance(tensor, _DTypeProtocol) else "float32"
             is_param = name in params
+            node_attrs: dict[str, AttributeValue] = {
+                "name": name,
+                "param_name": name,
+                "is_state": True,
+                "is_parameter": is_param,
+                "is_buffer": not is_param,
+                "dtype": str(dtype_meta),
+            }
             node = IRNode(
                 id=nid,
                 op_type="Input",
                 inputs=[],
                 shape_metadata=shape_meta,
-                attributes={
-                    "name": name,
-                    "param_name": name,
-                    "is_state": True,
-                    "is_parameter": is_param,
-                    "is_buffer": not is_param,
-                    "dtype": str(dtype_meta),
-                },
+                attributes=node_attrs,
             )
-            raw_node: TensorOrScalar = node
-            assert _is_dict_shape_node(raw_node)
-            raw_node.shape_metadata = {"shape": shape_meta}
             graph.nodes[nid] = node
             graph.inputs.append(nid)
 
@@ -781,12 +452,12 @@ class StateLiftingPass:
 
     def functionalize(
         self,
-        container: TypedVariadicCallable[TensorOrScalar] | StateEntry,
+        container: TypedVariadicCallable[OpValue] | StateContainerInput,
     ) -> tuple[dict[str, StateEntry], PureStateCallableProtocol]:
         """Convert a stateful callable container into a pure function accepting and returning state.
 
         Args:
-            container (TypedVariadicCallable[TensorOrScalar] | StateEntry): The stateful callable container.
+            container (TypedVariadicCallable[OpValue] | StateContainerInput): Stateful callable container.
 
         Returns:
             tuple[dict[str, StateEntry], PureStateCallableProtocol]: Initial state dictionary and pure function.
@@ -795,14 +466,14 @@ class StateLiftingPass:
         current_state: dict[str, StateEntry] = {}
         current_state.update(params)
         current_state.update(buffers)
-        state_container: StateEntry = container
+        state_container: StateContainerInput = container
 
         def pure_fn(
             state: Mapping[str, StateEntry],
             *args: StateEntry,
             **kwargs: StateEntry,
         ) -> tuple[StateEntry, dict[str, StateEntry]]:
-            """Pure execution function with explicit state passing.
+            """Execute container purely with explicit input state and restored attributes.
 
             Args:
                 state (Mapping[str, StateEntry]): Input state dictionary.
@@ -811,6 +482,9 @@ class StateLiftingPass:
 
             Returns:
                 tuple[StateEntry, dict[str, StateEntry]]: Output and updated state dictionary.
+
+            Raises:
+                TypeError: If ``container`` is not callable.
             """
             backup: dict[str, StateEntry] = {}
             for k, v in state.items():
@@ -820,10 +494,11 @@ class StateLiftingPass:
                 _set_val(parent, parts[-1], v)
 
             try:
-                callable_ref: TypedVariadicCallable[TensorOrScalar] | StateEntry = container
-                if not _is_state_container_callable(callable_ref):
+                if not callable(container):
                     raise TypeError(f"Container {type(container)} is not callable.")
-                out: StateEntry = callable_ref(*args, **kwargs)
+                _callable_fn_1: OpValue = container
+                assert is_variadic_callable(_callable_fn_1)
+                out: StateEntry = _callable_fn_1(*args, **kwargs)
 
                 new_state: dict[str, StateEntry] = {}
                 for k in state:
@@ -838,14 +513,13 @@ class StateLiftingPass:
                     parent = _navigate(state_container, parts[:-1])
                     _set_val(parent, parts[-1], v)
 
-        assert _is_pure_state_callable(pure_fn)
         return current_state, pure_fn
 
     def run(self, graph: IRGraph) -> bool:
-        """Run in-place state lifting pass on IRGraph.
+        """Run in-place state lifting pass on ``IRGraph``.
 
         Args:
-            graph (IRGraph): The IR graph.
+            graph (IRGraph): Target IR graph.
 
         Returns:
             bool: True if graph was modified, False otherwise.
@@ -853,11 +527,99 @@ class StateLiftingPass:
         return _lift_block(graph)
 
 
+def flatten_state_dict(
+    state_dict: Mapping[str, StateValue],
+    prefix: str = "",
+) -> dict[str, StateValue]:
+    """Flatten a nested state dictionary into a dot-delimited flat map.
+
+    Args:
+        state_dict (Mapping[str, StateValue]): Nested state dictionary.
+        prefix (str): Key prefix for recursion.
+
+    Returns:
+        dict[str, StateValue]: Flattened state map.
+    """
+    flat: dict[str, StateValue] = {}
+    for k, v in state_dict.items():
+        new_key: str = f"{prefix}.{k}" if prefix else k
+        if isinstance(v, dict):
+            sub_map: dict[str, StateValue] = {str(sk): sv for sk, sv in v.items()}
+            flat.update(flatten_state_dict(sub_map, new_key))
+        else:
+            flat[new_key] = v
+    return flat
+
+
+def unflatten_state_dict(
+    flat_state: dict[str, StateValue],
+) -> dict[str, StateValue | dict[str, StateValue]]:
+    """Unflatten a dot-delimited state dictionary back into a nested structure.
+
+    Args:
+        flat_state (dict[str, StateValue]): Flattened state map.
+
+    Returns:
+        dict[str, StateValue | dict[str, StateValue]]: Nested state dictionary.
+    """
+    nested: dict[str, StateValue | dict[str, StateValue]] = {}
+    for k, v in flat_state.items():
+        parts: list[str] = k.split(".")
+        d: dict[str, StateValue | dict[str, StateValue]] = nested
+        for part in parts[:-1]:
+            existing = d.get(part)
+            if isinstance(existing, dict):
+                d = existing
+            else:
+                sub_dict: dict[str, StateValue | dict[str, StateValue]] = {}
+                d[part] = sub_dict
+                d = sub_dict
+        d[parts[-1]] = v
+    return nested
+
+
+def _get_nodes(block: LogicalGraph) -> Iterable[LogicalNode]:
+    """Extract all ``LogicalNode`` instances from a block or graph.
+
+    Args:
+        block (LogicalGraph): The block or graph to inspect.
+
+    Returns:
+        Iterable[LogicalNode]: Sequence of ``LogicalNode`` instances.
+    """
+    return [node for _, node in _get_node_items(block)]
+
+
+def _lift_node(node: LogicalNode, block: LogicalGraph) -> bool:
+    """Lift a single ``ReadVariable``/``AssignVariable``/``Assign`` node in place.
+
+    Args:
+        node (LogicalNode): Target node.
+        block (LogicalGraph): Containing block or graph.
+
+    Returns:
+        bool: True if the node was modified.
+    """
+    return _lift_node_state(node, node.id, block)
+
+
+def _lift_block_ir(block: LogicalGraph) -> bool:
+    """Recursively lift stateful operations across a block and its subgraphs.
+
+    Args:
+        block (LogicalGraph): Target block or graph.
+
+    Returns:
+        bool: True if any node was lifted.
+    """
+    return _lift_block(block)
+
+
 def state_lifting_pass(graph: IRGraph) -> bool:
     """In-place pass to lift state to pure functional inputs.
 
     Args:
-        graph (IRGraph): The graph parameter for the operation.
+        graph (IRGraph): Target graph.
 
     Returns:
         bool: True if the graph was modified.
@@ -865,39 +627,82 @@ def state_lifting_pass(graph: IRGraph) -> bool:
     return StateLiftingPass().run(graph)
 
 
-def functionalize_assign_graph(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
-    """Lift mutable `Assign` nodes on `state_vars` into pure functional graph outputs.
+def lift_state_pass(graph: IRGraph) -> bool:
+    """Alias for ``state_lifting_pass`` lifting implicit state into functional I/O.
 
     Args:
-        graph (LogicalGraph): The input graph containing state `Assign` nodes.
-        state_vars (list[str]): The IDs of nodes representing initial state variables.
+        graph (IRGraph): Target IRGraph.
 
     Returns:
-        LogicalGraph: The functionalized graph with updated state outputs appended.
+        bool: True if the graph was modified.
     """
-    from ml_switcheroo_ir import topological_sort
+    return state_lifting_pass(graph)
 
-    new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
-    sorted_nodes = topological_sort(graph)
-    state_env: dict[str, str] = {v: v for v in state_vars}
 
-    for node in sorted_nodes:
-        if node.op_type == "Assign":
-            if len(node.inputs) >= 2 and node.inputs[0] in state_env:
-                state_env[node.inputs[0]] = node.inputs[1]
-        else:
-            new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
-            new_graph.nodes[node.id] = LogicalNode(
-                id=node.id,
-                op_type=node.op_type,
-                domain=node.domain,
-                version=node.version,
-                attributes=dict(node.attributes),
-                inputs=new_inputs,
-                shape_metadata=node.shape_metadata,
-                source_ast_ref=node.source_ast_ref,
-                sharding=node.sharding,
-            )
+def lift_module_state(container: StateContainerInput) -> tuple[dict[str, StateValue], IRGraph]:
+    """Lift a variable container into pure function parameters and an ``IRGraph``.
 
-    new_graph.outputs = list(graph.outputs) + [state_env[v] for v in state_vars]
-    return new_graph
+    Args:
+        container (StateContainerInput): Stateful variable container.
+
+    Returns:
+        tuple[dict[str, StateValue], IRGraph]: Extracted state map and functional ``IRGraph``.
+    """
+    return StateLiftingPass().lift(container)
+
+
+def lift_state(
+    container: TypedVariadicCallable[OpValue] | StateContainerInput,
+) -> tuple[dict[str, StateValue], PureStateCallableProtocol]:
+    """Functionalize a callable container into pure signature ``(state, *args) -> (out, new_state)``.
+
+    Args:
+        container (TypedVariadicCallable[OpValue] | StateContainerInput): Callable stateful container.
+
+    Returns:
+        tuple[dict[str, StateValue], PureStateCallableProtocol]: Initial state dict and pure callable.
+    """
+    return StateLiftingPass().functionalize(container)
+
+
+def functionalize_assign_graph(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
+    """Lift mutable ``Assign`` nodes on ``state_vars`` into pure functional graph outputs.
+
+    Args:
+        graph (LogicalGraph): Input graph containing state ``Assign`` nodes.
+        state_vars (list[str]): Node IDs representing initial state variables.
+
+    Returns:
+        LogicalGraph: Functionalized graph with updated state outputs appended.
+    """
+    from ml_switcheroo_compiler.core.state_manager import lift_state as _lift_assign_state
+
+    return _lift_assign_state(graph, state_vars)
+
+
+__all__ = [
+    "MutableStateDictContainerProtocol",
+    "PureStateCallableProtocol",
+    "StateContainerInput",
+    "StateDictContainerProtocol",
+    "StateEntry",
+    "StateLiftingPass",
+    "StateValue",
+    "StatefulContainerProtocol",
+    "_get_node_items",
+    "_get_nodes",
+    "_get_val",
+    "_lift_block",
+    "_lift_block_ir",
+    "_lift_node",
+    "_lift_node_state",
+    "_navigate",
+    "_set_val",
+    "flatten_state_dict",
+    "functionalize_assign_graph",
+    "lift_module_state",
+    "lift_state",
+    "lift_state_pass",
+    "state_lifting_pass",
+    "unflatten_state_dict",
+]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import typing
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +12,7 @@ import pytest
 import ml_switcheroo_compiler.ops.export as export_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
     pass
@@ -29,7 +30,7 @@ class DummyWithShape:
         self.shape: tuple[int, ...] = shape
 
 
-class DummyWithoutShape:
+class DummyWithoutShape(MockTestStub):
     """Mock operand lacking shape attribute."""
 
     def __init__(self) -> None:
@@ -37,11 +38,11 @@ class DummyWithoutShape:
         self.val: int = 123
 
 
-def test_export_to_dot_full_coverage(tmp_path: pytest.TempPathFactory) -> None:
+def test_export_to_dot_full_coverage(tmp_path: Path) -> None:
     """Test full coverage for graph export to DOT format.
 
     Args:
-        tmp_path (pytest.TempPathFactory): Temporary directory fixture.
+        tmp_path (Path): Temporary directory fixture.
     """
     with pytest.raises(RuntimeError, match="No active graph to export"):
         with patch.object(global_tracing_state, "active_graph", None):
@@ -84,7 +85,7 @@ def test_export_to_dot_full_coverage(tmp_path: pytest.TempPathFactory) -> None:
     graph.nodes["node_1"] = n1
     graph.nodes["node_2"] = n2
 
-    class MockProxy:
+    class MockProxy(MockTestStub):
         """Mock proxy tensor with id attribute."""
 
         def __init__(self, node_id: str) -> None:
@@ -95,20 +96,20 @@ def test_export_to_dot_full_coverage(tmp_path: pytest.TempPathFactory) -> None:
             """
             self.id: str = node_id
 
-    t_arr = ensure_callable(Tensor)(ensure_callable(MockProxy)("node_2"), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
-    t_untracked = ensure_callable(Tensor)(ensure_callable(MockProxy)("missing_node"), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
-    t_no_id = ensure_callable(Tensor)(ensure_callable(DummyWithoutShape)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
+    t_arr = Tensor(MockProxy("node_2"), TensorConfig((1,), "float32", "cpu"))
+    t_untracked = Tensor(MockProxy("missing_node"), TensorConfig((1,), "float32", "cpu"))
+    t_no_id = Tensor(DummyWithoutShape(), TensorConfig((1,), "float32", "cpu"))
 
     with patch.object(global_tracing_state, "active_graph", graph):
         str_io = io.StringIO()
-        ensure_callable(export_mod.export_to_dot)(str_io, t_arr, t_untracked, t_no_id)
+        export_mod.export_to_dot(str_io, t_arr, t_untracked, t_no_id)
         dot_str = str_io.getvalue()
         assert "digraph G {" in dot_str
         assert '"node_2"' in dot_str
         assert '"node_1"' in dot_str
 
-        file_path = ensure_callable(str)(ensure_eager_tensor(tmp_path) / ensure_eager_tensor("out.dot"))
-        ensure_callable(export_mod.export_to_dot)(file_path, t_arr)
+        file_path = str(tmp_path / "out.dot")
+        export_mod.export_to_dot(file_path, t_arr)
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
             assert "digraph G {" in content

@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.core.dataset import Dataset
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.quantization import IntegerQuantizationLoweringPass, PTQCalibrationPass, PTQPass, QATFakeQuantizePass, QuantizationConfig
+from ml_switcheroo_compiler.transforms.passes.quantization import (
+    IntegerQuantizationLoweringPass,
+    PTQCalibrationPass,
+    PTQPass,
+    QATFakeQuantizePass,
+    QuantizationConfig,
+)
 
 
 def test_ptq_pass() -> None:
@@ -157,7 +162,9 @@ def test_qat_pass_no_new_inputs() -> None:
     g = IRGraph()
     n3 = IRNode(id="n3", op_type="MatMul", inputs=[])
     g.nodes["n3"] = n3
-    assert QATFakeQuantizePass(QuantizationConfig(target_dtype=DType.Int8, per_channel=False, symmetric=True))(g) is False
+    assert (
+        QATFakeQuantizePass(QuantizationConfig(target_dtype=DType.Int8, per_channel=False, symmetric=True))(g) is False
+    )
 
 
 def test_integer_quantization_drops_fake_quant() -> None:
@@ -188,8 +195,13 @@ def test_quantization_missing_coverage() -> None:
     """Test function test_quantization_missing_coverage."""
     from unittest.mock import MagicMock, mock_open, patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.quantization import IntegerQuantizationLoweringPass, PTQPass, QATFakeQuantizePass
+    from ml_switcheroo_ir import IRGraph, IRNode
+
+    from ml_switcheroo_compiler.transforms.passes.quantization import (
+        IntegerQuantizationLoweringPass,
+        PTQPass,
+        QATFakeQuantizePass,
+    )
 
     with patch("os.path.exists", return_value=False):
         p1 = PTQPass(MagicMock(), MagicMock())

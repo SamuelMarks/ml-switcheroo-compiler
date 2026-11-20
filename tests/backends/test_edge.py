@@ -4,21 +4,26 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from ml_switcheroo_ir import LogicalGraph
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph
 
 from ml_switcheroo_compiler.backends import edge
-from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, StableHLOCodeGenerator, WasmCodeGenerator, WebGPUCodeGenerator
+from ml_switcheroo_compiler.backends.edge import (
+    ONNXCodeGenerator,
+    StableHLOCodeGenerator,
+    WasmCodeGenerator,
+    WebGPUCodeGenerator,
+)
 from ml_switcheroo_compiler.core.errors import CompilationError, UnimplementedMathError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_eager_tensor, has_backend_member
+from tests.testing_utils import EagerTensorProtocol, adapt_backend_module, coerce_str
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
 
 
 @pytest.fixture(autouse=True)
@@ -33,41 +38,66 @@ def global_wasm_mock() -> Iterator[None]:
     from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
     saved_registry = copy.deepcopy(OPS_REGISTRY)
-    ops_to_mock = ["UnknownOp", "Conv2D", "MaxPool2D", "BatchNorm", "LayerNorm", "AvgPool2D", "Add", "Constant", "DotGeneral", "Transpose", "MatMul", "ReduceSum", "ReduceMax", "Tanh", "BroadcastTo", "DummyOp", "Dummy", "Exp", "Input"]
+    ops_to_mock = [
+        "UnknownOp",
+        "Conv2D",
+        "MaxPool2D",
+        "BatchNorm",
+        "LayerNorm",
+        "AvgPool2D",
+        "Add",
+        "Constant",
+        "DotGeneral",
+        "Transpose",
+        "MatMul",
+        "ReduceSum",
+        "ReduceMax",
+        "Tanh",
+        "BroadcastTo",
+        "DummyOp",
+        "Dummy",
+        "Exp",
+        "Input",
+    ]
     for op in ops_to_mock:
         if op not in OPS_REGISTRY:
             OPS_REGISTRY[op] = {"variants": {}}
-        if "variants" not in OPS_REGISTRY[op]:
+        if "variants" not in OPS_REGISTRY[op] or not isinstance(OPS_REGISTRY[op]["variants"], dict):
             OPS_REGISTRY[op]["variants"] = {}
-        ensure_eager_tensor(OPS_REGISTRY[op]["variants"])["edge_wasm_simd"] = {"template": "mock_template_" + op}
-    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
+        variants = OPS_REGISTRY[op]["variants"]
+        assert isinstance(variants, dict)
+        variants["edge_wasm_simd"] = {"template": "mock_template_" + op}
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template"
+    ) as mock_get_wasm_template:
 
-        def mock_template_resolver(template_name: EagerValue) -> EagerValue:
+        def mock_template_resolver(template_name: BackendArg) -> BackendArg:
             """Test function mock_template_resolver.
 
             Args:
-                template_name: Test parameter `template_name`.
+                template_name (BackendArg): Test parameter `template_name`.
 
             Returns:
-                EagerValue: Computed output value from `mock_template_resolver`.
+                BackendArg: Computed output value from `mock_template_resolver`.
             """
-            body = ensure_eager_tensor("// ") + ensure_eager_tensor(template_name)
-            if template_name == "mock_template_Add":
-                body = ensure_eager_tensor("wasm_f32x4_add(a, b); wasm_v128_load")
-            elif template_name == "mock_template_Constant":
-                body = ensure_eager_tensor("wasm_f32x4_splat(a);")
-            elif template_name == "mock_template_Exp":
-                body = ensure_eager_tensor("std::exp(in0_val);")
-            elif template_name == "mock_template_Tanh":
-                body = ensure_eager_tensor("std::tanh(in0_val);")
-            elif template_name == "mock_template_Conv2D":
-                body = ensure_eager_tensor("Dummy Pool/Conv")
-            elif template_name == "mock_template_MaxPool2D":
-                body = ensure_eager_tensor("Dummy Pool/Conv")
-            elif template_name == "mock_template_AvgPool2D":
-                body = ensure_eager_tensor("Dummy Pool/Conv")
-            elif template_name == "mock_template_UnknownOp":
-                body = ensure_eager_tensor("Unimplemented UnknownOp")
+            tpl_name = coerce_str(template_name)
+            body = "// " + tpl_name
+            if tpl_name == "mock_template_Add":
+                body = "wasm_f32x4_add(a, b); wasm_v128_load"
+            elif tpl_name == "mock_template_Constant":
+                body = "wasm_f32x4_splat(a);"
+            elif tpl_name == "mock_template_Exp":
+                body = "std::exp(in0_val);"
+            elif tpl_name == "mock_template_Tanh":
+                body = "std::tanh(in0_val);"
+            elif tpl_name == "mock_template_Conv2D":
+                body = "Dummy Pool/Conv"
+            elif tpl_name == "mock_template_MaxPool2D":
+                body = "Dummy Pool/Conv"
+            elif tpl_name == "mock_template_AvgPool2D":
+                body = "Dummy Pool/Conv"
+            elif tpl_name == "mock_template_UnknownOp":
+                body = "Unimplemented UnknownOp"
             return {"body": body}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
@@ -82,7 +112,7 @@ def test_edge_generators() -> None:
     """Test the edge generators behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     graph = LogicalGraph()
     onnx = ONNXCodeGenerator(graph)
@@ -90,7 +120,9 @@ def test_edge_generators() -> None:
     assert "ml_switcheroo_graph" in onnx_res or "MagicMock" in str(onnx_res)
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(1, 64))
+    n1 = IRNode(
+        id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(1, 64)
+    )
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
     n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
     for n in [n0, n1, n2, n3]:
@@ -117,7 +149,9 @@ def test_wasm_generator() -> None:
     """Test the WASM code generator to verify correctness of generated vectorizable C++ code."""
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(64,))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,))
+    n1 = IRNode(
+        id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,)
+    )
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(64,))
     n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(64,))
     for n in [n0, n1, n2, n3]:
@@ -145,7 +179,9 @@ def test_webgpu_generator() -> None:
     """Test the WebGPU WGSL code generator to verify correctness of generated WGSL shader code."""
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(64,))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,))
+    n1 = IRNode(
+        id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,)
+    )
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(64,))
     n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(64,))
     for n in [n0, n1, n2, n3]:
@@ -164,7 +200,13 @@ def test_stablehlo_generator() -> None:
     """Test the StableHLO code generator to verify correctness of generated MLIR text representation."""
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(1, 2))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": [3.0, 4.0], "dtype": "float32"}, shape_metadata=(1, 2))
+    n1 = IRNode(
+        id="n1",
+        op_type="Constant",
+        inputs=[],
+        attributes={"value": [3.0, 4.0], "dtype": "float32"},
+        shape_metadata=(1, 2),
+    )
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(1, 2))
     n3 = IRNode(id="n3", op_type="CustomUnk", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(1, 2))
     for n in [n0, n1, n2, n3]:
@@ -199,7 +241,9 @@ def test_webgpu_ndim_indexing() -> None:
     """Test the WebGPU generator with multi-dimensional inputs to verify helper macro output."""
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(2, 3))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 1.0, "dtype": "float32"}, shape_metadata=(2, 3))
+    n1 = IRNode(
+        id="n1", op_type="Constant", inputs=[], attributes={"value": 1.0, "dtype": "float32"}, shape_metadata=(2, 3)
+    )
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(2, 3))
     for n in [n0, n1, n2]:
         g.nodes[n.id] = n
@@ -220,7 +264,9 @@ def test_webgpu_ops_coverage() -> None:
     n_conv = IRNode(id="n_conv", op_type="Conv2D", inputs=["n_in4d", "n_in4d"], shape_metadata=(2, 2, 2, 2))
     n_conv1 = IRNode(id="n_conv1", op_type="Conv1D", inputs=["n_in", "n_in"], shape_metadata=(2, 2))
     n_pool = IRNode(id="n_pool", op_type="MaxPool", inputs=["n_in4d"], shape_metadata=(2, 2, 2, 2))
-    n_bn = IRNode(id="n_bn", op_type="BatchNorm", inputs=["n_in", "n_in", "n_in", "n_in", "n_in"], shape_metadata=(2, 2))
+    n_bn = IRNode(
+        id="n_bn", op_type="BatchNorm", inputs=["n_in", "n_in", "n_in", "n_in", "n_in"], shape_metadata=(2, 2)
+    )
     n_red1 = IRNode(id="n_red1", op_type="ReduceSum", inputs=["n_in"], shape_metadata=(1,))
     n_red2 = IRNode(id="n_red2", op_type="ReduceMean", inputs=["n_in"], shape_metadata=(1,))
     n_red3 = IRNode(id="n_red3", op_type="ReduceMax", inputs=["n_in"], shape_metadata=(1,))
@@ -235,7 +281,29 @@ def test_webgpu_ops_coverage() -> None:
     n_cast = IRNode(id="n_cast", op_type="Cast", inputs=["n_in"], attributes={"dtype": "int32"}, shape_metadata=(2, 2))
     n_gelu = IRNode(id="n_gelu", op_type="Gelu", inputs=["n_in"], shape_metadata=(2, 2))
     n_pow = IRNode(id="n_pow", op_type="Power", inputs=["n_in", "n_in"], shape_metadata=(2, 2))
-    for n in [n_in, n_in4d, n_mat, n_conv, n_conv1, n_pool, n_bn, n_red1, n_red2, n_red3, n_red4, n_red5, n_arg1, n_arg2, n_dot, n_ein, n_soft, n_logsoft, n_cast, n_gelu, n_pow]:
+    for n in [
+        n_in,
+        n_in4d,
+        n_mat,
+        n_conv,
+        n_conv1,
+        n_pool,
+        n_bn,
+        n_red1,
+        n_red2,
+        n_red3,
+        n_red4,
+        n_red5,
+        n_arg1,
+        n_arg2,
+        n_dot,
+        n_ein,
+        n_soft,
+        n_logsoft,
+        n_cast,
+        n_gelu,
+        n_pow,
+    ]:
         g.nodes[n.id] = n
     gen = WebGPUCodeGenerator(g)
     with pytest.raises((UnimplementedMathError, CompilationError)):
@@ -251,17 +319,19 @@ def test_webgpu_ops_coverage() -> None:
         gen2.generate()
 
 
-def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
+def test_onnx_binary_export(tmp_path: Path) -> None:
     """Test the ONNX code generator to verify correctness of real binary .onnx export.
 
     Args:
-        tmp_path (EagerTensorProtocol): Pytest temporary path fixture.
+        tmp_path (Path): Pytest temporary path fixture.
     """
     import os
 
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(1, 64))
+    n1 = IRNode(
+        id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(1, 64)
+    )
     n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
     for n in [n0, n1, n2]:
         g.nodes[n.id] = n
@@ -271,7 +341,9 @@ def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
     out_file = os.path.join(tmp_path, "model.onnx")
     import builtins
 
-    if has_backend_member(builtins.open, "mock_calls") or has_backend_member(os.path.exists, "mock_calls"):
+    if adapt_backend_module(builtins.open).has_symbol("mock_calls") or adapt_backend_module(os.path.exists).has_symbol(
+        "mock_calls"
+    ):
         return
     try:
         generator.export_onnx(out_file)
@@ -284,6 +356,6 @@ def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
     except TypeError:
         return
     assert model is not None
-    if not has_backend_member(model.graph.name, "mock_calls"):
+    if not adapt_backend_module(model.graph.name).has_symbol("mock_calls"):
         assert model.graph.name == "ml_switcheroo_graph"
         assert len(model.graph.node) > 0

@@ -1,25 +1,22 @@
-"""Implementation of common operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.common`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.common.mixins.common`."""
 
 from __future__ import annotations
 
 import typing
+from collections.abc import Callable
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-    from ml_switcheroo_compiler.backends.formatters import CodeFormatter
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.formatters import CodeFormatter
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
 
-@typing.runtime_checkable
 class FallbackPrefixProtocol(typing.Protocol):
     """Protocol for AST generators providing a fallback prefix."""
 
     indent_level: int
     var_names: dict[str, str]
-    formatter: CodeFormatter
     _cholesky_vjp_imported: bool
     _lu_vjp_imported: bool
     _qr_vjp_imported: bool
@@ -34,11 +31,11 @@ class FallbackPrefixProtocol(typing.Protocol):
         """
         ...
 
-    def __init__(self, graph: EagerValue = None) -> None:
+    def __init__(self, graph: BackendArg = None) -> None:
         """Initialize the protocol generator.
 
         Args:
-            graph (EagerValue): Optional computation graph.
+            graph (BackendArg): Optional computation graph.
         """
         ...
 
@@ -58,44 +55,23 @@ class FallbackPrefixProtocol(typing.Protocol):
         """
         ...
 
-    def add_import(self, imp: str) -> None:
-        """Register an import statement.
-
-        Args:
-            imp (str): The import statement to register.
-        """
-        ...
-
-
-def _is_fallback_prefix_gen(val: CommonASTVisitor | FallbackPrefixProtocol | BaseGenerator) -> typing.TypeGuard[FallbackPrefixProtocol]:
-    """Type guard narrowing `val` to `FallbackPrefixProtocol`.
-
-    Args:
-        val (CommonASTVisitor | FallbackPrefixProtocol | BaseGenerator): Candidate generator or visitor.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
 
 class CommonASTVisitor:
     """Define base mixin/visitor for shared AST generation logic across backends."""
 
-    indent_level: int
-    code: list[str]
-    var_names: dict[str, str]
+    indent_level: int = 0
     _cholesky_vjp_imported: bool = False
     _lu_vjp_imported: bool = False
     _qr_vjp_imported: bool = False
     _svd_vjp_imported: bool = False
-    _generator: FallbackPrefixProtocol | BaseGenerator | None = None
+    _generator: FallbackPrefixProtocol | None = None
+    add_line: Callable[[str], None]
 
     def __init__(
         self,
         graph: AttributeValue = None,
         *args: str | int | float | bool,
-        generator: FallbackPrefixProtocol | BaseGenerator | None = None,
+        generator: FallbackPrefixProtocol | None = None,
         **kwargs: str | int | float | bool | None,
     ) -> None:
         """Initialize the visitor.
@@ -107,6 +83,10 @@ class CommonASTVisitor:
             **kwargs (str | int | float | bool | None): Keyword arguments.
         """
         self._generator = generator
+        if generator is None and not adapt_backend_module(self).resolve_symbol("formatter")[0]:
+            fmt = CodeFormatter()
+            self.var_names: dict[str, str] = fmt.var_names
+            self.code: list[str] = fmt.code
         del graph, args, kwargs
         super().__init__()
 
@@ -117,9 +97,7 @@ class CommonASTVisitor:
         Returns:
             FallbackPrefixProtocol: The generator or self.
         """
-        gen: CommonASTVisitor | FallbackPrefixProtocol | BaseGenerator = self._generator if self._generator is not None else self
-        assert _is_fallback_prefix_gen(gen)
-        return gen
+        return self._generator if self._generator is not None else self
 
     def get_fallback_prefix(self) -> str:
         """Return the backend prefix (e.g., 'jax', 'pt', 'mx').

@@ -16,7 +16,6 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_memory_layout,
     validate_workgroup_size,
 )
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_validate_identifier_comprehensive() -> None:
@@ -143,7 +142,9 @@ def test_wgsl_binding_node() -> None:
         WGSLBinding(group=5, binding=0, name="buf", type_str="array<f32>").validate()
 
     with pytest.raises(WGSLValidationError, match="Uniform address space only supports 'read'"):
-        WGSLBinding(group=0, binding=0, name="buf", type_str="array<f32>", address_space="uniform", access_mode="write").validate()
+        WGSLBinding(
+            group=0, binding=0, name="buf", type_str="array<f32>", address_space="uniform", access_mode="write"
+        ).validate()
 
 
 def test_wgsl_raw_validation() -> None:
@@ -201,8 +202,8 @@ def test_wgsl_node_recursive_validation() -> None:
         single_child=WGSLVar("var3"),
     )
     # Add non-node attribute and list with non-node items
-    ensure_mutable(valid_container).scalar_attr = ensure_eager_tensor(42)
-    ensure_mutable(valid_container).mixed_list = ensure_eager_tensor(["string_item", 100])
+    pytest.MonkeyPatch().setattr(valid_container, "scalar_attr", 42, raising=False)
+    pytest.MonkeyPatch().setattr(valid_container, "mixed_list", ["string_item", 100], raising=False)
     valid_container.validate()
 
     invalid_container = ContainerNode(

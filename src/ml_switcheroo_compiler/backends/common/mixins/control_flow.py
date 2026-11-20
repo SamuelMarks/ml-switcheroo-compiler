@@ -1,11 +1,12 @@
-"""Implementation of control flow operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.control_flow`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.common.mixins.control_flow`."""
 
 from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_ir import IRNode
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg, require_callable
 
 from .common import CommonASTVisitor
 
@@ -17,25 +18,24 @@ class ControlFlowASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Control flow AST generator mixin."""
 
-    def _emit_sub_graph(self, sub_graph: EagerValue, input_prefix: str = "") -> None:
+    def _emit_sub_graph(self, sub_graph: BackendArg, input_prefix: str = "") -> None:
         """Emit body lines for a control-flow subgraph.
 
         Args:
-            sub_graph (EagerValue): Subgraph to emit.
+            sub_graph (BackendArg): Subgraph to emit.
             input_prefix (str): Optional input argument prefix.
         """
-        from ml_switcheroo_compiler.backends.eager_registry import ensure_callable
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
         from ml_switcheroo_compiler.ir.core import ensure_graph
 
         sub_gen = type(self.generator)(ensure_graph(sub_graph))
-        sub_gen.formatter.indent_level = self.generator.indent_level
-        visitor = ensure_callable(CodeGeneratorVisitor)(sub_gen)
+        sub_gen.indent_level = self.generator.indent_level
+        visitor = require_callable(CodeGeneratorVisitor)(sub_gen)
         visitor.generate_body(input_prefix)
         for line in sub_gen.code[1:]:
             self.generator.add_line(line)
 
-    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Scan operation.
 
         Args:
@@ -50,7 +50,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Natively, backends implement this as a specific scan.
         return f"{pfx}_scan({', '.join(input_vars)})"
 
-    def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Switch operation.
 
         Args:
@@ -65,7 +65,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Fallback to a custom runner
         return f"{pfx}_switch({', '.join(input_vars)})"
 
-    def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the TimeDistributed operation.
 
         Args:
@@ -79,7 +79,10 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Fallback implementation: we assume the frontend has provided a TimeDistributed node.
         # Natively, backends might want to generate a loop or a vmap.
         # For simplicity in this mixin, we return a function call to a backend-specific time_distributed utility.
-        return f"{self.generator.get_fallback_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
+        return (
+            f"{self.generator.get_fallback_prefix()}_time_distributed({input_vars[0]}, "
+            f"'{node.attributes.get('wrapped_op_name', '')}')"
+        )
 
     def visit_Assert(self, node: IRNode, input_vars: list[str], **kwargs: list[str]) -> str:
         """Emit target backend code or IR transformation for the Assert operation.
@@ -96,7 +99,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         data = kwargs.get("data", ["Assertion failed."])
         return f"{pfx}_assert({input_vars[0]}, data={data})"
 
-    def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the AssociativeScan operation.
 
         Args:
@@ -110,7 +113,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_associative_scan({', '.join(input_vars)})"
 
-    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the WhileLoop operation.
 
         Args:
@@ -145,7 +148,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"loop_val_{node.id}"
 
-    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Cond operation.
 
         Args:
@@ -174,7 +177,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"true_fn_{node.id}() if {cond_val} else false_fn_{node.id}()"
 
-    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the ForiLoop operation.
 
         Args:
@@ -204,7 +207,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"loop_val_{node.id}"
 
-    def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Map operation.
 
         Args:
@@ -227,7 +230,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # map usually means array mapping over first dimension
         return f"{pfx}.stack([map_fn_{node.id}(x) for x in {xs}])"
 
-    def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Fold operation.
 
         Args:
@@ -255,7 +258,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"fold_val_{node.id}"
 
-    def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Vmap operation.
 
         Args:
@@ -269,7 +272,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_vmap({', '.join(input_vars)})"
 
-    def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the Pmap operation.
 
         Args:

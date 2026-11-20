@@ -15,10 +15,9 @@ from scripts.lint_numpy_leak import (
     check_for_third_party_leaks,
     main,
 )
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_check_for_numpy_leaks() -> None:
@@ -102,7 +101,10 @@ def test_main_success(capsys: CaptureFixture[str]) -> None:
     Args:
         capsys: Pytest fixture.
     """
-    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]):
+    with (
+        patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]),
+        patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]),
+    ):
         assert main() == 0
         captured = capsys.readouterr()
         assert "Linting passed" in captured.out
@@ -114,7 +116,10 @@ def test_main_failure_numpy(capsys: CaptureFixture[str]) -> None:
     Args:
         capsys: Pytest fixture.
     """
-    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=["leak1"]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]):
+    with (
+        patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=["leak1"]),
+        patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]),
+    ):
         assert main() == 1
         captured = capsys.readouterr()
         assert "NumPy Leak Linting failed" in captured.out
@@ -127,7 +132,11 @@ def test_main_failure_arch(capsys: CaptureFixture[str]) -> None:
     Args:
         capsys: Pytest fixture.
     """
-    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=["arch1"]), patch("scripts.lint_numpy_leak.check_for_third_party_leaks", return_value=[]):
+    with (
+        patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]),
+        patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=["arch1"]),
+        patch("scripts.lint_numpy_leak.check_for_third_party_leaks", return_value=[]),
+    ):
         assert main() == 1
         captured = capsys.readouterr()
         assert "Architectural Boundaries failed" in captured.out
@@ -140,7 +149,11 @@ def test_main_failure_third_party(capsys: CaptureFixture[str]) -> None:
     Args:
         capsys: Pytest fixture.
     """
-    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]), patch("scripts.lint_numpy_leak.check_for_third_party_leaks", return_value=["dep1"]):
+    with (
+        patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]),
+        patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]),
+        patch("scripts.lint_numpy_leak.check_for_third_party_leaks", return_value=["dep1"]),
+    ):
         assert main() == 1
         captured = capsys.readouterr()
         assert "Third-Party Dependency Isolation failed" in captured.out
@@ -158,26 +171,38 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
     """Test fallback import path when scripts.lint_dependencies raises ImportError on initial import."""
     import builtins
     import sys
+    import types
 
     orig_import = builtins.__import__
     first_call = True
 
-    def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def mock_import(
+        name: str,
+        globals_map: typing.Mapping[str, BackendArg] | None = None,
+        locals_map: typing.Mapping[str, BackendArg] | None = None,
+        fromlist: typing.Sequence[str] = (),
+        level: int = 0,
+    ) -> types.ModuleType:
         """Test function mock_import.
 
         Args:
-            name: Test parameter `name`.
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
+            name (str): Module name to import.
+            globals_map (typing.Mapping[str, BackendArg] | None): Globals mapping.
+            locals_map (typing.Mapping[str, BackendArg] | None): Locals mapping.
+            fromlist (typing.Sequence[str]): Imported symbol names.
+            level (int): Relative import level.
 
         Returns:
-            EagerValue: Computed output value from `mock_import`.
+            types.ModuleType: Imported module object.
+
+        Raises:
+            ImportError: When raised during `mock_import` (Mocked initial import error).
         """
         nonlocal first_call
         if "scripts.lint_dependencies" in name and first_call:
             first_call = False
             raise ImportError("Mocked initial import error")
-        return ensure_callable(orig_import)(name, *args, **kwargs)
+        return orig_import(name, globals_map, locals_map, fromlist, level)
 
     saved_mod = sys.modules.pop("scripts.lint_dependencies", None)
     try:

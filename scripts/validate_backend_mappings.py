@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 import yaml
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
-from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
+from ml_switcheroo_compiler.core.shape import IRAttrValue as AttributeValue
 
 
 def _load_yaml_config(filename: str) -> dict[str, AttributeValue]:
@@ -27,7 +27,9 @@ def _load_yaml_config(filename: str) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Parsed YAML dictionary or empty dictionary if missing.
     """
-    path: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", filename))
+    path: str = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", filename)
+    )
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             data: AttributeValue = yaml.safe_load(f)
@@ -41,13 +43,21 @@ _root_map_raw: AttributeValue = GROUNDING_CONFIG.get("root_map")
 ROOT_MAP: dict[str, str] = {str(k): str(v) for k, v in _root_map_raw.items()} if isinstance(_root_map_raw, dict) else {}
 
 _root_exp_raw: AttributeValue = GROUNDING_CONFIG.get("root_expansions")
-ROOT_EXPANSIONS: dict[str, str] = {str(k): str(v) for k, v in _root_exp_raw.items()} if isinstance(_root_exp_raw, dict) else {}
+ROOT_EXPANSIONS: dict[str, str] = (
+    {str(k): str(v) for k, v in _root_exp_raw.items()} if isinstance(_root_exp_raw, dict) else {}
+)
 
 _allowed_roots_raw: AttributeValue = GROUNDING_CONFIG.get("backend_allowed_roots")
-BACKEND_ALLOWED_ROOTS: dict[str, set[str]] = {str(k): set(str(x) for x in v) if isinstance(v, list) else set() for k, v in _allowed_roots_raw.items()} if isinstance(_allowed_roots_raw, dict) else {}
+BACKEND_ALLOWED_ROOTS: dict[str, set[str]] = (
+    {str(k): set(str(x) for x in v) if isinstance(v, list) else set() for k, v in _allowed_roots_raw.items()}
+    if isinstance(_allowed_roots_raw, dict)
+    else {}
+)
 
 _default_root_raw: AttributeValue = GROUNDING_CONFIG.get("backend_default_root")
-BACKEND_DEFAULT_ROOT: dict[str, str] = {str(k): str(v) for k, v in _default_root_raw.items()} if isinstance(_default_root_raw, dict) else {}
+BACKEND_DEFAULT_ROOT: dict[str, str] = (
+    {str(k): str(v) for k, v in _default_root_raw.items()} if isinstance(_default_root_raw, dict) else {}
+)
 
 WHITELIST_CONFIG: dict[str, AttributeValue] = _load_yaml_config("builtin_symbol_whitelist.yaml")
 _symbols_raw: AttributeValue = WHITELIST_CONFIG.get("symbols")
@@ -57,9 +67,13 @@ EAGER_CONFIG: dict[str, AttributeValue] = _load_yaml_config("eager_signatures.ya
 _eager_raw: AttributeValue = EAGER_CONFIG.get("backends")
 EAGER_SIGNATURES: dict[str, dict[str, dict[str, AttributeValue]]] = _eager_raw if isinstance(_eager_raw, dict) else {}
 
-_sparse_kernels_path: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", "sparse", "kernels.py"))
+_sparse_kernels_path: str = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", "sparse", "kernels.py")
+)
 with open(_sparse_kernels_path, encoding="utf-8") as _sk_file:
-    SPARSE_KERNEL_NAMES: set[str] = {node.name for node in ast.parse(_sk_file.read()).body if isinstance(node, ast.FunctionDef)}
+    SPARSE_KERNEL_NAMES: set[str] = {
+        node.name for node in ast.parse(_sk_file.read()).body if isinstance(node, ast.FunctionDef)
+    }
 
 
 def _resolve_ecosystem_endpoint(
@@ -82,7 +96,9 @@ def _resolve_ecosystem_endpoint(
     matched = False
     if backend_name == "numba":
         expanded_np = f"{ROOT_EXPANSIONS[parts[0]]}.{'.'.join(parts[1:])}" if parts[0] in ROOT_EXPANSIONS else ""
-        matched = engine.is_endpoint_valid("numpy", clean_api) or bool(expanded_np and engine.is_endpoint_valid("numpy", expanded_np))
+        matched = engine.is_endpoint_valid("numpy", clean_api) or bool(
+            expanded_np and engine.is_endpoint_valid("numpy", expanded_np)
+        )
     elif backend_name == "sparse" and clean_api.startswith("ml_switcheroo_compiler.backends.sparse.kernels."):
         matched = clean_api.split(".")[-1] in SPARSE_KERNEL_NAMES
     elif backend_name == "cupy":
@@ -94,7 +110,15 @@ def _resolve_ecosystem_endpoint(
         matched = engine.is_endpoint_valid(pkg, clean_api)
     elif backend_name == "jax" and clean_api.startswith("jax.scipy."):
         scipy_equiv = clean_api.replace("jax.scipy.", "scipy.", 1)
-        matched = engine.is_endpoint_valid("jax", clean_api) or engine.is_endpoint_valid("scipy", scipy_equiv) or (len(parts) > 4 and scipy_equiv.startswith("scipy.stats.") and engine.is_endpoint_valid("scipy", ".".join(scipy_equiv.split(".")[:3])))
+        matched = (
+            engine.is_endpoint_valid("jax", clean_api)
+            or engine.is_endpoint_valid("scipy", scipy_equiv)
+            or (
+                len(parts) > 4
+                and scipy_equiv.startswith("scipy.stats.")
+                and engine.is_endpoint_valid("scipy", ".".join(scipy_equiv.split(".")[:3]))
+            )
+        )
     elif backend_name == "jax" and clean_api.startswith("jax.numpy.linalg."):
         np_linalg_equiv = clean_api.replace("jax.numpy.linalg.", "numpy.linalg.", 1)
         matched = engine.is_endpoint_valid("jax", clean_api) or engine.is_endpoint_valid("numpy", np_linalg_equiv)
@@ -106,7 +130,11 @@ def _resolve_ecosystem_endpoint(
             "jax.ops.segment_sum",
         }
     elif backend_name in ("numpy", "scipy") and clean_api.startswith("scipy."):
-        matched = engine.is_endpoint_valid("scipy", clean_api) or (len(parts) > 3 and clean_api.startswith("scipy.stats.") and engine.is_endpoint_valid("scipy", ".".join(parts[:3])))
+        matched = engine.is_endpoint_valid("scipy", clean_api) or (
+            len(parts) > 3
+            and clean_api.startswith("scipy.stats.")
+            and engine.is_endpoint_valid("scipy", ".".join(parts[:3]))
+        )
 
     return matched
 
@@ -206,7 +234,11 @@ def _resolve_call_func_name(func: ast.expr, backend_name: str) -> str:
         return func.attr
     if curr.id in ("kwargs", "kw", "args", "x", "tensor", "arr", "values", "s") or curr.id.startswith("_var_"):
         return func.attr
-    root_id = BACKEND_DEFAULT_ROOT.get(backend_name, backend_name) if (curr.id == "backend_module" and backend_name) else curr.id
+    root_id = (
+        BACKEND_DEFAULT_ROOT.get(backend_name, backend_name)
+        if (curr.id == "backend_module" and backend_name)
+        else curr.id
+    )
     parts.append(root_id)
     parts.reverse()
     return ".".join(parts)
@@ -225,14 +257,23 @@ def extract_endpoints_from_ast(expr_str: str, backend_name: str = "") -> list[tu
     clean: str = normalize_template(expr_str)
     try:
         tree: ast.AST = ast.parse(clean, mode="exec")
-    except Exception:
+    except (SyntaxError, ValueError, TypeError, MemoryError, RecursionError):
         try:
             tree = ast.parse(clean, mode="eval")
-        except Exception:
+        except (SyntaxError, ValueError, TypeError, MemoryError, RecursionError):
             return []
 
     results: list[tuple[str, list[str], list[str]]] = []
-    guarded: set[str] = {node.args[1].value for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "hasattr" and len(node.args) >= 2 and isinstance(node.args[1], ast.Constant) and isinstance(node.args[1].value, str)}
+    guarded: set[str] = {
+        node.args[1].value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "hasattr"
+        and len(node.args) >= 2
+        and isinstance(node.args[1], ast.Constant)
+        and isinstance(node.args[1].value, str)
+    }
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
@@ -265,14 +306,20 @@ def validate_arguments_against_snapshot(
     Returns:
         list[str]: Validation error messages if mismatch occurs.
     """
-    params: list[dict[str, AttributeValue]] | None = engine.get_endpoint_parameters(backend_name, endpoint)
+    params = engine.get_endpoint_parameters(backend_name, endpoint)
     if not params:
         return []
 
     has_var_kw: bool = any(p.get("kind") == "VAR_KEYWORD" for p in params)
-    allowed_kwargs: set[str] = {str(p.get("name")) for p in params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
+    allowed_kwargs: set[str] = {
+        str(p.get("name")) for p in params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")
+    }
 
-    local_errors: list[str] = [f"Unexpected or hallucinated keyword argument '{kw}' for endpoint '{endpoint}'" for kw in (call_kwargs if not has_var_kw else []) if kw and kw not in allowed_kwargs and not kw.startswith("_")]
+    local_errors: list[str] = [
+        f"Unexpected or hallucinated keyword argument '{kw}' for endpoint '{endpoint}'"
+        for kw in (call_kwargs if not has_var_kw else [])
+        if kw and kw not in allowed_kwargs and not kw.startswith("_")
+    ]
 
     has_var_pos: bool = any(p.get("kind") == "VAR_POSITIONAL" for p in params)
     max_pos: int = len([p for p in params if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")])
@@ -357,13 +404,23 @@ def _validate_ast_call_entry(
     root: str = ep.split(".")[0]
     if allowed_roots and root in ROOT_EXPANSIONS and root not in allowed_roots and ep not in BUILTIN_OPS:
         return [f"{filepath}: '{op}' cross-framework hallucination '{ep}' in '{backend_name}' backend"]
-    if ep in BUILTIN_OPS or ep.startswith("_") or f"{backend_name}_" in ep or "prefix" in ep or f"_{backend_name}" in ep or (backend_name == "numpy" and ep.startswith("np_")):
+    if (
+        ep in BUILTIN_OPS
+        or ep.startswith("_")
+        or f"{backend_name}_" in ep
+        or "prefix" in ep
+        or f"_{backend_name}" in ep
+        or (backend_name == "numpy" and ep.startswith("np_"))
+    ):
         return []
     if not resolve_api_endpoint(ep, backend_name, engine):
         suggestion: str | None = engine.suggest_closest_endpoint(backend_name, ep) if backend_name else None
         hint: str = f" (did you mean '{suggestion}'?)" if suggestion else ""
         return [f"{filepath}: '{op}' unverified call '{ep}' in '{backend_name}' backend{hint}"]
-    return [f"{filepath}: '{op}' argument error: {ae}" for ae in validate_arguments_against_snapshot(backend_name, ep, call_args, call_kwargs, engine)]
+    return [
+        f"{filepath}: '{op}' argument error: {ae}"
+        for ae in validate_arguments_against_snapshot(backend_name, ep, call_args, call_kwargs, engine)
+    ]
 
 
 def _validate_single_op_spec(
@@ -393,16 +450,31 @@ def _validate_single_op_spec(
     custom_code: str = str(spec.get("custom_code") or "")
 
     for text_source in (target_api, ast_template, custom_code):
-        if text_source and text_source != "custom_op" and ("{" in text_source or "lambda" in text_source or "(" in text_source):
+        if (
+            text_source
+            and text_source != "custom_op"
+            and ("{" in text_source or "lambda" in text_source or "(" in text_source)
+        ):
             for ep, call_args, call_kwargs in extract_endpoints_from_ast(text_source, backend_name):
-                errors.extend(_validate_ast_call_entry(filepath, op, backend_name, allowed_roots, ep, call_args, call_kwargs, engine))
+                errors.extend(
+                    _validate_ast_call_entry(
+                        filepath, op, backend_name, allowed_roots, ep, call_args, call_kwargs, engine
+                    )
+                )
 
     if target_api and target_api != "custom_op":
         clean_api: str = target_api.strip("'\"").split("(")[0].strip()
         if not clean_api.startswith("{"):
             root_module: str = clean_api.split(".")[0]
-            if allowed_roots and root_module not in allowed_roots and clean_api not in BUILTIN_OPS and root_module in ROOT_MAP:
-                errors.append(f"{filepath}: '{op}' cross-framework hallucination '{clean_api}' in '{backend_name}' backend")
+            if (
+                allowed_roots
+                and root_module not in allowed_roots
+                and clean_api not in BUILTIN_OPS
+                and root_module in ROOT_MAP
+            ):
+                errors.append(
+                    f"{filepath}: '{op}' cross-framework hallucination '{clean_api}' in '{backend_name}' backend"
+                )
             elif not resolve_api_endpoint(clean_api, backend_name, engine):
                 suggestion = engine.suggest_closest_endpoint(backend_name, clean_api) if backend_name else None
                 hint = f" (did you mean '{suggestion}'?)" if suggestion else ""
@@ -462,7 +534,9 @@ def main() -> int:
     Returns:
         int: Exit code (0 for success, 1 for failure).
     """
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Validate backend mappings against snapshots.")
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description="Validate backend mappings against snapshots."
+    )
     parser.add_argument("--snapshot-dir", type=str, default=None, help="Path to snapshot directory.")
     args, _ = parser.parse_known_args()
 

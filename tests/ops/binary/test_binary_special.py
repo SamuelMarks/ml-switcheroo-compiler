@@ -5,10 +5,9 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.binary.special import Allclose, Atan2, Divmod, Isclose
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_binary_special() -> None:
@@ -39,7 +38,7 @@ def test_binary_special() -> None:
         """Test class DummyEval."""
 
         @staticmethod
-        def evaluate(*a: EagerValue, **k: EagerValue) -> EagerValue:
+        def evaluate(*a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function evaluate.
 
             Args:
@@ -47,26 +46,23 @@ def test_binary_special() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `evaluate`.
+                BackendArg: Computed output value from `evaluate`.
             """
             return "eager_eval"
 
+    import unittest.mock as mock
+
     import ml_switcheroo_compiler.ops.binary.special as sp
 
-    orig_evaluator = ensure_eager_tensor(ensure_eager_tensor(sp).EagerEvaluator)
-
-    try:
-        ensure_mutable(sp).EagerEvaluator = ensure_eager_tensor(DummyEval())
-        assert ensure_eager_tensor(d(1, 2)) == ensure_eager_tensor("eager_eval")
-    finally:
-        ensure_mutable(sp).EagerEvaluator = ensure_eager_tensor(orig_evaluator)
+    with mock.patch.object(sp, "EagerEvaluator", DummyEval()):
+        assert d(1, 2) == "eager_eval"
 
     config.eager_mode = False
 
     class DummyBinary:
         """Test class DummyBinary."""
 
-        def floor_divide(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def floor_divide(self, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function floor_divide.
 
             Args:
@@ -74,11 +70,11 @@ def test_binary_special() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `floor_divide`.
+                BackendArg: Computed output value from `floor_divide`.
             """
             return "fd"
 
-        def remainder(self, *a: EagerValue, **k: EagerValue) -> EagerValue:
+        def remainder(self, *a: BackendArg, **k: BackendArg) -> BackendArg:
             """Test function remainder.
 
             Args:
@@ -86,25 +82,28 @@ def test_binary_special() -> None:
                 k: Test parameter `k`.
 
             Returns:
-                EagerValue: Computed output value from `remainder`.
+                BackendArg: Computed output value from `remainder`.
             """
             return "r"
 
     import sys
     from unittest.mock import patch
 
+    import ml_switcheroo_compiler.ops.binary as _real_binary
+
+    assert _real_binary is not None
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops.binary": DummyBinary()}):
-        assert ensure_eager_tensor(d(1, 2)) == ensure_eager_tensor(("fd", "r"))
+        assert d(1, 2) == ("fd", "r")
     config.eager_mode = True
 
 
 def test_binary_special_coverage() -> None:
     """Test function test_binary_special_coverage."""
     a = Atan2()
-    assert ensure_eager_tensor(a.infer_shape(1)) == ensure_eager_tensor(1)
+    assert a.infer_shape(1) == (1,)
 
     d = Divmod()
-    assert ensure_eager_tensor(d.infer_shape(1)) == ensure_eager_tensor(1)
+    assert d.infer_shape(1) == (1,)
 
     i = Isclose()
-    assert ensure_eager_tensor(i.infer_shape(1)) == ensure_eager_tensor(1)
+    assert i.infer_shape(1) == (1,)

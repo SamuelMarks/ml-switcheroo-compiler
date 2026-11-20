@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.config_models import (
 )
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_variant_config_defaults() -> None:
@@ -140,7 +140,7 @@ def test_validate_sample_op_definitions_from_yaml() -> None:
     # Validate first 30 op definitions to verify schema compatibility
     for path in yaml_files[:30]:
         with open(path, encoding="utf-8") as f:
-            raw_data: dict[str, EagerValue] | None = yaml.safe_load(f)
+            raw_data: dict[str, BackendArg] | None = yaml.safe_load(f)
         if raw_data is not None and isinstance(raw_data, dict):
             if "operation" in raw_data or "opcode" in raw_data:
                 model = OperationDefinitionModel.model_validate(raw_data)

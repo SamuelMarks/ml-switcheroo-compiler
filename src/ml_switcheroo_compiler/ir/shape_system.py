@@ -7,32 +7,20 @@ import typing
 from collections.abc import Callable, Mapping, Sequence
 
 import yaml
-from ml_switcheroo_ir import (
-    Polynomial as IRPolynomial,
-)
-from ml_switcheroo_ir import (
-    SymBinaryOp as IRSymBinaryOp,
-)
-from ml_switcheroo_ir import (
-    SymInt as IRSymInt,
-)
-from ml_switcheroo_ir import (
-    SymNode as IRSymNode,
-)
-from ml_switcheroo_ir import (
-    SymUnaryOp as IRSymUnaryOp,
-)
+from ml_switcheroo_ir import TensorShape
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY, MATRIX_RANK
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode, TensorSpec
+    from ml_switcheroo_ir import DimensionType, LogicalGraph, LogicalNode, TensorSpec
+
+    from ml_switcheroo_compiler.core.shape import OpValue
 
 MAX_DIMENSIONS: int = 4
 MAX_RANK: int = 5
+_EqT = typing.TypeVar("_EqT")
 
 
 class AlgebraicRuleModel(BaseModel):
@@ -94,7 +82,7 @@ def load_algebraic_rules(rules_path: str | None = None) -> AlgebraicRuleSetModel
 MonomialType = tuple[tuple[str, int], ...]
 
 
-class Polynomial(IRPolynomial):
+class Polynomial:
     """Canonical multivariate polynomial over integer coefficients for symbolic equivalence.
 
     Attributes:
@@ -108,7 +96,11 @@ class Polynomial(IRPolynomial):
             terms (Optional[dict[MonomialType, int]]): Dictionary mapping canonical monomials
                 (tuples of (var_name, power) sorted) to non-zero integer coefficients.
         """
-        super().__init__(terms)
+        self.terms: dict[MonomialType, int] = {}
+        if terms:
+            for mono, coeff in terms.items():
+                if coeff != 0:
+                    self.terms[mono] = coeff
 
     @classmethod
     def from_const(cls, val: int) -> Polynomial:
@@ -162,11 +154,11 @@ class Polynomial(IRPolynomial):
         """
         return self.terms.get((), 0)
 
-    def add(self, other: IRPolynomial) -> Polynomial:
+    def add(self, other: Polynomial) -> Polynomial:
         """Add two polynomials.
 
         Args:
-            other (IRPolynomial): The other polynomial.
+            other (Polynomial): The other polynomial.
 
         Returns:
             Polynomial: Sum of the two polynomials.
@@ -180,11 +172,11 @@ class Polynomial(IRPolynomial):
                 new_terms[mono] = new_coeff
         return Polynomial(new_terms)
 
-    def sub(self, other: IRPolynomial) -> Polynomial:
+    def sub(self, other: Polynomial) -> Polynomial:
         """Subtract another polynomial from self.
 
         Args:
-            other (IRPolynomial): The polynomial to subtract.
+            other (Polynomial): The polynomial to subtract.
 
         Returns:
             Polynomial: Difference of the two polynomials.
@@ -198,11 +190,11 @@ class Polynomial(IRPolynomial):
                 new_terms[mono] = new_coeff
         return Polynomial(new_terms)
 
-    def mul(self, other: IRPolynomial) -> Polynomial:
+    def mul(self, other: Polynomial) -> Polynomial:
         """Multiply two polynomials.
 
         Args:
-            other (IRPolynomial): The other polynomial.
+            other (Polynomial): The other polynomial.
 
         Returns:
             Polynomial: Product of the two polynomials.
@@ -268,7 +260,7 @@ class Polynomial(IRPolynomial):
             new_terms[quot_mono] = coeff // div_coeff
         return Polynomial(new_terms)
 
-    def div_exact(self, other: IRPolynomial) -> Polynomial | None:
+    def div_exact(self, other: Polynomial) -> Polynomial | None:
         """Attempt exact polynomial division.
 
         Args:
@@ -336,11 +328,11 @@ class Polynomial(IRPolynomial):
         sorted_monos = sorted(self.terms.keys(), key=self._monomial_sort_key)
         return "".join(self._format_monomial_term(i, mono, self.terms[mono]) for i, mono in enumerate(sorted_monos))
 
-    def __eq__(self, other: TensorOrScalar | Polynomial) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Evaluate equality between two polynomials.
 
         Args:
-            other (TensorOrScalar | Polynomial): Other object to compare against.
+            other (_EqT): Other object to compare against.
 
         Returns:
             bool: True if both polynomials have identical canonical terms.
@@ -446,12 +438,6 @@ def _eval_binary_int_op(op: str, v1: int, v2: int) -> int | None:
     return fn(v1, v2) if fn is not None else None
 
 
-_SymNodeBase = IRSymNode
-_SymBinaryOpBase = IRSymBinaryOp
-_SymUnaryOpBase = IRSymUnaryOp
-_SymIntBase = IRSymInt
-
-
 @typing.runtime_checkable
 class _BinaryEvalSymNodeProtocol(typing.Protocol):
     """Protocol for symbolic nodes with binary operator fields."""
@@ -505,21 +491,27 @@ class _ShapeAttrNodeProtocol(typing.Protocol):
 class _GraphNodesProtocol(typing.Protocol):
     """Protocol for graph containers carrying a nodes collection."""
 
-    nodes: Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol]
+    nodes: (
+        Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol]
+        | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol]
+    )
 
 
-class SymNode(_SymNodeBase):
+class SymNode:
     """Base class for all symbolic expression tree nodes."""
 
     @classmethod
-    def to_node(cls, val: int | str | SymNode | SymInt | IRSymNode | IRSymInt | TensorOrScalar) -> SymNode:
+    def to_node(cls, val: int | str | SymNode | SymInt | OpValue) -> SymNode:
         """Convert an int, str, SymNode, or SymInt into a SymNode.
 
         Args:
-            val (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Value to convert.
+            val (int | str | SymNode | SymInt | OpValue): Value to convert.
 
         Returns:
             SymNode: Structured symbolic expression node.
+
+        Raises:
+            TypeError: If an argument passed to `to_node` has an incompatible type.
         """
         if isinstance(val, SymNode):
             return val
@@ -527,7 +519,7 @@ class SymNode(_SymNodeBase):
             return val.node
         if isinstance(val, int):
             return SymConst(val)
-        if isinstance(val, (str, IRSymNode, IRSymInt)):
+        if isinstance(val, str):
             return _parse_sym_str(str(val))
         msg = f"Cannot convert {type(val)} to SymNode"
         raise TypeError(msg)
@@ -597,11 +589,11 @@ class SymNode(_SymNodeBase):
         """
         return set()
 
-    def __add__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __add__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
         """Add two symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Operand to add.
+            other (Union[int, str, SymNode, SymInt]): Operand to add.
 
         Returns:
             SymBinaryOp: Addition expression node.
@@ -619,11 +611,11 @@ class SymNode(_SymNodeBase):
         """
         return SymBinaryOp("+", SymNode.to_node(other), self)
 
-    def __sub__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __sub__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
         """Subtract symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Operand to subtract.
+            other (Union[int, str, SymNode, SymInt]): Operand to subtract.
 
         Returns:
             SymBinaryOp: Subtraction expression node.
@@ -641,11 +633,11 @@ class SymNode(_SymNodeBase):
         """
         return SymBinaryOp("-", SymNode.to_node(other), self)
 
-    def __mul__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __mul__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
         """Multiply symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Operand to multiply.
+            other (Union[int, str, SymNode, SymInt]): Operand to multiply.
 
         Returns:
             SymBinaryOp: Multiplication expression node.
@@ -663,11 +655,11 @@ class SymNode(_SymNodeBase):
         """
         return SymBinaryOp("*", SymNode.to_node(other), self)
 
-    def __floordiv__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __floordiv__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
         """Floor-divide symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Divisor operand.
+            other (Union[int, str, SymNode, SymInt]): Divisor operand.
 
         Returns:
             SymBinaryOp: Floor division expression node.
@@ -685,11 +677,11 @@ class SymNode(_SymNodeBase):
         """
         return SymBinaryOp("//", SymNode.to_node(other), self)
 
-    def __mod__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __mod__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
         """Modulo symbolic expressions.
 
         Args:
-            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Divisor operand.
+            other (Union[int, str, SymNode, SymInt]): Divisor operand.
 
         Returns:
             SymBinaryOp: Modulo expression node.
@@ -707,11 +699,11 @@ class SymNode(_SymNodeBase):
         """
         return SymBinaryOp("%", SymNode.to_node(other), self)
 
-    def __pow__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __pow__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
         """Exponentiate symbolic expression.
 
         Args:
-            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Exponent operand.
+            other (Union[int, str, SymNode, SymInt]): Exponent operand.
 
         Returns:
             SymBinaryOp: Power expression node.
@@ -812,11 +804,11 @@ class SymConst(SymNode):
         """
         return f"SymConst({self.value})"
 
-    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Check equality with constant.
 
         Args:
-            other (TensorOrScalar | SymNode | SymInt): Other object.
+            other (_EqT): Other object.
 
         Returns:
             bool: True if values match.
@@ -908,11 +900,11 @@ class SymVar(SymNode):
         """
         return f"SymVar({self.name!r})"
 
-    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Check equality with another variable.
 
         Args:
-            other (TensorOrScalar | SymNode | SymInt): Other object.
+            other (_EqT): Other object.
 
         Returns:
             bool: True if variable names match.
@@ -954,7 +946,9 @@ def _has_nonneg_offset(expr: SymNode, target: SymNode) -> bool:
     """
     if not isinstance(expr, SymBinaryOp) or expr.op != "+":
         return False
-    return (expr.left == target and _is_nonneg_const(expr.right)) or (expr.right == target and _is_nonneg_const(expr.left))
+    return (expr.left == target and _is_nonneg_const(expr.right)) or (
+        expr.right == target and _is_nonneg_const(expr.left)
+    )
 
 
 def _has_nonneg_decrement(expr: SymNode, target: SymNode) -> bool:
@@ -1126,7 +1120,7 @@ _BINARY_SIMPLIFIERS: dict[str, Callable[[SymNode, SymNode], SymNode | None]] = {
 }
 
 
-class SymBinaryOp(SymNode, _SymBinaryOpBase):
+class SymBinaryOp(SymNode):
     """Binary operation node in symbolic expression tree.
 
     Attributes:
@@ -1258,11 +1252,11 @@ class SymBinaryOp(SymNode, _SymBinaryOpBase):
         """
         return f"SymBinaryOp({self.op!r}, {self.left!r}, {self.right!r})"
 
-    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Check structural equality with another binary operation node.
 
         Args:
-            other (TensorOrScalar | SymNode | SymInt): Other object.
+            other (_EqT): Other object.
 
         Returns:
             bool: True if other is a SymBinaryOp with identical op, left, and right operands.
@@ -1280,7 +1274,7 @@ class SymBinaryOp(SymNode, _SymBinaryOpBase):
         return hash((self.op, self.left, self.right))
 
 
-class SymUnaryOp(SymNode, _SymUnaryOpBase):
+class SymUnaryOp(SymNode):
     """Unary operation node in symbolic expression tree (abs, ceil, floor, neg).
 
     Attributes:
@@ -1367,7 +1361,8 @@ class SymPiecewise(SymNode):
     """Piecewise conditional symbolic node.
 
     Attributes:
-        cases (Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]]): Sequence of (condition, expr) pairs.
+        cases (Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]]): Sequence of (condition,
+            expr) pairs.
         default (SymNode): Default fallback expression node.
     """
 
@@ -1379,7 +1374,8 @@ class SymPiecewise(SymNode):
         """Initialize SymPiecewise.
 
         Args:
-            cases (Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]]): List of (condition_fn_or_node, expr_node).
+            cases (Sequence[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]]): List of
+                (condition_fn_or_node, expr_node).
             default (SymNode): Fallback node when no conditions are met.
         """
         self.cases = list(cases)
@@ -1430,11 +1426,11 @@ class SymPiecewise(SymNode):
             vars_set.update(expr.free_vars())
         return vars_set
 
-    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Check structural equality.
 
         Args:
-            other (TensorOrScalar | SymNode | SymInt): Other object.
+            other (_EqT): Other object.
 
         Returns:
             bool: True if cases and default match.
@@ -1636,19 +1632,29 @@ def _parse_sym_str(s: str) -> SymNode:
         node = parser.parse_expr()
         if parser.idx == len(tokens):
             return node
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return SymVar(s)
     return SymVar(s)
 
 
-class SymInt(_SymIntBase):
+class SymInt:
     """Symbolic Integer to trace graphs with dynamic dimensions."""
 
-    def __init__(self, name_or_expr: str | int | SymNode | SymInt | IRSymNode | IRSymInt) -> None:
+    def __init__(self, name_or_expr: str | int | SymNode | SymInt) -> None:
         """Initialize SymInt.
 
         Args:
-            name_or_expr (Union[str, int, SymNode, SymInt, IRSymNode, IRSymInt]): The name, expression string,
+            name_or_expr (Union[str, int, SymNode, SymInt]): The name, expression string,
                 integer, or underlying SymNode.
         """
         if isinstance(name_or_expr, SymInt):
@@ -1690,11 +1696,11 @@ class SymInt(_SymIntBase):
         """
         return SymInt(self.node.canonical())
 
-    def __add__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
+    def __add__(self, other: SymInt | int | SymNode | str) -> SymInt:
         """Execute add for compiler processing.
 
         Args:
-            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of addition.
@@ -1702,11 +1708,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("+", self.node, other_node))
 
-    def __radd__(self, other: int | IRSymNode | str) -> SymInt:
+    def __radd__(self, other: int) -> SymInt:
         """Execute radd for compiler processing.
 
         Args:
-            other (Union[int, IRSymNode, str]): The other operand.
+            other (int): The integer left operand.
 
         Returns:
             SymInt: Result of addition.
@@ -1714,11 +1720,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("+", other_node, self.node))
 
-    def __sub__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
+    def __sub__(self, other: SymInt | int | SymNode | str) -> SymInt:
         """Execute sub for compiler processing.
 
         Args:
-            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of subtraction.
@@ -1726,11 +1732,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("-", self.node, other_node))
 
-    def __rsub__(self, other: int | IRSymNode | str) -> SymInt:
+    def __rsub__(self, other: int | SymNode | str) -> SymInt:
         """Execute rsub for compiler processing.
 
         Args:
-            other (Union[int, IRSymNode, str]): The other operand.
+            other (Union[int, SymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of subtraction.
@@ -1738,11 +1744,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("-", other_node, self.node))
 
-    def __mul__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
+    def __mul__(self, other: SymInt | int | SymNode | str) -> SymInt:
         """Execute mul for compiler processing.
 
         Args:
-            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of multiplication.
@@ -1750,11 +1756,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("*", self.node, other_node))
 
-    def __rmul__(self, other: int | IRSymNode | str) -> SymInt:
+    def __rmul__(self, other: int) -> SymInt:
         """Execute rmul for compiler processing.
 
         Args:
-            other (Union[int, IRSymNode, str]): The other operand.
+            other (int): The integer left operand.
 
         Returns:
             SymInt: Result of multiplication.
@@ -1762,11 +1768,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("*", other_node, self.node))
 
-    def __floordiv__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
+    def __floordiv__(self, other: SymInt | int | SymNode | str) -> SymInt:
         """Execute floordiv for compiler processing.
 
         Args:
-            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of floor division.
@@ -1774,11 +1780,11 @@ class SymInt(_SymIntBase):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("//", self.node, other_node))
 
-    def __rfloordiv__(self, other: int | IRSymNode | str) -> SymInt:
+    def __rfloordiv__(self, other: int | SymNode | str) -> SymInt:
         """Execute rfloordiv for compiler processing.
 
         Args:
-            other (Union[int, IRSymNode, str]): The other operand.
+            other (Union[int, SymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of floor division.
@@ -1810,11 +1816,11 @@ class SymInt(_SymIntBase):
         """
         return hash(self.expr)
 
-    def __eq__(self, other: TensorOrScalar | SymNode | SymInt) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Evaluate __eq__ operation using canonical polynomial consistency.
 
         Args:
-            other (TensorOrScalar | SymNode | SymInt): The other object to compare.
+            other (_EqT): The other object to compare.
 
         Returns:
             bool: True if expressions are mathematically consistent.
@@ -2058,7 +2064,8 @@ class SymbolicConstraintTracker:
         """Substitute known resolved values into dimension or shape tuple.
 
         Args:
-            dim_or_shape (Union[int, str, SymNode, SymInt, tuple[...]]): Input dimension or shape.
+            dim_or_shape (int | str | SymNode | SymInt | tuple[int | str | SymNode | SymInt, ...]):
+                Input dimension or shape.
 
         Returns:
             Union[int, str, SymNode, SymInt, tuple[...]]: Substituted dimension or shape.
@@ -2071,9 +2078,14 @@ class SymbolicConstraintTracker:
         """Traverse a logical graph to extract and unify dimension equality constraints.
 
         Args:
-            graph (LogicalGraph): LogicalGraph or IRGraph instance.
+            graph (LogicalGraph | _GraphNodesProtocol): LogicalGraph or IRGraph instance.
         """
-        raw_nodes: Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] = graph.nodes
+        raw_nodes: (
+            Mapping[
+                str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol
+            ]
+            | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol]
+        ) = graph.nodes
         node_iterable = raw_nodes.values() if isinstance(raw_nodes, Mapping) else raw_nodes
         for node in node_iterable:
             assert isinstance(node, _TrackableGraphNodeProtocol)
@@ -2094,16 +2106,19 @@ class SymbolicConstraintTracker:
                 pass
 
 
-def _to_str_shape(shape: Sequence[int | str | SymNode | SymInt | IRSymNode | IRSymInt]) -> tuple[int | str, ...]:
+def _to_str_shape(
+    shape: Sequence[DimensionType | SymNode | SymInt | None] | TensorShape,
+) -> tuple[int | str, ...]:
     """Convert shape to string representation.
 
     Args:
-        shape (Sequence[Union[int, str, SymNode, SymInt]]): The shape tuple.
+        shape (Sequence[DimensionType | SymNode | SymInt | None] | TensorShape): The shape sequence or TensorShape.
 
     Returns:
-        tuple[Union[int, str], ...]: The string represented shape.
+        tuple[int | str, ...]: The string represented shape.
     """
-    return tuple(x if isinstance(x, int) else str(x) for x in shape)
+    dims = shape.dims if isinstance(shape, TensorShape) else shape
+    return tuple(x if isinstance(x, int) else str(x) for x in dims)
 
 
 def _from_str_shape(shape: Sequence[int | str | SymNode | SymInt]) -> tuple[int | SymInt, ...]:
@@ -2163,13 +2178,13 @@ class ShapeTracker:
 
     @staticmethod
     def update_from_feedback(
-        feedback_telemetry: dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]],
+        feedback_telemetry: Mapping[str, Sequence[int] | Mapping[str, Sequence[int]] | int],
         tracker: SymbolicConstraintTracker | None = None,
     ) -> dict[str, tuple[int, ...]]:
         """Update shape tracking state and unify constraints from runtime telemetry feedback.
 
         Args:
-            feedback_telemetry (dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]]):
+            feedback_telemetry (Mapping[str, Sequence[int] | Mapping[str, Sequence[int]] | int]):
                 Telemetry payload mapping node IDs to concrete observed shapes or containing a 'shapes' mapping.
             tracker (SymbolicConstraintTracker | None): Optional constraint tracker to unify.
 
@@ -2228,14 +2243,15 @@ class ShapeTracker:
     @staticmethod
     def resolve_dynamic_bounds(
         graph: LogicalGraph | _GraphNodesProtocol,
-        feedback_telemetry: dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]],
+        feedback_telemetry: Mapping[str, Sequence[int] | Mapping[str, Sequence[int]] | int],
         tracker: SymbolicConstraintTracker | None = None,
     ) -> dict[str, int]:
         """Resolve dynamic SymInt variables across an IR graph into static integer bounds using telemetry.
 
         Args:
-            graph (LogicalGraph): LogicalGraph or IRGraph instance containing nodes with symbolic dimensions.
-            feedback_telemetry (dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]]):
+            graph (LogicalGraph | _GraphNodesProtocol):
+                LogicalGraph or IRGraph instance containing nodes with symbolic dimensions.
+            feedback_telemetry (Mapping[str, Sequence[int] | Mapping[str, Sequence[int]] | int]):
                 In-browser execution telemetry with observed concrete shapes.
             tracker (SymbolicConstraintTracker | None): Optional constraint tracker for unification.
 
@@ -2245,7 +2261,12 @@ class ShapeTracker:
         concrete_shapes = ShapeTracker.update_from_feedback(feedback_telemetry, tracker)
         resolved_bounds: dict[str, int] = {}
 
-        raw_nodes: Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] = graph.nodes
+        raw_nodes: (
+            Mapping[
+                str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol
+            ]
+            | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol]
+        ) = graph.nodes
         node_iterable = raw_nodes.values() if isinstance(raw_nodes, Mapping) else raw_nodes
 
         for node in node_iterable:
@@ -2499,13 +2520,13 @@ def _normalize_single_axis(axis: int, ndim: int) -> int:
 
 
 def normalize_axis(
-    axis: int | tuple[int, ...] | list[int] | TensorOrScalar,
+    axis: int | tuple[int, ...] | list[int] | OpValue,
     ndim: int,
 ) -> int | tuple[int, ...]:
     """Normalize a negative axis or tuple of axes to be positive.
 
     Args:
-        axis (Union[int, tuple[int, ...], list[int]]): The axis to operate along.
+        axis (int | tuple[int, ...] | list[int] | OpValue): The axis to operate along.
         ndim (int): Number of dimensions.
 
     Returns:
@@ -2520,3 +2541,25 @@ def normalize_axis(
         return tuple(_normalize_single_axis(ax, ndim) for ax in axis)
     msg = f"Invalid type for axis: {type(axis)}"
     raise TypeError(msg)
+
+
+def compute_contiguous_strides(shape: Sequence[int | SymNode | SymInt]) -> tuple[int, ...]:
+    """Compute standard row-major contiguous strides for a concrete or symbolic tensor shape.
+
+    Args:
+        shape (Sequence[int | SymNode | SymInt]): Dimensions of the tensor.
+
+    Returns:
+        tuple[int, ...]: Contiguous stride tuple.
+    """
+    if not shape:
+        return ()
+
+    strides: list[int] = [1] * len(shape)
+    for i in range(len(shape) - 2, -1, -1):
+        next_dim = shape[i + 1]
+        if isinstance(next_dim, int):
+            strides[i] = strides[i + 1] * next_dim
+        else:
+            strides[i] = strides[i + 1]
+    return tuple(strides)

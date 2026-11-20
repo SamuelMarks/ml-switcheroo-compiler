@@ -4,20 +4,31 @@ from __future__ import annotations
 
 import typing
 
+import pytest
+from pytest_mock import MockerFixture
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.scatter import scatter, scatter_add, scatter_nd, tensor_scatter_add, tensor_scatter_max, tensor_scatter_min, tensor_scatter_update
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.ops.shape.scatter import (
+    scatter,
+    scatter_add,
+    scatter_nd,
+    tensor_scatter_add,
+    tensor_scatter_max,
+    tensor_scatter_min,
+    tensor_scatter_update,
+)
+from tests.testing_utils import ensure_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 class MockTensor:
     """Test class MockTensor."""
 
-    def __init__(self, shape: EagerValue = ()) -> None:
+    def __init__(self, shape: BackendArg = ()) -> None:
         """Test function __init__.
 
         Args:
@@ -29,7 +40,7 @@ class MockTensor:
         self.data = [1, 2]
 
 
-def test_scatter(mocker: EagerTensorProtocol) -> None:
+def test_scatter(mocker: MockerFixture) -> None:
     """Test function test_scatter.
 
     Args:
@@ -43,13 +54,13 @@ def test_scatter(mocker: EagerTensorProtocol) -> None:
     assert scatter(t, 0, idx, src) == "scatter"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
     res = scatter(t, 0, idx, src)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).config).shape == (2, 3)
+    assert ensure_tensor(res).config.shape == (2, 3)
 
 
-def test_scatter_nd(mocker: EagerTensorProtocol) -> None:
+def test_scatter_nd(mocker: MockerFixture) -> None:
     """Test function test_scatter_nd.
 
     Args:
@@ -62,12 +73,12 @@ def test_scatter_nd(mocker: EagerTensorProtocol) -> None:
     assert scatter_nd(idx, src, (2, 3)) == "scatter_nd"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(scatter_nd(idx, src, (2, 3))).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(scatter_nd(idx, src, (2, 3))).config.shape == (2, 3)
 
 
-def test_scatter_add(mocker: EagerTensorProtocol) -> None:
+def test_scatter_add(mocker: MockerFixture) -> None:
     """Test function test_scatter_add.
 
     Args:
@@ -81,12 +92,12 @@ def test_scatter_add(mocker: EagerTensorProtocol) -> None:
     assert scatter_add(t, 0, idx, src) == "scatter_add"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(scatter_add(t, 0, idx, src)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(scatter_add(t, 0, idx, src)).config.shape == (2, 3)
 
 
-def test_tensor_scatter_update(mocker: EagerTensorProtocol) -> None:
+def test_tensor_scatter_update(mocker: MockerFixture) -> None:
     """Test function test_tensor_scatter_update.
 
     Args:
@@ -100,12 +111,12 @@ def test_tensor_scatter_update(mocker: EagerTensorProtocol) -> None:
     assert tensor_scatter_update(t, idx, src) == "ts_update"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(tensor_scatter_update(t, idx, src)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(tensor_scatter_update(t, idx, src)).config.shape == (2, 3)
 
 
-def test_tensor_scatter_max(mocker: EagerTensorProtocol) -> None:
+def test_tensor_scatter_max(mocker: MockerFixture) -> None:
     """Test function test_tensor_scatter_max.
 
     Args:
@@ -119,12 +130,12 @@ def test_tensor_scatter_max(mocker: EagerTensorProtocol) -> None:
     assert tensor_scatter_max(t, idx, src) == "ts_max"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(tensor_scatter_max(t, idx, src)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(tensor_scatter_max(t, idx, src)).config.shape == (2, 3)
 
 
-def test_tensor_scatter_min(mocker: EagerTensorProtocol) -> None:
+def test_tensor_scatter_min(mocker: MockerFixture) -> None:
     """Test function test_tensor_scatter_min.
 
     Args:
@@ -138,12 +149,12 @@ def test_tensor_scatter_min(mocker: EagerTensorProtocol) -> None:
     assert tensor_scatter_min(t, idx, src) == "ts_min"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(tensor_scatter_min(t, idx, src)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(tensor_scatter_min(t, idx, src)).config.shape == (2, 3)
 
 
-def test_tensor_scatter_add(mocker: EagerTensorProtocol) -> None:
+def test_tensor_scatter_add(mocker: MockerFixture) -> None:
     """Test function test_tensor_scatter_add.
 
     Args:
@@ -157,20 +168,22 @@ def test_tensor_scatter_add(mocker: EagerTensorProtocol) -> None:
     assert tensor_scatter_add(t, idx, src) == "ts_add"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.scatter.get_active_backend").return_value
-    ensure_mutable(mock_backend.execute_op).return_value = ensure_eager_tensor("res")
-    ensure_mutable(mock_backend.array).side_effect = ensure_eager_tensor(lambda x: MockTensor((2, 3)))
-    assert ensure_eager_tensor(ensure_eager_tensor(tensor_scatter_add(t, idx, src)).config).shape == (2, 3)
+    pytest.MonkeyPatch().setattr(mock_backend.execute_op, "return_value", "res", raising=False)
+    pytest.MonkeyPatch().setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)), raising=False)
+    assert ensure_tensor(tensor_scatter_add(t, idx, src)).config.shape == (2, 3)
 
 
-def test_scatter_exact_shape_deduction(mocker: EagerTensorProtocol) -> None:
+def test_scatter_exact_shape_deduction(mocker: MockerFixture) -> None:
     """Verify that scatter and tensor_scatter operations deduce exact shapes in graph mode.
 
     Args:
-        mocker (EagerTensorProtocol): Pytest mocker fixture.
+        mocker (MockerFixture): Pytest mocker fixture.
     """
     captured_shapes: dict[str, tuple[int, ...]] = {}
 
-    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, EagerValue], shape: tuple[int, ...], dtype: EagerValue) -> str:
+    def mock_emit(
+        op_name: str, inputs: list[Tensor], attrs: dict[str, BackendArg], shape: tuple[int, ...], dtype: BackendArg
+    ) -> str:
         """Test function mock_emit.
 
         Args:

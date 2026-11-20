@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_int, ensure_str
+from ml_switcheroo_compiler.backends.registry import coerce_int, coerce_str
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeMetadataProtocol,
     ShapeProtocol,
-    TensorOrScalar,
     extract_dtype,
     extract_shape,
 )
@@ -27,43 +27,43 @@ class _MutableShapeMetaProtocol(typing.Protocol):
     shape: tuple[int, ...]
 
 
-def _extract_shape_meta(obj: TensorOrScalar) -> TensorOrScalar:
+def _extract_shape_meta(obj: OpValue) -> OpValue:
     """Extract `.shape_metadata` from `obj` if available.
 
     Args:
-        obj (TensorOrScalar): Input tensor or proxy.
+        obj (OpValue): Input tensor or proxy.
 
     Returns:
-        TensorOrScalar: Shape metadata or `None`.
+        OpValue: Shape metadata or `None`.
     """
     return obj.shape_metadata if isinstance(obj, ShapeMetadataProtocol) else None
 
 
 def _infer_unary_activation_shape(
-    args: tuple[EagerTensorProtocol, ...],
-    kwargs: dict[str, TensorOrScalar],
+    args: tuple[OpValue, ...],
+    kwargs: dict[str, OpValue],
 ) -> tuple[int, ...]:
     """Infer output shape for a unary activation from `args` or `kwargs`.
 
     Args:
-        args (tuple[EagerTensorProtocol, ...]): Positional arguments.
-        kwargs (dict[str, TensorOrScalar]): Keyword arguments.
+        args (tuple[OpValue, ...]): Positional arguments.
+        kwargs (dict[str, OpValue]): Keyword arguments.
 
     Returns:
         tuple[int, ...]: Inferred integer shape tuple.
     """
     x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
-    fallback = tuple(ensure_int(d) for d in x) if isinstance(x, (list, tuple)) else ()
+    fallback = tuple(coerce_int(d) for d in x) if isinstance(x, (list, tuple)) else ()
     return extract_shape(x, fallback)
 
 
-def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:
+def crelu(features: OpValue, axis: OpValue = -1, name: OpValue = None) -> OpValue:
     """Compute Concatenated ReLU.
 
     Args:
-        features (TensorOrScalar): Input `features` argument (features).
-        axis (TensorOrScalar): Input `axis` argument (axis).
-        name (TensorOrScalar): Input `name` argument (name).
+        features (OpValue): Input `features` argument (features).
+        axis (OpValue): Input `axis` argument (axis).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -72,17 +72,22 @@ def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrSca
 
     from ml_switcheroo_compiler.ops.binary import maximum
 
-    return maximum(concatenate([ensure_tensor(features), negative(features)], axis=ensure_int(axis)), 0.0)
+    return maximum(concatenate([ensure_tensor(features), negative(features)], axis=coerce_int(axis)), 0.0)
 
 
-def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None, increasing: TensorOrScalar = True, name: TensorOrScalar = None) -> TensorOrScalar:
+def isotonic_regression(
+    y: OpValue,
+    sample_weights: OpValue = None,
+    increasing: OpValue = True,
+    name: OpValue = None,
+) -> OpValue:
     """Solves isotonic regression problems.
 
     Args:
-        y (TensorOrScalar): Input `y` argument (y).
-        sample_weights (TensorOrScalar): Input `sample_weights` argument (sample weights).
-        increasing (TensorOrScalar): Input `increasing` argument (increasing).
-        name (TensorOrScalar): Input `name` argument (name).
+        y (OpValue): Input `y` argument (y).
+        sample_weights (OpValue): Input `sample_weights` argument (sample weights).
+        increasing (OpValue): Input `increasing` argument (increasing).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -92,7 +97,9 @@ def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("IsotonicRegression", y, sample_weights=sample_weights, increasing=increasing, name=name)
+        return get_active_backend().execute_op(
+            "IsotonicRegression", y, sample_weights=sample_weights, increasing=increasing, name=name
+        )
 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -126,12 +133,12 @@ class Softmax(OpDef):
 
     op_name = "Softmax"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -144,18 +151,18 @@ class Softmax(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_1: TensorOrScalar = res
+        _typed_ret_1: OpValue = res
         return _typed_ret_1
 
 
-def softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def softmax(x: OpValue, axis: int = -1, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Softmax activation.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
+        x (OpValue): Input `x` argument (x).
         axis (int): Input `axis` argument (axis).
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -168,7 +175,7 @@ def softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: 
         return get_active_backend().execute_op("Softmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Softmax", [ensure_str(x)], _extract_shape_meta(x), {"axis": axis})
+    return emit_ir_node(None, "Softmax", [coerce_str(x)], _extract_shape_meta(x), {"axis": axis})
 
 
 @register_op("LogSoftmax")
@@ -177,12 +184,12 @@ class LogSoftmax(OpDef):
 
     op_name = "LogSoftmax"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -195,18 +202,18 @@ class LogSoftmax(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_2: TensorOrScalar = res
+        _typed_ret_2: OpValue = res
         return _typed_ret_2
 
 
-def log_softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def log_softmax(x: OpValue, axis: int = -1, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """LogSoftmax activation.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
+        x (OpValue): Input `x` argument (x).
         axis (int): Input `axis` argument (axis).
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -219,7 +226,7 @@ def log_softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwar
         return get_active_backend().execute_op("LogSoftmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "LogSoftmax", [ensure_str(x)], _extract_shape_meta(x), {"axis": axis})
+    return emit_ir_node(None, "LogSoftmax", [coerce_str(x)], _extract_shape_meta(x), {"axis": axis})
 
 
 @register_op("Sigmoid")
@@ -228,12 +235,12 @@ class Sigmoid(OpDef):
 
     op_name = "Sigmoid"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -246,7 +253,7 @@ class Sigmoid(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_3: TensorOrScalar = res
+        _typed_ret_3: OpValue = res
         return _typed_ret_3
 
 
@@ -278,12 +285,12 @@ class OneHot(OpDef):
 
     op_name = "OneHot"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -297,17 +304,17 @@ class OneHot(OpDef):
         if axis == -1:
             return indices_shape + (depth,)
         else:
-            return indices_shape[: int(ensure_int(axis))] + (depth,) + indices_shape[int(ensure_int(axis)) :]
+            return indices_shape[: int(coerce_int(axis))] + (depth,) + indices_shape[int(coerce_int(axis)) :]
 
 
-def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def one_hot(indices: OpValue, depth: int, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """OneHot encoding.
 
     Args:
-        indices (TensorOrScalar): Input `indices` argument (indices).
+        indices (OpValue): Input `indices` argument (indices).
         depth (int): Input `depth` argument (depth).
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -321,13 +328,17 @@ def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     kwargs["depth"] = depth
-    shape = tuple(indices.shape) + (depth,) if isinstance(indices, ShapeProtocol) else (depth,)
+    shape: tuple[int, ...] = (
+        tuple(int(d) for d in indices.shape if isinstance(d, int)) + (depth,)
+        if isinstance(indices, ShapeProtocol)
+        else (depth,)
+    )
     import copy
 
     meta = copy.copy(_extract_shape_meta(indices))
     if isinstance(meta, _MutableShapeMetaProtocol):
         meta.shape = shape
-    return emit_ir_node(None, "OneHot", [ensure_str(indices)], meta, kwargs)
+    return emit_ir_node(None, "OneHot", [coerce_str(indices)], meta, kwargs)
 
 
 @register_op("Rrelu")
@@ -336,12 +347,12 @@ class Rrelu(OpDef):
 
     op_name = "Rrelu"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -354,17 +365,17 @@ class Rrelu(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_4: TensorOrScalar = res
+        _typed_ret_4: OpValue = res
         return _typed_ret_4
 
 
-def rrelu(x: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rrelu(x: OpValue, *args: OpValue, **kwargs: OpValue) -> OpValue:
     """Rrelu activation.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        x (OpValue): Input `x` argument (x).
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -377,7 +388,7 @@ def rrelu(x: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
         return get_active_backend().execute_op("Rrelu", x, *args, **kwargs)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Rrelu", [ensure_str(x)], _extract_shape_meta(x), kwargs)
+    return emit_ir_node(None, "Rrelu", [coerce_str(x)], _extract_shape_meta(x), kwargs)
 
 
 @register_op("HardSilu")
@@ -386,12 +397,12 @@ class HardSilu(OpDef):
 
     op_name = "HardSilu"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape matching input.
@@ -405,12 +416,12 @@ class HardSwish(OpDef):
 
     op_name = "HardSwish"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape matching input.
@@ -424,12 +435,12 @@ class Squareplus(OpDef):
 
     op_name = "Squareplus"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Result shape matching input.
@@ -437,12 +448,12 @@ class Squareplus(OpDef):
         return _infer_unary_activation_shape(args, kwargs)
 
 
-def hard_silu(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def hard_silu(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Hard SiLU activation.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -452,12 +463,12 @@ def hard_silu(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar
     return dispatch_op("HardSilu", *args, **kwargs)
 
 
-def hard_swish(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def hard_swish(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Hard Swish activation.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -467,12 +478,12 @@ def hard_swish(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScala
     return dispatch_op("HardSwish", *args, **kwargs)
 
 
-def mish(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def mish(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Mish activation.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -482,12 +493,12 @@ def mish(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     return dispatch_op("Mish", *args, **kwargs)
 
 
-def squareplus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def squareplus(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Squareplus activation.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

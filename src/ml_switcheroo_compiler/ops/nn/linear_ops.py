@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
 from ml_switcheroo_compiler.ops.binary import add
-from ml_switcheroo_compiler.ops.linalg.einsum_frontend import einsum
+from ml_switcheroo_compiler.ops.linalg.einsum_api import einsum
 from ml_switcheroo_compiler.ops.linalg.matmul import matmul
-from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
+from ml_switcheroo_compiler.ops.shape.api import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Tensor | None = None) -> TensorOrScalar:
+def linear(input: Tensor, weight: Tensor, bias: Tensor | None = None) -> OpValue:
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -27,7 +27,7 @@ def linear(input: Tensor, weight: Tensor, bias: Tensor | None = None) -> TensorO
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Tensor | None = None) -> TensorOrScalar:
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Tensor | None = None) -> OpValue:
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).

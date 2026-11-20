@@ -2,63 +2,35 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor
-
-T = typing.TypeVar("T")
-
-
-def _as_branch_result(val: TensorOrScalar, fn: Callable[[], T]) -> T:
-    """Narrow a branch execution result to `T`.
-
-    Args:
-        val (TensorOrScalar): Evaluated or traced branch result.
-        fn (Callable[[], T]): Reference branch callable for type inference.
-
-    Returns:
-        T: Narrowed result.
-    """
-    del fn
-
-    def _guard(cand: TensorOrScalar) -> typing.TypeGuard[T]:
-        """Type guard narrowing `cand` to `T`.
-
-        Args:
-            cand (TensorOrScalar): Candidate result.
-
-        Returns:
-            bool: True for valid branch results.
-        """
-        return not isinstance(cand, type(Ellipsis))
-
-    assert _guard(val)
-    return val
 
 
 def cond(
-    pred: Tensor,
-    true_fn: Callable[[], T],
-    false_fn: Callable[[], T],
-) -> T:
-    """Conditionally execute either true_fn or false_fn based on predicate.
+    pred: Tensor | OpValue,
+    true_fn: Callable[[], OpValue] | OpValue,
+    false_fn: Callable[[], OpValue] | OpValue,
+) -> OpValue:
+    """Conditionally execute either ``true_fn`` or ``false_fn`` based on predicate ``pred``.
 
-    Dispatches to eager execution when eager mode is enabled, or records an If/Cond
+    Dispatches to eager execution when eager mode is enabled, or records an ``If``
     control flow node into the active tracing IR graph.
 
     Args:
-        pred (Tensor): A boolean scalar tensor determining the branch to execute.
-        true_fn (Callable[[], T]): Nullary callable evaluated if pred is True.
-        false_fn (Callable[[], T]): Nullary callable evaluated if pred is False.
+        pred (Tensor | OpValue): Boolean scalar tensor or predicate determining the branch to execute.
+        true_fn (Callable[[], OpValue] | OpValue): Nullary callable evaluated if ``pred`` is True.
+        false_fn (Callable[[], OpValue] | OpValue): Nullary callable evaluated if ``pred`` is False.
 
     Returns:
-        T: Result of executing the selected branch callable.
+        OpValue: Result of executing the selected branch callable or traced output ``Tensor``.
     """
     import ml_switcheroo_compiler.ops.control_flow as cf
+    from ml_switcheroo_compiler.core.tensor import ensure_tensor
 
+    pred_t = pred if isinstance(pred, Tensor) else ensure_tensor(pred)
     if config.eager_mode:
-        return _as_branch_result(cf.cond_eager(pred, true_fn, false_fn), true_fn)
-    return _as_branch_result(cf.cond_tracing(pred, true_fn, false_fn), true_fn)
+        return cf.cond_eager(pred_t, true_fn, false_fn)
+    return cf.cond_tracing(pred_t, true_fn, false_fn)

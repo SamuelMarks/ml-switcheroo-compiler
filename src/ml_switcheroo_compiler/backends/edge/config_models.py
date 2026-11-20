@@ -334,7 +334,9 @@ class OnnxSchemaConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     types: dict[str, int]
-    opset_versions: dict[str, int] = Field(default_factory=lambda: {"min_opset": 14, "max_opset": 20, "default_opset": 18})
+    opset_versions: dict[str, int] = Field(
+        default_factory=lambda: {"min_opset": 14, "max_opset": 20, "default_opset": 18}
+    )
     operations: dict[str, OnnxOpBuilderConfig] = Field(default_factory=dict)
 
 
@@ -586,7 +588,9 @@ class BindGroupRulesConfig(BaseModel):
     input_access: str = "read"
     output_access: str = "read_write"
     uniform_access: str = "read"
-    storage_buffer_declaration: str = "@group({group}) @binding({binding}) var<storage, {access}> {name}: array<{dtype}>;"
+    storage_buffer_declaration: str = (
+        "@group({group}) @binding({binding}) var<storage, {access}> {name}: array<{dtype}>;"
+    )
     uniform_buffer_declaration: str = "@group({group}) @binding({binding}) var<uniform> {name}: {dtype};"
 
 
@@ -634,7 +638,7 @@ def load_bindgroup_schemas(path: str | None = None) -> BindGroupSchemasConfig:
     """Load and validate WebGPU bind group schemas from YAML.
 
     Args:
-        path (str, optional): Custom path to bindgroup_schemas.yaml.
+        path (str | None): Custom path to bindgroup_schemas.yaml.
 
     Returns:
         BindGroupSchemasConfig: Validated bindgroup schema model.
@@ -703,7 +707,7 @@ def load_dtype_emulation_config(path: str | None = None) -> DtypeEmulationConfig
     """Load and validate double-precision emulation rules from YAML.
 
     Args:
-        path (str, optional): Custom path to dtype_emulation.yaml.
+        path (str | None): Custom path to dtype_emulation.yaml.
 
     Returns:
         DtypeEmulationConfig: Validated dtype emulation configuration model.
@@ -716,3 +720,6 @@ def load_dtype_emulation_config(path: str | None = None) -> DtypeEmulationConfig
     with open(resolved_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return DtypeEmulationConfig.model_validate(data)
+
+
+StablehloSchemaConfig.model_rebuild(_types_namespace={"OpValue": str, "IRAttrValue": str})

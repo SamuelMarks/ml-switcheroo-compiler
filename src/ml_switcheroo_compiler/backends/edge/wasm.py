@@ -3,1604 +3,52 @@
 from __future__ import annotations
 
 import os
-import typing
-from collections.abc import Sequence
 
 import yaml
+from ml_switcheroo_ir import IRGraph
 
-from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
-    ensure_callable,
-    ensure_eager_list,
-    ensure_float,
-    ensure_int,
-    ensure_int_list,
-    ensure_str,
+    BackendArg,
+    coerce_int,
+    coerce_str,
 )
-from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    WasmAttrType as WasmAttrType,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _as_wasm_attr_val as _as_wasm_attr_val,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _as_wasm_d1 as _as_wasm_d1,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _as_wasm_leaf as _as_wasm_leaf,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _node_attrs as _node_attrs,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _str_list_attr as _str_list_attr,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _WasmD1 as _WasmD1,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _WasmGenBase as _WasmGenBase,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_base import (
+    _WasmLeaf as _WasmLeaf,
+)
+from ml_switcheroo_compiler.backends.edge._wasm_codegen_core import _WasmCodeGenCore as _WasmCodeGenCore
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, ensure_graph
-
-_WasmLeaf = typing.Union[IRNode, IRGraph, str, int, float, bool, None]  # noqa: UP007
-_WasmD1 = typing.Union[_WasmLeaf, dict[str, _WasmLeaf], list[_WasmLeaf], tuple[_WasmLeaf, ...]]  # noqa: UP007
-WasmAttrType = typing.Union[_WasmD1, dict[str, _WasmD1], list[_WasmD1], tuple[_WasmD1, ...]]  # noqa: UP007
-
-
-def _node_attrs(node: EagerValue) -> dict[str, WasmAttrType]:
-    """Return node attributes dictionary.
-
-    Args:
-        node (EagerValue): Target IR node.
-
-    Returns:
-        dict[str, WasmAttrType]: Node attributes mapping.
-    """
-    raw = get_backend_member(node, "attributes", {})
-    return {str(k): _as_wasm_attr_val(v) for k, v in raw.items()} if isinstance(raw, dict) else {}
-
-
-def _as_wasm_attr_val(val: EagerValue) -> WasmAttrType:
-    """Narrow an `EagerValue` attribute to `WasmAttrType`.
-
-    Args:
-        val (EagerValue): Candidate attribute value.
-
-    Returns:
-        WasmAttrType: Narrowed attribute value.
-    """
-
-    def _guard(cand: EagerValue) -> typing.TypeGuard[WasmAttrType]:
-        """Validate `cand` is a valid `WasmAttrType`.
-
-        Args:
-            cand (EagerValue): Candidate value.
-
-        Returns:
-            bool: True if valid.
-        """
-        return not isinstance(cand, type(Ellipsis))
-
-    assert _guard(val)
-    return val
-
-
-def _str_list_attr(obj: EagerValue, name: str) -> list[str]:
-    """Extract a list of strings from an attribute on `obj`.
-
-    Args:
-        obj (EagerValue): Target node or graph.
-        name (str): Attribute name.
-
-    Returns:
-        list[str]: Extracted string list.
-    """
-    raw = get_backend_member(obj, name, [])
-    return [str(x) for x in ensure_eager_list(raw)]
+from ml_switcheroo_compiler.core.errors import UnimplementedMathError as UnimplementedMathError
 
 
 @register_backend("edge_wasm")
 @register_backend("edge_wasm_simd")
-class WasmCodeGenerator(BaseGenerator):
+class WasmCodeGenerator(_WasmCodeGenCore):
     """WASM Code Generator for emitting vectorizable, highly optimized WASM-SIMD C++ source code."""
-
-    def __init__(self, graph: IRGraph, delegates: WasmAttrType = None) -> None:
-        """Initialize WasmCodeGenerator.
-
-        Args:
-            graph (IRGraph): The IR graph to process.
-            delegates (WasmAttrType, optional): Visitor delegates.
-        """
-        from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import (
-            OFFLINE_DIAGNOSTIC_OPS,
-            strip_offline_diagnostic_nodes_pass,
-        )
-
-        sanitized_graph = strip_offline_diagnostic_nodes_pass(graph)
-        super().__init__(sanitized_graph, delegates)
-        self.sorted_nodes = [n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "op_type", "")) not in OFFLINE_DIAGNOSTIC_OPS]
-        self.var_map: dict[str, str] = {}
-        self.is_simd: bool = False
-
-    def _allocate_aligned_memory(self, size_bytes: int, alignment: int = 16) -> str:
-        """Generate C++ aligned memory allocation statement.
-
-        Args:
-            size_bytes (int): Number of bytes to allocate.
-            alignment (int): Byte alignment boundary (default 16 for SIMD).
-
-        Returns:
-            str: C++ `std::aligned_alloc` invocation string.
-        """
-        return f"std::aligned_alloc({alignment}, {size_bytes});"
-
-    def _generate_striding_logic(self, shape: list[int]) -> tuple[list[int], str]:
-        """Compute contiguous row-major strides and linear index C++ expression for `shape`.
-
-        Args:
-            shape (list[int]): Tensor dimension sizes.
-
-        Returns:
-            tuple[list[int], str]: Tuple of `(strides_list, c_index_expression)`.
-        """
-        if not shape:
-            return [], "0"
-        strides: list[int] = [1] * len(shape)
-        for i in range(len(shape) - 2, -1, -1):
-            strides[i] = strides[i + 1] * shape[i + 1]
-
-        c_code: str = " + ".join([f"((idx / {s}) % {d}) * {s}" if s > 1 else f"(idx % {d}) * {s}" for d, s in zip(shape, strides)])
-        return strides, c_code
-
-    def _map_type(self, dtype: str) -> str:
-        """Map an IR data type string to its C++ primitive scalar type.
-
-        Args:
-            dtype (str): IR data type string.
-
-        Returns:
-            str: Corresponding C++ scalar type name.
-        """
-        return {
-            "float32": "float",
-            "float64": "double",
-            "int32": "int",
-            "bool": "bool",
-        }.get(str(dtype).lower(), "float")
-
-    def _num_elements(self, shape: Sequence[int] | int | float) -> int:
-        """Compute the total number of scalar elements for `shape`.
-
-        Args:
-            shape (Sequence[int] | int | float): Tensor dimension sizes.
-
-        Returns:
-            int: Product of dimensions.
-        """
-        if isinstance(shape, (int, float)):
-            return 1
-        n: int = 1
-        for s in shape:
-            n *= s
-        return n
-
-    def get_helper_functions(self) -> list[str]:
-        """Return C++ helper functions/macros for missing WASM math.
-
-        Returns:
-            list[str]: Lines of C++ macros/functions.
-        """
-        helpers: list[str] = ["// --- Scalar Fallback Helpers ---"]
-        import os
-
-        import yaml
-
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
-
-        yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
-        if os.path.exists(yaml_path):
-            with open(yaml_path) as f:
-                data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-
-            # Load scalar helpers
-            scalars: dict[str, str] = data.get("scalars") or {}
-            for name, body in scalars.items():
-                helpers.append(f"inline float _scalar_{name.lower()}(float a, float b) {{ {body} }}")
-
-            helpers.append("// --- SIMD Fast Math Approximations from YAML ---")
-
-            intrinsics: dict[str, dict[str, str]] = data.get("intrinsics", {})
-            for _op, intrinsic_data in intrinsics.items():
-                if intrinsic_data.get("macro_name") and intrinsic_data.get("simd_expr"):
-                    is_binary: bool = "b" in intrinsic_data["simd_expr"]
-                    arg_sig: str = "v128_t a, v128_t b" if is_binary else "v128_t x"
-                    helpers.append(f"inline v128_t {intrinsic_data['macro_name']}({arg_sig}) {{")
-                    for line in intrinsic_data["simd_expr"].split("\n"):
-                        if line.strip():
-                            helpers.append(f"    {line}")
-                    helpers.append("}")
-
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers
-
-        helpers.extend(get_cpp_helpers())
-        return helpers
-
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: WasmAttrType) -> str:
-        """Process a node and return its generated C++ variable name.
-
-        Args:
-            node (IRNode): The IR node.
-            input_vars (list[str]): Names of the input variables.
-            **kwargs (WasmAttrType): Additional attributes.
-
-        Returns:
-            str: Variable name of the evaluated node.
-        """
-        return ensure_str(get_backend_member(node, "id", ""))
-
-    @staticmethod
-    def _normalize_ndim_shape(raw_shape: EagerValue | list[int], target_ndim: int) -> list[int]:
-        """Normalize a raw shape metadata value into a fixed-rank integer list.
-
-        Args:
-            raw_shape (EagerValue | list[int]): Raw shape metadata (list, tuple, scalar, or None).
-            target_ndim (int): Desired number of dimensions (e.g. 4 for 2D conv, 5 for 3D conv).
-
-        Returns:
-            list[int]: Normalized shape list of length at least target_ndim.
-        """
-        if not raw_shape:
-            res = [1] * target_ndim
-        elif isinstance(raw_shape, (int, float)):
-            res = [1] * (target_ndim - 1) + [int(raw_shape)]
-        else:
-            res = [int(x) for x in ensure_int_list(raw_shape)]
-        if len(res) < target_ndim:
-            res = [1] * (target_ndim - len(res)) + res
-        return res
-
-    @staticmethod
-    def _parse_conv3d_spatial_triplet(val: WasmAttrType, default_val: int) -> tuple[int, int, int]:
-        """Parse a 3D spatial parameter (stride or dilation) into (d, h, w) integers.
-
-        Args:
-            val (WasmAttrType): Attribute value (int, float, tuple, or list).
-            default_val (int): Default value when sequence is empty or non-numeric.
-
-        Returns:
-            tuple[int, int, int]: Parsed (depth, height, width) triplet.
-        """
-        if isinstance(val, (tuple, list)):
-            if len(val) == 3:
-                return int(ensure_int(val[0])), int(ensure_int(val[1])), int(ensure_int(val[2]))
-            if len(val) == 2:
-                return default_val, int(ensure_int(val[0])), int(ensure_int(val[1]))
-            s_val = int(ensure_int(val[0])) if val else default_val
-            return s_val, s_val, s_val
-        scalar = int(val) if isinstance(val, (int, float)) else default_val
-        return scalar, scalar, scalar
-
-    @classmethod
-    def _parse_conv3d_padding(
-        cls,
-        pad: WasmAttrType,
-        out_shape: list[int],
-        in_shape: list[int],
-        w_shape: list[int],
-        strides: tuple[int, int, int],
-    ) -> tuple[int, int, int]:
-        """Parse 3D convolution padding attribute including 'SAME' mode.
-
-        Args:
-            pad (WasmAttrType): Raw padding attribute value.
-            out_shape (list[int]): Normalized 5D output shape.
-            in_shape (list[int]): Normalized 5D input shape.
-            w_shape (list[int]): Normalized 5D weight shape.
-            strides (tuple[int, int, int]): Parsed (stride_d, stride_h, stride_w).
-
-        Returns:
-            tuple[int, int, int]: Computed (pad_d, pad_h, pad_w) triplet.
-        """
-        if isinstance(pad, str) and pad.upper() == "SAME":
-            sd, sh, sw = strides
-            pad_d = max(0, (out_shape[2] - 1) * sd + w_shape[2] - in_shape[2]) // 2
-            pad_h = max(0, (out_shape[3] - 1) * sh + w_shape[3] - in_shape[3]) // 2
-            pad_w = max(0, (out_shape[4] - 1) * sw + w_shape[4] - in_shape[4]) // 2
-            return pad_d, pad_h, pad_w
-        return cls._parse_conv3d_spatial_triplet(pad, 0)
-
-    def _resolve_node_input_shapes(self, node: IRNode, target_ndim: int) -> tuple[list[int], list[int]]:
-        """Resolve and normalize the first two input shapes of a node.
-
-        Args:
-            node (IRNode): The IR node whose inputs are inspected.
-            target_ndim (int): Target rank for normalization.
-
-        Returns:
-            tuple[list[int], list[int]]: Normalized (in0_shape, in1_shape) lists.
-        """
-        inputs_list: list[str] = _str_list_attr(node, "inputs")
-        input_nodes = [next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == inp), None) for inp in inputs_list]
-        raw_in0: EagerValue = get_backend_member(input_nodes[0], "shape_metadata", None) if len(input_nodes) > 0 and input_nodes[0] else None
-        raw_in1: EagerValue = get_backend_member(input_nodes[1], "shape_metadata", None) if len(input_nodes) > 1 and input_nodes[1] else None
-        return self._normalize_ndim_shape(raw_in0, target_ndim), self._normalize_ndim_shape(raw_in1, target_ndim)
-
-    def visit_Conv2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Conv2D WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        attrs: dict[str, WasmAttrType] = _node_attrs(node)
-        if attrs.get("folded_batch_norm"):
-            raw_bn = attrs.get("bn_inputs", [])
-            bn_inputs: list[str] = [str(x) for x in raw_bn] if isinstance(raw_bn, (list, tuple)) else []
-            if len(bn_inputs) == 4:
-                scale, _, _, var = [self.var_map.get(inp, inp) for inp in bn_inputs]
-                eps: float = float(ensure_float(attrs.get("epsilon", 1e-5)))
-                self.add_line(f"// Folded BatchNorm for {clean_id}")
-                self.add_line(f"float mult_{clean_id} = {scale} / std::sqrt({var} + {eps});")
-
-        template: dict[str, str] = get_wasm_template("im2col_conv2d" if attrs.get("tiling") else "conv2d")
-        in0_shape, w_shape = self._resolve_node_input_shapes(node, 4)
-        norm_shape = self._normalize_ndim_shape(shape, 4)
-
-        stride: WasmAttrType = attrs.get("stride", 1)
-        stride_h: int = int(ensure_int(stride[0])) if isinstance(stride, (tuple, list)) else int(ensure_int(stride))
-        stride_w: int = int(ensure_int(stride[1])) if isinstance(stride, (tuple, list)) else int(ensure_int(stride))
-
-        expr_args: dict[str, WasmAttrType] = {
-            "B": norm_shape[0],
-            "out_channels": norm_shape[1],
-            "out_height": norm_shape[2],
-            "out_width": norm_shape[3],
-            "in_channels": in0_shape[1],
-            "in_height": in0_shape[2],
-            "in_width": in0_shape[3],
-            "filter_h": w_shape[2],
-            "filter_w": w_shape[3],
-            "stride_h": stride_h,
-            "stride_w": stride_w,
-            "clean_id": clean_id,
-            "in0": inputs[0] if len(inputs) > 0 else "dummy",
-            "in1": inputs[1] if len(inputs) > 1 else "dummy",
-        }
-        body: str = template["body"].format(**expr_args)
-        for line in body.split("\n"):
-            self.add_line(f"    {line}")
-
-    def visit_Conv3D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Conv3D WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node representing Conv3D.
-            op_type (str): The operation type name.
-            clean_id (str): Sanitized identifier string for output buffer.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Target output shape dimensions.
-            nelem (int): Total number of output elements.
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("Conv3D")
-        in0_shape, w_shape = self._resolve_node_input_shapes(node, 5)
-        norm_shape = self._normalize_ndim_shape(shape, 5)
-
-        attrs: dict[str, WasmAttrType] = _node_attrs(node)
-        raw_stride = attrs.get("stride", attrs.get("strides", 1))
-        stride_d, stride_h, stride_w = self._parse_conv3d_spatial_triplet(raw_stride, 1)
-
-        raw_pad = attrs.get("padding", attrs.get("pad", 0))
-        pad_d, pad_h, pad_w = self._parse_conv3d_padding(raw_pad, norm_shape, in0_shape, w_shape, (stride_d, stride_h, stride_w))
-
-        raw_dil = attrs.get("dilation", attrs.get("dilations", 1))
-        dilation_d, dilation_h, dilation_w = self._parse_conv3d_spatial_triplet(raw_dil, 1)
-
-        expr_args: dict[str, WasmAttrType] = {
-            "B": norm_shape[0],
-            "out_channels": norm_shape[1],
-            "out_depth": norm_shape[2],
-            "out_height": norm_shape[3],
-            "out_width": norm_shape[4],
-            "in_channels": in0_shape[1],
-            "in_depth": in0_shape[2],
-            "in_height": in0_shape[3],
-            "in_width": in0_shape[4],
-            "filter_d": w_shape[2],
-            "filter_h": w_shape[3],
-            "filter_w": w_shape[4],
-            "stride_d": stride_d,
-            "stride_h": stride_h,
-            "stride_w": stride_w,
-            "pad_d": pad_d,
-            "pad_h": pad_h,
-            "pad_w": pad_w,
-            "dilation_d": dilation_d,
-            "dilation_h": dilation_h,
-            "dilation_w": dilation_w,
-            "clean_id": clean_id,
-            "in0": inputs[0] if len(inputs) > 0 else "dummy",
-            "in1": inputs[1] if len(inputs) > 1 else "dummy",
-        }
-        body: str = template["body"].format(**expr_args)
-        for line in body.split("\n"):
-            self.add_line(f"    {line}")
-
-    def visit_AllReduce(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Emit WebRTC AllReduce.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
-
-        op_id: str = ensure_str(get_backend_member(node, "id", "op"))
-        js_code: str = emit_webrtc_op("AllReduce", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
-        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
-
-    def visit_AllGather(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Emit WebRTC AllGather.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
-
-        op_id: str = ensure_str(get_backend_member(node, "id", "op"))
-        js_code: str = emit_webrtc_op("AllGather", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
-        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
-
-    def visit_AllToAll(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Emit WebRTC AllToAll.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
-
-        op_id: str = ensure_str(get_backend_member(node, "id", "op"))
-        js_code: str = emit_webrtc_op("AllToAll", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
-        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
-
-    def visit_ReduceScatter(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Emit WebRTC ReduceScatter.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
-
-        op_id: str = ensure_str(get_backend_member(node, "id", "op"))
-        js_code: str = emit_webrtc_op("ReduceScatter", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
-        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
-
-    def visit_Broadcast(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Emit WebRTC Broadcast.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
-
-        op_id: str = ensure_str(get_backend_member(node, "id", "op"))
-        js_code: str = emit_webrtc_op("Broadcast", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
-        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
-
-    def visit_WhileLoop(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate WhileLoop with loop option annotations.
-
-        Args:
-            node (IRNode): The IR node representing the loop.
-            op_type (str): The operation type name.
-            clean_id (str): Sanitized identifier for generated code variables.
-            inputs (list[str]): Input variable names.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("while_loop")
-        attrs: dict[str, WasmAttrType] = _node_attrs(node)
-
-        body_graph: WasmAttrType = attrs.get("body_graph") or attrs.get("body")
-        loop_body: str = "// Empty loop body"
-        if body_graph:
-            subgen = WasmCodeGenerator(ensure_graph(body_graph))
-            loop_body = subgen.generate()
-
-        condition_expr: str = str(attrs.get("condition_expr") or (f"buf_{inputs[0]}[0] {attrs.get('comparator', '>')} {attrs.get('threshold', '0.0')}" if inputs else "1"))
-        max_iters = attrs.get("maximum_iterations")
-        if max_iters is None:
-            max_iters = attrs.get("max_iters", 10)
-        parallel_iters = attrs.get("parallel_iterations")
-        swap_memory = attrs.get("swap_memory")
-        shape_invariants = attrs.get("shape_invariants")
-
-        annotations: list[str] = []
-        if parallel_iters is not None:
-            annotations.append(f"parallel_iterations={parallel_iters}")
-        if swap_memory is not None:
-            annotations.append(f"swap_memory={swap_memory}")
-        if max_iters is not None:
-            annotations.append(f"maximum_iterations={max_iters}")
-        if shape_invariants is not None:
-            annotations.append(f"shape_invariants={shape_invariants}")
-        if annotations:
-            self.add_line(f"  // Loop annotations: {', '.join(annotations)}")
-
-        body: str = template["body"].format(
-            in0=inputs[0] if inputs else "dummy",
-            clean_id=clean_id,
-            condition_expr=condition_expr,
-            max_iters=max_iters,
-            loop_body=loop_body,
-        )
-        for line in body.split("\n"):
-            self.add_line(line)
-
-    def visit_Loop(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Loop (alias for WhileLoop).
-
-        Args:
-            node (IRNode): The IR node representing the loop.
-            op_type (str): The operation type name.
-            clean_id (str): Sanitized identifier for generated code variables.
-            inputs (list[str]): Input variable names.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self.visit_WhileLoop(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Cond(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Cond with dynamic subgraph lowering.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("cond")
-        attrs: dict[str, WasmAttrType] = _node_attrs(node)
-
-        def _lower_branch(branch_graph: WasmAttrType, default_input: str) -> str:
-            """Lower a branch subgraph into C++ strings.
-
-            Args:
-                branch_graph (WasmAttrType): The subgraph to lower.
-                default_input (str): The default input buffer name.
-
-            Returns:
-                str: Generated C++ code string.
-            """
-            if not branch_graph:
-                return f"for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{default_input}[i];"
-
-            subgen = WasmCodeGenerator(ensure_graph(branch_graph))
-
-            # Map inputs for the subgraph generator to point to the parent's input buffers
-            # Offset by 1 because inputs[0] is the conditional predicate
-            input_remap = {}
-            for i, in_name in enumerate(_str_list_attr(branch_graph, "inputs")):
-                parent_idx = i + 1 if (i + 1) < len(inputs) else 0
-                input_remap[in_name] = inputs[parent_idx] if inputs else "dummy"
-
-            # Overload the input mapping logic internally
-            subgen.var_map.update(input_remap)
-
-            out_code = subgen.generate()
-
-            # Final output mapping
-            bg_outputs = _str_list_attr(branch_graph, "outputs")
-            if bg_outputs:
-                out_id = subgen.var_map.get(bg_outputs[0], bg_outputs[0].replace("-", "_"))
-                out_code += f"\\n  for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{out_id}[i];"
-            else:
-                out_code += f"\\n  for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{default_input}[i];"
-
-            return out_code
-
-        # Check for branch_graphs array first (standardized layout)
-        raw_bg = attrs.get("branch_graphs", [])
-        branch_graphs: list[WasmAttrType] = list(raw_bg) if isinstance(raw_bg, (list, tuple)) else []
-        if branch_graphs:
-            true_graph: WasmAttrType = branch_graphs[0] if len(branch_graphs) > 0 else None
-            false_graph: WasmAttrType = branch_graphs[1] if len(branch_graphs) > 1 else None
-        else:
-            true_graph = attrs.get("then_branch")
-            false_graph = attrs.get("else_branch")
-
-        true_body: str = _lower_branch(true_graph, inputs[1] if len(inputs) > 1 else inputs[0] if inputs else "dummy")
-        false_body: str = _lower_branch(false_graph, inputs[2] if len(inputs) > 2 else inputs[0] if inputs else "dummy")
-
-        cond_expr: str = str(attrs.get("condition_expr") or (f"buf_{inputs[0]}[0] {attrs.get('comparator', '>')} {attrs.get('threshold', '0.0')}" if inputs else "1"))
-        body: str = template["body"].format(condition_expr=cond_expr, true_body=true_body, false_body=false_body)
-        for line in body.split("\n"):
-            self.add_line(line)
-
-    def visit_If(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate If (alias for Cond).
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self.visit_Cond(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Scan(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Scan using recursive subgraph execution.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("scan")
-        attrs: dict[str, WasmAttrType] = _node_attrs(node)
-
-        body_graph: WasmAttrType = attrs.get("body_graph") or attrs.get("body")
-        loop_body: str = "// Empty scan body"
-        if body_graph:
-            subgen = WasmCodeGenerator(ensure_graph(body_graph))
-            loop_body = subgen.generate()
-
-        init_val: str = str(attrs.get("init_val", "0.0"))
-        scan_op_expr: str = str(attrs.get("scan_op_expr") or (f"buf_{clean_id}[i] = buf_{inputs[0]}[i];\\n    " + loop_body.replace("\\n", "\\n    ") if inputs else f"buf_{clean_id}[i] = 1.0f;"))
-        body: str = template["body"].format(clean_id=clean_id, nelem=nelem, init_val=init_val, scan_op_expr=scan_op_expr)
-        for line in body.split("\n"):
-            self.add_line(line)
-
-    def visit_MatMul(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate MatMul WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        attrs: dict[str, WasmAttrType] = _node_attrs(node)
-        if attrs.get("tiling"):
-            template: dict[str, str] = get_wasm_template("tiled_matmul")
-            # For simplicity, fetch the heuristic from the environment or use defaults
-            TILE_M = 4
-            TILE_N = 4
-            TILE_K = 4
-            in0: str = inputs[0] if len(inputs) > 0 else "dummy"
-            in1: str = inputs[1] if len(inputs) > 1 else "dummy"
-            M = shape[0] if len(shape) > 0 else 1
-            N = shape[1] if len(shape) > 1 else 1
-
-            in0_node: WasmAttrType = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-            in0_shape = get_backend_member(in0_node, "shape_metadata", None) if in0_node else [1, 1]
-            K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
-
-            body: str = template["body"].format(M=M, N=N, K=K, TILE_M=TILE_M, TILE_N=TILE_N, TILE_K=TILE_K, in0=in0, in1=in1)
-            for line in body.split("\n"):
-                self.add_line(line)
-        else:
-            # fallback
-            template = get_wasm_template("matmul")
-            in0 = inputs[0] if len(inputs) > 0 else "dummy"
-            in1 = inputs[1] if len(inputs) > 1 else "dummy"
-            M = shape[0] if len(shape) > 0 else 1
-            N = shape[1] if len(shape) > 1 else 1
-
-            in0_node = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-            in0_shape = get_backend_member(in0_node, "shape_metadata", None) if in0_node else [1, 1]
-            K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
-            body = template["body"].format(M=M, N=N, K=K, in0=in0, in1=in1, clean_id=clean_id)
-            for line in body.split("\n"):
-                self.add_line(line)
-
-    def visit_MaxPool2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate MaxPool2D WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_pooling2d(node, clean_id, inputs, shape, "max_pool2d")
-
-    def visit_AvgPool2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate AvgPool2D WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_pooling2d(node, clean_id, inputs, shape, "avg_pool2d")
-
-    def _generate_pooling2d(self, node: IRNode, clean_id: str, inputs: list[str], shape: Sequence[int] | int | float, template_name: str) -> None:
-        """Generate Pooling 2D.
-
-        Args:
-            node: Input `node` argument (node).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            template_name: Input `template_name` argument (template name).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template = get_wasm_template(template_name)
-        attrs = _node_attrs(node)
-
-        in0_node = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")) == inputs[0]), None) if len(inputs) > 0 else None
-
-        raw_in0_sh: EagerValue = get_backend_member(in0_node, "shape_metadata", [1, 1, 1, 1]) if in0_node else [1, 1, 1, 1]
-
-        if not raw_in0_sh:
-            in0_shape: list[int] = [1, 1, 1, 1]
-        elif isinstance(raw_in0_sh, (int, float)):
-            in0_shape = [1, 1, 1, int(raw_in0_sh)]
-        else:
-            in0_shape = [int(x) for x in ensure_int_list(raw_in0_sh)]
-        if len(in0_shape) < 4:
-            in0_shape = [1] * (4 - len(in0_shape)) + in0_shape
-        if not shape:
-            shape_list = [1, 1, 1, 1]
-        elif isinstance(shape, (int, float)):
-            shape_list = [1, 1, 1, int(shape)]
-        else:
-            shape_list = list(shape)
-        if len(shape_list) < 4:
-            shape_list = [1] * (4 - len(shape_list)) + shape_list
-
-        kernel_size = attrs.get("kernel_size", attrs.get("pool_size", 1))
-        kernel_h = kernel_size[0] if isinstance(kernel_size, (list, tuple)) else kernel_size
-        kernel_w = kernel_size[1] if isinstance(kernel_size, (list, tuple)) else kernel_size
-
-        stride = attrs.get("stride", attrs.get("strides", 1))
-        stride_h = stride[0] if isinstance(stride, (list, tuple)) else stride
-        stride_w = stride[1] if isinstance(stride, (list, tuple)) else stride
-
-        expr_args = {
-            "B": shape_list[0],
-            "C": shape_list[1],
-            "out_height": shape_list[2],
-            "out_width": shape_list[3],
-            "in_height": in0_shape[2],
-            "in_width": in0_shape[3],
-            "kernel_h": kernel_h,
-            "kernel_w": kernel_w,
-            "stride_h": stride_h,
-            "stride_w": stride_w,
-            "clean_id": clean_id,
-            "in0": inputs[0] if len(inputs) > 0 else "dummy",
-        }
-        body = template.get("body", "").format(**expr_args)
-        for line in body.split("\\n"):
-            self.add_line(f"    {line}")
-
-    def visit_Linear(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Linear (Dense) WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("Linear")
-
-        in0 = inputs[0] if len(inputs) > 0 else "dummy"
-        in1 = inputs[1] if len(inputs) > 1 else "dummy"
-        in2 = inputs[2] if len(inputs) > 2 else "dummy"
-
-        M = shape[0] if len(shape) > 0 else 1
-        N = shape[1] if len(shape) > 1 else 1
-
-        in0_node = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-        in0_shape = get_backend_member(in0_node, "shape_metadata", None) if in0_node else [1, 1]
-        K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
-
-        has_bias = "true" if in2 != "dummy" else "false"
-        body = template.get("body", "").format(M=M, N=N, K=K, in0=in0, in1=in1, in2=in2, clean_id=clean_id, nelem=nelem, has_bias=has_bias)
-        for line in body.split("\n"):
-            if line.strip() or line == "":
-                self.add_line(f"  {line}")
-
-    def visit_Attention(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Attention WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("Attention")
-        in0 = inputs[0] if len(inputs) > 0 else "dummy"
-        in1 = inputs[1] if len(inputs) > 1 else "dummy"
-        in2 = inputs[2] if len(inputs) > 2 else "dummy"
-
-        in0_node = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-        in0_shape = get_backend_member(in0_node, "shape_metadata", None) if in0_node else [1, 1]
-        seq_len = in0_shape[0] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 0 else 1
-        embed_dim = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
-
-        body = template.get("body", "").format(clean_id=clean_id, nelem=nelem, in0=in0, in1=in1, in2=in2, seq_len=seq_len, embed_dim=embed_dim)
-        for line in body.split("\n"):
-            if line.strip() or line == "":
-                self.add_line(f"  {line}")
-
-    def visit_MaxPool(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate MaxPool WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self.visit_MaxPool2D(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_LayerNorm(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate LayerNorm WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("LayerNorm")
-        in0 = inputs[0] if len(inputs) > 0 else "dummy"
-        in1 = inputs[1] if len(inputs) > 1 else "dummy"  # scale
-        in2 = inputs[2] if len(inputs) > 2 else "dummy"  # bias
-
-        attrs = _node_attrs(node)
-        eps = float(ensure_float(attrs.get("epsilon", 1e-5)))
-
-        in0_node = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-        in0_shape = get_backend_member(in0_node, "shape_metadata", None) if in0_node else [1, 1]
-        rows = in0_shape[0] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 0 else 1
-        cols = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
-
-        body = template.get("body", "").format(clean_id=clean_id, nelem=nelem, in0=in0, in1=in1, in2=in2, rows=rows, cols=cols, eps=eps)
-        for line in body.split("\n"):
-            if line.strip() or line == "":
-                self.add_line(f"  {line}")
-
-    def visit_Trig(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Trig (Sin/Cos) WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Exp(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Exp WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Log(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Log WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Tanh(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Tanh WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Sigmoid(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Sigmoid WASM.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_ReduceSum(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate ReduceSum WASM.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template("ReduceSum")
-        in0 = inputs[0] if len(inputs) > 0 else "dummy"
-
-        body = template.get("body", "").format(clean_id=clean_id, nelem=nelem, in0=in0)
-        for line in body.split("\n"):
-            if line.strip() or line == "":
-                self.add_line(f"  {line}")
-
-    def visit_Add(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Add WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Sub(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Sub WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Mul(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Mul WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Div(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Div WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Min(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Min WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Max(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Max WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Abs(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Abs WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Neg(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Neg WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Sqrt(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Sqrt WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Relu(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Relu WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Ceil(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Ceil WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Floor(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Floor WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Round(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Round WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Sin(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Sin WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def visit_Cos(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Cos WASM SIMD.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type.
-            clean_id (str): Sanitized identifier.
-            inputs (list[str]): Input identifiers.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-
-    def _generate_binary_simd_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate vector unrolled v128 binary operations with remainder loop peeling and bounds checking.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): The operation type name.
-            clean_id (str): Sanitized identifier for generated code variables.
-            inputs (list[str]): Input variable names.
-            shape (list[int]): Shape dimensions.
-            nelem (int): Total number of elements.
-        """
-        in0: str = inputs[0] if len(inputs) > 0 else "dummy"
-        in1: str = inputs[1] if len(inputs) > 1 else in0
-
-        import os
-
-        import yaml
-
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
-
-        simd_macro: str = ""
-        scalar_expr: str = ""
-
-        yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
-        if os.path.exists(yaml_path):
-            with open(yaml_path) as f:
-                data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-            intrinsics_dict = data.get("intrinsics", {})
-            intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
-            if intr:
-                simd_macro = intr.get("macro_name", "")
-                if intr.get("scalar_fallback"):
-                    scalar_expr = intr["scalar_fallback"].format(f"buf_{in0}[i_{clean_id}]", f"buf_{in1}[i_{clean_id}]")
-            if not scalar_expr:
-                scalars_dict = data.get("scalars", {})
-                if op_type.lower() in scalars_dict:
-                    scalar_expr = f"_scalar_{op_type.lower()}(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])"
-        if not scalar_expr:
-            binary_scalars: dict[str, str] = {
-                "add": f"buf_{in0}[i_{clean_id}] + buf_{in1}[i_{clean_id}]",
-                "sub": f"buf_{in0}[i_{clean_id}] - buf_{in1}[i_{clean_id}]",
-                "mul": f"buf_{in0}[i_{clean_id}] * buf_{in1}[i_{clean_id}]",
-                "div": f"buf_{in0}[i_{clean_id}] / buf_{in1}[i_{clean_id}]",
-                "min": f"std::min(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])",
-                "max": f"std::max(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])",
-            }
-            scalar_expr = binary_scalars.get(op_type.lower(), f"buf_{in0}[i_{clean_id}]")
-
-        self.add_line("  // Bounds check")
-        self.add_line(f"  if ({nelem} > size) return; // Out of bounds")
-
-        if simd_macro:
-            self.add_line(f"  int i_{clean_id} = 0;")
-            self.add_line(f"  for(; i_{clean_id} <= {nelem} - 4; i_{clean_id} += 4) {{")
-            self.add_line(f"      v128_t vec_a = wasm_v128_load(&buf_{in0}[i_{clean_id}]);")
-            self.add_line(f"      v128_t vec_b = wasm_v128_load(&buf_{in1}[i_{clean_id}]);")
-            self.add_line(f"      v128_t vec_out = {simd_macro}(vec_a, vec_b);")
-            self.add_line(f"      wasm_v128_store(&buf_{clean_id}[i_{clean_id}], vec_out);")
-            self.add_line("  }")
-            self.add_line(f"  for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{")
-            self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
-            self.add_line("  }")
-        else:
-            self.add_line(f"  int i_{clean_id} = 0;")
-            self.add_line(f"  for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{")
-            self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
-            self.add_line("  }")
-
-    def _generate_vector_unrolled_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate vector unrolled v128 operations with remainder loop peeling and bounds checking.
-
-        Args:
-            node: Input `node` argument (node).
-            op_type: Input `op_type` argument (op type).
-            clean_id: Input `clean_id` argument (clean id).
-            inputs: Input `inputs` argument (inputs).
-            shape: Input `shape` argument (shape).
-            nelem: Input `nelem` argument (nelem).
-        """
-        in_id = inputs[0] if inputs else "dummy"
-
-        import os
-
-        import yaml
-
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        simd_macro = ""
-        scalar_expr = ""
-
-        yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
-        if os.path.exists(yaml_path):
-            with open(yaml_path) as f:
-                data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-            intrinsics_dict = data.get("intrinsics", {})
-            intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
-            if intr:
-                simd_macro = intr.get("macro_name", "")
-                if intr.get("scalar_fallback"):
-                    scalar_expr = intr["scalar_fallback"].format(f"buf_{in_id}[i_{clean_id}]")
-            if not scalar_expr:
-                scalars_dict = data.get("scalars", {})
-                scalar_def = scalars_dict.get(op_type.lower())
-                if scalar_def:
-                    body_str = scalar_def.replace("return ", "").rstrip(";")
-                    scalar_expr = body_str.replace("a", f"buf_{in_id}[i_{clean_id}]")
-        else:
-            builtins = {
-                "sin": "std::sin({0})",
-                "cos": "std::cos({0})",
-                "exp": "std::exp({0})",
-                "log": "std::log({0})",
-                "tanh": "std::tanh({0})",
-                "sqrt": "std::sqrt({0})",
-                "abs": "std::abs({0})",
-                "neg": "-{0}",
-                "relu": "std::max(0.0f, {0})",
-            }
-            if op_type.lower() in builtins:
-                scalar_expr = builtins[op_type.lower()].format(f"buf_{in_id}[i_{clean_id}]")
-
-        if not simd_macro and not scalar_expr:
-            raise UnimplementedMathError(f"Operation '{op_type}' lacks WASM SIMD intrinsics and scalar fallback.")
-
-        if simd_macro and not scalar_expr:
-            scalar_expr = f"wasm_f32x4_extract_lane({simd_macro}(wasm_f32x4_splat(buf_{in_id}[i_{clean_id}])), 0)"
-
-        self.add_line("  // Bounds check")
-        self.add_line(f"  if ({nelem} > size) return; // Out of bounds")
-
-        if simd_macro:
-            self.add_line(f"  int i_{clean_id} = 0;")
-            self.add_line(f"  for(; i_{clean_id} <= {nelem} - 4; i_{clean_id} += 4) {{")
-            self.add_line(f"      v128_t vec_in = wasm_v128_load(&buf_{in_id}[i_{clean_id}]);")
-            self.add_line(f"      v128_t vec_out = {simd_macro}(vec_in);")
-            self.add_line(f"      wasm_v128_store(&buf_{clean_id}[i_{clean_id}], vec_out);")
-            self.add_line("  }")
-            self.add_line(f"  for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{")
-            self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
-            self.add_line("  }")
-        else:
-            # Scalar fallback
-            self.add_line(f"  int i_{clean_id} = 0;")
-            self.add_line(f"  for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{")
-            self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
-            self.add_line("  }")
-
-    @staticmethod
-    def _is_wasm_intrinsic_op(op_type: str) -> bool:
-        """Check whether an operation is defined in the WASM SIMD intrinsics configuration.
-
-        Args:
-            op_type (str): Operation type name.
-
-        Returns:
-            bool: True if op_type has an intrinsic or scalar entry in intrinsics.yaml.
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
-
-        yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
-        if not os.path.exists(yaml_path):
-            return False
-        with open(yaml_path) as f:
-            idata = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-        intrinsics_map = idata.get("intrinsics", {})
-        scalars_map = idata.get("scalars", {})
-        lower_op = op_type.lower()
-        return op_type in intrinsics_map or lower_op in scalars_map or lower_op in [k.lower() for k in intrinsics_map]
-
-    def _emit_mapped_wasm_template(
-        self,
-        node: IRNode,
-        op_type: str,
-        clean_id: str,
-        inputs: list[str],
-        shape: list[int],
-        nelem: int,
-        mapping: dict[str, WasmAttrType],
-    ) -> None:
-        """Format and emit a mapped WASM SIMD template for a node.
-
-        Args:
-            node (IRNode): The IR node.
-            op_type (str): Operation type name.
-            clean_id (str): Sanitized output buffer identifier.
-            inputs (list[str]): Sanitized input identifiers.
-            shape (list[int]): Output shape dimensions.
-            nelem (int): Total number of output elements.
-            mapping (dict[str, WasmAttrType]): Registry mapping specification for edge_wasm_simd.
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        template: dict[str, str] = get_wasm_template(str(mapping["template"]))
-        if "body" not in template:
-            print(f"DEBUG: op_type={op_type}, mapping={mapping}, template={template}")
-            raise UnimplementedMathError(f"MISSING BODY FOR: {op_type} template: {template}")
-
-        in0_node: WasmAttrType = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if inputs else None
-        raw_in0_shape: EagerValue = get_backend_member(in0_node, "shape_metadata", None) if in0_node else None
-        in0_shape = self._normalize_ndim_shape(raw_in0_shape, 2)
-        shape_seq: list[int] = self._normalize_ndim_shape(shape, 1)
-
-        K = in0_shape[1] if len(in0_shape) > 1 else 1
-        N = shape_seq[1] if len(shape_seq) > 1 else 1
-        M = shape_seq[0] if len(shape_seq) > 0 else 1
-
-        raw_nelem_in = get_backend_member(node, "inputs_nelem", [1])
-        nelem_in_val = int(ensure_int(raw_nelem_in[0])) if isinstance(raw_nelem_in, (list, tuple)) and raw_nelem_in else 1
-        expr_format_args: dict[str, WasmAttrType] = {
-            "nelem": nelem,
-            "clean_id": clean_id,
-            "op_type": op_type,
-            "in0": inputs[0] if len(inputs) > 0 else "dummy",
-            "in1": inputs[1] if len(inputs) > 1 else "dummy",
-            "K": K,
-            "N": N,
-            "M": M,
-            "nelem_in": nelem_in_val,
-        }
-        expr_format_args.update(mapping)
-
-        body: str = template["body"].format(**expr_format_args)
-        for line in body.split("\n"):
-            if line.strip():
-                self.add_line(f"  {line}")
-
-    def _generate_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Dispatch an IR node to its visitor method or WASM SIMD template emitter.
-
-        Args:
-            node (IRNode): The IR node to emit.
-            op_type (str): Canonical operation type name.
-            clean_id (str): Sanitized output buffer variable identifier.
-            inputs (list[str]): Sanitized input variable identifiers.
-            shape (list[int]): Output tensor shape dimensions.
-            nelem (int): Total number of output elements.
-        """
-        if has_backend_member(self, f"visit_{op_type}"):
-            ensure_callable(get_backend_member(self, f"visit_{op_type}"))(node, op_type, clean_id, inputs, shape, nelem)
-            return
-
-        from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import OFFLINE_DIAGNOSTIC_OPS
-
-        if op_type in OFFLINE_DIAGNOSTIC_OPS:
-            return
-
-        from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
-
-        op_def = OPS_REGISTRY.get(op_type, {})
-        raw_variants = op_def.get("variants", {})
-        raw_wasm = raw_variants.get("edge_wasm_simd", {}) if isinstance(raw_variants, dict) else {}
-        mapping: dict[str, WasmAttrType] = dict(raw_wasm) if isinstance(raw_wasm, dict) else {}
-
-        if not mapping or "template" not in mapping:
-            if self._is_wasm_intrinsic_op(op_type):
-                if len(inputs) <= 1:
-                    self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
-                else:
-                    self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
-                return
-            raise UnimplementedMathError(f"Missing WASM SIMD template for {op_type}")
-
-        self._emit_mapped_wasm_template(node, op_type, clean_id, inputs, shape, nelem, mapping)
-
-    def _build_kernel_signature_params(self, input_nodes: list[IRNode], output_ids: list[str]) -> str:
-        """Construct the C++ kernel function parameter declaration string.
-
-        Args:
-            input_nodes (list[IRNode]): Graph input IR nodes.
-            output_ids (list[str]): Graph output node IDs.
-
-        Returns:
-            str: Comma-separated C++ parameter declaration string.
-        """
-        func_params: list[str] = []
-        for idx, node in enumerate(input_nodes):
-            meta_dtype: str = self._map_type(ensure_str(get_backend_member(node, "dtype", "float32")))
-            func_params.append(f"const {meta_dtype}* __restrict__ in_{idx}")
-
-        for i, out_id in enumerate(output_ids):
-            out_node: WasmAttrType = next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == out_id), None)
-            meta_dtype = self._map_type(ensure_str(get_backend_member(out_node, "dtype", "float32"))) if out_node else "float"
-            func_params.append(f"{meta_dtype}* __restrict__ out_{i}")
-
-        func_params.append("int size")
-        return ", ".join(func_params)
-
-    def _emit_arena_allocations_and_pointers(self, input_nodes: list[IRNode]) -> dict[int, int]:
-        """Emit buffer arena allocations, input copies, and node pointer declarations.
-
-        Args:
-            input_nodes (list[IRNode]): Graph input IR nodes.
-
-        Returns:
-            dict[int, int]: Mapping of arena IDs to allocated byte sizes.
-        """
-        self.add_line("  // Buffer arenas")
-        arenas: dict[int, int] = {}
-        for node in self.sorted_nodes:
-            attrs = _node_attrs(node)
-            arena_id: int = int(ensure_int(attrs.get("buffer_id", 0)))
-            offset: int = int(ensure_int(attrs.get("buffer_offset", 0)))
-            shape = get_backend_member(node, "shape_metadata", None)
-            shape_seq = self._normalize_ndim_shape(shape, 1)
-            nelem: int = self._num_elements(shape_seq)
-            arenas[arena_id] = max(arenas.get(arena_id, 0), offset + nelem * 4)
-
-        for arena_id, total_size in arenas.items():
-            self.add_line(f"  float* buf_arena_{arena_id} = (float*)std::aligned_alloc(16, {total_size});")
-
-        self.add_line("  // Pointers and Input Copies")
-        for idx, node in enumerate(input_nodes):
-            clean_id: str = ensure_str(get_backend_member(node, "id", "")).replace("-", "_")
-            attrs = _node_attrs(node)
-            arena_id = int(ensure_int(attrs.get("buffer_id", 0)))
-            offset = int(ensure_int(attrs.get("buffer_offset", 0))) // 4
-            shape = get_backend_member(node, "shape_metadata", None)
-            shape_seq = self._normalize_ndim_shape(shape, 1)
-            nelem = self._num_elements(shape_seq)
-            self.add_line(f"  float* buf_{clean_id} = buf_arena_{arena_id} + {offset};")
-            self.add_line(f"  std::copy(in_{idx}, in_{idx} + {nelem}, buf_{clean_id});")
-
-        for node in self.sorted_nodes:
-            if ensure_str(get_backend_member(node, "op_type", "")) == "Input":
-                continue
-            clean_id = ensure_str(get_backend_member(node, "id", "")).replace("-", "_")
-            attrs = _node_attrs(node)
-            arena_id = int(ensure_int(attrs.get("buffer_id", 0)))
-            offset = int(ensure_int(attrs.get("buffer_offset", 0))) // 4
-            self.add_line(f"  float* buf_{clean_id} = buf_arena_{arena_id} + {offset};")
-
-        self.add_line("  float dummy_val = 0.0f;")
-        self.add_line("  float* buf_dummy = &dummy_val;")
-        self.add_line("")
-        return arenas
-
-    def _emit_computed_nodes_and_epilogue(self, output_ids: list[str], arenas: dict[int, int]) -> None:
-        """Emit sequential node computations, output copies, and arena deallocations.
-
-        Args:
-            output_ids (list[str]): Graph output node IDs.
-            arenas (dict[int, int]): Allocated arena IDs to free.
-        """
-        from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import OFFLINE_DIAGNOSTIC_OPS
-
-        self.add_line("  // Compute nodes sequentially")
-        for node in self.sorted_nodes:
-            op_type: str = ensure_str(get_backend_member(node, "op_type", ""))
-            if op_type in ("Input", "Output", "Constant") or op_type in OFFLINE_DIAGNOSTIC_OPS:
-                continue
-
-            clean_id = ensure_str(get_backend_member(node, "id", "")).replace("-", "_")
-            inputs: list[str] = [inp.replace("-", "_") for inp in _str_list_attr(node, "inputs")]
-            raw_shape = get_backend_member(node, "shape_metadata", None)
-            shape = self._normalize_ndim_shape(raw_shape, 1)
-            self._generate_op(node, op_type, clean_id, inputs, shape, self._num_elements(shape))
-
-        self.add_line("  // Copy Outputs")
-        for i, out_id in enumerate(output_ids):
-            out_node = next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == out_id), None)
-            if out_node:
-                clean_id = out_node.id.replace("-", "_")
-                out_shape = get_backend_member(out_node, "shape_metadata", None)
-                out_shape_seq = self._normalize_ndim_shape(out_shape, 1)
-                nelem = self._num_elements(out_shape_seq)
-                self.add_line(f"  std::copy(buf_{clean_id}, buf_{clean_id} + {nelem}, out_{i});")
-
-        self.add_line("  // Free temporary allocations")
-        for arena_id in arenas:
-            self.add_line(f"  std::free(buf_arena_{arena_id});")
-
-        self.add_line("}")
-        self.add_line("}")
-
-    def generate(self) -> str:
-        """Generate WASM-compatible, highly optimized C++ source code with WASM v128 SIMD and scalar peeling.
-
-        Returns:
-            str: Generated highly vectorizable C++ kernel code with remainder loops.
-        """
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
-
-        input_nodes: list[IRNode] = [n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "op_type", "")) == "Input"]
-        output_ids: list[str] = _str_list_attr(self.graph, "outputs")
-
-        self.code.clear()
-        params_str: str = self._build_kernel_signature_params(input_nodes, output_ids)
-
-        headers_tpl: str = get_wasm_template("kernel_headers").get("body", "")
-        for line in headers_tpl.strip().split("\n"):
-            self.add_line(line)
-        self.add_line("")
-        for helper in self.get_helper_functions():
-            self.add_line(helper)
-        self.add_line("")
-
-        main_start_tpl: str = get_wasm_template("kernel_main_start").get("body", "")
-        for line in main_start_tpl.format(params_str=params_str).strip().split("\n"):
-            self.add_line(line)
-
-        arenas = self._emit_arena_allocations_and_pointers(input_nodes)
-        self._emit_computed_nodes_and_epilogue(output_ids, arenas)
-
-        return "\n".join(self.code)
 
     def compile_wasm(self, output_dir: str = ".") -> tuple[str, str] | None:
         """Automatically compile the generated C++ source code into WASM and JS binary files using emcc or clang.
@@ -1610,6 +58,9 @@ class WasmCodeGenerator(BaseGenerator):
 
         Returns:
             Optional[tuple[str, str]]: Paths to (js_loader_path, wasm_binary_path) if compilation succeeded, else None.
+
+        Raises:
+            CompilationError: If compilation or binary verification fails in `compile_wasm`.
         """
         import os
         import shutil
@@ -1625,14 +76,36 @@ class WasmCodeGenerator(BaseGenerator):
             if emcc_bin:
                 js_out: str = os.path.join(output_dir, "kernel.js")
                 wasm_out: str = os.path.join(output_dir, "kernel.wasm")
-                cmd: list[str] = [emcc_bin, "-O3", "-msimd128", "-s", "EXPORTED_FUNCTIONS=['_main_kernel']", "-s", "STANDALONE_WASM", temp_file_path, "-o", js_out]
+                cmd: list[str] = [
+                    emcc_bin,
+                    "-O3",
+                    "-msimd128",
+                    "-s",
+                    "EXPORTED_FUNCTIONS=['_main_kernel']",
+                    "-s",
+                    "STANDALONE_WASM",
+                    temp_file_path,
+                    "-o",
+                    js_out,
+                ]
                 subprocess.run(cmd, check=True, capture_output=True)
                 return js_out, wasm_out
 
             clang_bin = shutil.which("clang")
             if clang_bin:
                 wasm_out = os.path.join(output_dir, "kernel.wasm")
-                cmd = [clang_bin, "--target=wasm32", "-O3", "-msimd128", "-nostdlib", "-Wl,--no-entry", "-Wl,--export=main_kernel", temp_file_path, "-o", wasm_out]
+                cmd = [
+                    clang_bin,
+                    "--target=wasm32",
+                    "-O3",
+                    "-msimd128",
+                    "-nostdlib",
+                    "-Wl,--no-entry",
+                    "-Wl,--export=main_kernel",
+                    temp_file_path,
+                    "-o",
+                    wasm_out,
+                ]
                 subprocess.run(cmd, check=True, capture_output=True)
                 return "", wasm_out
 
@@ -1645,7 +118,7 @@ class WasmCodeGenerator(BaseGenerator):
 
             err_msg: str = e.stderr.decode("utf-8") if e.stderr else str(e)
             raise CompilationError(f"WASM compilation failed: {err_msg}") from e
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError, RuntimeError) as e:
             from ml_switcheroo_compiler.core.errors import CompilationError
 
             raise CompilationError(f"WASM compilation failed with unknown error: {e}") from e
@@ -1653,12 +126,12 @@ class WasmCodeGenerator(BaseGenerator):
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> tuple[str, str]:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: BackendArg) -> tuple[str, str]:
         """Compile IRGraph into a standalone .wasm binary via compile_wasm.
 
         Args:
             graph (IRGraph): Target computational graph.
-            **kwargs (EagerValue): Compiler options.
+            **kwargs (BackendArg): Compiler options.
 
         Returns:
             tuple[str, str]: Paths to generated js loader and wasm binary files.
@@ -1677,16 +150,17 @@ class WasmCodeGenerator(BaseGenerator):
         """Export serialized graph definition for browser-side WASM execution.
 
         Returns:
-            dict[str, Union[list[str], list[dict[str, Union[str, list[str], list[int]]]]]]: Graph payload containing nodes, inputs, outputs, and shape metadata.
+            dict[str, Union[list[str], list[dict[str, Union[str, list[str], list[int]]]]]]: Graph payload containing
+                nodes, inputs, outputs, and shape metadata.
         """
         nodes_list: list[dict[str, str | list[str] | list[int]]] = []
         for node in self.sorted_nodes:
-            raw_sm = get_backend_member(node, "shape_metadata", ()) or ()
+            raw_sm = adapt_backend_module(node).get_symbol("shape_metadata", ()) or ()
             sm_seq = raw_sm if isinstance(raw_sm, (list, tuple)) else ()
             nodes_list.append(
                 {
-                    "id": str(get_backend_member(node, "id", "")),
-                    "op_type": str(get_backend_member(node, "op_type", "")),
+                    "id": str(adapt_backend_module(node).get_symbol("id", "")),
+                    "op_type": str(adapt_backend_module(node).get_symbol("op_type", "")),
                     "inputs": _str_list_attr(node, "inputs"),
                     "shape_metadata": [int(s) for s in sm_seq if isinstance(s, (int, float))],
                 }
@@ -1699,39 +173,51 @@ class WasmCodeGenerator(BaseGenerator):
 
     @staticmethod
     def _record_symbolic_dims_from_concrete(
-        meta: tuple[EagerValue, ...] | list[EagerValue] | None,
-        concrete: tuple[EagerValue, ...] | list[EagerValue],
+        meta: tuple[BackendArg, ...] | list[BackendArg] | None,
+        concrete: tuple[BackendArg, ...] | list[BackendArg],
         solved_env: dict[str, int],
     ) -> None:
         """Record solved symbolic dimension bindings from a node's existing metadata and concrete shape.
 
         Args:
-            meta (tuple[EagerValue, ...] | list[EagerValue] | None): Existing symbolic shape metadata.
-            concrete (tuple[EagerValue, ...] | list[EagerValue]): Concrete shape sequence.
+            meta (tuple[BackendArg, ...] | list[BackendArg] | None): Existing symbolic shape metadata.
+            concrete (tuple[BackendArg, ...] | list[BackendArg]): Concrete shape sequence.
             solved_env (dict[str, int]): Mutable environment mapping symbol names to solved integers.
         """
         if meta and len(meta) == len(concrete):
             for m_dim, c_dim in zip(meta, concrete):
-                if has_backend_member(m_dim, "node"):
-                    solved_env[str(get_backend_member(m_dim, "node"))] = int(ensure_int(c_dim))
+                if adapt_backend_module(m_dim).has_symbol("node"):
+                    solved_env[str(adapt_backend_module(m_dim).require_symbol("node"))] = int(coerce_int(c_dim))
                 elif isinstance(m_dim, str):
-                    solved_env[m_dim] = int(ensure_int(c_dim))
+                    solved_env[m_dim] = int(coerce_int(c_dim))
 
     @staticmethod
-    def _evaluate_refined_dim(dim: EagerValue, solved_env: dict[str, int]) -> int | None:
+    def _evaluate_refined_dim(dim: BackendArg, solved_env: dict[str, int]) -> int | None:
         """Evaluate a single dimension entry against the solved symbolic environment.
 
         Args:
-            dim (EagerValue): Symbolic or concrete dimension entry.
+            dim (BackendArg): Symbolic or concrete dimension entry.
             solved_env (dict[str, int]): Mapping of symbol names to concrete integer sizes.
 
         Returns:
             int | None: Resolved integer dimension or None if unresolvable.
         """
-        if has_backend_member(dim, "node") and has_backend_member(get_backend_member(dim, "node"), "eval"):
+        if adapt_backend_module(dim).has_symbol("node") and adapt_backend_module(
+            adapt_backend_module(dim).require_symbol("node")
+        ).has_symbol("eval"):
             try:
-                return int(ensure_int(ensure_mod(get_backend_member(dim, "node")).eval(solved_env)))
-            except Exception:
+                return int(coerce_int(adapt_backend_module(dim).require_symbol("node").eval(solved_env)))
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ):
                 return int(dim) if isinstance(dim, (int, float)) else 1
         if isinstance(dim, str) and dim in solved_env:
             return solved_env[dim]
@@ -1739,11 +225,11 @@ class WasmCodeGenerator(BaseGenerator):
             return int(dim)
         return None
 
-    def apply_shape_telemetry(self, telemetry: dict[str, EagerValue] | EagerValue) -> None:
+    def apply_shape_telemetry(self, telemetry: dict[str, BackendArg] | BackendArg) -> None:
         """Update IRGraph node shape metadata and refine symbolic dimensions from client telemetry.
 
         Args:
-            telemetry (dict[str, object]): Mapping or payload containing learned concrete shapes.
+            telemetry (dict[str, BackendArg] | BackendArg): Mapping or payload containing learned concrete shapes.
         """
         shape_data = telemetry.get("shapes", telemetry) if isinstance(telemetry, dict) else {}
         if not isinstance(shape_data, dict):
@@ -1751,16 +237,16 @@ class WasmCodeGenerator(BaseGenerator):
 
         solved_env: dict[str, int] = {}
         for node in self.sorted_nodes:
-            nid: str = ensure_str(get_backend_member(node, "id", ""))
+            nid: str = coerce_str(adapt_backend_module(node).get_symbol("id", ""))
             concrete = shape_data.get(nid)
             if isinstance(concrete, (list, tuple)):
-                raw_meta = get_backend_member(node, "shape_metadata", None)
+                raw_meta = adapt_backend_module(node).get_symbol("shape_metadata", None)
                 meta_seq = raw_meta if isinstance(raw_meta, (list, tuple)) else None
                 self._record_symbolic_dims_from_concrete(meta_seq, concrete, solved_env)
                 node.shape_metadata = tuple(int(x) for x in concrete if isinstance(x, (int, float)))
 
         for node in self.sorted_nodes:
-            meta = get_backend_member(node, "shape_metadata", None)
+            meta = adapt_backend_module(node).get_symbol("shape_metadata", None)
             if isinstance(meta, (list, tuple)):
                 refined = [r for d in meta if (r := self._evaluate_refined_dim(d, solved_env)) is not None]
                 if refined:
@@ -1773,14 +259,16 @@ class WasmCodeGenerator(BaseGenerator):
             str: WAT module string suitable for wat2wasm compilation.
         """
         yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "wasm_opcodes.yaml")
-        op_map: dict[str, dict[str, EagerValue]] = {}
+        op_map: dict[str, dict[str, BackendArg]] = {}
         if os.path.exists(yaml_path):
             with open(yaml_path, encoding="utf-8") as f:
                 raw = yaml.safe_load(f)
             if isinstance(raw, dict) and "opcodes" in raw and isinstance(raw["opcodes"], dict):
                 op_map = raw["opcodes"]
 
-        nodes = [n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "op_type", "")) != "Input"]
+        nodes = [
+            n for n in self.sorted_nodes if coerce_str(adapt_backend_module(n).get_symbol("op_type", "")) != "Input"
+        ]
         wat_lines: list[str] = [
             "(module",
             '  (memory (export "memory") 1)',
@@ -1793,10 +281,28 @@ class WasmCodeGenerator(BaseGenerator):
         ]
 
         for node in nodes:
-            op_type = ensure_str(get_backend_member(node, "op_type", "")).lower()
+            op_type = coerce_str(adapt_backend_module(node).get_symbol("op_type", "")).lower()
             spec = op_map.get(op_type, {})
             simd_inst: str = str(spec.get("instruction", "f32x4.mul"))
-            arity: int = int(ensure_int(spec.get("arity", 1 if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs", "f32x4.ceil", "f32x4.floor", "f32x4.trunc", "f32x4.nearest") else 2)))
+            arity: int = int(
+                coerce_int(
+                    spec.get(
+                        "arity",
+                        1
+                        if simd_inst
+                        in (
+                            "f32x4.neg",
+                            "f32x4.sqrt",
+                            "f32x4.abs",
+                            "f32x4.ceil",
+                            "f32x4.floor",
+                            "f32x4.trunc",
+                            "f32x4.nearest",
+                        )
+                        else 2,
+                    )
+                )
+            )
 
             if arity == 1:
                 wat_lines.extend(

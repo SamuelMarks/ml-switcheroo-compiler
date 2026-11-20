@@ -18,7 +18,6 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
     pass
@@ -28,7 +27,7 @@ def test_tensor_dunders() -> None:
     """Test the tensor dunders behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     config.eager_mode = True
     d = Device(DeviceType.CPU, 0)
@@ -54,9 +53,9 @@ def test_tensor_dunders() -> None:
     _ = list(t1)
     _ = +t1
     _ = t1[0]
-    ensure_mutable(config).enable_in_place = ensure_eager_tensor(True)
+    pytest.MonkeyPatch().setattr(config, "enable_in_place", True, raising=False)
     t1[0] = 5
-    ensure_mutable(config).enable_in_place = ensure_eager_tensor(False)
+    pytest.MonkeyPatch().setattr(config, "enable_in_place", False, raising=False)
     arr_out = np.array(t1)
     assert np.array_equal(arr_out, np.array([5, 2, 3]))
 
@@ -92,15 +91,15 @@ def test_tensor_dunders_extra() -> None:
     assert not (t1 > t2).data
     assert (t1 <= t2).data
     assert not (t1 >= t2).data
-    assert not ensure_eager_tensor(ensure_eager_tensor(t1 == t2).data)
-    assert ensure_eager_tensor(ensure_eager_tensor(t1 != t2).data)
+    assert not t1 == t2.data
+    assert t1 != t2.data
 
 
 def test_tensor_errors() -> None:
     """Test the tensor errors behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     t = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Float32, Device(DeviceType.CPU)))
     with pytest.raises((ValueError, ShapeMismatchError)):

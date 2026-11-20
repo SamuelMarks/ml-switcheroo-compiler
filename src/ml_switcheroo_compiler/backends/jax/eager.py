@@ -1,4 +1,4 @@
-"""Implementation of eager operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.jax.eager`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.jax.eager`."""
 
 from __future__ import annotations
 
@@ -8,15 +8,16 @@ import typing
 from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerValue,
+    BackendArg,
+    EagerTensorProtocol,
     ShapeProtocol,
-    ensure_callable,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_float,
-    ensure_int_list,
+    coerce_float,
+    coerce_int_list,
+    coerce_numeric,
+    coerce_operand_list,
+    require_callable,
 )
-from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
 if typing.TYPE_CHECKING:
     import jax.ops
@@ -25,15 +26,26 @@ if typing.TYPE_CHECKING:
     import jax.scipy.special
     import jax.scipy.stats
 
-_has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
-jax = importlib.import_module("jax") if _has_jax else ensure_mod(None)
-jnp = ensure_mod(importlib.import_module("jax.numpy") if _has_jax else None)
-lax = ensure_mod(importlib.import_module("jax.lax") if _has_jax else None)
-jss = importlib.import_module("jax.scipy.special") if _has_jax else ensure_mod(None)
-_ = (importlib.import_module("jax.ops"), importlib.import_module("jax.scipy.linalg"), importlib.import_module("jax.scipy.signal"), importlib.import_module("jax.scipy.stats")) if _has_jax else None
+_has_jax = sys.modules.get("jax") is not None or (
+    "jax" not in sys.modules and importlib.util.find_spec("jax") is not None
+)
+jax = importlib.import_module("jax") if _has_jax else None
+jnp = importlib.import_module("jax.numpy") if _has_jax else None
+lax = importlib.import_module("jax.lax") if _has_jax else None
+jss = importlib.import_module("jax.scipy.special") if _has_jax else None
+_ = (
+    (
+        importlib.import_module("jax.ops"),
+        importlib.import_module("jax.scipy.linalg"),
+        importlib.import_module("jax.scipy.signal"),
+        importlib.import_module("jax.scipy.stats"),
+    )
+    if _has_jax
+    else None
+)
 
 
-def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
+def _execute_adaptive_avg_pool(operand: BackendArg, output_size: BackendArg) -> BackendArg:
     """Execute the eager execute adaptive avg pool operation on the active backend array.
 
     Args:
@@ -41,17 +53,17 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
         output_size: Input `output_size` argument (output size).
 
     Returns:
-        EagerValue: Computed `EagerValue` output.
+        BackendArg: Computed `BackendArg` output.
     """
     import jax
     import jax.numpy as jnp
     from jax.lax import reduce_window
 
-    operand_arr: jax.Array = jnp.asarray(operand)
+    operand_arr = require_callable(jnp.asarray)(operand)
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(ensure_int_list(output_size))
+        output_size_list = list(coerce_int_list(output_size))
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -70,17 +82,19 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
         window_strides.append(max(1, stride))
 
     # We do a simple average pooling over the computed window
-    sum_pooled: jax.Array = reduce_window(operand_arr, 0.0, jax.lax.add, window_dimensions, window_strides, "VALID")
+    sum_pooled: EagerTensorProtocol = require_callable(reduce_window)(
+        operand_arr, 0.0, jax.lax.add, window_dimensions, window_strides, "VALID"
+    )
 
     # To get average we need to divide by window size. For adaptive pool the effective window size can vary,
     # but for simple cases we just divide by prod(window_dimensions[-spatial_rank:])
     import math
 
     window_area: int = math.prod(window_dimensions[-spatial_rank:])
-    return ensure_eager_tensor(sum_pooled / float(window_area))
+    return sum_pooled / float(window_area)
 
 
-def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
+def _execute_adaptive_max_pool(operand: BackendArg, output_size: BackendArg) -> BackendArg:
     """Execute the eager execute adaptive max pool operation on the active backend array.
 
     Args:
@@ -88,17 +102,17 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
         output_size: Input `output_size` argument (output size).
 
     Returns:
-        EagerValue: Computed `EagerValue` output.
+        BackendArg: Computed `BackendArg` output.
     """
     import jax
     import jax.numpy as jnp
     from jax.lax import reduce_window
 
-    operand_arr: jax.Array = jnp.asarray(operand)
+    operand_arr = require_callable(jnp.asarray)(operand)
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(ensure_int_list(output_size))
+        output_size_list = list(coerce_int_list(output_size))
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -115,10 +129,12 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
         window_dimensions.append(max(1, kernel))
         window_strides.append(max(1, stride))
 
-    return ensure_eager_tensor(reduce_window(operand_arr, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID"))
+    return require_callable(reduce_window)(
+        operand_arr, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID"
+    )
 
 
-def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_accumulate_n(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute accumulate n operation on the active backend array.
 
     Args:
@@ -126,21 +142,21 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
 
     Raises:
         ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
-    inputs = ensure_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
+    inputs = coerce_operand_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: EagerValue = inputs[0]
+    res: BackendArg = inputs[0]
     for i in range(1, len(inputs)):
-        res = ensure_eager_tensor(res) + ensure_eager_tensor(inputs[i])
+        res = coerce_numeric(res) + coerce_numeric(inputs[i])
     return res
 
 
-def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_binom_cdf(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager binomial cumulative distribution function on the active backend array.
 
     Args:
@@ -148,14 +164,14 @@ def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args (loc).
 
     Returns:
-        EagerValue: Binomial CDF array.
+        BackendArg: Binomial CDF array.
     """
-    k, n, p = ensure_eager_tensor(args[0]), ensure_eager_tensor(args[1]), ensure_eager_tensor(args[2])
-    loc: float = float(ensure_float(kwargs.get("loc", 0.0)))
-    return ensure_eager_tensor(ensure_callable(get_backend_member(jss, "betainc"))(n - (k - loc), (k - loc) + 1, 1 - p))
+    k, n, p = coerce_numeric(args[0]), coerce_numeric(args[1]), coerce_numeric(args[2])
+    loc: float = float(coerce_float(kwargs.get("loc", 0.0)))
+    return adapt_backend_module(jss).require_op("betainc")(n - (k - loc), (k - loc) + 1, 1.0 - p)
 
 
-def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_binom_pmf(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager binomial probability mass function on the active backend array.
 
     Args:
@@ -163,12 +179,14 @@ def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Binomial PMF array.
+        BackendArg: Binomial PMF array.
     """
-    return ensure_eager_tensor(jax.scipy.stats.binom.pmf(*args, **kwargs))
+    import jax.scipy.stats
+
+    return require_callable(jax.scipy.stats.binom.pmf)(*args, **kwargs)
 
 
-def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_convolve2d(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager 2D convolution operation on the active backend array.
 
     Args:
@@ -176,12 +194,14 @@ def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args (mode, boundary, fillvalue).
 
     Returns:
-        EagerValue: Convolved 2D array.
+        BackendArg: Convolved 2D array.
     """
-    return ensure_eager_tensor(jax.scipy.signal.convolve2d(*args, **kwargs))
+    import jax.scipy.signal
+
+    return require_callable(jax.scipy.signal.convolve2d)(*args, **kwargs)
 
 
-def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_welch(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute Welch's power spectral density estimation on the active backend array.
 
     Args:
@@ -189,12 +209,14 @@ def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Sample frequencies and power spectral density.
+        BackendArg: Sample frequencies and power spectral density.
     """
-    return ensure_eager_tensor(jax.scipy.signal.welch(*args, **kwargs))
+    import jax.scipy.signal
+
+    return require_callable(jax.scipy.signal.welch)(*args, **kwargs)
 
 
-def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_bessel_jn(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute bessel jn operation on the active backend array.
 
     Args:
@@ -202,12 +224,14 @@ def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(jax.scipy.special.bessel_jn(args[1], v=args[0]))
+    import jax.scipy.special
+
+    return require_callable(jax.scipy.special.bessel_jn)(args[1], v=args[0])
 
 
-def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_unsorted_segment_sum(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute unsorted segment sum operation on the active backend array.
 
     Args:
@@ -215,12 +239,14 @@ def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(jax.ops.segment_sum(*args, **kwargs))
+    import jax.ops
+
+    return require_callable(jax.ops.segment_sum)(*args, **kwargs)
 
 
-def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_unsorted_segment_max(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute unsorted segment max operation on the active backend array.
 
     Args:
@@ -228,12 +254,14 @@ def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(jax.ops.segment_max(*args, **kwargs))
+    import jax.ops
+
+    return require_callable(jax.ops.segment_max)(*args, **kwargs)
 
 
-def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_unsorted_segment_min(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute unsorted segment min operation on the active backend array.
 
     Args:
@@ -241,12 +269,14 @@ def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> Ea
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(jax.ops.segment_min(*args, **kwargs))
+    import jax.ops
+
+    return require_callable(jax.ops.segment_min)(*args, **kwargs)
 
 
-def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_unsorted_segment_prod(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute unsorted segment prod operation on the active backend array.
 
     Args:
@@ -254,12 +284,14 @@ def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> E
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(jax.ops.segment_prod(*args, **kwargs))
+    import jax.ops
+
+    return require_callable(jax.ops.segment_prod)(*args, **kwargs)
 
 
-def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_variance(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute variance operation on the active backend array.
 
     Args:
@@ -267,15 +299,15 @@ def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     import jax.numpy as jnp
 
     kwargs.setdefault("ddof", 0)
-    return ensure_eager_tensor(ensure_callable(get_backend_member(jnp, "var"))(*args, **kwargs))
+    return adapt_backend_module(jnp).require_op("var")(*args, **kwargs)
 
 
-def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_cast(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute cast operation on the active backend array.
 
     Args:
@@ -283,27 +315,27 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    tensor: EagerValue = args[0]
-    dtype: EagerValue = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dt_str: str = str(get_backend_member(dtype, "value", dtype)).split(".")[-1]
+    tensor: BackendArg = args[0]
+    dtype: BackendArg = kwargs.get("dtype") if "dtype" in kwargs else args[1]
+    dt_str: str = str(adapt_backend_module(dtype).get_symbol("value", dtype)).split(".")[-1]
     import jax.numpy as jnp
 
     if "int4" in dt_str:
-        dt: EagerValue = get_backend_member(jnp, "int8")
+        dt: BackendArg = adapt_backend_module(jnp).require_symbol("int8")
     elif "bfloat16" in dt_str:
-        dt = get_backend_member(jnp, "bfloat16")
+        dt = adapt_backend_module(jnp).require_symbol("bfloat16")
     elif "float16" in dt_str:
-        dt = get_backend_member(jnp, "float16")
+        dt = adapt_backend_module(jnp).require_symbol("float16")
     elif "float8" in dt_str:
-        dt = get_backend_member(jnp, "float8_e4m3fn", get_backend_member(jnp, "float32"))
+        dt = adapt_backend_module(jnp).get_symbol("float8_e4m3fn", adapt_backend_module(jnp).require_symbol("float32"))
     else:
-        dt = get_backend_member(jnp, dt_str, None)
-    return ensure_eager_tensor(tensor).astype(dt)
+        dt = adapt_backend_module(jnp).get_symbol(dt_str, None)
+    return adapt_backend_module(tensor).require_op("astype")(dt)
 
 
-def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _execute_ragged_tensor_to_dense(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute ragged tensor to dense operation on the active backend array.
 
     Args:
@@ -311,14 +343,19 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    rt: EagerValue = args[0]
+    rt: BackendArg = args[0]
     # Check shape/type via duck typing since jnp.ndarray might be masked
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], ShapeProtocol):
-        max_len: int = max(len(x) for x in rt)
-        padded: list[EagerValue] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
-        return ensure_eager_tensor(ensure_callable(get_backend_member(jnp, "stack"))(padded))
+        from ml_switcheroo_compiler.backends.eager_registry import coerce_int
+
+        jnp_adp = adapt_backend_module(jnp)
+        row_lens = [int(coerce_int(x.shape[0])) if isinstance(x, ShapeProtocol) else 0 for x in rt]
+        max_len: int = max(row_lens)
+        pad_fn = jnp_adp.require_op("pad")
+        padded: list[BackendArg] = [pad_fn(x, (0, max_len - rl)) for x, rl in zip(rt, row_lens)]
+        return jnp_adp.require_op("stack")(padded)
     return rt
 
 
@@ -366,18 +403,51 @@ _OP_DISPATCH = (
         "AdaptiveAvgPool3D": _execute_adaptive_avg_pool,
         "AdaptiveMaxPool2D": _execute_adaptive_max_pool,
         "AdaptiveMaxPool3D": _execute_adaptive_max_pool,
-        "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs), _execute_adaptive_max_pool(*args, **kwargs)),
-        "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=get_backend_member(target, "dtype", None))),
+        "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (
+            _execute_adaptive_max_pool(*args, **kwargs),
+            _execute_adaptive_max_pool(*args, **kwargs),
+        ),
+        "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (
+            target,
+            __import__("jax").numpy.zeros((), dtype=adapt_backend_module(target).get_symbol("dtype", None)),
+        ),
         "Adjoint": lambda x, **kwargs: __import__("jax").numpy.conj(__import__("jax").numpy.transpose(x)),
-        "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if has_backend_member(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),
-        "AllReduce": lambda tensor, *args, **kwargs: __import__("jax").lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if str(kwargs.get("op_type", "sum")).lower() == "sum" else __import__("jax").lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),
+        "AllGather": lambda tensor, *args, **kwargs: (
+            __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i"))
+            if adapt_backend_module(__import__("jax").lax).has_symbol("all_gather")
+            else __import__("jax").numpy.stack([tensor])
+        ),
+        "AllReduce": lambda tensor, *args, **kwargs: (
+            __import__("jax").lax.psum(tensor, axis_name=kwargs.get("axis_name", "i"))
+            if str(kwargs.get("op_type", "sum")).lower() == "sum"
+            else __import__("jax").lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i"))
+        ),
         "ReduceScatter": lambda tensor, *args, **kwargs: (
-            __import__("jax").lax.reduce_scatter(tensor, __import__("jax").lax.add if str(kwargs.get("op_type", "sum")).lower() == "sum" else __import__("jax").lax.max, scatter_dimension=kwargs.get("axis", 0), axis_name=kwargs.get("axis_name", "i"))
-            if has_backend_member(__import__("jax").lax, "reduce_scatter")
+            __import__("jax").lax.reduce_scatter(
+                tensor,
+                __import__("jax").lax.add
+                if str(kwargs.get("op_type", "sum")).lower() == "sum"
+                else __import__("jax").lax.max,
+                scatter_dimension=kwargs.get("axis", 0),
+                axis_name=kwargs.get("axis_name", "i"),
+            )
+            if adapt_backend_module(__import__("jax").lax).has_symbol("reduce_scatter")
             else tensor
         ),
-        "AllToAll": lambda tensor, *args, **kwargs: __import__("jax").lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if has_backend_member(__import__("jax").lax, "all_to_all") else tensor,
-        "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(__import__("jax").random.bernoulli(__import__("jax").random.PRNGKey(0), 1.0 - float(kwargs.get("p", 0.5)), x.shape), x, 0.0),
+        "AllToAll": lambda tensor, *args, **kwargs: (
+            __import__("jax").lax.all_to_all(
+                tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)
+            )
+            if adapt_backend_module(__import__("jax").lax).has_symbol("all_to_all")
+            else tensor
+        ),
+        "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(
+            __import__("jax").random.bernoulli(
+                __import__("jax").random.PRNGKey(0), 1.0 - float(kwargs.get("p", 0.5)), x.shape
+            ),
+            x,
+            0.0,
+        ),
         "AsString": lambda arr, **kwargs: str(arr),
         "Assert": lambda condition, data, summarize=3, **kwargs: None,
         "Assign": lambda ref, value, **kwargs: value,
@@ -413,8 +483,14 @@ _OP_DISPATCH = (
         "Irfftn": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn(args[0], **kwargs),
         "Irfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn(args[0], **kwargs),
         "LogSoftmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.log_softmax(x, axis=axis),
-        "Mish": lambda x: __import__("jax").nn.mish(x) if has_backend_member(__import__("jax").nn, "mish") else x * __import__("jax").numpy.tanh(__import__("jax").numpy.log1p(__import__("jax").numpy.exp(x))),
-        "OneHot": lambda *args, **kwargs: __import__("jax").nn.one_hot(args[0], kwargs.get("depth", args[1] if len(args) > 1 else 1)),
+        "Mish": lambda x: (
+            __import__("jax").nn.mish(x)
+            if adapt_backend_module(__import__("jax").nn).has_symbol("mish")
+            else x * __import__("jax").numpy.tanh(__import__("jax").numpy.log1p(__import__("jax").numpy.exp(x)))
+        ),
+        "OneHot": lambda *args, **kwargs: __import__("jax").nn.one_hot(
+            args[0], kwargs.get("depth", args[1] if len(args) > 1 else 1)
+        ),
         "Rfft": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft(args[0], **kwargs),
         "Rfft2": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft2(args[0], **kwargs),
         "Rfftfreq": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftfreq(*args, **kwargs),
@@ -422,43 +498,47 @@ _OP_DISPATCH = (
         "Rfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftn(args[0], **kwargs),
         "Sigmoid": lambda *args, **kwargs: __import__("jax").nn.sigmoid(args[0]),
         "Softmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.softmax(x, axis=axis),
-        "Squareplus": lambda x: __import__("jax").nn.squareplus(x) if has_backend_member(__import__("jax").nn, "squareplus") else 0.5 * (x + __import__("jax").numpy.sqrt(x**2 + 4.0)),
+        "Squareplus": lambda x: (
+            __import__("jax").nn.squareplus(x)
+            if adapt_backend_module(__import__("jax").nn).has_symbol("squareplus")
+            else 0.5 * (x + __import__("jax").numpy.sqrt(x**2 + 4.0))
+        ),
     }
-    if get_backend_member(jax, "scipy", None) is not None
+    if jax is not None and adapt_backend_module(jax).get_symbol("scipy", None) is not None
     else {}
 )
 
 
-def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def execute_op(cls: type | None, op_type: str, *args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     """Execute the eager execute op operation on the active backend array.
 
     Args:
-        cls (type): The class.
+        cls (type | None): The class.
         op_type (str): Input `op_type` argument (op type).
         *args: Positional args.
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
 
     Raises:
-        BackendNotSupportedError: If invalid inputs or unsupported runtime conditions trigger `BackendNotSupportedError`.
+        BackendNotSupportedError: If invalid inputs or unsupported runtime conditions trigger
+            `BackendNotSupportedError`.
     """
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
 
     schema = load_backend_mappings("jax")
-    if op_type in schema.operations and (schema.operations[op_type].target_api or schema.operations[op_type].custom_code):
+    if op_type in schema.operations and (
+        schema.operations[op_type].target_api or schema.operations[op_type].custom_code
+    ):
         import sys
 
-        func_resolved = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
+        func_resolved = resolve_target_api(
+            schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__]
+        )
         if func_resolved:
-            return ensure_callable(func_resolved)(*args, **kwargs)
+            return require_callable(func_resolved)(*args, **kwargs)
 
-    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-
-    global_func = global_eager_registry.get(op_type)
-    if global_func is not None:
-        return global_func(jnp, *args, **kwargs)
     import re
 
     s1: str = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
@@ -472,12 +552,28 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
     elif snake == "div":
         snake = "divide"
     func = None
-    for mod in [jnp, lax, get_backend_member(jnp, "linalg", None), get_backend_member(jnp, "fft", None)]:
-        if mod is not None and has_backend_member(mod, snake) and snake != "totally_unknown_op_missing" and snake != "unknown_op_missing_missing":
-            func = ensure_callable(get_backend_member(mod, snake))
+    for mod in [
+        jnp,
+        lax,
+        adapt_backend_module(jnp).get_symbol("linalg", None),
+        adapt_backend_module(jnp).get_symbol("fft", None),
+    ]:
+        if (
+            mod is not None
+            and adapt_backend_module(mod).has_symbol(snake)
+            and snake != "totally_unknown_op_missing"
+            and snake != "unknown_op_missing_missing"
+        ):
+            func = adapt_backend_module(mod).require_op(snake)
             break
     if func is not None:
-        return ensure_eager_tensor(func(*args, **kwargs))
+        return func(*args, **kwargs)
+
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+    global_func = global_eager_registry.get(op_type)
+    if global_func is not None:
+        return global_func(jnp, *args, **kwargs)
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

@@ -1,16 +1,23 @@
-"""Implementation of math testing operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing`."""
 
 from __future__ import annotations
 
 import builtins  # noqa: F401
+import types
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    coerce_float,
+    global_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 
 
 @global_eager_registry.register("Allclose")
-def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _allclose(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager allclose operation on the active backend array.
 
     Args:
@@ -19,38 +26,57 @@ def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     a = args[0]
     b = args[1]
-    rtol = kwargs.get("rtol", 1e-05) if has_backend_member(kwargs, "get") else 1e-05
-    atol = kwargs.get("atol", 1e-08) if has_backend_member(kwargs, "get") else 1e-08
-    equal_nan = kwargs.get("equal_nan", False) if has_backend_member(kwargs, "get") else False
+    rtol = kwargs.get("rtol", 1e-05) if adapt_backend_module(kwargs).has_symbol("get") else 1e-05
+    atol = kwargs.get("atol", 1e-08) if adapt_backend_module(kwargs).has_symbol("get") else 1e-08
+    equal_nan = kwargs.get("equal_nan", False) if adapt_backend_module(kwargs).has_symbol("get") else False
 
-    def _val(x: EagerValue) -> EagerValue:
+    def _val(x: BackendArg) -> BackendArg:
         """Execute the eager val operation on the active backend array.
 
         Args:
         x: Input `x` argument (x).
 
         Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
         """
-        x_data = get_backend_member(x, "data", x)
-        if has_backend_member(x_data, "item") and callable(get_backend_member(x_data, "item")):
-            return ensure_eager_tensor(get_backend_member(x_data, "item")())
-        if has_backend_member(x_data, "tolist"):
-            return ensure_eager_tensor(get_backend_member(x_data, "tolist")())
-        _typed_ret_1: EagerValue = x_data
+        x_data = adapt_backend_module(x).get_symbol("data", x)
+        if adapt_backend_module(x_data).has_symbol("item") and callable(
+            adapt_backend_module(x_data).require_symbol("item")
+        ):
+            return adapt_backend_module(x_data).require_symbol("item")()
+        if adapt_backend_module(x_data).has_symbol("tolist"):
+            return adapt_backend_module(x_data).require_symbol("tolist")()
+        _typed_ret_1: BackendArg = x_data
         return _typed_ret_1
 
-    if has_backend_member(backend_module, "allclose"):
-        return ensure_eager_tensor(get_backend_member(backend_module, "allclose")(a, b, rtol=float(ensure_float(_val(rtol))), atol=float(ensure_float(_val(atol))), equal_nan=bool(_val(equal_nan))))
-    return _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(ensure_float(_val(rtol))), atol=float(ensure_float(_val(atol))), equal_nan=bool(_val(equal_nan)))
+    if adapt_backend_module(backend_module).has_symbol("allclose"):
+        return adapt_backend_module(backend_module).require_symbol("allclose")(
+            a,
+            b,
+            rtol=float(coerce_float(_val(rtol))),
+            atol=float(coerce_float(_val(atol))),
+            equal_nan=bool(_val(equal_nan)),
+        )
+    return _resolve_eager_mod(backend_module).allclose(
+        a,
+        b,
+        rtol=float(coerce_float(_val(rtol))),
+        atol=float(coerce_float(_val(atol))),
+        equal_nan=bool(_val(equal_nan)),
+    )
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: BackendModuleProtocol, a1: EagerValue, a2: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _array_equiv(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    a1: BackendArg,
+    a2: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager array equiv operation on the active backend array.
 
     Args:
@@ -60,13 +86,23 @@ def _array_equiv(backend_module: BackendModuleProtocol, a1: EagerValue, a2: Eage
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return get_backend_member(backend_module, "allclose")(a1, a2) if has_backend_member(backend_module, "allclose") else True
+    return (
+        adapt_backend_module(backend_module).require_symbol("allclose")(a1, a2)
+        if adapt_backend_module(backend_module).has_symbol("allclose")
+        else True
+    )
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: BackendModuleProtocol, condition: EagerValue, data: EagerValue = None, summarize: int = 3, **kwargs: EagerValue) -> EagerValue:
+def _assert(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    condition: BackendArg,
+    data: BackendArg = None,
+    summarize: int = 3,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute the eager assert operation on the active backend array.
 
     Args:
@@ -97,7 +133,9 @@ def _assert(backend_module: BackendModuleProtocol, condition: EagerValue, data: 
 
 
 @global_eager_registry.register("PromoteTypes")
-def _promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _promotetypes(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager promotetypes operation on the active backend array.
 
     Args:
@@ -106,13 +144,15 @@ def _promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(get_backend_member(backend_module, "promote_types")(*args, **kwargs))
+    return adapt_backend_module(backend_module).require_symbol("promote_types")(*args, **kwargs)
 
 
 @global_eager_registry.register("ResultType")
-def _resulttype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _resulttype(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager resulttype operation on the active backend array.
 
     Args:
@@ -121,6 +161,6 @@ def _resulttype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         **kwargs: Keyword args.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    return ensure_eager_tensor(get_backend_member(backend_module, "result_type")(*args, **kwargs))
+    return adapt_backend_module(backend_module).require_symbol("result_type")(*args, **kwargs)

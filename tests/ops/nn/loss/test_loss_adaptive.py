@@ -7,14 +7,21 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.loss import AdaptiveLogSoftmaxWithLoss, adaptive_log_softmax_with_loss, binary_crossentropy, categorical_crossentropy, sparse_categorical_crossentropy
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_mutable
+from ml_switcheroo_compiler.ops.nn.loss import (
+    AdaptiveLogSoftmaxWithLoss,
+    adaptive_log_softmax_with_loss,
+    binary_crossentropy,
+    categorical_crossentropy,
+    sparse_categorical_crossentropy,
+)
+from tests.testing_utils import MockTensorStub, MockTestStub, coerce_operand_list, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_loss_extras() -> None:
@@ -27,59 +34,69 @@ def test_loss_extras() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
     try:
         t_true = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
         t_pred = Tensor(np.array([0.5]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
         res_bce = binary_crossentropy(t_true, t_pred, label_smoothing=0.1)
         assert res_bce is not None
-        t_true_c = Tensor(np.array([[1.0, 0.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-        t_pred_c = Tensor(np.array([[0.8, 0.2]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
+        t_true_c = Tensor(
+            np.array([[1.0, 0.0]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))
+        )
+        t_pred_c = Tensor(
+            np.array([[0.8, 0.2]]), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu"))
+        )
         categorical_crossentropy(t_true_c, t_pred_c, label_smoothing=0.1, from_logits=True)
         sparse_categorical_crossentropy(t_true, t_pred_c, ignore_class=1)
 
-        class DummyShape:
+        class DummyShape(MockTestStub):
             """Test class DummyShape."""
 
             shape = (1, 2)
 
-        assert ensure_callable(AdaptiveLogSoftmaxWithLoss)().infer_shape(None, ensure_callable(DummyShape)()) == ((1, 2), ())
+        assert AdaptiveLogSoftmaxWithLoss().infer_shape(None, DummyShape()) == (
+            (1, 2),
+            (),
+        )
 
-        class MockData:
+        class MockData(MockTestStub):
             """Test class MockData."""
 
             id = "data"
 
-        class MockTensor:
+        class MockTensor(MockTensorStub):
             """Test class MockTensor."""
 
-            data = MockData()
-            shape = (1, 2)
-            dtype = DType("float32")
-            device = Device("cpu")
+            def __init__(self) -> None:
+                """Initialize stub attributes."""
+                super().__init__()
+                self.data = MockData()
+                self.shape = (1, 2)
+                self.dtype = DType("float32")
+                self.device = Device("cpu")
 
-        ensure_callable(adaptive_log_softmax_with_loss)(ensure_callable(MockTensor)(), ensure_callable(MockTensor)(), [1])
+        adaptive_log_softmax_with_loss(MockTensor(), MockTensor(), [1])
 
         class LogPoissonLoss:
             """Test class LogPoissonLoss."""
 
-            def infer_shape(self, *args: EagerValue) -> EagerValue:
+            def infer_shape(self, *args: BackendArg) -> BackendArg:
                 """Test function infer_shape.
 
                 Args:
                     args: Test parameter `args`.
 
                 Returns:
-                    EagerValue: Computed output value from `infer_shape`.
+                    BackendArg: Computed output value from `infer_shape`.
                 """
-                return ensure_eager_tensor(args[0]).shape if args else ()
+                return extract_test_shape(args[0]) if args else ()
 
         assert LogPoissonLoss().infer_shape(DummyShape()) == (1, 2)
         assert LogPoissonLoss().infer_shape() == ()
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
 
 
 def test_loss_extra_functions() -> None:
@@ -94,7 +111,7 @@ def test_loss_extra_functions() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
     try:
         t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
         t2 = Tensor(np.array([0.5]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
@@ -112,16 +129,16 @@ def test_loss_extra_functions() -> None:
         class MockTopK:
             """Test class MockTopK."""
 
-            def infer_shape(self, *args: EagerValue) -> EagerValue:
+            def infer_shape(self, *args: BackendArg) -> BackendArg:
                 """Test function infer_shape.
 
                 Args:
                     args: Test parameter `args`.
 
                 Returns:
-                    EagerValue: Computed output value from `infer_shape`.
+                    BackendArg: Computed output value from `infer_shape`.
                 """
-                return ensure_eager_tensor(args[0]).shape if args else ()
+                return extract_test_shape(args[0]) if args else ()
 
         assert loss.InTopK().infer_shape(type("DummyShape", (), {"shape": (1, 2)})()) == (1, 2)
         assert loss.InTopK().infer_shape() == ()
@@ -134,7 +151,7 @@ def test_loss_extra_functions() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
 
 
 def test_loss_extra_functions_2() -> None:
@@ -149,22 +166,25 @@ def test_loss_extra_functions_2() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
 
     try:
 
-        class MockData:
+        class MockData(MockTestStub):
             """Test class MockData."""
 
             id = "data"
 
-        class MockTensor:
+        class MockTensor(MockTensorStub):
             """Test class MockTensor."""
 
-            data = MockData()
-            shape = (1, 2)
-            dtype = DType("float32")
-            device = Device("cpu")
+            def __init__(self) -> None:
+                """Initialize stub attributes."""
+                super().__init__()
+                self.data = MockData()
+                self.shape = (1, 2)
+                self.dtype = DType("float32")
+                self.device = Device("cpu")
 
         mt = MockTensor()
         t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
@@ -177,19 +197,19 @@ def test_loss_extra_functions_2() -> None:
 
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
             mock_backend.return_value.execute_op.return_value = (np.array([1.0]), np.array([0.5]))
-            ensure_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+            loss.adaptive_log_softmax_with_loss(mt, mt, [1])
 
         # Test adaptive_log_softmax_with_loss tracing exception
         config.eager_mode = False
         state.global_tracing_state.is_tracing = False
         with pytest.raises(RuntimeError, match="Must be tracing"):
-            ensure_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+            loss.adaptive_log_softmax_with_loss(mt, mt, [1])
 
         state.global_tracing_state.is_tracing = True
-        ensure_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+        loss.adaptive_log_softmax_with_loss(mt, mt, [1])
 
         # Test mathematically complete CTC loss numpy eager solver
-        from ml_switcheroo_compiler.backends.numpy.eager.loss_ops import _np_ctc_loss
+        from ml_switcheroo_compiler.backends.eager.nn_ops.losses import _np_ctc_loss
 
         # Define mock logits (T=2, B=1, C=3)
         # Logits at T=0: [0.1, 0.8, 0.1] (strongly predicts index 1)
@@ -199,9 +219,9 @@ def test_loss_extra_functions_2() -> None:
         label_len = np.array([2], dtype=np.int32)
         logit_len = np.array([2], dtype=np.int32)
 
-        loss_val = _np_ctc_loss(ensure_mod(None), labels_test, logits_test, label_len, logit_len, logits_time_major=True)
-        assert ensure_callable(len)(loss_val) == 1
-        assert ensure_eager_tensor(loss_val)[0] > 0.0
+        loss_val = _np_ctc_loss(None, labels_test, logits_test, label_len, logit_len, logits_time_major=True)
+        assert len(coerce_operand_list(loss_val)) == 1
+        assert ensure_ndarray(loss_val)[0] > 0.0
 
         # Test CTC decode shape and log-probabilities
         paths, log_probs = loss.ctc_decode(t, t, top_paths=2)
@@ -212,7 +232,7 @@ def test_loss_extra_functions_2() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
 
 
 def test_loss_eager_adaptive() -> None:
@@ -228,18 +248,21 @@ def test_loss_eager_adaptive() -> None:
 
     try:
 
-        class MockData:
+        class MockData(MockTestStub):
             """Test class MockData."""
 
             id = "data"
 
-        class MockTensor:
+        class MockTensor(MockTensorStub):
             """Test class MockTensor."""
 
-            data = MockData()
-            shape = (1, 2)
-            dtype = "float32"
-            device = "cpu"
+            def __init__(self) -> None:
+                """Initialize stub attributes."""
+                super().__init__()
+                self.data = MockData()
+                self.shape = (1, 2)
+                self.dtype = "float32"
+                self.device = "cpu"
 
         MockTensor()
 
@@ -252,8 +275,8 @@ def test_loss_eager_adaptive() -> None:
             from ml_switcheroo_compiler.core.dtype import DType
 
             real_t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
-            out, loss_val = ensure_callable(loss.adaptive_log_softmax_with_loss)(real_t, real_t, [1])
-            assert ensure_eager_tensor(ensure_eager_tensor(out).data) == "out"
-            assert ensure_eager_tensor(ensure_eager_tensor(loss_val).data) == "loss"
+            out, loss_val = loss.adaptive_log_softmax_with_loss(real_t, real_t, [1])
+            assert out.data == "out"
+            assert loss_val.data == "loss"
     finally:
         config.eager_mode = orig

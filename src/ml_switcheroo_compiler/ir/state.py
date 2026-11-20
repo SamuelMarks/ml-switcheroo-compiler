@@ -1,14 +1,28 @@
-"""State Mutation & Aliasing Representation for IR."""
+"""Canonical IR state operation constants and node factory constructors (State Layer 1).
+
+Layer Responsibilities across the State Subsystem:
+    1. ``ir.state``: Canonical IR op identifiers and stateless ``IRNode`` constructors.
+    2. ``core.state_manager``: Pure graph-level ``Assign`` environment tracking and functionalization.
+    3. ``tracing.state``: Thread/context-active graph builder state during symbolic tracing.
+    4. ``ops.state``: Registered ``OpDef`` schemas (``ReadVariable``, ``AssignVariable``).
+"""
 
 from __future__ import annotations
 
 import uuid
 
-from ml_switcheroo_compiler.ir.core import IRNode, ShapeLike
+from ml_switcheroo_ir import IRNode
+
+from ml_switcheroo_compiler.ir.core import ShapeLike
+
+READ_VARIABLE_OP: str = "ReadVariable"
+ASSIGN_VARIABLE_OP: str = "AssignVariable"
+SCATTER_UPDATE_OP: str = "ScatterUpdate"
+ASSIGN_OP: str = "Assign"
 
 
 def create_read_variable(variable_name: str, shape: ShapeLike, dtype: str) -> IRNode:
-    """Create a `ReadVariable` IR node reading the current value of a named state variable.
+    """Create a ``ReadVariable`` IR node reading the current value of a named state variable.
 
     Args:
         variable_name (str): Name of the state variable to read.
@@ -16,20 +30,20 @@ def create_read_variable(variable_name: str, shape: ShapeLike, dtype: str) -> IR
         dtype (str): Output tensor data type identifier.
 
     Returns:
-        IRNode: Constructed `ReadVariable` logical node.
+        IRNode: Constructed ``ReadVariable`` logical node.
     """
-    _ = dtype
     return IRNode(
         id=str(uuid.uuid4()),
-        op_type="ReadVariable",
+        op_type=READ_VARIABLE_OP,
         inputs=[],
-        attributes={"variable_name": variable_name},
+        attributes={"variable_name": variable_name, "dtype": dtype},
+        dtype=dtype,
         shape_metadata=shape,
     )
 
 
 def create_assign_variable(variable_name: str, value_id: str, shape: ShapeLike) -> IRNode:
-    """Create an `AssignVariable` IR node mutating a named state variable to `value_id`.
+    """Create an ``AssignVariable`` IR node mutating a named state variable to ``value_id``.
 
     Args:
         variable_name (str): Name of the state variable to update.
@@ -37,11 +51,11 @@ def create_assign_variable(variable_name: str, value_id: str, shape: ShapeLike) 
         shape (ShapeLike): Output tensor shape metadata.
 
     Returns:
-        IRNode: Constructed `AssignVariable` logical node.
+        IRNode: Constructed ``AssignVariable`` logical node.
     """
     return IRNode(
         id=str(uuid.uuid4()),
-        op_type="AssignVariable",
+        op_type=ASSIGN_VARIABLE_OP,
         inputs=[value_id],
         attributes={"variable_name": variable_name},
         shape_metadata=shape,
@@ -54,7 +68,7 @@ def create_scatter_update(
     updates_id: str,
     shape: ShapeLike,
 ) -> IRNode:
-    """Create a `ScatterUpdate` IR node updating indexed slices of a tensor.
+    """Create a ``ScatterUpdate`` IR node updating indexed slices of a tensor.
 
     Args:
         tensor_id (str): Node ID of the base tensor.
@@ -63,11 +77,22 @@ def create_scatter_update(
         shape (ShapeLike): Output tensor shape metadata.
 
     Returns:
-        IRNode: Constructed `ScatterUpdate` logical node.
+        IRNode: Constructed ``ScatterUpdate`` logical node.
     """
     return IRNode(
         id=str(uuid.uuid4()),
-        op_type="ScatterUpdate",
+        op_type=SCATTER_UPDATE_OP,
         inputs=[tensor_id, indices_id, updates_id],
         shape_metadata=shape,
     )
+
+
+__all__ = [
+    "ASSIGN_OP",
+    "ASSIGN_VARIABLE_OP",
+    "READ_VARIABLE_OP",
+    "SCATTER_UPDATE_OP",
+    "create_assign_variable",
+    "create_read_variable",
+    "create_scatter_update",
+]

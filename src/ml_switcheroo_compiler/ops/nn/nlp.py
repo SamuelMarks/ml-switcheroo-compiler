@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_tensor_pair, ensure_tensor_triple
+from ml_switcheroo_compiler.backends.registry import unpack_pair, unpack_triple
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_data,
     extract_shape,
 )
@@ -66,15 +66,15 @@ class NLPOpsConfig(pydantic.BaseModel):
     name: str | None = None
 
 
-def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
+def all_candidate_sampler(true_classes: OpValue, config: NLPOpsConfig) -> OpValue:
     """Generate all candidates for sampling operations.
 
     Args:
-        true_classes (TensorOrScalar): The true classes for the current batch.
+        true_classes (OpValue): The true classes for the current batch.
         config (NLPOpsConfig): Configuration for the sampling operation.
 
     Returns:
-        TensorOrScalar: Tuple of (sampled_candidates, true_expected_count, sampled_expected_count).
+        OpValue: Tuple of (sampled_candidates, true_expected_count, sampled_expected_count).
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
@@ -84,7 +84,7 @@ def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) ->
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sampled, true_exp, sampled_exp = ensure_tensor_triple(
+        sampled, true_exp, sampled_exp = unpack_triple(
             backend.execute_op(
                 "AllCandidateSampler",
                 extract_data(true_classes),
@@ -108,12 +108,16 @@ def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) ->
         "seed": config.sampling.seed,
     }
     num_sampled_tensor = _emit_shape_node("AllCandidateSampler", [true_classes], attrs, sampled_shape, "int32")
-    true_expected_count = _emit_shape_node("AllCandidateSamplerTrueExpected", [true_classes], attrs, true_shape, "float32")
-    sampled_expected_count = _emit_shape_node("AllCandidateSamplerSampledExpected", [true_classes], attrs, sampled_shape, "float32")
+    true_expected_count = _emit_shape_node(
+        "AllCandidateSamplerTrueExpected", [true_classes], attrs, true_shape, "float32"
+    )
+    sampled_expected_count = _emit_shape_node(
+        "AllCandidateSamplerSampledExpected", [true_classes], attrs, sampled_shape, "float32"
+    )
     return num_sampled_tensor, true_expected_count, sampled_expected_count
 
 
-def compute_accidental_hits(true_classes: TensorOrScalar, sampled_candidates: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
+def compute_accidental_hits(true_classes: OpValue, sampled_candidates: OpValue, config: NLPOpsConfig) -> OpValue:
     """Compute accidental hits for candidate sampling.
 
     Identifies cases where a sampled candidate matches a true class and returns
@@ -144,7 +148,7 @@ class VocabConfig(pydantic.BaseModel):
 
     vocab_file: str = ""
     num_reserved_ids: int = 0
-    unigrams: TensorOrScalar = ()
+    unigrams: OpValue = ()
 
 
 class SamplingStrategyConfig(pydantic.BaseModel):
@@ -178,10 +182,10 @@ class SamplerConfig(pydantic.BaseModel):
 
 
 def fixed_unigram_candidate_sampler(
-    true_classes: TensorOrScalar,
+    true_classes: OpValue,
     config: NLPOpsConfig,
     sampler_config: SamplerConfig | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Sample candidates using a fixed unigram distribution.
 
     Generates a set of sampled candidates according to a provided unigram
@@ -198,7 +202,7 @@ def fixed_unigram_candidate_sampler(
     return all_candidate_sampler(true_classes, config)
 
 
-def learned_unigram_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
+def learned_unigram_candidate_sampler(true_classes: OpValue, config: NLPOpsConfig) -> OpValue:
     """Sample candidates using a learned unigram distribution.
 
     Generates candidates by continuously updating a unigram distribution
@@ -214,7 +218,7 @@ def learned_unigram_candidate_sampler(true_classes: TensorOrScalar, config: NLPO
     return all_candidate_sampler(true_classes, config)
 
 
-def log_uniform_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
+def log_uniform_candidate_sampler(true_classes: OpValue, config: NLPOpsConfig) -> OpValue:
     """Sample candidates using a log-uniform (Zipfian) distribution.
 
     Useful when classes are ordered by decreasing frequency.
@@ -229,7 +233,7 @@ def log_uniform_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsCo
     return all_candidate_sampler(true_classes, config)
 
 
-def uniform_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
+def uniform_candidate_sampler(true_classes: OpValue, config: NLPOpsConfig) -> OpValue:
     """Sample candidates using a uniform distribution.
 
     Generates candidates where each candidate ID has an equal probability
@@ -257,18 +261,18 @@ class NCELossConfig(pydantic.BaseModel):
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values: TensorOrScalar = None
+    sampled_values: OpValue = None
     remove_accidental_hits: bool = False
     name: str = "nce_loss"
 
 
 def nce_loss(
-    weights: TensorOrScalar,
-    biases: TensorOrScalar,
-    labels: TensorOrScalar,
-    inputs: TensorOrScalar,
+    weights: OpValue,
+    biases: OpValue,
+    labels: OpValue,
+    inputs: OpValue,
     config: NCELossConfig,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute the noise-contrastive estimation (NCE) training loss.
 
     This function calculates the NCE loss which is often used for training
@@ -299,19 +303,19 @@ class SampledSoftmaxConfig(pydantic.BaseModel):
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values: TensorOrScalar = None
+    sampled_values: OpValue = None
     remove_accidental_hits: bool = True
     seed: int | None = None
     name: str = "sampled_softmax_loss"
 
 
 def sampled_softmax_loss(
-    weights: TensorOrScalar,
-    biases: TensorOrScalar,
-    labels: TensorOrScalar,
-    inputs: TensorOrScalar,
+    weights: OpValue,
+    biases: OpValue,
+    labels: OpValue,
+    inputs: OpValue,
     config: SampledSoftmaxConfig,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute the sampled softmax training loss.
 
     This function approximates the full softmax loss by sampling a subset
@@ -331,26 +335,26 @@ def sampled_softmax_loss(
 
 
 def ctc_beam_search_decoder(
-    inputs: TensorOrScalar,
-    sequence_length: TensorOrScalar,
-    beam_width: TensorOrScalar = 100,
-    top_paths: TensorOrScalar = 1,
-    merge_repeated: TensorOrScalar = True,
-) -> TensorOrScalar:
+    inputs: OpValue,
+    sequence_length: OpValue,
+    beam_width: OpValue = 100,
+    top_paths: OpValue = 1,
+    merge_repeated: OpValue = True,
+) -> OpValue:
     """Perform beam search decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
     network using the beam search algorithm.
 
     Args:
-        inputs (TensorOrScalar): A tensor of input logits.
-        sequence_length (TensorOrScalar): A tensor containing the length of each sequence.
-        beam_width (TensorOrScalar): The width of the beam search.
-        top_paths (TensorOrScalar): The number of top paths to return.
-        merge_repeated (TensorOrScalar): Whether to merge repeated labels.
+        inputs (OpValue): A tensor of input logits.
+        sequence_length (OpValue): A tensor containing the length of each sequence.
+        beam_width (OpValue): The width of the beam search.
+        top_paths (OpValue): The number of top paths to return.
+        merge_repeated (OpValue): Whether to merge repeated labels.
 
     Returns:
-        TensorOrScalar: A tuple containing the decoded paths and the log probabilities.
+        OpValue: A tuple containing the decoded paths and the log probabilities.
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
@@ -358,7 +362,7 @@ def ctc_beam_search_decoder(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        decoded, log_probs = ensure_tensor_pair(
+        decoded, log_probs = unpack_pair(
             backend.execute_op(
                 "CtcBeamSearchDecoder",
                 extract_data(inputs),
@@ -372,30 +376,32 @@ def ctc_beam_search_decoder(
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     attrs = {"beam_width": beam_width, "top_paths": top_paths, "merge_repeated": merge_repeated}
-    path_node = _emit_shape_node("CtcBeamSearchDecoder", [inputs, sequence_length], attrs, extract_shape(inputs, (1,)), "int64")
+    path_node = _emit_shape_node(
+        "CtcBeamSearchDecoder", [inputs, sequence_length], attrs, extract_shape(inputs, (1,)), "int64"
+    )
     log_prob_node = _emit_shape_node("CtcBeamSearchDecoderLogProb", [inputs, sequence_length], attrs, (1,), "float32")
     return [path_node], log_prob_node
 
 
 def ctc_greedy_decoder(
-    inputs: TensorOrScalar,
-    sequence_length: TensorOrScalar,
-    merge_repeated: TensorOrScalar = True,
-    blank_index: TensorOrScalar = None,
-) -> TensorOrScalar:
+    inputs: OpValue,
+    sequence_length: OpValue,
+    merge_repeated: OpValue = True,
+    blank_index: OpValue = None,
+) -> OpValue:
     """Perform greedy decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
     network by greedily selecting the most likely class at each timestep.
 
     Args:
-        inputs (TensorOrScalar): A tensor of input logits.
-        sequence_length (TensorOrScalar): A tensor containing the length of each sequence.
-        merge_repeated (TensorOrScalar): Whether to merge repeated labels.
-        blank_index (TensorOrScalar): The index of the blank label.
+        inputs (OpValue): A tensor of input logits.
+        sequence_length (OpValue): A tensor containing the length of each sequence.
+        merge_repeated (OpValue): Whether to merge repeated labels.
+        blank_index (OpValue): The index of the blank label.
 
     Returns:
-        TensorOrScalar: A tuple containing the decoded paths and the log probabilities.
+        OpValue: A tuple containing the decoded paths and the log probabilities.
     """
     return ctc_beam_search_decoder(inputs, sequence_length, beam_width=1, top_paths=1, merge_repeated=merge_repeated)
 
@@ -410,7 +416,7 @@ class CTCLossOptions(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     logits_time_major: bool = True
-    unique: TensorOrScalar = None
+    unique: OpValue = None
     blank_index: int | None = None
     name: str | None = None
 
@@ -421,7 +427,7 @@ def ctc_loss(
     label_length: Tensor,
     logit_length: Tensor,
     options: CTCLossOptions | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute the Connectionist Temporal Classification (CTC) Loss.
 
     Calculates the loss between a continuous sequence of logits and a target
@@ -454,18 +460,18 @@ def ctc_loss(
     )
 
 
-def ctc_unique_labels(labels: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
+def ctc_unique_labels(labels: OpValue, name: OpValue = None) -> OpValue:
     """Extract unique labels and indices for batched data.
 
     Utility function typically used in conjunction with CTC loss to find
     unique labels across a batch.
 
     Args:
-        labels (TensorOrScalar): A tensor containing batched target labels.
-        name (TensorOrScalar): An optional name for the operation.
+        labels (OpValue): A tensor containing batched target labels.
+        name (OpValue): An optional name for the operation.
 
     Returns:
-        TensorOrScalar: A tuple containing the unique labels and their indices.
+        OpValue: A tuple containing the unique labels and their indices.
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
@@ -474,7 +480,7 @@ def ctc_unique_labels(labels: TensorOrScalar, name: TensorOrScalar = None) -> Te
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        unique, indices = ensure_tensor_pair(backend.execute_op("CtcUniqueLabels", extract_data(labels), name=name))
+        unique, indices = unpack_pair(backend.execute_op("CtcUniqueLabels", extract_data(labels), name=name))
         return (
             Tensor(unique, TensorConfig(extract_shape(unique, lbl_shape), "int32", "cpu")),
             Tensor(indices, TensorConfig(extract_shape(indices, lbl_shape), "int32", "cpu")),
@@ -518,7 +524,14 @@ class CtcLoss(OpDef):
 
     op_name = "CtcLoss"
 
-    def infer_shape(self, labels: EagerTensorProtocol, logits: EagerTensorProtocol, label_length: EagerTensorProtocol, logit_length: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(
+        self,
+        labels: OpValue,
+        logits: OpValue,
+        label_length: OpValue,
+        logit_length: OpValue,
+        **kwargs: OpValue,
+    ) -> OpValue:
         """Infers the output shape for the CTC loss operation.
 
         Args:
@@ -533,11 +546,11 @@ class CtcLoss(OpDef):
         """
         # logits: (T, N, C) if time_major else (N, T, C)
         time_major = kwargs.get("logits_time_major", True)
-        raw_logits: TensorOrScalar = logits
+        raw_logits: OpValue = logits
         if isinstance(raw_logits, ShapeProtocol):
-            if len(raw_logits.shape) == 3:
-                batch = raw_logits.shape[1] if time_major else raw_logits.shape[0]
+            if len(extract_shape(raw_logits)) == 3:
+                batch = extract_shape(raw_logits)[1] if time_major else extract_shape(raw_logits)[0]
                 return (batch,)
-            elif len(raw_logits.shape) == 2:
+            elif len(extract_shape(raw_logits)) == 2:
                 return (1,)
         return (1,)

@@ -2,19 +2,34 @@
 
 from __future__ import annotations
 
+import types
 from collections.abc import Callable
 
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_eager_tensor, ensure_float, ensure_opt_str, ensure_str
-from ml_switcheroo_compiler.backends.protocols import ensure_mod, get_backend_member, has_backend_member
-from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+    EagerTensorProtocol,
+    coerce_array,
+    coerce_float,
+    coerce_opt_str,
+    coerce_str,
+    unpack_pair,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
+from ml_switcheroo_compiler.core.shape import OpValue as OpValue
 
 from .vision_transforms import _apply_elastic_batch
-from .vision_utils import GeometricGridConfig, RandomCropConfig, TransformInterpolationConfig, _prepare_eager_transform
+from .vision_utils import (
+    GeometricGridConfig,
+    RandomCropConfig,
+    TransformInterpolationConfig,
+    _np_map_coordinates,
+    _prepare_eager_transform,
+)
 
-VisionArray = EagerValue
+VisionArray = BackendArg
 
 
 def _flip_horizontal(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -26,7 +41,10 @@ def _flip_horizontal(img: VisionArray, rng: VisionArray) -> VisionArray:
 
     Returns: VisionArray: The horizontally flipped image, or the original image.
     """
-    return ensure_eager_tensor(img)[:, :, ::-1] if ensure_mod(rng).random() > 0.5 else img
+    from .vision_utils import _resolve_backend_mod
+
+    rand_val = coerce_float(adapt_backend_module(rng).require_op("random")())
+    return coerce_array(_resolve_backend_mod(None), img)[:, :, ::-1] if rand_val > 0.5 else img
 
 
 def _flip_vertical(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -38,7 +56,10 @@ def _flip_vertical(img: VisionArray, rng: VisionArray) -> VisionArray:
 
     Returns: VisionArray: The vertically flipped image, or the original image.
     """
-    return ensure_eager_tensor(img)[:, ::-1, :] if ensure_mod(rng).random() > 0.5 else img
+    from .vision_utils import _resolve_backend_mod
+
+    rand_val = coerce_float(adapt_backend_module(rng).require_op("random")())
+    return coerce_array(_resolve_backend_mod(None), img)[:, ::-1, :] if rand_val > 0.5 else img
 
 
 def _flip_both(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -75,7 +96,12 @@ _FLIP_STRATEGIES: dict[str, Callable[[VisionArray, VisionArray], VisionArray]] =
 }
 
 
-def random_flip_eager(backend_module: VisionArray, images: VisionArray, mode: str, seed: VisionArray | None = None) -> VisionArray:
+def random_flip_eager(
+    backend_module: types.ModuleType | BackendModuleProtocol | None,
+    images: VisionArray,
+    mode: str,
+    seed: VisionArray | None = None,
+) -> VisionArray:
     """Apply a random flip transformation to a batch of images eagerly.
 
     Args:
@@ -87,17 +113,20 @@ def random_flip_eager(backend_module: VisionArray, images: VisionArray, mode: st
     Returns:
             VisionArray: Computed `VisionArray` output.
     """
+    from .vision_utils import _resolve_backend_mod
+
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    np_mod = _resolve_backend_mod(ctx.np_mod)
 
-    out: VisionArray = get_backend_member(ctx.np_mod, "copy")(ctx.imgs)
+    out = adapt_backend_module(np_mod).require_symbol("copy")(ctx.imgs)
     strategy = _FLIP_STRATEGIES.get(mode, _identity_flip)
 
     for i in range(ctx.B):
-        ensure_eager_tensor(out)[i] = strategy(ensure_eager_tensor(out)[i], ctx.rng)
+        out[i] = strategy(out[i], ctx.rng)
 
-    out = _from_channels_last(ctx.np_mod, out, data_format)
-    return _from_numpy_array(backend_module, out, "", images)
+    out_cl = _from_channels_last(np_mod, out, data_format)
+    return _from_numpy_array(backend_module, out_cl, "", images)
 
 
 class RotationConfig(pydantic.BaseModel):
@@ -128,7 +157,9 @@ def _compute_rotation_matrix(np_mod: VisionArray, angle: float, W: int, H: int) 
     return (0.0, 0.0)
 
 
-def _generate_coordinate_grid(np_mod: VisionArray, H: int, W: int) -> tuple[VisionArray, VisionArray]:
+def _generate_coordinate_grid(
+    np_mod: types.ModuleType | BackendModuleProtocol, H: int, W: int
+) -> tuple[EagerTensorProtocol, EagerTensorProtocol]:
     """Create a 2D meshgrid corresponding to image coordinates.
 
     Args:
@@ -137,9 +168,13 @@ def _generate_coordinate_grid(np_mod: VisionArray, H: int, W: int) -> tuple[Visi
         W (int): The width dimension of the grid.
 
     Returns:
-        tuple[VisionArray, VisionArray]: The Y and X coordinate grids.
+        tuple[EagerTensorProtocol, EagerTensorProtocol]: The Y and X coordinate grids.
     """
-    return (0, 0)
+    from .vision_utils import _resolve_backend_mod
+
+    mod = _resolve_backend_mod(np_mod)
+    ys, xs = unpack_pair(mod.meshgrid(mod.arange(H, dtype=float), mod.arange(W, dtype=float), indexing="ij"))
+    return (mod.asarray(ys), mod.asarray(xs))
 
 
 class AffineTransformParams(pydantic.BaseModel):
@@ -153,7 +188,9 @@ class AffineTransformParams(pydantic.BaseModel):
     cy: float
 
 
-def _apply_affine_transform(y_grid: VisionArray, x_grid: VisionArray, params: AffineTransformParams) -> tuple[VisionArray, VisionArray]:
+def _apply_affine_transform(
+    y_grid: VisionArray, x_grid: VisionArray, params: AffineTransformParams
+) -> tuple[VisionArray, VisionArray]:
     """Transform spatial coordinate grids using an affine matrix.
 
     Args:
@@ -164,14 +201,20 @@ def _apply_affine_transform(y_grid: VisionArray, x_grid: VisionArray, params: Af
     Returns:
         tuple[VisionArray, VisionArray]: The transformed Y and X coordinates.
     """
-    x_shifted = ensure_float(x_grid) - params.cx
-    y_shifted = ensure_float(y_grid) - params.cy
+    x_shifted = coerce_float(x_grid) - params.cx
+    y_shifted = coerce_float(y_grid) - params.cy
     x_rot = x_shifted * params.cos_a + y_shifted * params.sin_a
     y_rot = -x_shifted * params.sin_a + y_shifted * params.cos_a
     return (y_rot + params.cy, x_rot + params.cx)
 
 
-def _interpolate_pixels(np_mod: VisionArray, imgs: VisionArray, new_y: VisionArray, new_x: VisionArray, config: RotationConfig) -> VisionArray:
+def _interpolate_pixels(
+    np_mod: types.ModuleType | BackendModuleProtocol,
+    imgs: VisionArray,
+    new_y: VisionArray,
+    new_x: VisionArray,
+    config: RotationConfig,
+) -> EagerTensorProtocol:
     """Sample pixels from original images at new spatial coordinates using interpolation.
 
     Args:
@@ -181,12 +224,32 @@ def _interpolate_pixels(np_mod: VisionArray, imgs: VisionArray, new_y: VisionArr
         new_x: The X-coordinates to sample from.
         config (RotationConfig): The configuration dictating interpolation method and out-of-bounds behavior.
 
-    Returns: VisionArray: The interpolated image tensor.
+    Returns: EagerTensorProtocol: The interpolated image tensor.
     """
-    return (0, 0)
+    from .vision_utils import _resolve_backend_mod
+
+    mod = _resolve_backend_mod(np_mod)
+    imgs_t = coerce_array(mod, imgs)
+    b_dim, h_dim, w_dim, c_dim = imgs_t.shape
+    ny = mod.broadcast_to(mod.asarray(new_y, dtype=float), (h_dim, w_dim))
+    nx = mod.broadcast_to(mod.asarray(new_x, dtype=float), (h_dim, w_dim))
+    out = mod.zeros_like(imgs_t)
+    order = 1 if config.interpolation == "bilinear" else 0
+    for b in range(b_dim):
+        for c in range(c_dim):
+            out[b, :, :, c] = _np_map_coordinates(
+                mod,
+                imgs_t[b, :, :, c],
+                (ny, nx),
+                order=order,
+                fill_value=config.fill_value,
+            )
+    return out
 
 
-def _compute_rotation_grid(np_mod: VisionArray, H: int, W: int, rng: VisionArray, factor: float) -> tuple[VisionArray, VisionArray]:
+def _compute_rotation_grid(
+    np_mod: VisionArray, H: int, W: int, rng: VisionArray, factor: float
+) -> tuple[VisionArray, VisionArray]:
     """Calculate the transformed spatial grid for a random rotation.
 
     Args:
@@ -215,7 +278,9 @@ def random_rotation_eager(backend_module: VisionArray, images: VisionArray, conf
     return (0, 0)
 
 
-def _crop_and_pad_single(np_mod: VisionArray, img: VisionArray, rng: VisionArray, shape_info: tuple[int, int, int, int]) -> VisionArray:
+def _crop_and_pad_single(
+    np_mod: VisionArray, img: VisionArray, rng: VisionArray, shape_info: tuple[int, int, int, int]
+) -> VisionArray:
     """Extract a random crop from a single image and pad if necessary.
 
     Args:
@@ -242,13 +307,15 @@ def _compute_random_crop(np_mod: VisionArray, imgs: VisionArray, config: RandomC
     return (0, 0)
 
 
-def random_crop_eager(backend_module: VisionArray, images: VisionArray, size: tuple[int, int], seed: VisionArray | None = None) -> VisionArray:
+def random_crop_eager(
+    backend_module: VisionArray, images: VisionArray, size: tuple[int, int], seed: VisionArray | None = None
+) -> VisionArray:
     """Execute a random spatial crop on a batch of images eagerly.
 
     Args:
         backend_module: Input `backend_module` argument (backend module).
         images: Input `images` argument (images).
-        size (tuple): Input `size` argument (size).
+        size (tuple[int, int]): Input `size` argument (size).
         seed: Input `seed` argument (seed).
 
     Returns:
@@ -257,7 +324,9 @@ def random_crop_eager(backend_module: VisionArray, images: VisionArray, size: tu
     return (0, 0)
 
 
-def random_perspective_eager(backend_module: VisionArray, images: VisionArray, factor: float | tuple[float, float], **kwargs: VisionArray) -> VisionArray:
+def random_perspective_eager(
+    backend_module: VisionArray, images: VisionArray, factor: float | tuple[float, float], **kwargs: VisionArray
+) -> VisionArray:
     """Apply a random perspective transformation to a batch of images eagerly.
 
     Args:
@@ -284,7 +353,9 @@ def _blur_displacement(np_mod: VisionArray, d: VisionArray, s: float) -> VisionA
     return (0, 0)
 
 
-def _generate_random_elastic_grid(np_mod: VisionArray, shape: tuple[int, int, int], rng: VisionArray, a: float, s: float) -> tuple[VisionArray, VisionArray]:
+def _generate_random_elastic_grid(
+    np_mod: VisionArray, shape: tuple[int, int, int], rng: VisionArray, a: float, s: float
+) -> tuple[VisionArray, VisionArray]:
     """Create a displacement grid for elastic transformations using smoothed random noise.
 
     Args:
@@ -311,12 +382,12 @@ def _get_elastic_factor(rng: VisionArray, f: VisionArray) -> float:
         float: The sampled configuration parameter for elastic distortion.
     """
     if isinstance(f, (tuple, list)):
-        return float(ensure_mod(rng).uniform(f[0], f[1]))
-    return float(ensure_float(f))
+        return coerce_float(adapt_backend_module(rng).require_op("uniform")(f[0], f[1]))
+    return float(coerce_float(f))
 
 
 def random_elastic_transform_eager(
-    backend_module: VisionArray,
+    backend_module: types.ModuleType | BackendModuleProtocol | None,
     images: VisionArray,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
@@ -333,23 +404,40 @@ def random_elastic_transform_eager(
 
     Returns: VisionArray: The batch of elastically transformed images.
     """
-    data_format = kwargs.get("data_format", None) if has_backend_member(kwargs, "get") else None
-    ctx = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None) if has_backend_member(kwargs, "get") else None, data_format)
+    from .vision_utils import _resolve_backend_mod
+
+    data_format = kwargs.get("data_format", None) if adapt_backend_module(kwargs).has_symbol("get") else None
+    ctx = _prepare_eager_transform(
+        backend_module,
+        images,
+        kwargs.get("seed", None) if adapt_backend_module(kwargs).has_symbol("get") else None,
+        data_format,
+    )
+    np_mod = _resolve_backend_mod(ctx.np_mod)
     a = _get_elastic_factor(ctx.rng, alpha)
     s = _get_elastic_factor(ctx.rng, sigma)
-    (new_y, new_x) = _generate_random_elastic_grid(ctx.np_mod, (ctx.B, ctx.H, ctx.W), ctx.rng, a, s)
+    (new_y, new_x) = _generate_random_elastic_grid(np_mod, (ctx.B, ctx.H, ctx.W), ctx.rng, a, s)
     t_config = TransformInterpolationConfig(
         new_y=new_y,
         new_x=new_x,
-        order=1 if str(kwargs.get("interpolation", "bilinear") if has_backend_member(kwargs, "get") else "bilinear") == "bilinear" else 0,
-        fill_value=float(ensure_float(kwargs.get("fill_value", 0.0) if has_backend_member(kwargs, "get") else 0.0)),
+        order=1
+        if str(
+            kwargs.get("interpolation", "bilinear") if adapt_backend_module(kwargs).has_symbol("get") else "bilinear"
+        )
+        == "bilinear"
+        else 0,
+        fill_value=float(
+            coerce_float(kwargs.get("fill_value", 0.0) if adapt_backend_module(kwargs).has_symbol("get") else 0.0)
+        ),
     )
-    out = _apply_elastic_batch(ctx.np_mod, ctx.imgs, t_config)
-    out = _from_channels_last(ctx.np_mod, out, ensure_opt_str(data_format))
-    return _from_numpy_array(backend_module, out, "", images)
+    out = _apply_elastic_batch(np_mod, ctx.imgs, t_config)
+    out_cl = _from_channels_last(np_mod, out, coerce_opt_str(data_format))
+    return _from_numpy_array(backend_module, out_cl, "", images)
 
 
-def _compute_zoom_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tuple[VisionArray, VisionArray]:
+def _compute_zoom_grid(
+    np_mod: types.ModuleType | BackendModuleProtocol, config: GeometricGridConfig
+) -> tuple[VisionArray, VisionArray]:
     """Calculate the destination spatial grid for a zoom transformation.
 
     Args:
@@ -359,10 +447,17 @@ def _compute_zoom_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tupl
     Returns:
         tuple[VisionArray, VisionArray]: The Y and X coordinates of the zoomed grid.
     """
-    return (0, 0)
+    ys, xs = _generate_coordinate_grid(np_mod, config.H, config.W)
+    sy = 1.0 + _get_shear_factor(config.rng, config.factor1)
+    sx = 1.0 + _get_shear_factor(config.rng, config.factor2 if config.factor2 is not None else config.factor1)
+    cy = (config.H - 1) / 2.0
+    cx = (config.W - 1) / 2.0
+    return ((ys - cy) * sy + cy, (xs - cx) * sx + cx)
 
 
-def _compute_translation_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tuple[VisionArray, VisionArray]:
+def _compute_translation_grid(
+    np_mod: types.ModuleType | BackendModuleProtocol, config: GeometricGridConfig
+) -> tuple[VisionArray, VisionArray]:
     """Calculate the shifted spatial grid for a translation operation.
 
     Args:
@@ -372,7 +467,10 @@ def _compute_translation_grid(np_mod: VisionArray, config: GeometricGridConfig) 
     Returns:
         tuple[VisionArray, VisionArray]: The Y and X coordinates of the translated grid.
     """
-    return (0, 0)
+    ys, xs = _generate_coordinate_grid(np_mod, config.H, config.W)
+    dy = _get_shear_factor(config.rng, config.factor1) * float(config.H)
+    dx = _get_shear_factor(config.rng, config.factor2) * float(config.W)
+    return (ys - dy, xs - dx)
 
 
 def _get_shear_factor(rng: VisionArray, factor: VisionArray) -> float:
@@ -385,13 +483,15 @@ def _get_shear_factor(rng: VisionArray, factor: VisionArray) -> float:
     Returns:
         float: The sampled shear magnitude.
     """
-    rng_mod = ensure_mod(rng)
     if isinstance(factor, (tuple, list)):
-        return float(rng_mod.uniform(factor[0], factor[1]))
-    return float(rng_mod.uniform(-ensure_float(factor), factor))
+        return coerce_float(adapt_backend_module(rng).require_op("uniform")(factor[0], factor[1]))
+    f_val = coerce_float(factor)
+    return coerce_float(adapt_backend_module(rng).require_op("uniform")(-f_val, f_val))
 
 
-def _compute_shear_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tuple[VisionArray, VisionArray]:
+def _compute_shear_grid(
+    np_mod: types.ModuleType | BackendModuleProtocol, config: GeometricGridConfig
+) -> tuple[VisionArray, VisionArray]:
     """Calculate the skewed spatial grid for a shear transformation.
 
     Args:
@@ -401,11 +501,14 @@ def _compute_shear_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tup
     Returns:
         tuple[VisionArray, VisionArray]: The Y and X coordinates of the sheared grid.
     """
-    return (0, 0)
+    ys, xs = _generate_coordinate_grid(np_mod, config.H, config.W)
+    shy = _get_shear_factor(config.rng, config.factor1)
+    shx = _get_shear_factor(config.rng, config.factor2 if config.factor2 is not None else 0.0)
+    return (ys + shy * xs, xs + shx * ys)
 
 
 def random_zoom_eager(
-    backend_module: VisionArray,
+    backend_module: types.ModuleType | BackendModuleProtocol | None,
     images: VisionArray,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
@@ -417,35 +520,46 @@ def random_zoom_eager(
         backend_module: The backend module to use for array operations.
         images: The input tensor of images to zoom.
         height_factor (tuple[float, float] | float): The zoom scaling factor range for the vertical axis.
-        width_factor (tuple[float, float] | float | None, optional): The zoom scaling factor range for the horizontal axis. Defaults to None.
+        width_factor (tuple[float, float] | float | None, optional): The zoom scaling factor range for the horizontal
+            axis. Defaults to None.
         **kwargs: Additional configuration like interpolation or fill mode.
 
     Returns: VisionArray: The batch of zoomed images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect") if has_backend_member(kwargs, "get") else "reflect")
-    interpolation = str(kwargs.get("interpolation", "bilinear") if has_backend_member(kwargs, "get") else "bilinear")
-    fill_value = float(ensure_float(kwargs.get("fill_value", 0.0) if has_backend_member(kwargs, "get") else 0.0))
-    seed = kwargs.get("seed", None) if has_backend_member(kwargs, "get") else None
-    data_format = kwargs.get("data_format", None) if has_backend_member(kwargs, "get") else None
+    from .vision_utils import _resolve_backend_mod
+
+    fill_mode = str(kwargs.get("fill_mode", "reflect") if adapt_backend_module(kwargs).has_symbol("get") else "reflect")
+    interpolation = str(
+        kwargs.get("interpolation", "bilinear") if adapt_backend_module(kwargs).has_symbol("get") else "bilinear"
+    )
+    fill_value = float(
+        coerce_float(kwargs.get("fill_value", 0.0) if adapt_backend_module(kwargs).has_symbol("get") else 0.0)
+    )
+    seed = kwargs.get("seed", None) if adapt_backend_module(kwargs).has_symbol("get") else None
+    data_format = kwargs.get("data_format", None) if adapt_backend_module(kwargs).has_symbol("get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    np_mod = _resolve_backend_mod(ctx.np_mod)
     if width_factor is None:
         width_factor = height_factor
-    (new_y, new_x) = _compute_zoom_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
+    (new_y, new_x) = _compute_zoom_grid(
+        np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor)
+    )
     config = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=ensure_str(data_format),
+        data_format=coerce_str(data_format),
     )
-    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, ensure_opt_str(data_format))
-    return _from_numpy_array(backend_module, out, "", images)
+    out_arr = _interpolate_pixels(np_mod, ctx.imgs, new_y, new_x, config)
+    out = coerce_array(np_mod, _from_channels_last(np_mod, out_arr, coerce_opt_str(data_format)))
+    out_res: VisionArray = out[0] if adapt_backend_module(images).get_symbol("ndim", 4) == 3 else out
+    return _from_numpy_array(backend_module, out_res, "", images)
 
 
 def random_translation_eager(
-    backend_module: VisionArray,
+    backend_module: types.ModuleType | BackendModuleProtocol | None,
     images: VisionArray,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
@@ -462,28 +576,38 @@ def random_translation_eager(
 
     Returns: VisionArray: The batch of translated images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect") if has_backend_member(kwargs, "get") else "reflect")
-    interpolation = str(kwargs.get("interpolation", "bilinear") if has_backend_member(kwargs, "get") else "bilinear")
-    fill_value = float(ensure_float(kwargs.get("fill_value", 0.0) if has_backend_member(kwargs, "get") else 0.0))
-    seed = kwargs.get("seed", None) if has_backend_member(kwargs, "get") else None
-    data_format = kwargs.get("data_format", None) if has_backend_member(kwargs, "get") else None
+    from .vision_utils import _resolve_backend_mod
+
+    fill_mode = str(kwargs.get("fill_mode", "reflect") if adapt_backend_module(kwargs).has_symbol("get") else "reflect")
+    interpolation = str(
+        kwargs.get("interpolation", "bilinear") if adapt_backend_module(kwargs).has_symbol("get") else "bilinear"
+    )
+    fill_value = float(
+        coerce_float(kwargs.get("fill_value", 0.0) if adapt_backend_module(kwargs).has_symbol("get") else 0.0)
+    )
+    seed = kwargs.get("seed", None) if adapt_backend_module(kwargs).has_symbol("get") else None
+    data_format = kwargs.get("data_format", None) if adapt_backend_module(kwargs).has_symbol("get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
-    (new_y, new_x) = _compute_translation_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
+    np_mod = _resolve_backend_mod(ctx.np_mod)
+    (new_y, new_x) = _compute_translation_grid(
+        np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor)
+    )
     config = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=ensure_str(data_format),
+        data_format=coerce_str(data_format),
     )
-    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, ensure_opt_str(data_format))
-    return _from_numpy_array(backend_module, out, "", images)
+    out_arr = _interpolate_pixels(np_mod, ctx.imgs, new_y, new_x, config)
+    out = coerce_array(np_mod, _from_channels_last(np_mod, out_arr, coerce_opt_str(data_format)))
+    out_res: VisionArray = out[0] if adapt_backend_module(images).get_symbol("ndim", 4) == 3 else out
+    return _from_numpy_array(backend_module, out_res, "", images)
 
 
 def random_shear_eager(
-    backend_module: VisionArray,
+    backend_module: types.ModuleType | BackendModuleProtocol | None,
     images: VisionArray,
     y_factor: tuple[float, float] | float,
     x_factor: tuple[float, float] | float | None = None,
@@ -495,26 +619,36 @@ def random_shear_eager(
         backend_module: The backend module to use for array operations.
         images: The input tensor of images to shear.
         y_factor (tuple[float, float] | float): The shearing factor magnitude for the vertical axis.
-        x_factor (tuple[float, float] | float | None, optional): The shearing factor magnitude for the horizontal axis. Defaults to None.
+        x_factor (tuple[float, float] | float | None, optional): The shearing factor magnitude for the horizontal
+            axis. Defaults to None.
         **kwargs: Additional configuration variables, e.g., interpolation.
 
     Returns: VisionArray: The batch of sheared images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect") if has_backend_member(kwargs, "get") else "reflect")
-    interpolation = str(kwargs.get("interpolation", "bilinear") if has_backend_member(kwargs, "get") else "bilinear")
-    fill_value = float(ensure_float(kwargs.get("fill_value", 0.0) if has_backend_member(kwargs, "get") else 0.0))
-    seed = kwargs.get("seed", None) if has_backend_member(kwargs, "get") else None
-    data_format = kwargs.get("data_format", None) if has_backend_member(kwargs, "get") else None
+    from .vision_utils import _resolve_backend_mod
+
+    fill_mode = str(kwargs.get("fill_mode", "reflect") if adapt_backend_module(kwargs).has_symbol("get") else "reflect")
+    interpolation = str(
+        kwargs.get("interpolation", "bilinear") if adapt_backend_module(kwargs).has_symbol("get") else "bilinear"
+    )
+    fill_value = float(
+        coerce_float(kwargs.get("fill_value", 0.0) if adapt_backend_module(kwargs).has_symbol("get") else 0.0)
+    )
+    seed = kwargs.get("seed", None) if adapt_backend_module(kwargs).has_symbol("get") else None
+    data_format = kwargs.get("data_format", None) if adapt_backend_module(kwargs).has_symbol("get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
-    (new_y, new_x) = _compute_shear_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=y_factor, factor2=x_factor))
+    np_mod = _resolve_backend_mod(ctx.np_mod)
+    (new_y, new_x) = _compute_shear_grid(
+        np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=y_factor, factor2=x_factor)
+    )
     config = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=ensure_str(data_format),
+        data_format=coerce_str(data_format),
     )
-    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, ensure_opt_str(data_format))
-    return _from_numpy_array(backend_module, out, "", images)
+    out_arr = _interpolate_pixels(np_mod, ctx.imgs, new_y, new_x, config)
+    out_cl = _from_channels_last(np_mod, out_arr, coerce_opt_str(data_format))
+    return _from_numpy_array(backend_module, out_cl, "", images)

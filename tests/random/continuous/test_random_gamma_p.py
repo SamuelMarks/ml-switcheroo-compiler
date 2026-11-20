@@ -7,7 +7,6 @@ import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.random.continuous.random_gamma_p import random_gamma_p
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -15,8 +14,10 @@ if typing.TYPE_CHECKING:
 
 def test_random_gamma_p() -> None:
     """Test random_gamma_p function."""
-    with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.random_gamma_p"], "_dispatch_random") as mock_dispatch:
+    with patch.object(
+        sys.modules["ml_switcheroo_compiler.random.continuous.random_gamma_p"], "_dispatch_random"
+    ) as mock_dispatch:
         mock_dispatch.return_value = "mocked_result"
         result = random_gamma_p(1, 2, a=3)
-        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
+        assert result == "mocked_result"
         mock_dispatch.assert_called_once_with("random_gamma_p", 1, 2, a=3)

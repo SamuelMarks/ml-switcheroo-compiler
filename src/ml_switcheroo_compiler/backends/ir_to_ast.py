@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 
 import libcst as cst
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 _CONFIG_PATH: str = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
@@ -54,7 +54,18 @@ def _emit_call_args(
         kw_map = _CONFIG.frameworks[target_framework].kwarg_map
 
     for k, v in node.attributes.items():
-        if k in ("is_parameter", "param_name", "var_name", "dtype", "value", "shape", "callee", "has_varargs", "has_varkwargs", "is_ternary"):
+        if k in (
+            "is_parameter",
+            "param_name",
+            "var_name",
+            "dtype",
+            "value",
+            "shape",
+            "callee",
+            "has_varargs",
+            "has_varkwargs",
+            "is_ternary",
+        ):
             continue
         target_k = kw_map.get(k, k)
         if isinstance(v, bool):
@@ -383,7 +394,9 @@ def _build_return_statement(
     if graph.outputs:
         ret_target = graph.outputs[-1]
         out_node = graph.nodes.get(ret_target)
-        ret_name = var_map.get(ret_target) or (out_node.attributes.get("var_name", ret_target) if out_node else ret_target)
+        ret_name = var_map.get(ret_target) or (
+            out_node.attributes.get("var_name", ret_target) if out_node else ret_target
+        )
         return cst.SimpleStatementLine(body=[cst.Return(value=cst.Name(str(ret_name)))])
     if last_val_name is not None:
         return cst.SimpleStatementLine(body=[cst.Return(value=cst.Name(last_val_name))])

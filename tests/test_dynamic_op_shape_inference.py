@@ -5,9 +5,8 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import get_op
 from ml_switcheroo_compiler.ops.shape_inference import (
     S,
@@ -31,10 +30,9 @@ from ml_switcheroo_compiler.ops.shape_inference import (
     infer_transpose,
 )
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    pass
 
 
 def test_symbolic_dimension() -> None:
@@ -254,28 +252,29 @@ def test_dynamic_op_def_declarative_inference() -> None:
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
 
     _load_yaml_registry()
-    ensure_eager_tensor(_YAML_REGISTRY)["CustomDynamicTestOp"] = {"category": "elementwise"}
+    entry: dict[str, dict[str, dict[str, str]]] = {"metadata": {"info": {"category": "elementwise"}}}
+    _YAML_REGISTRY["CustomDynamicTestOp"] = entry
     op_cls = get_op("CustomDynamicTestOp")
     op = op_cls()
 
     # Empty inputs
-    assert op.infer_shape() == ()
+    assert op.dispatch_infer_shape() == ()
 
     # Valid broadcast
-    assert op.infer_shape((1, 3), (2, 1)) == (2, 3)
+    assert op.dispatch_infer_shape((1, 3), (2, 1)) == (2, 3)
 
     # Mismatch raises ValueError
     with pytest.raises(ValueError, match="Shape mismatch"):
-        op.infer_shape((2, 3), (2, 4))
+        op.dispatch_infer_shape((2, 3), (2, 4))
 
 
 def test_shape_inference_pass_with_strides_and_symbolic() -> None:
     """Test that shape_inference_pass correctly attaches shape_metadata and contiguous strides."""
     sym_shape = (S("batch"), 4)
     node_in1 = IRNode(id="in1", op_type="Input", inputs=[], attributes={})
-    ensure_mutable(node_in1).shape_metadata = ensure_eager_tensor(sym_shape)
+    node_in1.shape_metadata = sym_shape
     node_in2 = IRNode(id="in2", op_type="Input", inputs=[], attributes={})
-    ensure_mutable(node_in2).shape_metadata = ensure_eager_tensor(sym_shape)
+    node_in2.shape_metadata = sym_shape
     node_add = IRNode(id="add", op_type="Add", inputs=["in1", "in2"], attributes={}, shape_metadata=None)
 
     graph = IRGraph(name="test_graph", outputs=["add"])
@@ -285,11 +284,11 @@ def test_shape_inference_pass_with_strides_and_symbolic() -> None:
 
     modified = shape_inference_pass(graph)
     assert modified is True
-    assert ensure_eager_tensor(graph.nodes["add"].shape_metadata) == (S("batch"), 4)
+    assert graph.nodes["add"].shape_metadata == (S("batch"), 4)
     assert graph.nodes["add"].attributes["strides"] == (4, 1)
 
 
-def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) -> None:
+def test_load_shape_signatures_missing_file(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test loading shape signatures when YAML file does not exist.
 
     Args:
@@ -306,7 +305,7 @@ def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) ->
 
 def test_broadcast_shapes_none_and_edge_cases() -> None:
     """Test broadcasting with None inputs."""
-    assert ensure_callable(broadcast_shapes)(None, None) == ()
+    assert broadcast_shapes(None, None) == ()
 
 
 def test_conv_3d_and_symbolic() -> None:
@@ -437,33 +436,35 @@ def test_infer_shape_input_extractors() -> None:
     class DummyMeta:
         """Test class DummyMeta."""
 
-        def __init__(self, s: EagerValue) -> None:
+        def __init__(self, s: tuple[int, ...]) -> None:
             """Test function __init__.
 
             Args:
                 s: Test parameter `s`.
             """
-            self.shape_metadata = s
+            self.shape_metadata: tuple[int, ...] = s
 
     class DummyShape:
         """Test class DummyShape."""
 
-        def __init__(self, s: EagerValue) -> None:
+        def __init__(self, s: tuple[int, ...]) -> None:
             """Test function __init__.
 
             Args:
                 s: Test parameter `s`.
             """
-            self.shape_metadata = None
-            self.shape = s
+            self.shape_metadata: tuple[int, ...] | None = None
+            self.shape: tuple[int, ...] = s
+
+    from tests.testing_utils import require_callable
 
     # Positional args
-    assert ensure_callable(infer_shape)("Add", ensure_callable(DummyMeta)((2, 3)), ensure_callable(DummyShape)((1, 3))) == (2, 3)
+    assert require_callable(infer_shape)("Add", DummyMeta((2, 3)), DummyShape((1, 3))) == (2, 3)
     assert infer_shape("Add", (2, 3), [1, 3]) == (2, 3)
 
     # inputs kwarg
-    assert ensure_callable(infer_shape)("Add", inputs=[ensure_callable(DummyMeta)((2, 3)), ensure_callable(DummyShape)((1, 3))]) == (2, 3)
-    assert ensure_callable(infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
+    assert require_callable(infer_shape)("Add", inputs=[DummyMeta((2, 3)), DummyShape((1, 3))]) == (2, 3)
+    assert require_callable(infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
 
 
 def test_coverage_gap_fillers() -> None:
@@ -530,3 +531,22 @@ def test_coverage_gap_fillers() -> None:
     cfg = load_shape_signatures()
     cfg.operations["TestCustomCat"] = ShapeOpSignature(category="custom_unknown")
     assert infer_op_shape_declarative("TestCustomCat", (2, 3), (1, 3)) == (2, 3)
+
+    from ml_switcheroo_compiler.ops.shape_inference import (
+        _to_int_or_seq,
+        _to_opt_int_or_seq,
+        _to_opt_int_seq,
+        _to_padding,
+        _to_shape_type,
+    )
+
+    assert _to_padding("SAME") == "SAME"
+    assert _to_padding([1, 2]) == [1, 2]
+    assert _to_padding(None) == 0
+    assert _to_shape_type([S("b"), 4, "seq", None]) == (S("b"), 4, S("seq"), 0)
+    assert _to_opt_int_seq([1, 2]) == [1, 2]
+    assert _to_opt_int_seq(None) is None
+    assert _to_int_or_seq([2, 3]) == [2, 3]
+    assert _to_int_or_seq(None, default=2) == 2
+    assert _to_opt_int_or_seq(None) is None
+    assert _to_opt_int_or_seq(3) == 3

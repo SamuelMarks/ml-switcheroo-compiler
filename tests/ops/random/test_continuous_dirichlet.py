@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import typing
 
+from pytest_mock import MockerFixture
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.random.continuous.dirichlet import dirichlet
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import MockTensorStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
-def test_dirichlet(mocker: EagerTensorProtocol) -> None:
+def test_dirichlet(mocker: MockerFixture) -> None:
     # Mock global_tracing_state.add_node inside random.state
     """Test function test_dirichlet.
 
@@ -21,7 +23,7 @@ def test_dirichlet(mocker: EagerTensorProtocol) -> None:
     """
     mocker.patch("ml_switcheroo_compiler.random.state.global_tracing_state.add_node")
 
-    class MockTensor:
+    class MockTensor(MockTensorStub):
         """Test class MockTensor."""
 
         def __init__(self) -> None:
@@ -30,8 +32,8 @@ def test_dirichlet(mocker: EagerTensorProtocol) -> None:
             self.shape = ()
 
     t = MockTensor()
-    res = ensure_callable(dirichlet)(t, t)
-    assert res is not None
+    res = dirichlet(t, t)
+    assert tuple(res.shape) == ()
 
-    res2 = ensure_callable(dirichlet)(t, t, shape=(2, 3), dtype=DType.Float64)
-    assert res2 is not None
+    res2 = dirichlet(t, t, shape=(2, 3), dtype=DType.Float64)
+    assert tuple(res2.shape) == (2, 3)

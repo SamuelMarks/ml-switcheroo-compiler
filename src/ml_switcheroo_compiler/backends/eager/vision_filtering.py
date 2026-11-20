@@ -2,22 +2,23 @@
 
 from __future__ import annotations
 
+import types
+
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
     EagerTensorProtocol,
-    EagerValue,
-    ensure_eager_tensor,
-    ensure_int_list,
-    ensure_shape,
-    ensure_tensor_quad,
+    coerce_int_list,
+    coerce_shape,
     global_eager_registry,
+    unpack_quad,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
 
-def _resolve_filter_mod(backend_module: BackendModuleProtocol | None) -> BackendModuleProtocol:
+def _resolve_filter_mod(backend_module: BackendModuleProtocol | types.ModuleType | None) -> BackendModuleProtocol:
     """Resolve an array module providing `zeros`, `linspace`, `stack`, and `where`.
 
     Args:
@@ -32,7 +33,9 @@ def _resolve_filter_mod(backend_module: BackendModuleProtocol | None) -> Backend
 
 
 @global_eager_registry.register("ExtractVolumePatches")
-def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _extract_volume_patches(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Execute the eager extract volume patches operation on the active backend array.
 
     Args:
@@ -41,22 +44,42 @@ def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerV
         **kwargs: Keyword args.
 
     Returns:
-        EagerValue: Computed `EagerValue` output.
+        BackendArg: Computed `BackendArg` output.
     """
     mod = _resolve_filter_mod(backend_module)
     if not args:
-        return ensure_eager_tensor(get_backend_member(backend_module, "asarray")([]) if has_backend_member(backend_module, "asarray") else mod.array([]))
+        return (
+            adapt_backend_module(backend_module).require_symbol("asarray")([])
+            if adapt_backend_module(backend_module).has_symbol("asarray")
+            else mod.array([])
+        )
 
     input_tensor: EagerTensorProtocol = mod.asarray(args[0])
-    ksizes = ensure_int_list(kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if has_backend_member(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
-    strides = ensure_int_list(kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if has_backend_member(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
+    ksizes = coerce_int_list(
+        kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1])
+        if adapt_backend_module(kwargs).has_symbol("get")
+        else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1])
+    )
+    strides = coerce_int_list(
+        kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1])
+        if adapt_backend_module(kwargs).has_symbol("get")
+        else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1])
+    )
 
     if input_tensor.ndim != 5:
-        return get_backend_member(backend_module, "asarray")(input_tensor) if has_backend_member(backend_module, "asarray") else input_tensor
+        return (
+            adapt_backend_module(backend_module).require_symbol("asarray")(input_tensor)
+            if adapt_backend_module(backend_module).has_symbol("asarray")
+            else input_tensor
+        )
 
     shape = input_tensor.shape
     if any(int(k) <= 0 or int(k) > int(s) for k, s in zip(ksizes, shape)):
-        return get_backend_member(backend_module, "asarray")(input_tensor) if has_backend_member(backend_module, "asarray") else input_tensor
+        return (
+            adapt_backend_module(backend_module).require_symbol("asarray")(input_tensor)
+            if adapt_backend_module(backend_module).has_symbol("asarray")
+            else input_tensor
+        )
 
     out_dims = [len(range(0, int(shape[d]) - int(ksizes[d]) + 1, int(strides[d]))) for d in range(5)]
     patch_vol = int(ksizes[0]) * int(ksizes[1]) * int(ksizes[2]) * int(ksizes[3]) * int(ksizes[4])
@@ -76,7 +99,11 @@ def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerV
                         ]
                         res[i0, i1, i2, i3, i4] = patch.reshape(-1)
 
-    return get_backend_member(backend_module, "asarray")(res) if has_backend_member(backend_module, "asarray") else res
+    return (
+        adapt_backend_module(backend_module).require_symbol("asarray")(res)
+        if adapt_backend_module(backend_module).has_symbol("asarray")
+        else res
+    )
 
 
 class NMSConfig(pydantic.BaseModel):
@@ -89,7 +116,9 @@ class NMSConfig(pydantic.BaseModel):
     score_threshold: float = float("-inf")
 
 
-def _get_box_coords(np_mod: BackendModuleProtocol, box_ctx: tuple[int, int, int, int], box: EagerValue) -> tuple[tuple[int, int], tuple[int, int]]:
+def _get_box_coords(
+    np_mod: BackendModuleProtocol | types.ModuleType | None, box_ctx: tuple[int, int, int, int], box: BackendArg
+) -> tuple[tuple[int, int], tuple[int, int]]:
     """Retrieve the box coords property or mapping.
 
     Args:
@@ -101,27 +130,38 @@ def _get_box_coords(np_mod: BackendModuleProtocol, box_ctx: tuple[int, int, int,
         tuple[tuple[int, int], tuple[int, int]]: ((y1, x1), (y2, x2)).
     """
     h, w = box_ctx[0], box_ctx[1]
-    box_arr = ensure_eager_tensor(box)
-    y1 = int(box_arr[0] * (h - 1))
-    x1 = int(box_arr[1] * (w - 1))
-    y2 = int(box_arr[2] * (h - 1))
-    x2 = int(box_arr[3] * (w - 1))
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_float, coerce_operand_list
+
+    box_vals = [coerce_float(v) for v in coerce_operand_list(box)]
+    y1 = int(box_vals[0] * (h - 1))
+    x1 = int(box_vals[1] * (w - 1))
+    y2 = int(box_vals[2] * (h - 1))
+    x2 = int(box_vals[3] * (w - 1))
     return ((y1, x1), (y2, x2))
 
 
-def _extract_box_channels(np_mod: BackendModuleProtocol, img: EagerValue, out: EagerValue, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
+def _extract_box_channels(
+    np_mod: BackendModuleProtocol | types.ModuleType | None,
+    img: BackendArg,
+    out: BackendArg,
+    coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int],
+    config: BBoxConfig,
+) -> None:
     """Execute the eager extract box channels operation on the active backend array.
 
     Args:
         np_mod: Input `np_mod` argument (np mod).
         img: Input `img` argument (img).
         out: Input `out` argument (out).
-        coords_and_i (tuple[tuple[tuple[int, int], tuple[int, int]], int]): Input `coords_and_i` argument (coords and i).
+        coords_and_i (tuple[tuple[tuple[int, int], tuple[int, int]], int]): Input `coords_and_i` argument (coords and
+            i).
         config (BBoxConfig): Input `config` argument (config).
 
     Returns:
             None: Computed `None` output.
     """
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_array
+
     (y1_i, x1_i), (y2_i, x2_i) = coords_and_i[0]
     i = coords_and_i[1]
     crop_h, crop_w = config.crop_size
@@ -129,43 +169,59 @@ def _extract_box_channels(np_mod: BackendModuleProtocol, img: EagerValue, out: E
     if y2_i <= y1_i or x2_i <= x1_i:
         return
 
-    cropped = ensure_eager_tensor(img)[y1_i : y2_i + 1, x1_i : x2_i + 1]
-    if cropped.size == 0:
+    img_arr = coerce_array(np_mod, img)
+    out_arr = coerce_array(np_mod, out)
+    cropped = img_arr[y1_i : y2_i + 1, x1_i : x2_i + 1]
+    if adapt_backend_module(cropped).get_symbol("size", 0) == 0:
         return
 
-    y_indices = get_backend_member(np_mod, "linspace")(0, cropped.shape[0] - 1, crop_h).astype(int)
-    x_indices = get_backend_member(np_mod, "linspace")(0, cropped.shape[1] - 1, crop_w).astype(int)
+    y_indices = adapt_backend_module(np_mod).require_symbol("linspace")(0, cropped.shape[0] - 1, crop_h).astype(int)
+    x_indices = adapt_backend_module(np_mod).require_symbol("linspace")(0, cropped.shape[1] - 1, crop_w).astype(int)
     resized = cropped[y_indices][:, x_indices]
-    ensure_eager_tensor(out)[i] = resized
+    out_arr[i] = resized
 
 
-def _extract_single_box(np_mod: BackendModuleProtocol, batch_ctx: EagerValue, i: int, config: BBoxConfig) -> None:
+def _extract_single_box(
+    np_mod: BackendModuleProtocol | types.ModuleType | None, batch_ctx: BackendArg, i: int, config: BBoxConfig
+) -> None:
     """Execute the eager extract single box operation on the active backend array.
 
     Args:
-        np_mod: Input `np_mod` argument (np mod).
-        batch_ctx: Input `batch_ctx` argument (batch ctx).
+        np_mod (BackendModuleProtocol | types.ModuleType | None): Input `np_mod` argument (np mod).
+        batch_ctx (BackendArg): Input `batch_ctx` argument (batch ctx).
         i (int): Input `i` argument (i).
         config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            None: Computed `None` output.
+        None: Computed `None` output.
     """
-    imgs, bxs, bxs_idx, out = ensure_tensor_quad(batch_ctx)
-    img_idx = int(bxs_idx[i])
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_int, coerce_operand_list, coerce_shape
+
+    imgs_raw, bxs_raw, bxs_idx_raw, out = unpack_quad(batch_ctx)
+    imgs = coerce_operand_list(imgs_raw)
+    bxs = coerce_operand_list(bxs_raw)
+    bxs_idx = coerce_operand_list(bxs_idx_raw)
+    img_idx = coerce_int(bxs_idx[i])
     if img_idx >= len(imgs):
         return
     img = imgs[img_idx]
     box = bxs[i]
-    if img.ndim < 2:
+    img_shape = coerce_shape(adapt_backend_module(img).require_symbol("shape"))
+    if len(img_shape) < 2:
         return
-    h, w = img.shape[0], img.shape[1]
+    h, w = img_shape[0], img_shape[1]
     box_ctx = (h, w, config.crop_size[0], config.crop_size[1])
     coords = _get_box_coords(np_mod, box_ctx, box)
     _extract_box_channels(np_mod, img, out, (coords, i), config)
 
 
-def _extract_boxes_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, bxs: EagerValue, bxs_idx: EagerValue, config: BBoxConfig) -> EagerValue:
+def _extract_boxes_batch(
+    np_mod: BackendModuleProtocol | types.ModuleType | None,
+    imgs: BackendArg,
+    bxs: BackendArg,
+    bxs_idx: BackendArg,
+    config: BBoxConfig,
+) -> BackendArg:
     """Extract bounding boxes for a batch.
 
     Args:
@@ -175,23 +231,33 @@ def _extract_boxes_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, bxs: E
         bxs_idx: Box indices.
         config (BBoxConfig): Configuration.
 
-    Returns: EagerValue: Extracted boxes.
+    Returns: BackendArg: Extracted boxes.
     """
-    imgs_arr = ensure_eager_tensor(imgs)
-    num_boxes = len(ensure_eager_tensor(bxs))
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_array, coerce_operand_list
+
+    imgs_arr = coerce_array(np_mod, imgs)
+    num_boxes = len(coerce_operand_list(bxs))
     if imgs_arr.ndim == 0:
-        return ensure_eager_tensor(get_backend_member(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
+        return adapt_backend_module(np_mod).require_symbol("zeros")(
+            (num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype
+        )
 
     channels = imgs_arr.shape[-1] if imgs_arr.ndim > 2 else 1
     out_shape = (num_boxes, config.crop_size[0], config.crop_size[1], channels)
-    out = get_backend_member(np_mod, "zeros")(out_shape, dtype=imgs_arr.dtype)
+    out = adapt_backend_module(np_mod).require_symbol("zeros")(out_shape, dtype=imgs_arr.dtype)
     batch_ctx = (imgs, bxs, bxs_idx, out)
     for i in range(num_boxes):
         _extract_single_box(np_mod, batch_ctx, i, config)
-    return ensure_eager_tensor(out)
+    return out
 
 
-def _extract_boxes_tf(backend_module: BackendModuleProtocol, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
+def _extract_boxes_tf(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    images: BackendArg,
+    boxes: BackendArg,
+    box_indices: BackendArg,
+    config: BBoxConfig,
+) -> BackendArg:
     """Execute the eager extract boxes tf operation on the active backend array.
 
     Args:
@@ -202,17 +268,27 @@ def _extract_boxes_tf(backend_module: BackendModuleProtocol, images: EagerValue,
         config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = _resolve_filter_mod(backend_module)
     images_np = mod.asarray(images)
     boxes_np = mod.asarray(boxes)
     box_indices_np = mod.asarray(box_indices)
     res = _extract_boxes_batch(mod, images_np, boxes_np, box_indices_np, config)
-    return get_backend_member(backend_module, "asarray")(res) if has_backend_member(backend_module, "asarray") else res
+    return (
+        adapt_backend_module(backend_module).require_symbol("asarray")(res)
+        if adapt_backend_module(backend_module).has_symbol("asarray")
+        else res
+    )
 
 
-def extract_bounding_boxes_eager(backend_module: BackendModuleProtocol, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
+def extract_bounding_boxes_eager(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    images: BackendArg,
+    boxes: BackendArg,
+    box_indices: BackendArg,
+    config: BBoxConfig,
+) -> BackendArg:
     """Execute the eager extract bounding boxes eager operation on the active backend array.
 
     Args:
@@ -223,12 +299,14 @@ def extract_bounding_boxes_eager(backend_module: BackendModuleProtocol, images: 
         config (BBoxConfig): Input `config` argument (config).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _extract_boxes_tf(backend_module, images, boxes, box_indices, config)
 
 
-def _to_xyxy_format(np_mod: BackendModuleProtocol, boxes: EagerValue, format: str) -> EagerValue:
+def _to_xyxy_format(
+    np_mod: BackendModuleProtocol | types.ModuleType | None, boxes: BackendArg, format: str
+) -> BackendArg:
     """Execute the eager to xyxy format operation on the active backend array.
 
     Args:
@@ -237,28 +315,30 @@ def _to_xyxy_format(np_mod: BackendModuleProtocol, boxes: EagerValue, format: st
         format (str): Input `format` argument (format).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
 
     Raises:
         ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
-    boxes = get_backend_member(np_mod, "asarray")(boxes)
+    boxes = adapt_backend_module(np_mod).require_symbol("asarray")(boxes)
     if format == "xyxy":
         return boxes
     elif format == "xyWH":
-        boxes_arr = ensure_eager_tensor(boxes)
+        boxes_arr = boxes
         x, y, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return ensure_eager_tensor(get_backend_member(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
+        return adapt_backend_module(np_mod).require_symbol("stack")([x, y, x + w, y + h], axis=-1)
     elif format == "cxcyWH":
-        boxes_arr = ensure_eager_tensor(boxes)
+        boxes_arr = boxes
         cx, cy, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return ensure_eager_tensor(get_backend_member(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
+        return adapt_backend_module(np_mod).require_symbol("stack")(
+            [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1
+        )
     else:
         msg = f"Unknown format {format}"
         raise ValueError(msg)
 
 
-def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) -> EagerValue:
+def _compute_iou(np_mod: BackendModuleProtocol | types.ModuleType | None, b1: BackendArg, b2: BackendArg) -> BackendArg:
     """Execute the eager compute iou operation on the active backend array.
 
     Args:
@@ -267,31 +347,41 @@ def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) 
         b2: Input `b2` argument (b2).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    b1 = get_backend_member(np_mod, "asarray")(b1)
-    b2 = get_backend_member(np_mod, "asarray")(b2)
+    b1 = adapt_backend_module(np_mod).require_symbol("asarray")(b1)
+    b2 = adapt_backend_module(np_mod).require_symbol("asarray")(b2)
 
-    if get_backend_member(b1, "size") == 0 or get_backend_member(b2, "size") == 0:
-        return ensure_eager_tensor(get_backend_member(np_mod, "zeros")(ensure_shape(get_backend_member(b1, "shape"))[:-1], dtype=get_backend_member(b1, "dtype")))
+    if adapt_backend_module(b1).require_symbol("size") == 0 or adapt_backend_module(b2).require_symbol("size") == 0:
+        return adapt_backend_module(np_mod).require_symbol("zeros")(
+            coerce_shape(adapt_backend_module(b1).require_symbol("shape"))[:-1],
+            dtype=adapt_backend_module(b1).require_symbol("dtype"),
+        )
 
-    x11, y11, x12, y12 = ensure_tensor_quad(get_backend_member(np_mod, "split")(b1, 4, axis=-1))
-    x21, y21, x22, y22 = ensure_tensor_quad(get_backend_member(np_mod, "split")(b2, 4, axis=-1))
+    x11, y11, x12, y12 = unpack_quad(adapt_backend_module(np_mod).require_symbol("split")(b1, 4, axis=-1))
+    x21, y21, x22, y22 = unpack_quad(adapt_backend_module(np_mod).require_symbol("split")(b2, 4, axis=-1))
 
-    xA = get_backend_member(np_mod, "maximum")(x11, x21)
-    yA = get_backend_member(np_mod, "maximum")(y11, y21)
-    xB = get_backend_member(np_mod, "minimum")(x12, x22)
-    yB = get_backend_member(np_mod, "minimum")(y12, y22)
+    xA = adapt_backend_module(np_mod).require_symbol("maximum")(x11, x21)
+    yA = adapt_backend_module(np_mod).require_symbol("maximum")(y11, y21)
+    xB = adapt_backend_module(np_mod).require_symbol("minimum")(x12, x22)
+    yB = adapt_backend_module(np_mod).require_symbol("minimum")(y12, y22)
 
-    interArea = get_backend_member(np_mod, "maximum")(0, xB - xA) * get_backend_member(np_mod, "maximum")(0, yB - yA)
+    interArea = adapt_backend_module(np_mod).require_symbol("maximum")(0, xB - xA) * adapt_backend_module(
+        np_mod
+    ).require_symbol("maximum")(0, yB - yA)
     box1Area = (x12 - x11) * (y12 - y11)
     box2Area = (x22 - x21) * (y22 - y21)
 
     iou = interArea / (box1Area + box2Area - interArea + 1e-9)
-    return ensure_eager_tensor(iou.reshape(iou.shape[:-1]))
+    return iou.reshape(iou.shape[:-1])
 
 
-def iou_eager(backend_module: BackendModuleProtocol, boxes1: EagerValue, boxes2: EagerValue, bounding_box_format: str = "xyxy") -> EagerValue:
+def iou_eager(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    boxes1: BackendArg,
+    boxes2: BackendArg,
+    bounding_box_format: str = "xyxy",
+) -> BackendArg:
     """Execute the eager iou eager operation on the active backend array.
 
     Args:
@@ -301,16 +391,25 @@ def iou_eager(backend_module: BackendModuleProtocol, boxes1: EagerValue, boxes2:
         bounding_box_format (str): Input `bounding_box_format` argument (bounding box format).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = _resolve_filter_mod(backend_module)
     b1 = _to_xyxy_format(mod, boxes1, bounding_box_format)
     b2 = _to_xyxy_format(mod, boxes2, bounding_box_format)
     res = _compute_iou(mod, b1, b2)
-    return get_backend_member(backend_module, "asarray")(res) if has_backend_member(backend_module, "asarray") else res
+    return (
+        adapt_backend_module(backend_module).require_symbol("asarray")(res)
+        if adapt_backend_module(backend_module).has_symbol("asarray")
+        else res
+    )
 
 
-def _sort_boxes_by_score(np_mod: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, score_threshold: float) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
+def _sort_boxes_by_score(
+    np_mod: BackendModuleProtocol | types.ModuleType | None,
+    boxes: BackendArg,
+    scores: BackendArg,
+    score_threshold: float,
+) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
     """Execute the eager sort boxes by score operation on the active backend array.
 
     Args:
@@ -320,24 +419,32 @@ def _sort_boxes_by_score(np_mod: BackendModuleProtocol, boxes: EagerValue, score
         score_threshold (float): Input `score_threshold` argument (score threshold).
 
     Returns:
-            tuple[object, object, object, object]: Computed `tuple[object, object, object, object]` output.
+        tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]: Filtered and sorted
+            boxes, scores, indices, and order.
     """
-    boxes_arr: EagerTensorProtocol = get_backend_member(np_mod, "asarray")(boxes)
-    scores_arr: EagerTensorProtocol = get_backend_member(np_mod, "asarray")(scores)
+    boxes_arr: EagerTensorProtocol = adapt_backend_module(np_mod).require_symbol("asarray")(boxes)
+    scores_arr: EagerTensorProtocol = adapt_backend_module(np_mod).require_symbol("asarray")(scores)
 
     if scores_arr.size == 0:
-        return boxes_arr, scores_arr, get_backend_member(np_mod, "array")([], dtype=int), get_backend_member(np_mod, "array")([], dtype=int)
+        return (
+            boxes_arr,
+            scores_arr,
+            adapt_backend_module(np_mod).require_symbol("array")([], dtype=int),
+            adapt_backend_module(np_mod).require_symbol("array")([], dtype=int),
+        )
 
     mask = scores_arr >= score_threshold
     filtered_boxes = boxes_arr[mask]
     filtered_scores = scores_arr[mask]
-    indices = get_backend_member(np_mod, "where")(mask)[0]
+    indices = adapt_backend_module(np_mod).require_symbol("where")(mask)[0]
 
     order = filtered_scores.argsort()[::-1]
     return filtered_boxes, filtered_scores, indices, order
 
 
-def _compute_overlap(np_mod: BackendModuleProtocol, bxs: EagerValue, i: int, order: EagerValue) -> EagerValue:
+def _compute_overlap(
+    np_mod: BackendModuleProtocol | types.ModuleType | None, bxs: BackendArg, i: int, order: BackendArg
+) -> BackendArg:
     """Execute the eager compute overlap operation on the active backend array.
 
     Args:
@@ -347,16 +454,24 @@ def _compute_overlap(np_mod: BackendModuleProtocol, bxs: EagerValue, i: int, ord
         order: Input `order` argument (order).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    bxs_arr = ensure_eager_tensor(bxs)
-    order_arr = ensure_eager_tensor(order)
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_array
+
+    bxs_arr = coerce_array(np_mod, bxs)
+    order_arr = coerce_array(np_mod, order)
     b1 = bxs_arr[order_arr[i]]
     b2 = bxs_arr[order_arr[1:]]
     return _compute_iou(np_mod, b1, b2)
 
 
-def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue, order: EagerValue, max_output_size: int, iou_threshold: float) -> EagerValue:
+def _apply_suppression_threshold(
+    np_mod: BackendModuleProtocol | types.ModuleType | None,
+    bxs: BackendArg,
+    order: BackendArg,
+    max_output_size: int,
+    iou_threshold: float,
+) -> BackendArg:
     """Execute the eager apply suppression threshold operation on the active backend array.
 
     Args:
@@ -367,11 +482,13 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
         iou_threshold (float): Input `iou_threshold` argument (iou threshold).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
-    bxs_arr = ensure_eager_tensor(bxs)
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_array
+
+    bxs_arr = coerce_array(np_mod, bxs)
     keep: list[int] = []
-    order_list = [int(x) for x in ensure_int_list(order)]
+    order_list = [int(x) for x in coerce_int_list(order)]
     while len(order_list) > 0 and len(keep) < max_output_size:
         i = order_list.pop(0)
         keep.append(i)
@@ -380,16 +497,23 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
         # Compute IoU of the kept box with the remaining boxes
         b1 = bxs_arr[i]
         b2 = bxs_arr[order_list]
-        iou = ensure_eager_tensor(_compute_iou(np_mod, b1, b2))
+        iou = coerce_array(np_mod, _compute_iou(np_mod, b1, b2))
 
         # Keep those with IoU <= threshold
         to_keep = iou <= iou_threshold
-        order_list = [order_list[j] for j in range(len(order_list)) if to_keep[j]]
+        order_list = [order_list[j] for j in range(len(order_list)) if bool(to_keep[j])]
 
-    return ensure_eager_tensor(get_backend_member(np_mod, "array")(keep, dtype=get_backend_member(np_mod, "int64")))
+    return adapt_backend_module(np_mod).require_symbol("array")(
+        keep, dtype=adapt_backend_module(np_mod).require_symbol("int64")
+    )
 
 
-def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
+def _nms_tf(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    boxes: BackendArg,
+    scores: BackendArg,
+    config: NMSConfig | None = None,
+) -> BackendArg:
     """Execute the eager nms tf operation on the active backend array.
 
     Args:
@@ -399,15 +523,28 @@ def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
         config (Optional[NMSConfig]): Input `config` argument (config).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     if config is None:
-        config = NMSConfig(max_output_size=ensure_eager_tensor(boxes).shape[0] if has_backend_member(boxes, "shape") else 100)
+        config = NMSConfig(
+            max_output_size=coerce_shape(adapt_backend_module(boxes).require_symbol("shape"))[0]
+            if adapt_backend_module(boxes).has_symbol("shape")
+            else 100
+        )
     res = _nms_torch(boxes, scores, config, backend_module)
-    return get_backend_member(backend_module, "asarray")(res) if has_backend_member(backend_module, "asarray") else res
+    return (
+        adapt_backend_module(backend_module).require_symbol("asarray")(res)
+        if adapt_backend_module(backend_module).has_symbol("asarray")
+        else res
+    )
 
 
-def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend_module: BackendModuleProtocol | None = None) -> EagerValue:
+def _nms_torch(
+    boxes: BackendArg,
+    scores: BackendArg,
+    config: NMSConfig,
+    backend_module: BackendModuleProtocol | types.ModuleType | None = None,
+) -> BackendArg:
     """Execute the eager nms torch operation on the active backend array.
 
     Args:
@@ -417,19 +554,24 @@ def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend
         backend_module: Optional execution backend module.
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     mod = _resolve_filter_mod(backend_module)
     boxes = mod.asarray(boxes)
     scores = mod.asarray(scores)
     bxs, _, idxs, order = _sort_boxes_by_score(mod, boxes, scores, config.score_threshold)
-    if len(ensure_eager_tensor(bxs)) == 0:
-        return ensure_eager_tensor(mod.array([], dtype=mod.int64))
+    if len(bxs) == 0:
+        return mod.array([], dtype=mod.int64)
     kept_local = _apply_suppression_threshold(mod, bxs, order, config.max_output_size, config.iou_threshold)
-    return ensure_eager_tensor(idxs)[kept_local]
+    return idxs[kept_local]
 
 
-def nms_eager(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
+def nms_eager(
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    boxes: BackendArg,
+    scores: BackendArg,
+    config: NMSConfig | None = None,
+) -> BackendArg:
     """Execute the eager nms eager operation on the active backend array.
 
     Args:
@@ -439,6 +581,6 @@ def nms_eager(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: 
         config (Optional[NMSConfig]): Input `config` argument (config).
 
     Returns:
-            EagerValue: Computed `EagerValue` output.
+            BackendArg: Computed `BackendArg` output.
     """
     return _nms_tf(backend_module, boxes, scores, config)

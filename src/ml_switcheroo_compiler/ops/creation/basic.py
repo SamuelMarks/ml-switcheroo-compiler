@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 
 
@@ -17,7 +16,11 @@ def _coerce_shape(val: OpArgValue) -> tuple[int, ...] | None:
     Returns:
         tuple[int, ...] | None: Coerced shape tuple or None.
     """
-    return (val,) if isinstance(val, int) else (tuple(int(x) for x in val if isinstance(x, int)) if isinstance(val, (tuple, list)) else None)
+    return (
+        (val,)
+        if isinstance(val, int)
+        else (tuple(int(x) for x in val if isinstance(x, int)) if isinstance(val, (tuple, list)) else None)
+    )
 
 
 class CreationOp(OpDef):
@@ -150,15 +153,15 @@ class ManualSeed(OpDef):
 
     op_name = "ManualSeed"
 
-    def infer_shape(self, seed: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, seed: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer scalar `()` shape for `ManualSeed`.
 
         Args:
-            seed (EagerTensorProtocol): Seed integer or tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            seed (OpValue): Seed integer or tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: Empty shape tuple `()`.
+            OpValue: Empty shape tuple `()`.
         """
         _ = (seed, kwargs)
         return ()
@@ -168,15 +171,15 @@ class ManualSeed(OpDef):
 class ConstantOfShape(OpDef):
     """Generate a tensor of a given shape filled with a constant value."""
 
-    def infer_shape(self, *shapes: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *shapes: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape from the first shape argument.
 
         Args:
-            *shapes (EagerTensorProtocol): Target shape tuple arguments.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            *shapes (OpValue): Target shape tuple arguments.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: Inferred output shape.
+            OpValue: Inferred output shape.
         """
         _ = kwargs
         return shapes[0] if shapes else ()
@@ -186,15 +189,15 @@ class ConstantOfShape(OpDef):
 class Range(OpDef):
     """Generate a 1D range sequence tensor."""
 
-    def infer_shape(self, *shapes: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *shapes: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer output shape for `Range`.
 
         Args:
-            *shapes (EagerTensorProtocol): Input bound arguments.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            *shapes (OpValue): Input bound arguments.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: Inferred shape tuple.
+            OpValue: Inferred shape tuple.
         """
         _ = kwargs
         return shapes[0] if shapes else ()
@@ -204,90 +207,100 @@ class Range(OpDef):
 class Blackman(OpDef):
     """Return the Blackman window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D `(M,)` output shape for `Blackman`.
 
         Args:
-            M (EagerTensorProtocol): Number of points in the output window.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            M (OpValue): Number of points in the output window.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: 1-tuple `(M,)`.
+            OpValue: 1-tuple `(M,)`.
         """
         _ = kwargs
-        return (M,) if isinstance(M, int) else (M.item(),)
+        from ml_switcheroo_compiler.backends.registry import coerce_int
+
+        return (M,) if isinstance(M, int) else (coerce_int(M),)
 
 
 @register_op("Bartlett")
 class Bartlett(OpDef):
     """Return the Bartlett triangular window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D `(M,)` output shape for `Bartlett`.
 
         Args:
-            M (EagerTensorProtocol): Number of points in the output window.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            M (OpValue): Number of points in the output window.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: 1-tuple `(M,)`.
+            OpValue: 1-tuple `(M,)`.
         """
         _ = kwargs
-        return (M,) if isinstance(M, int) else (M.item(),)
+        from ml_switcheroo_compiler.backends.registry import coerce_int
+
+        return (M,) if isinstance(M, int) else (coerce_int(M),)
 
 
 @register_op("Hamming")
 class Hamming(OpDef):
     """Return the Hamming window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D `(M,)` output shape for `Hamming`.
 
         Args:
-            M (EagerTensorProtocol): Number of points in the output window.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            M (OpValue): Number of points in the output window.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: 1-tuple `(M,)`.
+            OpValue: 1-tuple `(M,)`.
         """
         _ = kwargs
-        return (M,) if isinstance(M, int) else (M.item(),)
+        from ml_switcheroo_compiler.backends.registry import coerce_int
+
+        return (M,) if isinstance(M, int) else (coerce_int(M),)
 
 
 @register_op("Hanning")
 class Hanning(OpDef):
     """Return the Hanning (Hann) window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D `(M,)` output shape for `Hanning`.
 
         Args:
-            M (EagerTensorProtocol): Number of points in the output window.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            M (OpValue): Number of points in the output window.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: 1-tuple `(M,)`.
+            OpValue: 1-tuple `(M,)`.
         """
         _ = kwargs
-        return (M,) if isinstance(M, int) else (M.item(),)
+        from ml_switcheroo_compiler.backends.registry import coerce_int
+
+        return (M,) if isinstance(M, int) else (coerce_int(M),)
 
 
 @register_op("Kaiser")
 class Kaiser(OpDef):
     """Return the Kaiser window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer 1D `(M,)` output shape for `Kaiser`.
 
         Args:
-            M (EagerTensorProtocol): Number of points in the output window.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            M (OpValue): Number of points in the output window.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns:
-            TensorOrScalar: 1-tuple `(M,)`.
+            OpValue: 1-tuple `(M,)`.
         """
         _ = kwargs
-        return (M,) if isinstance(M, int) else (M.item(),)
+        from ml_switcheroo_compiler.backends.registry import coerce_int
+
+        return (M,) if isinstance(M, int) else (coerce_int(M),)
 
 
 @register_op("TrilIndices")

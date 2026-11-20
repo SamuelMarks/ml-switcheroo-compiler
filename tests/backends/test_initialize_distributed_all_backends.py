@@ -18,7 +18,11 @@ def test_pytorch_initialize_distributed() -> None:
     from unittest.mock import MagicMock
 
     mock_torch = MagicMock()
-    ctx = patch.dict(sys.modules, {"torch": mock_torch, "torch.distributed": mock_torch.distributed}) if importlib.util.find_spec("torch") is None else MagicMock()
+    ctx = (
+        patch.dict(sys.modules, {"torch": mock_torch, "torch.distributed": mock_torch.distributed})
+        if importlib.util.find_spec("torch") is None
+        else MagicMock()
+    )
     with ctx:
         with patch("torch.distributed.is_initialized", return_value=False):
             with patch("torch.distributed.init_process_group") as mock_init:
@@ -39,7 +43,11 @@ def test_jax_initialize_distributed() -> None:
     from unittest.mock import MagicMock
 
     mock_jax = MagicMock()
-    ctx = patch.dict(sys.modules, {"jax": mock_jax, "jax.distributed": mock_jax.distributed}) if importlib.util.find_spec("jax") is None else MagicMock()
+    ctx = (
+        patch.dict(sys.modules, {"jax": mock_jax, "jax.distributed": mock_jax.distributed})
+        if importlib.util.find_spec("jax") is None
+        else MagicMock()
+    )
     with ctx:
         with patch("jax.distributed.initialize") as mock_init:
             config = DistributedConfig(world_size=4, rank=0, options={"coordinator_address": "localhost:1234"})
@@ -58,7 +66,11 @@ def test_dask_initialize_distributed() -> None:
     from unittest.mock import MagicMock
 
     mock_dask = MagicMock()
-    ctx = patch.dict(sys.modules, {"dask": mock_dask, "dask.distributed": mock_dask.distributed}) if importlib.util.find_spec("dask") is None else MagicMock()
+    ctx = (
+        patch.dict(sys.modules, {"dask": mock_dask, "dask.distributed": mock_dask.distributed})
+        if importlib.util.find_spec("dask") is None
+        else MagicMock()
+    )
     with ctx:
         with patch("dask.distributed.Client") as mock_client:
             config = DistributedConfig(options={"scheduler_address": "localhost:8786"})
@@ -73,6 +85,6 @@ def test_dask_initialize_distributed() -> None:
 def test_webgpu_initialize_distributed() -> None:
     """Test WebGPU initialize_distributed."""
     # WebGPU initialization is a no-op on the python side.
-    config = DistributedConfig()
+    config = DistributedConfig(world_size=2)
     WebGPUCodeGenerator.initialize_distributed(backend_config=config)
-    assert config is not None
+    assert config.world_size == 2

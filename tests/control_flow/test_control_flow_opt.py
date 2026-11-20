@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.ops.control_flow.cond import cond
 from ml_switcheroo_compiler.ops.control_flow.scan import scan
 from ml_switcheroo_compiler.ops.control_flow.while_loop import while_loop
@@ -18,7 +20,6 @@ from ml_switcheroo_compiler.transforms.passes.parallel_scan import (
     detect_associative_reduction,
     parallel_scan_pass,
 )
-from tests.testing_utils import ensure_attrs
 
 
 def test_evaluate_static_predicate() -> None:

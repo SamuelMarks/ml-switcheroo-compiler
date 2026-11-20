@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_ir import IRGraph, IRNode
+
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import buffer_allocation_pass
-from tests.testing_utils import ensure_eager_tensor
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
     pass
@@ -36,10 +37,12 @@ def test_dynamic_allocation_pass() -> None:
     assert buffer_allocation_pass(graph)
 
     # Check attributes
-    schema = ensure_eager_tensor(ensure_eager_tensor(graph).attributes).get("dynamic_memory_schema")
-    assert schema is not None
-    assert len(schema["dynamic_offsets"]) == 1
-    offset_info = schema["dynamic_offsets"][0]
+    schema = graph.attributes.get("dynamic_memory_schema")
+    assert isinstance(schema, dict)
+    dyn_offsets = coerce_operand_list(schema["dynamic_offsets"])
+    assert len(dyn_offsets) == 1
+    offset_info = dyn_offsets[0]
+    assert isinstance(offset_info, dict)
     assert offset_info["symbolic_math"] == "B * 64 * 64 * 4"
     assert offset_info["node_id"] == "n1"
 

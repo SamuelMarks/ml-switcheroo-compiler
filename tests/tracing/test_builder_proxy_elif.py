@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import typing
 
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
+import pytest
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_extract_proxy_inputs_elif_branch() -> None:
@@ -21,7 +21,7 @@ def test_extract_proxy_inputs_elif_branch() -> None:
         is_tracing = True
         active_graph = True
 
-        def add_node(self, node: EagerValue) -> None:
+        def add_node(self, node: BackendArg) -> None:
             """Test function add_node.
 
             Args:
@@ -29,8 +29,10 @@ def test_extract_proxy_inputs_elif_branch() -> None:
             """
             pass
 
-    old_state = ensure_eager_tensor(ensure_eager_tensor(bmod).global_tracing_state)
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(FakeTracingState())
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    old_state = global_tracing_state
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", FakeTracingState(), raising=False)
 
     class NonTensorWithId:
         """Test class NonTensorWithId."""
@@ -43,4 +45,4 @@ def test_extract_proxy_inputs_elif_branch() -> None:
     ids, shapes, first = TracingNodeBuilder.extract_proxy_inputs((NonTensorWithId(),))
     assert ids == ["my_proxy_id"]
     assert shapes == [(4, 4)]
-    ensure_mutable(bmod).global_tracing_state = ensure_eager_tensor(old_state)
+    pytest.MonkeyPatch().setattr(bmod, "global_tracing_state", old_state, raising=False)

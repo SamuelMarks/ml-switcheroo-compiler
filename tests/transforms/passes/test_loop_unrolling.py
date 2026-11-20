@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import ensure_attr_val, ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
-from tests.testing_utils import ensure_attr_val, ensure_attrs, ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -26,7 +25,12 @@ def test_loop_unrolling_pass() -> None:
 
     # Create main graph
     graph = IRGraph()
-    loop_node = IRNode(id="loop", op_type="WhileLoop", inputs=["init_val"], attributes=ensure_attrs({"max_iterations": 2, "body": body_graph}))
+    loop_node = IRNode(
+        id="loop",
+        op_type="WhileLoop",
+        inputs=["init_val"],
+        attributes=ensure_attrs({"max_iterations": 2, "body": body_graph}),
+    )
     graph.nodes["loop"] = loop_node
 
     # Run unrolling pass
@@ -108,8 +112,13 @@ def test_loop_unrolling_extra_coverage() -> None:
     """Test function test_loop_unrolling_extra_coverage."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
-    from ml_switcheroo_compiler.transforms.passes.loop_unrolling import _load_config, detect_static_bound, loop_unrolling_pass
+    from ml_switcheroo_ir import IRGraph, IRNode, LogicalNode
+
+    from ml_switcheroo_compiler.transforms.passes.loop_unrolling import (
+        _load_config,
+        detect_static_bound,
+        loop_unrolling_pass,
+    )
 
     # test yaml missing
     with patch("os.path.exists", return_value=False):
@@ -120,8 +129,13 @@ def test_loop_unrolling_extra_coverage() -> None:
     assert detect_static_bound(node, []) is None
 
     node = IRNode(id="n1", op_type="WhileLoop")
-    heuristics = [{"op_type": "Add"}, {"op_type": "WhileLoop", "other": 1}, {"op_type": "WhileLoop", "max_iterations": "string"}, {"op_type": "WhileLoop", "max_iterations": 5}]
-    assert ensure_callable(detect_static_bound)(node, heuristics) == 5
+    heuristics: list[dict[str, AttributeValue]] = [
+        {"op_type": "Add"},
+        {"op_type": "WhileLoop", "other": 1},
+        {"op_type": "WhileLoop", "max_iterations": "string"},
+        {"op_type": "WhileLoop", "max_iterations": 5},
+    ]
+    assert detect_static_bound(node, heuristics) == 5
 
     # graph loops unrolling branches
     g = IRGraph()
@@ -163,7 +177,8 @@ def test_loop_unrolling_extra_coverage() -> None:
 
 def test_loop_unrolling_clone_logical_node_and_non_irnode() -> None:
     """Test clone_subgraph with LogicalNode and unroll_loops with Identity nodes."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_ir import IRGraph, LogicalNode
+
     from ml_switcheroo_compiler.transforms.passes.loop_unrolling import clone_subgraph, unroll_loops
 
     # 1. clone_subgraph with LogicalNode

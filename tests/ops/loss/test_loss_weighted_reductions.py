@@ -7,7 +7,15 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.loss import kld, kullback_leibler_divergence, logcosh, mape, mape_loss, msle, msle_loss
+from ml_switcheroo_compiler.ops.nn.loss import (
+    kld,
+    kullback_leibler_divergence,
+    logcosh,
+    mape,
+    mape_loss,
+    msle,
+    msle_loss,
+)
 
 
 def test_loss_extras() -> None:

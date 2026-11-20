@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.pytorch.eager import (
     _execute_accumulate_n,
     _execute_broadcast_to,
@@ -24,13 +25,13 @@ from ml_switcheroo_compiler.backends.pytorch.eager import (
     _torch_tensordot,
     _torch_variance,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import MockTestStub, extract_test_dtype, extract_test_shape
 
 if typing.TYPE_CHECKING:
     import torch
     import torch.distributed as dist
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 torch = pytest.importorskip("torch")
 dist = pytest.importorskip("torch.distributed")
@@ -52,7 +53,7 @@ def test_scatter_ops() -> None:
 
     res1 = _execute_tensor_scatter_max(tensor, indices, updates)
     assert (
-        ensure_eager_tensor(res1)[
+        ensure_ndarray(res1)[
             (
                 0,
                 0,
@@ -63,7 +64,7 @@ def test_scatter_ops() -> None:
 
     res2 = _execute_tensor_scatter_min(tensor, indices, updates)
     assert (
-        ensure_eager_tensor(res2)[
+        ensure_ndarray(res2)[
             (
                 0,
                 0,
@@ -74,7 +75,7 @@ def test_scatter_ops() -> None:
 
     res3 = _execute_tensor_scatter_update(tensor, indices, updates)
     assert (
-        ensure_eager_tensor(res3)[
+        ensure_ndarray(res3)[
             (
                 0,
                 0,
@@ -85,7 +86,7 @@ def test_scatter_ops() -> None:
 
     res4 = _execute_tensor_scatter_add(tensor, indices, updates)
     assert (
-        ensure_eager_tensor(res4)[
+        ensure_ndarray(res4)[
             (
                 0,
                 0,
@@ -99,55 +100,55 @@ def test_broadcast_to() -> None:
     """Test function test_broadcast_to."""
     t = torch.tensor(1.0)
     res = _execute_broadcast_to(t, shape=(2, 2))
-    assert ensure_eager_tensor(res).shape == (2, 2)
+    assert extract_test_shape(res) == (2, 2)
 
 
 def test_cast() -> None:
     """Test function test_cast."""
     t = torch.tensor(1.0)
 
-    class FakeDtype:
+    class FakeDtype(MockTestStub):
         """Test class FakeDtype."""
 
         value = "float8_e4m3fn"
 
-    ensure_callable(_execute_cast)(t, dtype=ensure_callable(FakeDtype)())
+    _execute_cast(t, dtype=FakeDtype())
 
-    class FakeDtype2:
+    class FakeDtype2(MockTestStub):
         """Test class FakeDtype2."""
 
         value = "float8_e5m2"
 
-    ensure_callable(_execute_cast)(t, dtype=ensure_callable(FakeDtype2)())
+    _execute_cast(t, dtype=FakeDtype2())
 
-    class FakeDtype3:
+    class FakeDtype3(MockTestStub):
         """Test class FakeDtype3."""
 
         value = "int4"
 
-    ensure_callable(_execute_cast)(t, dtype=ensure_callable(FakeDtype3)())
+    _execute_cast(t, dtype=FakeDtype3())
 
-    class FakeDtype4:
+    class FakeDtype4(MockTestStub):
         """Test class FakeDtype4."""
 
         value = "bfloat16"
 
-    ensure_callable(_execute_cast)(t, dtype=ensure_callable(FakeDtype4)())
+    _execute_cast(t, dtype=FakeDtype4())
 
-    class FakeDtype5:
+    class FakeDtype5(MockTestStub):
         """Test class FakeDtype5."""
 
         value = "float16"
 
-    ensure_callable(_execute_cast)(t, dtype=ensure_callable(FakeDtype5)())
+    _execute_cast(t, dtype=FakeDtype5())
 
-    class FakeDtype6:
+    class FakeDtype6(MockTestStub):
         """Test class FakeDtype6."""
 
         value = "int32"
 
-    res_cast = ensure_callable(_execute_cast)(t, dtype=ensure_callable(FakeDtype6)())
-    assert ensure_eager_tensor(res_cast).dtype == torch.int32
+    res_cast = _execute_cast(t, dtype=FakeDtype6())
+    assert extract_test_dtype(res_cast) == torch.int32
 
 
 def test_ragged_tensor_to_dense() -> None:
@@ -155,55 +156,55 @@ def test_ragged_tensor_to_dense() -> None:
     """Test function test_ragged_tensor_to_dense."""
     rt = [torch.tensor([1.0, 2.0]), torch.tensor([1.0])]
     res = _execute_ragged_tensor_to_dense(rt)
-    assert ensure_eager_tensor(res).shape == (2, 2)
+    assert extract_test_shape(res) == (2, 2)
 
     # Dict form
     rt2 = {"values": torch.tensor([1.0, 2.0, 3.0]), "row_splits": torch.tensor([0, 2, 3])}
     res2 = _execute_ragged_tensor_to_dense(rt2)
-    assert ensure_eager_tensor(res2).shape == (2, 2)
+    assert extract_test_shape(res2) == (2, 2)
 
     # Object form
-    class MockRT:
+    class MockRT(MockTestStub):
         """Test class MockRT."""
 
         values = torch.tensor([1.0, 2.0, 3.0])
         row_splits = torch.tensor([0, 2, 3])
 
-    res3 = ensure_callable(_execute_ragged_tensor_to_dense)(ensure_callable(MockRT)())
-    assert ensure_eager_tensor(res3).shape == (2, 2)
+    res3 = _execute_ragged_tensor_to_dense(MockRT())
+    assert extract_test_shape(res3) == (2, 2)
 
     # Empty
     assert _execute_ragged_tensor_to_dense([]) == []
 
     # Nested Tensor
-    class NestedRT:
+    class NestedRT(MockTestStub):
         """Test class NestedRT."""
 
         is_nested = True
 
-        def to_padded_tensor(self, padding: EagerValue) -> EagerValue:
+        def to_padded_tensor(self, padding: BackendArg) -> BackendArg:
             """Test function to_padded_tensor.
 
             Args:
                 padding: Test parameter `padding`.
 
             Returns:
-                EagerValue: Computed output value from `to_padded_tensor`.
+                BackendArg: Computed output value from `to_padded_tensor`.
             """
-            _typed_ret_1: EagerValue = torch.tensor([[1.0, padding], [padding, padding]])
+            _typed_ret_1: BackendArg = torch.tensor([[1.0, padding], [padding, padding]])
             return _typed_ret_1
 
-    assert ensure_eager_tensor(ensure_callable(_execute_ragged_tensor_to_dense)(ensure_callable(NestedRT)(), default_value=0.0)).shape == (2, 2)
+    assert extract_test_shape(_execute_ragged_tensor_to_dense(NestedRT(), default_value=0.0)) == (2, 2)
 
 
 def test_torch_utilities() -> None:
     """Test function test_torch_utilities."""
     t = torch.tensor([1.0, 2.0])
     res = _torch_variance(t, ddof=1)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).item)() == 0.5
+    assert ensure_ndarray(res).item() == 0.5
 
     res = _torch_tensordot(t, t, axes=1)
-    assert ensure_eager_tensor(ensure_eager_tensor(res).item)() == 5.0
+    assert ensure_ndarray(res).item() == 5.0
 
 
 def test_power_iteration() -> None:
@@ -211,8 +212,10 @@ def test_power_iteration() -> None:
     from ml_switcheroo_compiler.backends.pytorch.eager import _execute_power_iteration
 
     w = torch.eye(2)
-    v, u, s = ensure_callable(_execute_power_iteration)(w, num_iters=2)
-    assert ensure_eager_tensor(ensure_eager_tensor(s).item)() > 0
+    res = _execute_power_iteration(w, num_iters=2)
+    assert isinstance(res, (tuple, list))
+    v, u, s = res
+    assert ensure_ndarray(s).item() > 0
 
 
 def test_one_hot() -> None:
@@ -221,9 +224,9 @@ def test_one_hot() -> None:
 
     indices = torch.tensor([0, 1, 2])
     res = _execute_one_hot(indices, 3)
-    assert ensure_eager_tensor(res).shape == (3, 3)
+    assert extract_test_shape(res) == (3, 3)
     res2 = _execute_one_hot(indices, 3, on_value=2.0, off_value=1.0, axis=0)
-    assert ensure_eager_tensor(res2).shape == (3, 3)
+    assert extract_test_shape(res2) == (3, 3)
 
 
 def test_cum_ops() -> None:
@@ -231,9 +234,9 @@ def test_cum_ops() -> None:
     from ml_switcheroo_compiler.backends.pytorch.eager import _execute_cumlogsumexp, _execute_cummax, _execute_cummin
 
     t = torch.tensor([1.0, 2.0, 3.0])
-    assert ensure_eager_tensor(_execute_cummax(t, dim=0)).shape == (3,)
-    assert ensure_eager_tensor(_execute_cummin(t, dim=0)).shape == (3,)
-    assert ensure_eager_tensor(_execute_cumlogsumexp(t, dim=0)).shape == (3,)
+    assert extract_test_shape(_execute_cummax(t, dim=0)) == (3,)
+    assert extract_test_shape(_execute_cummin(t, dim=0)) == (3,)
+    assert extract_test_shape(_execute_cumlogsumexp(t, dim=0)) == (3,)
 
 
 def test_execute_op_various_branches() -> None:
@@ -242,34 +245,34 @@ def test_execute_op_various_branches() -> None:
 
     # Branch 474->476 where schema has op but resolve_target_api returns None
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
-        res_atan = ensure_callable(execute_op)(None, "Atan2", ensure_callable(torch.tensor)(1.0), ensure_callable(torch.tensor)(1.0))
-        assert ensure_eager_tensor(ensure_eager_tensor(res_atan).item)() == pytest.approx(0.785398)
+        res_atan = execute_op(None, "Atan2", torch.tensor(1.0), torch.tensor(1.0))
+        assert ensure_ndarray(res_atan).item() == pytest.approx(0.785398)
 
     # Normal mapping fallback (if any) or standard pytorch op
-    res = ensure_callable(execute_op)(None, "Add", ensure_callable(torch.tensor)(1), ensure_callable(torch.tensor)(2))
-    assert ensure_eager_tensor(ensure_eager_tensor(res).item)() == 3
+    res = execute_op(None, "Add", torch.tensor(1), torch.tensor(2))
+    assert ensure_ndarray(res).item() == 3
 
     # Hit standard torch op via lower() directly (not in schema)
-    res_direct = ensure_callable(execute_op)(None, "ceil", ensure_callable(torch.tensor)(1.5))
-    assert ensure_eager_tensor(ensure_eager_tensor(res_direct).item)() == 2.0
+    res_direct = execute_op(None, "ceil", torch.tensor(1.5))
+    assert ensure_ndarray(res_direct).item() == 2.0
 
     # Custom op map hit
-    res_onehot = ensure_callable(execute_op)(None, "OneHot", ensure_callable(torch.tensor)([0]), depth=2)
-    assert ensure_eager_tensor(res_onehot).shape == (1, 2)
+    res_onehot = execute_op(None, "OneHot", torch.tensor([0]), depth=2)
+    assert extract_test_shape(res_onehot) == (1, 2)
 
     # Capitalized string translation to F. or linalg
-    res2 = ensure_callable(execute_op)(None, "Pad", ensure_callable(torch.tensor)([1.0]), pad=(1, 1))
-    assert ensure_eager_tensor(res2).shape == (3,)
+    res2 = execute_op(None, "Pad", torch.tensor([1.0]), pad=(1, 1))
+    assert extract_test_shape(res2) == (3,)
 
     # Global registry fallback
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     global_eager_registry.register("MyGlobalFakeOp")(lambda b, x: x * 10)
-    res3 = ensure_callable(execute_op)(None, "MyGlobalFakeOp", ensure_callable(torch.tensor)(5))
-    assert ensure_eager_tensor(ensure_eager_tensor(res3).item)() == 50
+    res3 = execute_op(None, "MyGlobalFakeOp", torch.tensor(5))
+    assert ensure_ndarray(res3).item() == 50
 
     with pytest.raises(Exception, match=r".*"):
-        ensure_callable(execute_op)(None, "UnknownFakeOpThatWillNeverExist", ensure_callable(torch.tensor)(1))
+        execute_op(None, "UnknownFakeOpThatWillNeverExist", torch.tensor(1))
 
 
 def test_distributed_ops() -> None:
@@ -286,7 +289,10 @@ def test_distributed_ops() -> None:
         assert _torch_all_reduce(t).shape == (2,)
         assert _torch_reduce_scatter(t).shape == (2,)
         assert _torch_all_to_all(t).shape == (2,)
-    with patch("torch.distributed.is_initialized", return_value=True), patch("torch.distributed.get_world_size", return_value=1):
+    with (
+        patch("torch.distributed.is_initialized", return_value=True),
+        patch("torch.distributed.get_world_size", return_value=1),
+    ):
         with patch("torch.distributed.all_gather"):
             _torch_all_gather(t)
         with patch("torch.distributed.all_reduce"):

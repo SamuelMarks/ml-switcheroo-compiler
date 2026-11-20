@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import ensure_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
+from ml_switcheroo_compiler.backends.registry import coerce_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_symbolic_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -13,12 +13,12 @@ class RaggedDot(OpDef):
 
     op_name = "RaggedDot"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the RaggedDot operation.
 
         Args:
-            *args (TensorOrScalar): Input tensors (rt_a, b).
-            **kwargs (TensorOrScalar): Optional keyword arguments.
+            *args (OpValue): Input tensors (rt_a, b).
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple: Result shape (B, var_dim, N).
@@ -33,8 +33,12 @@ class RaggedDot(OpDef):
 
         if a is None:
             return ()
-        shape_a = ensure_shape(tuple(a)) if isinstance(a, (list, tuple)) else extract_shape(a)
-        shape_b = (ensure_shape(tuple(b)) if isinstance(b, (list, tuple)) else extract_shape(b)) if b is not None else ()
+        shape_a = coerce_shape(tuple(a)) if isinstance(a, (list, tuple)) else extract_symbolic_shape(a)
+        shape_b = (
+            (coerce_shape(tuple(b)) if isinstance(b, (list, tuple)) else extract_symbolic_shape(b))
+            if b is not None
+            else ()
+        )
 
         batch = shape_a[0] if len(shape_a) > 0 else 1
         ragged_dim = shape_a[1] if len(shape_a) > 1 else SymVar("ragged_dim")

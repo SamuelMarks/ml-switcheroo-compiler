@@ -6,10 +6,9 @@ import os
 import typing
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 @typing.runtime_checkable
@@ -63,12 +62,17 @@ def _get_tiling_config() -> dict[str, AttributeValue]:
     return raw_tiling if isinstance(raw_tiling, dict) else {}
 
 
-def _should_tile(op_type: str, shape: tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None, op_config: dict[str, AttributeValue]) -> bool:
+def _should_tile(
+    op_type: str,
+    shape: tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None,
+    op_config: dict[str, AttributeValue],
+) -> bool:
     """Determine if a node should be tiled based on shape and thresholds.
 
     Args:
         op_type (str): The operation type.
-        shape (tuple | list | None): The node's shape metadata.
+        shape (tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None):
+            The node's shape metadata.
         op_config (dict[str, AttributeValue]): The operation's configuration.
 
     Returns:
@@ -96,13 +100,15 @@ def _should_tile(op_type: str, shape: tuple[AttributeValue, ...] | list[Attribut
     return False
 
 
-def _split_shape(op_type: str, shape: tuple[AttributeValue, ...], op_config: dict[str, AttributeValue]) -> tuple[AttributeValue, ...]:
+def _split_shape(
+    op_type: str, shape: tuple[AttributeValue, ...], op_config: typing.Mapping[str, AttributeValue]
+) -> tuple[AttributeValue, ...]:
     """Split multi-dimensional shape into outer/inner tile chunks.
 
     Args:
         op_type (str): Operation type.
-        shape (tuple): The original shape.
-        op_config (dict): Tiling config.
+        shape (tuple[AttributeValue, ...]): The original shape.
+        op_config (typing.Mapping[str, AttributeValue]): Tiling config.
 
     Returns:
         tuple: The tiled shape.

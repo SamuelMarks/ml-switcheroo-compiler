@@ -23,7 +23,7 @@ from scripts.validate_backend_mappings import (
 )
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_normalize_template() -> None:
@@ -67,11 +67,15 @@ def test_validate_arguments_against_snapshot() -> None:
     assert errs == []
 
     # Too many positional args
-    errs_too_many = validate_arguments_against_snapshot("pytorch", "torch.matmul", ["a", "b", "c", "d", "e", "f"], [], engine)
+    errs_too_many = validate_arguments_against_snapshot(
+        "pytorch", "torch.matmul", ["a", "b", "c", "d", "e", "f"], [], engine
+    )
     assert any("Too many positional arguments" in e for e in errs_too_many)
 
     # Unknown keyword argument
-    errs_kw = validate_arguments_against_snapshot("pytorch", "torch.matmul", ["a", "b"], ["invalid_kwarg_12345"], engine)
+    errs_kw = validate_arguments_against_snapshot(
+        "pytorch", "torch.matmul", ["a", "b"], ["invalid_kwarg_12345"], engine
+    )
     assert any("Unexpected or hallucinated keyword argument" in e for e in errs_kw)
 
 
@@ -158,7 +162,7 @@ def test_validate_mappings_with_temp_files() -> None:
         pytorch_mappings: str = os.path.join(pytorch_dir, "mappings")
         os.makedirs(pytorch_mappings)
 
-        mock_yaml: dict[str, EagerValue] = {
+        mock_yaml: dict[str, BackendArg] = {
             "good_op": {"target_api": "numpy.add"},
             "custom_op": {"target_api": "custom_op"},
             "lambda_op": {"target_api": "lambda x: x"},
@@ -180,7 +184,7 @@ def test_validate_mappings_with_temp_files() -> None:
         with open(filepath, "w", encoding="utf-8") as f:
             yaml.dump(mock_yaml, f)
 
-        py_yaml: dict[str, EagerValue] = {
+        py_yaml: dict[str, BackendArg] = {
             "bad_arg_op": {"ast_template": "torch.matmul(a, b, c, d, e, f, g)"},
         }
         py_filepath: str = os.path.join(pytorch_mappings, "py_ops.yaml")
@@ -201,7 +205,7 @@ def test_validate_mappings_with_temp_files() -> None:
 
         orig_relpath = os.path.relpath
 
-        def mock_relpath(path: str, start: EagerValue = None) -> str:
+        def mock_relpath(path: str, start: BackendArg = None) -> str:
             """Test function mock_relpath.
 
             Args:
@@ -218,7 +222,13 @@ def test_validate_mappings_with_temp_files() -> None:
         with open(unknown_be_file, "w", encoding="utf-8") as f:
             yaml.dump({"op": {"target_api": "x"}}, f)
 
-        with patch("glob.glob", side_effect=[[filepath, py_filepath, skip_file, ops_file, non_dict_file, unknown_be_file], [], []]), patch("os.path.relpath", side_effect=mock_relpath):
+        with (
+            patch(
+                "glob.glob",
+                side_effect=[[filepath, py_filepath, skip_file, ops_file, non_dict_file, unknown_be_file], [], []],
+            ),
+            patch("os.path.relpath", side_effect=mock_relpath),
+        ):
             errors = validate_mappings()
 
         err_str: str = " ".join(errors)

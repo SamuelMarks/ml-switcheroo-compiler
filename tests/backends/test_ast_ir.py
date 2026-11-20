@@ -7,12 +7,8 @@ import typing
 import libcst as cst
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
-from ml_switcheroo_compiler.backends.ir_to_ast import (
-    _build_attribute_chain,
-    emit_ir_to_ast,
-    emit_ir_to_class,
-)
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from ml_switcheroo_compiler.backends.ir_to_ast import _build_attribute_chain, emit_ir_to_ast, emit_ir_to_class
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 
 if typing.TYPE_CHECKING:
     pass
@@ -55,9 +51,10 @@ def test_ir_to_ast() -> None:
 
 def test_ast_branches() -> None:
     """Test function test_ast_branches."""
+    from ml_switcheroo_ir import IRNode
+
     from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
     from ml_switcheroo_compiler.backends.ir_to_ast import emit_ir_to_ast
-    from ml_switcheroo_compiler.ir.core import IRNode
 
     # Not a call
     source = "x = 1\n"
@@ -234,26 +231,28 @@ class MLP(nn.Module):
     expected_numerical = np.maximum(0.0, test_x + 1.0)
 
     input_node = next(n for n in ir_graph.nodes.values() if n.op_type == "Input")
-    eval_res = ensure_callable(evaluate_graph)(ir_graph, {input_node.id: test_x})
+    eval_res = evaluate_graph(ir_graph, {input_node.id: test_x})
     actual_output = list(eval_res.values())[0]
-    ensure_callable(np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(ensure_ndarray(actual_output), expected_numerical, rtol=1e-5, atol=1e-5)
 
 
 def test_ir_to_ast_defaults() -> None:
     """Test fallback logic in _get_compute_method_name and _get_class_base_expr."""
+    import libcst as cst
+
     from ml_switcheroo_compiler.backends.ir_to_ast import _get_class_base_expr, _get_compute_method_name
 
     assert _get_compute_method_name("unknown_fw") == "forward"
-    assert ensure_eager_tensor(ensure_eager_tensor(_get_class_base_expr("unknown_fw")).value) == "object"
+    base_expr = _get_class_base_expr("unknown_fw")
+    assert isinstance(base_expr, cst.Name)
+    assert base_expr.value == "object"
 
 
 def test_ir_to_ast_missing_branches() -> None:
     """Test Cond with < 3 inputs and ForeignCall with varargs, varkwargs, and no var_name."""
-    from ml_switcheroo_compiler.backends.ir_to_ast import (
-        _emit_control_flow_statement,
-        _emit_foreign_statement,
-    )
-    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_ir import IRNode
+
+    from ml_switcheroo_compiler.backends.ir_to_ast import _emit_control_flow_statement, _emit_foreign_statement
 
     # 1. Cond with len(inputs) < 3 falls through (branch 84->91)
     cond_node = IRNode("cond1", "Cond", inputs=["cond_flag", "true_val"])
@@ -280,7 +279,7 @@ def test_ir_to_ast_missing_branches() -> None:
         inputs=["x"],
         attributes={"var_name": "", "callee": "pkg.bar"},
     )
-    ensure_mutable(foreign_no_var).id = ensure_eager_tensor("")
+    foreign_no_var.id = ""
     stmt_no_var = _emit_foreign_statement(foreign_no_var)
     assert stmt_no_var is not None
     assert isinstance(stmt_no_var.body[0], cst.Expr)
@@ -288,8 +287,9 @@ def test_ir_to_ast_missing_branches() -> None:
 
 def test_emit_ir_to_class_outputs_in_var_map_or_missing() -> None:
     """Test emit_ir_to_class when output id is already in var_map or missing from graph nodes."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.ir_to_ast import emit_ir_to_class
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     graph = IRGraph()
     # Node with var_name is included in var_map by _build_var_map

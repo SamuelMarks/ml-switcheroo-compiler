@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import types
 import typing
 
-from ml_switcheroo_ir import NodeDict
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import EagerBoundCallable, require_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_wasm_simd_activations_codegen() -> None:
@@ -192,11 +193,21 @@ def test_wasm_unimplemented_and_binary_simd_fallbacks() -> None:
 
     # 3. Direct invocation of _generate_binary_simd_op for fallback binary_scalars mapping
     gen_direct = WasmCodeGenerator(graph_binary)
-    ensure_callable(gen_direct._generate_binary_simd_op)(node, "add", "add_direct", ["in_a", "in_b"], (4,), 4)
+    gen_direct._generate_binary_simd_op(node, "add", "add_direct", ["in_a", "in_b"], [4], 4)
     assert any("buf_in_a[i_add_direct] + buf_in_b[i_add_direct]" in line for line in gen_direct.code)
 
 
-def _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestWasmEdgeBranchesIntrinsicsAndTemplatesState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_wasm_edge_branches_intrinsics_and_templates` split helpers."""
+
+    UnimplementedMathError: type
+    patch: EagerBoundCallable
+    pytest: types.ModuleType
+
+
+def _test_wasm_edge_branches_intrinsics_and_templates_part_1(
+    _state: _TestWasmEdgeBranchesIntrinsicsAndTemplatesState,
+) -> None:
     """Execute part 1 of test_wasm_edge_branches_intrinsics_and_templates.
 
     Args:
@@ -243,12 +254,14 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state: dict[str, E
     gen_none = WasmCodeGenerator(g_none)
     src_none = gen_none.generate()
     assert "Loop annotations:" not in src_none
-    _state.update(ensure_tensor_dict({"UnimplementedMathError": UnimplementedMathError, "g_loop": g_loop, "g_none": g_none, "gen_loop": gen_loop}))
-    _state.update(ensure_tensor_dict({"gen_none": gen_none, "node_loop_no_inputs": node_loop_no_inputs, "node_loop_none": node_loop_none, "patch": patch}))
-    _state.update(ensure_tensor_dict({"pytest": pytest, "src_loop": src_loop, "src_none": src_none}))
+    _state.update({"UnimplementedMathError": UnimplementedMathError})
+    _state.update({"patch": require_callable(patch)})
+    _state.update({"pytest": pytest})
 
 
-def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_wasm_edge_branches_intrinsics_and_templates_part_2(
+    _state: _TestWasmEdgeBranchesIntrinsicsAndTemplatesState,
+) -> None:
     """Execute part 2 of test_wasm_edge_branches_intrinsics_and_templates.
 
     Args:
@@ -267,7 +280,9 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, E
             gen_missing.generate()
 
     # 3. Template without 'body' key
-    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"no_body": "x"}):
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"no_body": "x"}
+    ):
         g_no_body = IRGraph(name="t_no_body")
         in_0 = IRNode(id="in_0", op_type="Input", shape_metadata=(4,))
         node_alibi = IRNode(id="op", op_type="Acos", inputs=["in_0"], shape_metadata=(4,))
@@ -277,20 +292,26 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, E
         gen_no_body = WasmCodeGenerator(g_no_body)
         with pytest.raises(UnimplementedMathError, match="MISSING BODY FOR: Acos"):
             gen_no_body.generate()
-    _state.update(ensure_tensor_dict({"g_missing_yaml": g_missing_yaml, "g_no_body": g_no_body, "gen_missing": gen_missing, "gen_no_body": gen_no_body}))
-    _state.update(ensure_tensor_dict({"in_0": in_0, "node_alibi": node_alibi, "node_unmapped": node_unmapped}))
-    _state.update(ensure_tensor_dict({"UnimplementedMathError": UnimplementedMathError, "patch": patch, "pytest": pytest}))
+    _state.update(
+        {"UnimplementedMathError": UnimplementedMathError, "patch": require_callable(patch), "pytest": pytest}
+    )
 
 
-def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_wasm_edge_branches_intrinsics_and_templates_part_3(
+    _state: _TestWasmEdgeBranchesIntrinsicsAndTemplatesState,
+) -> None:
     """Execute part 3 of test_wasm_edge_branches_intrinsics_and_templates.
 
     Args:
         _state: Shared test state dictionary.
     """
     patch = _state["patch"]
-    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump") as mock_dump:
-        ensure_mutable(mock_dump).return_value = ensure_eager_tensor(
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump"
+    ) as mock_dump:
+        pytest.MonkeyPatch().setattr(
+            mock_dump,
+            "return_value",
             {
                 "intrinsics": {
                     "custom_simd_op": {
@@ -300,7 +321,8 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, E
                 "scalars": {
                     "custom_simd_op": "custom_func",
                 },
-            }
+            },
+            raising=False,
         )
         g_custom = IRGraph(name="t_custom")
         in_a = IRNode(id="in_a", op_type="Input", shape_metadata=(4,))
@@ -312,13 +334,14 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, E
         gen_custom = WasmCodeGenerator(g_custom)
         src_custom = gen_custom.generate()
         assert "_scalar_custom_simd_op" in src_custom
-    _state.update(ensure_tensor_dict({"g_custom": g_custom, "gen_custom": gen_custom, "in_a": in_a, "in_b": in_b}))
-    _state.update(ensure_tensor_dict({"mock_dump": mock_dump, "node_custom": node_custom, "src_custom": src_custom}))
 
 
 def test_wasm_edge_branches_intrinsics_and_templates() -> None:
-    """Verify edge branch coverage: WhileLoop no inputs, missing YAML, template missing body, and scalars dict fallback."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    """Verify edge branch coverage: WhileLoop no inputs, missing YAML, template missing body, and scalars dict.
+
+    fallback.
+    """
+    _state: _TestWasmEdgeBranchesIntrinsicsAndTemplatesState = {}
     _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state)
     _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state)
     _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state)

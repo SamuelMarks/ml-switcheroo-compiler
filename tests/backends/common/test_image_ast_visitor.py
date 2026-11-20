@@ -6,10 +6,10 @@ import typing
 from collections.abc import Sequence
 
 import numpy as np
+from ml_switcheroo_ir import IRNode
 
 import ml_switcheroo_compiler.backends.common.mixins.image as img_mix
-from ml_switcheroo_compiler.ir.core import IRNode
-from tests.testing_utils import ensure_callable
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 if typing.TYPE_CHECKING:
     pass
@@ -17,6 +17,32 @@ if typing.TYPE_CHECKING:
 
 class _DummyGenerator:
     """Mock generator providing fallback prefix."""
+
+    indent_level: int = 0
+    var_names: dict[str, str]
+    _cholesky_vjp_imported: bool = False
+    _lu_vjp_imported: bool = False
+    _qr_vjp_imported: bool = False
+    _svd_vjp_imported: bool = False
+
+    def __init__(self, graph: BackendArg = None) -> None:
+        """Initialize mock generator.
+
+        Args:
+            graph: Optional computation graph.
+        """
+        del graph
+        self.var_names = {}
+        self._code: list[str] = []
+
+    @property
+    def code(self) -> list[str]:
+        """Return generated code lines.
+
+        Returns:
+            list[str]: Code lines.
+        """
+        return self._code
 
     def get_fallback_prefix(self) -> str:
         """Return prefix for fallback ops.
@@ -26,19 +52,27 @@ class _DummyGenerator:
         """
         return "np_eager"
 
+    def add_line(self, line: str) -> None:
+        """Append a line of generated code.
+
+        Args:
+            line: Code line to append.
+        """
+        self._code.append(line)
+
 
 class _MockArrayWithNumpy:
     """Mock object with numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with numpy array.
 
         Args:
-            arr (np.ndarray): Underlying array.
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
         """
         self.arr = arr
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Return underlying numpy array.
 
         Returns:
@@ -50,11 +84,11 @@ class _MockArrayWithNumpy:
 class _MockDataWithNumpy:
     """Mock object with data.numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
         """Initialize with nested data object.
 
         Args:
-            arr (np.ndarray): Underlying array.
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
         """
         self.data = _MockArrayWithNumpy(arr)
 
@@ -105,9 +139,9 @@ class _MockBackendH5:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load h5 mock weights.
 
         Args:
@@ -118,11 +152,11 @@ class _MockBackendH5:
         """
         return {"backend_key": np.array([42.0])}
 
-    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], path: str) -> None:
+    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save h5 mock weights.
 
         Args:
-            weights (dict[str, np.ndarray]): Weights dict.
+            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
@@ -133,18 +167,18 @@ class _MockBackendNPZ:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], str] | None = None
+        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
 
-    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]], path: str) -> None:
+    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
         """Save npz mock weights.
 
         Args:
-            weights (dict[str, np.ndarray]): Weights dict.
+            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
 
-    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
+    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Load npz mock weights.
 
         Args:
@@ -159,7 +193,9 @@ class _MockBackendNPZ:
 class _MockBackendSafetensors:
     """Mock backend implementing custom from_buffer method."""
 
-    def from_buffer(self, buffer: bytes, dtype: str, shape: Sequence[int]) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
+    def from_buffer(
+        self, buffer: bytes, dtype: str, shape: Sequence[int]
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float32]]:
         """Reconstruct array from buffer.
 
         Args:
@@ -185,7 +221,7 @@ def test_image_ast_visitor() -> None:
     Returns:
         None
     """
-    vis = ensure_callable(img_mix.ImageASTVisitor)(generator=ensure_callable(_DummyGenerator)())
+    vis = img_mix.ImageASTVisitor(generator=_DummyGenerator())
     node = IRNode("dummy", "Dummy", inputs=[], attributes={})
 
     # With kwargs explicitly supplied
@@ -194,8 +230,14 @@ def test_image_ast_visitor() -> None:
     assert vis.visit_AdjustHue(node, ["x"], delta=0.2) == "np_eager_adjust_hue(x, 0.2)"
     assert vis.visit_AdjustSaturation(node, ["x"], saturation_factor=2.0) == "np_eager_adjust_saturation(x, 2.0)"
     assert vis.visit_AffineGenerator(node, ["th", "d"], batch_size=4) == "np_eager_affine_generator(4, th, d)"
-    assert vis.visit_AffineGrid(node, ["th"], size=(2, 2), align_corners=True) == "np_eager_affine_grid(th, size=(2, 2), align_corners=True)"
-    assert vis.visit_AffineTransform(node, ["img", "mat"], interpolation="bilinear") == "np_eager_affine_transform(img, mat, interpolation='bilinear')"
+    assert (
+        vis.visit_AffineGrid(node, ["th"], size=(2, 2), align_corners=True)
+        == "np_eager_affine_grid(th, size=(2, 2), align_corners=True)"
+    )
+    assert (
+        vis.visit_AffineTransform(node, ["img", "mat"], interpolation="bilinear")
+        == "np_eager_affine_transform(img, mat, interpolation='bilinear')"
+    )
     assert vis.visit_AugMix(node, ["x"]) == "np_eager_augmix(x)"
     assert vis.visit_AutoContrast(node, ["x"]) == "np_eager_auto_contrast(x)"
 
@@ -206,4 +248,7 @@ def test_image_ast_visitor() -> None:
     assert vis.visit_AdjustSaturation(node, ["x"]) == "np_eager_adjust_saturation(x, 1.0)"
     assert vis.visit_AffineGenerator(node, ["th"]) == "np_eager_affine_generator(1, th)"
     assert vis.visit_AffineGrid(node, ["th"]) == "np_eager_affine_grid(th, size=(), align_corners=False)"
-    assert vis.visit_AffineTransform(node, ["img", "mat"]) == "np_eager_affine_transform(img, mat, interpolation='nearest')"
+    assert (
+        vis.visit_AffineTransform(node, ["img", "mat"])
+        == "np_eager_affine_transform(img, mat, interpolation='nearest')"
+    )

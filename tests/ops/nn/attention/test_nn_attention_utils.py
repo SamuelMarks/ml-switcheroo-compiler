@@ -1,268 +1,79 @@
-"""Tests for test_nn_attention_utils."""
+"""Behavioral tests for RoPE, sinusoidal positional encoding, and ALiBi mask utilities."""
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
-from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
+from tests.testing_utils import MockTestStub
 
 
-def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
-    """Execute part 1 of test_nn_attention_utils_coverage.
+class _ShapedDummy(MockTestStub):
+    """Operand providing `.shape`."""
 
-    Args:
-        _state: Shared test state dictionary.
-    """
-    config.eager_mode = True
-    t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig(shape=(1, 1, 2), dtype=DType("float32"), device=Device("cpu")))
-
-    assert ensure_callable(RopeOp)().infer_shape(t) == (1, 1, 2)
-    assert ensure_callable(ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
-
-    assert rope(t, axis=2) is not None
-
-    sinusoidal_positional_encoding(4, 4)
-    alibi_mask(4, 2)
-
-    import ml_switcheroo_compiler.backends.registry as registry_mod
-
-    _state.update(ensure_tensor_dict({"registry_mod": registry_mod, "t": t}))
-
-
-class _MockAttentionBackend:
-    """Test class _MockAttentionBackend."""
-
-    def execute_op(self, op_name: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function execute_op.
+    def __init__(self, shape: tuple[int, ...]) -> None:
+        """Initialize shaped dummy operand.
 
         Args:
-            op_name: Test parameter `op_name`.
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-
-        Returns:
-            EagerValue: Computed output value from `execute_op`.
+            shape (tuple[int, ...]): Desired shape tuple.
         """
-        if op_name == "Concatenate":
-            tensors = args[0]
-            axis = kwargs.get("axis", -1)
-            return ensure_callable(np.concatenate)([ensure_callable(np.atleast_1d)(arr) if ensure_callable(np.ndim)(arr) == 0 else arr for arr in ensure_eager_tensor(tensors)], axis=axis)
-        return np.array([1.0])
+        self.shape = shape
 
-    def asarray(self, x: EagerValue) -> EagerValue:
-        """Test function asarray.
 
-        Args:
-            x: Test parameter `x`.
+class _UnshapedDummy(MockTestStub):
+    """Operand lacking `.shape`."""
 
-        Returns:
-            EagerValue: Computed output value from `asarray`.
-        """
-        return np.asarray(x)
+    val: int = 123
 
-    def array(self, x: EagerValue) -> EagerValue:
-        """Test function array.
 
-        Args:
-            x: Test parameter `x`.
+def test_attention_utils_infer_shape_and_eager_execution() -> None:
+    """Verify `RopeOp.infer_shape` and eager NumPy evaluation of RoPE, positional encoding, and ALiBi mask."""
+    rope_op = RopeOp()
+    assert rope_op.infer_shape(_ShapedDummy((2, 4, 8))) == (2, 4, 8)
+    assert rope_op.infer_shape(_UnshapedDummy()) == ()
 
-        Returns:
-            EagerValue: Computed output value from `array`.
-        """
-        return np.asarray(x)
+    t_in = Tensor(
+        np.ones((1, 2, 4), dtype=np.float32),
+        TensorConfig(shape=(1, 2, 4), dtype=DType.Float32, device=Device("cpu")),
+    )
+    assert ScaledDotProductAttention().infer_shape(t_in, t_in, t_in, None) == (1, 2, 4)
 
-    def expand_dims(self, x: EagerValue, axis: EagerValue) -> EagerValue:
-        """Test function expand_dims.
+    with ConfigContext(backend="numpy", eager_mode=True):
+        rope_out = rope(t_in, axis=4)
+        assert isinstance(rope_out, Tensor)
+        assert rope_out.shape == (1, 2, 4)
 
-        Args:
-            x: Test parameter `x`.
-            axis: Test parameter `axis`.
+        pe = sinusoidal_positional_encoding(seq_len=4, axis=8)
+        assert isinstance(pe, Tensor)
+        assert pe.shape == (4, 8)
 
-        Returns:
-            EagerValue: Computed output value from `expand_dims`.
-        """
-        return ensure_callable(np.expand_dims)(x, axis=axis)
+        mask = alibi_mask(seq_len=4, num_heads=2)
+        assert mask == 0.0
 
-    def multiply(self, x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function multiply.
 
-        Args:
-            x: Test parameter `x`.
-            y: Test parameter `y`.
-
-        Returns:
-            EagerValue: Computed output value from `multiply`.
-        """
+def test_rope_symbolic_tracing_ir_emission() -> None:
+    """Verify `rope` emits a canonical `Rope` `LogicalNode` when traced with `TracerTape`."""
+    t_sym = Tensor(
+        ProxyTensor("rope_in", (2, 4, 8), "float32"),
+        TensorConfig((2, 4, 8), DType.Float32, Device("cpu")),
+    )
+    with ConfigContext(eager_mode=False):
+        tape = TracerTape()
+        traced_graph = tape.start_tracing("rope_trace")
         try:
-            return ensure_eager_tensor(ensure_callable(np.multiply)(x, y))
-        except Exception:
-            return x
+            out = rope(t_sym, axis=8)
+        finally:
+            tape.stop_tracing()
 
-    def subtract(self, x: EagerValue, y: EagerValue) -> EagerValue:
-        """Test function subtract.
-
-        Args:
-            x: Test parameter `x`.
-            y: Test parameter `y`.
-
-        Returns:
-            EagerValue: Computed output value from `subtract`.
-        """
-        try:
-            return ensure_eager_tensor(ensure_callable(np.subtract)(x, y))
-        except Exception:
-            return x
-
-    def arange(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Test function arange.
-
-        Args:
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-
-        Returns:
-            EagerValue: Computed output value from `arange`.
-        """
-        return ensure_callable(np.arange)(*args, **kwargs)
-
-    def exp(self, x: EagerValue) -> EagerValue:
-        """Test function exp.
-
-        Args:
-            x: Test parameter `x`.
-
-        Returns:
-            EagerValue: Computed output value from `exp`.
-        """
-        return ensure_eager_tensor(ensure_callable(np.exp)(x))
-
-    def sin(self, x: EagerValue) -> EagerValue:
-        """Test function sin.
-
-        Args:
-            x: Test parameter `x`.
-
-        Returns:
-            EagerValue: Computed output value from `sin`.
-        """
-        return ensure_eager_tensor(ensure_callable(np.sin)(x))
-
-    def cos(self, x: EagerValue) -> EagerValue:
-        """Test function cos.
-
-        Args:
-            x: Test parameter `x`.
-
-        Returns:
-            EagerValue: Computed output value from `cos`.
-        """
-        return ensure_eager_tensor(ensure_callable(np.cos)(x))
-
-    def concatenate(self, x: EagerValue, axis: EagerValue) -> EagerValue:
-        """Test function concatenate.
-
-        Args:
-            x: Test parameter `x`.
-            axis: Test parameter `axis`.
-
-        Returns:
-            EagerValue: Computed output value from `concatenate`.
-        """
-        try:
-            return ensure_callable(np.concatenate)([ensure_callable(np.atleast_1d)(arr) for arr in ensure_eager_tensor(x)], axis=axis)
-        except Exception:
-            return x
-
-
-def __test_nn_attention_utils_coverage_part_2_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
-    """Execute sub-part 1 of _test_nn_attention_utils_coverage_part_2.
-
-    Args:
-        _state: Shared test state dictionary.
-    """
-    _state.update(ensure_tensor_dict({"MockAttentionBackend": _MockAttentionBackend}))
-
-
-def __test_nn_attention_utils_coverage_part_2_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
-    """Execute sub-part 2 of _test_nn_attention_utils_coverage_part_2.
-
-    Args:
-        _state: Shared test state dictionary.
-    """
-    MockAttentionBackend = _state["MockAttentionBackend"]
-    _state.update(ensure_tensor_dict({"MockAttentionBackend": MockAttentionBackend}))
-
-
-def _test_nn_attention_utils_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
-    """Execute part 2 of test_nn_attention_utils_coverage.
-
-    Args:
-        _state: Shared test state dictionary.
-    """
-    ensure_eager_tensor(_state)["_state"] = _state
-    for _sub_fn in (__test_nn_attention_utils_coverage_part_2_sub_1, __test_nn_attention_utils_coverage_part_2_sub_2):
-        _sub_fn(_state)
-    assert len(_state) > 0
-
-
-def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
-    """Execute part 3 of test_nn_attention_utils_coverage.
-
-    Args:
-        _state: Shared test state dictionary.
-    """
-    MockAttentionBackend, registry_mod, t = _state["MockAttentionBackend"], _state["registry_mod"], _state["t"]
-    orig_backend = registry_mod.get_active_backend
-    try:
-        ensure_mutable(registry_mod).get_active_backend = ensure_eager_tensor(lambda: MockAttentionBackend())
-
-        ensure_callable(rope)(t, axis=2)
-
-        config.eager_mode = False
-        global_tracing_state.is_tracing = True
-
-        class DummyGraph:
-            """Test class DummyGraph."""
-
-            def __init__(self) -> None:
-                """Test function __init__."""
-                self.name = "dummy"
-                self.nodes = ensure_tensor_dict({})
-
-            def add_node(self, node: EagerValue) -> None:
-                """Test function add_node.
-
-                Args:
-                    node: Test parameter `node`.
-                """
-                pass
-
-        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
-
-        ensure_callable(rope)(t, axis=2)
-    finally:
-        config.eager_mode = False
-        global_tracing_state.is_tracing = False
-        ensure_mutable(registry_mod).get_active_backend = ensure_eager_tensor(orig_backend)
-    _state.update(ensure_tensor_dict({"orig_backend": orig_backend}))
-
-
-def test_nn_attention_utils_coverage() -> None:
-    """Test function test_nn_attention_utils_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
-    _test_nn_attention_utils_coverage_part_1(_state)
-    _test_nn_attention_utils_coverage_part_2(_state)
-    _test_nn_attention_utils_coverage_part_3(_state)
-    assert len(_state) > 0
+    assert isinstance(out, Tensor)
+    assert out.shape == (2, 4, 8)
+    rope_nodes = [n for n in traced_graph.nodes.values() if n.op_type == "Rope"]
+    assert len(rope_nodes) == 1
+    assert rope_nodes[0].inputs == ["rope_in"]
+    assert rope_nodes[0].attributes["axis"] == 8

@@ -8,9 +8,9 @@ import typing
 from collections.abc import Iterable
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_node_list, as_opt_graph, clone_logical_node
+from ml_switcheroo_compiler.ir.core import as_node_list, as_opt_graph, clone_logical_node
 
 
 @typing.runtime_checkable
@@ -41,12 +41,14 @@ def _load_scan_rules() -> dict[str, AttributeValue]:
     return {}
 
 
-def detect_associative_reduction(body_graph: IRGraph | None, rules: dict[str, AttributeValue]) -> tuple[str, str] | None:
+def detect_associative_reduction(
+    body_graph: IRGraph | None, rules: typing.Mapping[str, AttributeValue]
+) -> tuple[str, str] | None:
     """Detect whether a scan body graph performs an associative reduction.
 
     Args:
         body_graph (IRGraph | None): The scan body graph or block.
-        rules (dict[str, AttributeValue]): Declarative associative scan rules.
+        rules (typing.Mapping[str, AttributeValue]): Declarative associative scan rules.
 
     Returns:
         Optional[tuple[str, str]]: Tuple of (detected_op_type, parallel_primitive) if associative, else None.
@@ -54,10 +56,12 @@ def detect_associative_reduction(body_graph: IRGraph | None, rules: dict[str, At
     if not body_graph:
         return None
 
-    from ml_switcheroo_compiler.core.shape import TensorOrScalar
+    from ml_switcheroo_compiler.core.shape import OpValue
 
-    raw_nodes: TensorOrScalar = body_graph.nodes
-    node_values: Iterable[IRNode] = raw_nodes.values() if isinstance(raw_nodes, _NodesValuesProtocol) else as_node_list(body_graph.nodes)
+    raw_nodes: OpValue | _NodesValuesProtocol = body_graph.nodes
+    node_values: Iterable[IRNode] = (
+        raw_nodes.values() if isinstance(raw_nodes, _NodesValuesProtocol) else as_node_list(body_graph.nodes)
+    )
     raw_assoc = rules.get("associative_ops", {})
     assoc_map = raw_assoc if isinstance(raw_assoc, dict) else {}
 

@@ -3,26 +3,25 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_dtype,
     extract_shape,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor, as_opt_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _fallback_load(filepath: str | None) -> TensorOrScalar:
+def _fallback_load(filepath: str | None) -> OpValue:
     """Load tensor weights based on file extension (.safetensors, .npz, .npy, .h5).
 
     Args:
         filepath (str | None): Path to the serialized weight file.
 
     Returns:
-        TensorOrScalar: Loaded weights dictionary, tensor, or None if unsupported.
+        OpValue: Loaded weights dictionary, tensor, or None if unsupported.
     """
     if not isinstance(filepath, str):
         return None
@@ -39,15 +38,15 @@ def _fallback_load(filepath: str | None) -> TensorOrScalar:
     return None
 
 
-def load(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def load(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Load arrays or serialized tensor archives from disk.
 
     Args:
-        *args (TensorOrScalar): Positional file path and loader arguments.
-        **kwargs (TensorOrScalar): Keyword loader options.
+        *args (OpValue): Positional file path and loader arguments.
+        **kwargs (OpValue): Keyword loader options.
 
     Returns:
-        TensorOrScalar: Loaded tensor or dictionary of tensors.
+        OpValue: Loaded tensor or dictionary of tensors.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -67,95 +66,95 @@ def load(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     )
 
 
-def save(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+def save(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Save a tensor or array to a binary `.npy` file.
 
     Args:
-        *args (TensorOrScalar): File path and tensor positional arguments.
-        **kwargs (TensorOrScalar): Keyword arguments for saving.
+        *args (OpValue): File path and tensor positional arguments.
+        **kwargs (OpValue): Keyword arguments for saving.
 
     Returns:
-        Tensor | None: Symbolic node when tracing, or None in eager mode.
+        OpValue: Symbolic node when tracing, or backend result in eager mode.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_opt_tensor_obj(get_active_backend().execute_op("Save", *args, **kwargs))
+        return get_active_backend().execute_op("Save", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
 
 
-def save_gguf(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+def save_gguf(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Save weights and metadata in GGUF binary format.
 
     Args:
-        *args (TensorOrScalar): Positional path and weight dictionary arguments.
-        **kwargs (TensorOrScalar): Keyword GGUF serialization options.
+        *args (OpValue): Positional path and weight dictionary arguments.
+        **kwargs (OpValue): Keyword GGUF serialization options.
 
     Returns:
-        Tensor | None: Symbolic node when tracing, or None in eager mode.
+        OpValue: Symbolic node when tracing, or backend result in eager mode.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_opt_tensor_obj(get_active_backend().execute_op("SaveGguf", *args, **kwargs))
+        return get_active_backend().execute_op("SaveGguf", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
 
 
-def save_safetensors(file: str, arrays: TensorOrScalar) -> None:
+def save_safetensors(file: str, arrays: OpValue) -> None:
     """Save a dictionary of tensors to Safetensors format.
 
     Args:
         file (str): Destination `.safetensors` file path.
-        arrays (TensorOrScalar): Mapping of tensor names to tensor objects.
+        arrays (OpValue): Mapping of tensor names to tensor objects.
     """
     SafetensorsWeightFormat().save(arrays, file)
 
 
-def savez(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+def savez(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Save multiple arrays into an uncompressed `.npz` archive.
 
     Args:
-        *args (TensorOrScalar): File path and unnamed array positional arguments.
-        **kwargs (TensorOrScalar): Named arrays to store in the archive.
+        *args (OpValue): File path and unnamed array positional arguments.
+        **kwargs (OpValue): Named arrays to store in the archive.
 
     Returns:
-        Tensor | None: Symbolic node when tracing, or None in eager mode.
+        OpValue: Symbolic node when tracing, or backend result in eager mode.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_opt_tensor_obj(get_active_backend().execute_op("Savez", *args, **kwargs))
+        return get_active_backend().execute_op("Savez", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
 
 
-def savez_compressed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
+def savez_compressed(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Save multiple arrays into a compressed `.npz` archive.
 
     Args:
-        *args (TensorOrScalar): File path and unnamed array positional arguments.
-        **kwargs (TensorOrScalar): Named arrays to store in the compressed archive.
+        *args (OpValue): File path and unnamed array positional arguments.
+        **kwargs (OpValue): Named arrays to store in the compressed archive.
 
     Returns:
-        Tensor | None: Symbolic node when tracing, or None in eager mode.
+        OpValue: Symbolic node when tracing, or backend result in eager mode.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return as_opt_tensor_obj(get_active_backend().execute_op("SavezCompressed", *args, **kwargs))
+        return get_active_backend().execute_op("SavezCompressed", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")
@@ -167,15 +166,15 @@ class Load(OpDef):
 
     op_name = "Load"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for Load.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -185,7 +184,7 @@ class Load(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_1: TensorOrScalar = res
+        _typed_ret_1: OpValue = res
         return _typed_ret_1
 
 
@@ -195,15 +194,15 @@ class Save(OpDef):
 
     op_name = "Save"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for Save.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -213,7 +212,7 @@ class Save(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_2: TensorOrScalar = res
+        _typed_ret_2: OpValue = res
         return _typed_ret_2
 
 
@@ -223,15 +222,15 @@ class SaveGguf(OpDef):
 
     op_name = "SaveGguf"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for SaveGguf.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -241,7 +240,7 @@ class SaveGguf(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_3: TensorOrScalar = res
+        _typed_ret_3: OpValue = res
         return _typed_ret_3
 
 
@@ -251,15 +250,15 @@ class Savez(OpDef):
 
     op_name = "Savez"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for Savez.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -269,7 +268,7 @@ class Savez(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_4: TensorOrScalar = res
+        _typed_ret_4: OpValue = res
         return _typed_ret_4
 
 
@@ -279,15 +278,15 @@ class SavezCompressed(OpDef):
 
     op_name = "SavezCompressed"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer broadcasted output shape for SavezCompressed.
 
         Args:
-            *args (TensorOrScalar): Positional tensor arguments.
-            **kwargs (TensorOrScalar): Keyword operation attributes.
+            *args (OpValue): Positional tensor arguments.
+            **kwargs (OpValue): Keyword operation attributes.
 
         Returns:
-            TensorOrScalar: Inferred output shape tuple.
+            OpValue: Inferred output shape tuple.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -297,5 +296,5 @@ class SavezCompressed(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_5: TensorOrScalar = res
+        _typed_ret_5: OpValue = res
         return _typed_ret_5

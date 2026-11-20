@@ -1,17 +1,75 @@
-"""Implementation of lu operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.lu`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.linalg.decompositions.lu`."""
 
 from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_tensor, ensure_tensor_pair
+from ml_switcheroo_compiler.backends.registry import (
+    unpack_pair,
+    unpack_triple,
+)
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node, _extract_linalg_shape
 
 if typing.TYPE_CHECKING:
     pass
+
+
+@register_op("Lu")
+class Lu(OpDef):
+    """Full PLU matrix decomposition operator definition."""
+
+    def infer_shape(
+        self,
+        *args: OpValue,
+        **kwargs: OpValue,
+    ) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer `(P_shape, L_shape, U_shape)` factor shapes for PLU decomposition.
+
+        Args:
+            *args (OpValue): Input matrix `A` argument.
+            **kwargs (OpValue): Optional keyword arguments (`a`, `input`).
+
+        Returns:
+            tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]] | tuple[int, ...]: Factor shape triple or `()`.
+        """
+        inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
+        if inp is None:
+            return ()
+        shape = _extract_linalg_shape(inp)
+        if len(shape) < 2:
+            return (shape, shape, shape)
+        m, n = shape[-2], shape[-1]
+        k = min(m, n)
+        p_shape = shape[:-2] + (m, m)
+        l_shape = shape[:-2] + (m, k)
+        u_shape = shape[:-2] + (k, n)
+        return (p_shape, l_shape, u_shape)
+
+
+def lu(a: Tensor) -> OpValue:
+    """Compute the PLU decomposition of matrix `a`.
+
+    Args:
+        a (Tensor): Input matrix tensor.
+
+    Returns:
+        OpValue: Tuple of `(P, L, U)` factor tensors.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        p, l_mat, u = unpack_triple(backend.execute_op("Lu", a.data))
+        return (
+            Tensor(p, TensorConfig(extract_shape(p), a.dtype, a.device)),
+            Tensor(l_mat, TensorConfig(extract_shape(l_mat), a.dtype, a.device)),
+            Tensor(u, TensorConfig(extract_shape(u), a.dtype, a.device)),
+        )
+    return _emit_linalg_node("Lu", [a], {}, [a.shape, a.shape, a.shape], [a.dtype] * 3)
 
 
 @register_op("LuFactor")
@@ -27,10 +85,12 @@ class LuFactor(OpDef):
 
         Args:
             *args (Tensor | tuple[int, ...] | list[int] | None): Positional args representing input tensor.
-            **kwargs (Tensor | tuple[int, ...] | list[int] | str | int | float | None): Keyword args representing input tensor.
+            **kwargs (Tensor | tuple[int, ...] | list[int] | str | int | float | None): Keyword args representing
+                input tensor.
 
         Returns:
-            tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]: Tuple of (lu_shape (..., M, N), pivots_shape (..., min(M, N))).
+            tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]: Tuple of (lu_shape (..., M, N), pivots_shape
+                (..., min(M, N))).
         """
         inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
         if inp is None:
@@ -80,11 +140,11 @@ def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        lu, piv = ensure_tensor_pair(backend.execute_op("LuFactor", a.data))
+        lu, piv = unpack_pair(backend.execute_op("LuFactor", a.data))
         piv_dtype = a.dtype
         return (
-            Tensor(lu, TensorConfig(lu.shape, a.dtype, a.device)),
-            Tensor(piv, TensorConfig(piv.shape, piv_dtype, a.device)),
+            Tensor(lu, TensorConfig(extract_shape(lu), a.dtype, a.device)),
+            Tensor(piv, TensorConfig(extract_shape(piv), piv_dtype, a.device)),
         )
 
     piv_shape = a.shape[:-1]
@@ -108,8 +168,8 @@ def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = ensure_eager_tensor(backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size))
-        return Tensor(data, TensorConfig(data.shape, pivots.dtype, pivots.device))
+        data = backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size)
+        return Tensor(data, TensorConfig(extract_shape(data), pivots.dtype, pivots.device))
     out_shape = pivots.shape[:-1] + (permutation_size,)
     res = _emit_linalg_node(
         "LuPivotsToPermutation",

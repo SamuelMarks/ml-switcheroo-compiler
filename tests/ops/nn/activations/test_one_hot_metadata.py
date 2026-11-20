@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.nn.activations import one_hot
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable
 
 
 def test_one_hot_shape_metadata() -> None:
@@ -32,10 +33,10 @@ def test_one_hot_shape_metadata() -> None:
         orig_tracing = state.global_tracing_state.is_tracing
         state.global_tracing_state.is_tracing = True
         orig_add_node = state.global_tracing_state.add_node
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(lambda node: None)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", lambda node: None, raising=False)
         res = one_hot(DummyTensor(), 5)
-        assert res is not None
+        assert str(res).startswith("onehot")
         state.global_tracing_state.is_tracing = orig_tracing
-        ensure_mutable(state.global_tracing_state).add_node = ensure_eager_tensor(orig_add_node)
+        pytest.MonkeyPatch().setattr(state.global_tracing_state, "add_node", orig_add_node, raising=False)
     finally:
         config.eager_mode = orig

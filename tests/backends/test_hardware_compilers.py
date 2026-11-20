@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.backends.hardware_compilers import (
 )
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_base_hardware_compiler_is_available() -> None:
@@ -94,7 +94,9 @@ def test_base_hardware_compiler_fallback_syntax_comments_strings_and_preprocesso
     assert not base._fallback_syntax_check("char c = 'x; void foo() {}", ["void"])
 
     # Preprocessor balanced
-    assert base._fallback_syntax_check("#if 1\n#ifdef FOO\n#ifndef BAR\nvoid foo() {}\n#endif\n#endif\n#endif", ["void"])
+    assert base._fallback_syntax_check(
+        "#if 1\n#ifdef FOO\n#ifndef BAR\nvoid foo() {}\n#endif\n#endif\n#endif", ["void"]
+    )
 
     # Preprocessor unclosed (#if without #endif)
     assert not base._fallback_syntax_check("#if 1\nvoid foo() {}", ["void"])
@@ -116,7 +118,7 @@ def test_cuda_compiler_compile_native(tmp_path: Path) -> None:
     out_file = tmp_path / "out.ptx"
 
     # Successful compilation with output file created
-    def fake_run_success(cmd: list[str], **kwargs: EagerValue) -> MagicMock:
+    def fake_run_success(cmd: list[str], **kwargs: BackendArg) -> MagicMock:
         """Test function fake_run_success.
 
         Args:

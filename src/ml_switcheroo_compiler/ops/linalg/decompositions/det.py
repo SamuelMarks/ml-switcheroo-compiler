@@ -1,12 +1,12 @@
-"""Implementation of det operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.decompositions.det`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.linalg.decompositions.det`."""
 
 from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor, ensure_tensor_pair
+from ml_switcheroo_compiler.backends.registry import unpack_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_device, extract_shape
+from ml_switcheroo_compiler.core.shape import OpValue, extract_device, extract_shape
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import (
@@ -23,12 +23,12 @@ if typing.TYPE_CHECKING:
 class Det(OpDef):
     """Det Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer determinant output scalar/batch shape (...).
 
         Args:
-            *args (EagerTensorProtocol): Input tensor or shape arguments.
-            **kwargs (EagerTensorProtocol): Optional keyword arguments.
+            *args (OpValue): Input tensor or shape arguments.
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Reduced batch shape (...).
@@ -44,12 +44,14 @@ class Det(OpDef):
 class Slogdet(OpDef):
     """Slogdet Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+    def infer_shape(
+        self, *args: OpValue, **kwargs: OpValue
+    ) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
         """Infer sign and log determinant output shapes.
 
         Args:
-            *args (EagerTensorProtocol): Input tensor or shape arguments.
-            **kwargs (EagerTensorProtocol): Optional keyword arguments.
+            *args (OpValue): Input tensor or shape arguments.
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple: Tuple of (sign_shape (...), logdet_shape (...)).
@@ -62,7 +64,7 @@ class Slogdet(OpDef):
         return (batch_shape, batch_shape)
 
 
-def det(input: Tensor) -> TensorOrScalar:
+def det(input: Tensor) -> OpValue:
     """Compute the determinant of a square matrix.
 
     Args:
@@ -84,7 +86,7 @@ def det(input: Tensor) -> TensorOrScalar:
     return _emit_linalg_node("Det", [input], {}, [()], [_extract_linalg_dtype(input, None)])
 
 
-def slogdet(input: Tensor) -> TensorOrScalar:
+def slogdet(input: Tensor) -> OpValue:
     """Compute the sign and natural logarithm of the determinant of a square matrix.
 
     Args:
@@ -97,17 +99,21 @@ def slogdet(input: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sign, logdet = ensure_tensor_pair(backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input)))
-        sign_arr = ensure_eager_tensor(backend.array(sign))
-        logdet_arr = ensure_eager_tensor(backend.array(logdet))
+        sign, logdet = unpack_pair(
+            backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input))
+        )
+        sign_arr = backend.array(sign)
+        logdet_arr = backend.array(logdet)
         return (
             Tensor(
                 sign_arr,
-                TensorConfig(sign_arr.shape, _extract_linalg_dtype(input, None), extract_device(input, None)),
+                TensorConfig(extract_shape(sign_arr), _extract_linalg_dtype(input, None), extract_device(input, None)),
             ),
             Tensor(
                 logdet_arr,
-                TensorConfig(logdet_arr.shape, _extract_linalg_dtype(input, None), extract_device(input, None)),
+                TensorConfig(
+                    extract_shape(logdet_arr), _extract_linalg_dtype(input, None), extract_device(input, None)
+                ),
             ),
         )
     return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [_extract_linalg_dtype(input, None)] * 2)

@@ -5,10 +5,13 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
-from ml_switcheroo_ir import NodeDict
+import pytest
+from ml_switcheroo_ir import LogicalNode, NodeDict
 
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import coerce_operand_list
 
 if typing.TYPE_CHECKING:
     pass
@@ -21,16 +24,17 @@ def test_numpy_type_translator() -> None:
 
 def test_numpy_ast_visitor() -> None:
     """Test function test_numpy_ast_visitor."""
-    kwargs = {"equation": "ij,jk->ik", "dimension": 1, "other": "val"}
-    assert ensure_callable(NumpyASTVisitor._format_kwargs)(kwargs) == "other=val, axis=1"
+    kwargs: dict[str, BackendArg] = {"equation": "ij,jk->ik", "dimension": 1, "other": "val"}
+    assert NumpyASTVisitor._format_kwargs(kwargs) == "other=val, axis=1"
 
     node = MagicMock(op_type="Parameter")
     node.id = "p1"
     assert NumpyASTVisitor.visit_Parameter(node, ["p1"]) == "p1 = None # Parameter"
 
-    assert ensure_callable(NumpyASTVisitor.visit_Return)(None, []) == "return None"
-    assert ensure_callable(NumpyASTVisitor.visit_Return)(None, ["v1"]) == "return v1"
-    assert ensure_callable(NumpyASTVisitor.visit_Return)(None, ["v1", "v2"]) == "return v1, v2"
+    ret_node = LogicalNode(id="ret", op_type="Return")
+    assert NumpyASTVisitor.visit_Return(ret_node, []) == "return None"
+    assert NumpyASTVisitor.visit_Return(ret_node, ["v1"]) == "return v1"
+    assert NumpyASTVisitor.visit_Return(ret_node, ["v1", "v2"]) == "return v1, v2"
 
     node = MagicMock(op_type="Sum")
     assert NumpyASTVisitor.generic_visit(node, ["a"], dimension=1) == "np.sum(a, axis=1)"
@@ -112,13 +116,13 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     # Test passing raw numpy array
     res1 = fn_aot(np.array([1.0, 2.0]))
     assert isinstance(res1, Tensor)
-    ensure_callable(np.testing.assert_array_equal)(res1.data, ensure_callable(np.array)([1.0, 2.0]))
+    np.testing.assert_array_equal(ensure_ndarray(res1.data), np.array([1.0, 2.0]))
 
     # Test passing Tensor input
     t_in = Tensor(np.array([3.0]), TensorConfig((1,), DType.Float32, Device("cpu")))
     res2 = fn_aot(t_in)
     assert isinstance(res2, Tensor)
-    ensure_callable(np.testing.assert_array_equal)(res2.data, ensure_callable(np.array)([3.0]))
+    np.testing.assert_array_equal(ensure_ndarray(res2.data), np.array([3.0]))
 
     # Test returning Tensor directly
     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y": t_in}):
@@ -138,12 +142,14 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
         }
     )
     # One Tensor, one raw array
-    with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y1": t_in, "y2": np.array([4.0])}):
+    with patch(
+        "ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"y1": t_in, "y2": np.array([4.0])}
+    ):
         fn_multi = gen.compile_aot(g_multi)
-        outs = fn_multi(t_in)
-        assert ensure_callable(len)(outs) == 2
-        assert id(ensure_eager_tensor(outs)[0]) == id(t_in)
-        assert isinstance(ensure_eager_tensor(outs)[1], Tensor)
+        outs = coerce_operand_list(fn_multi(t_in))
+        assert len(outs) == 2
+        assert id(outs[0]) == id(t_in)
+        assert isinstance(outs[1], Tensor)
 
     # 4. compile_aot with no outputs
     g_empty = LogicalGraph("g_empty")
@@ -152,4 +158,12 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     assert fn_empty() is None
 
     assert NumpyGenerator.get_module() is np
-    assert ensure_eager_tensor(NumpyGenerator.get_scipy_module("special")).erf is not None
+    assert NumpyGenerator.get_scipy_module("special").erf is not None
+
+
+def test_numpy_scipy_submodule_loaders() -> None:
+    """Verify all supported SciPy submodule loaders and unsupported submodule error."""
+    for sub_name in ("linalg", "stats", "signal", "fft", "ndimage", "sparse", "optimize", "integrate"):
+        assert NumpyGenerator.get_scipy_module(sub_name).__name__ == f"scipy.{sub_name}"
+    with pytest.raises(ValueError, match="Unsupported SciPy submodule"):
+        NumpyGenerator.get_scipy_module("unsupported_sub")

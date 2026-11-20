@@ -7,9 +7,10 @@ import functools
 import typing
 from collections.abc import Callable, Iterable, Iterator
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import OpValue, is_variadic_callable
 
 T = typing.TypeVar("T")
+_EqT = typing.TypeVar("_EqT")
 
 
 class TreeDef:
@@ -48,35 +49,37 @@ class TreeDef:
         """
         return hash(str(self.node_type) + str(self.children_defs))
 
-    def __eq__(self, other: TensorOrScalar | TreeDef) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Check equality with another TreeDef.
 
         Args:
-            other (TensorOrScalar | TreeDef): The other object to compare with.
+            other (_EqT): The other object to compare with.
 
         Returns:
             bool: True if equal, False otherwise.
         """
         if not isinstance(other, TreeDef):
             return False
-        return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
+        return (
+            self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
+        )
 
 
-PyTree = typing.Union[TensorOrScalar, TreeDef]  # noqa: UP007
+PyTree = typing.Union[OpValue, TreeDef]  # noqa: UP007
 
 
-def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
+def tree_flatten(tree: PyTree) -> tuple[list[OpValue], TreeDef]:
     """Flatten a PyTree into a list of leaves and an auxiliary treedef.
 
     Args:
         tree (PyTree): The tree to flatten.
 
     Returns:
-        tuple[list[TensorOrScalar], TreeDef]: The flattened leaves and the tree definition.
+        tuple[list[OpValue], TreeDef]: The flattened leaves and the tree definition.
     """
     if isinstance(tree, dict):
         keys = sorted(tree.keys(), key=lambda k: (type(k).__name__, str(k)))
-        leaves: list[TensorOrScalar] = []
+        leaves: list[OpValue] = []
         children_defs: list[TreeDef] = []
         for k in keys:
             child_leaves, child_def = tree_flatten(tree[k])
@@ -95,14 +98,14 @@ def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
     return [tree], TreeDef(type(None))
 
 
-def _unflatten_leaf(leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
+def _unflatten_leaf(leaves_it: Iterator[OpValue]) -> OpValue:
     """Unflatten a leaf node.
 
     Args:
-        leaves_it (Iterator[TensorOrScalar]): Iterator of leaves.
+        leaves_it (Iterator[OpValue]): Iterator of leaves.
 
     Returns:
-        TensorOrScalar: The leaf.
+        OpValue: The leaf.
 
     Raises:
         ValueError: If there are too few leaves.
@@ -114,15 +117,15 @@ def _unflatten_leaf(leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
         raise ValueError(msg) from None
 
 
-def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> dict[str | int, TensorOrScalar]:
+def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[OpValue]) -> dict[str | int, OpValue]:
     """Unflatten a dict node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[TensorOrScalar]): Iterator of leaves.
+        leaves_it (Iterator[OpValue]): Iterator of leaves.
 
     Returns:
-        dict[str | int, TensorOrScalar]: The unflattened dict.
+        dict[str | int, OpValue]: The unflattened dict.
 
     Raises:
         ValueError: If the dictionary TreeDef has no keys.
@@ -133,34 +136,34 @@ def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> dict
     return {k: _unflatten_node(c_def, leaves_it) for k, c_def in zip(t_def.keys, t_def.children_defs)}
 
 
-def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
+def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[OpValue]) -> OpValue:
     """Unflatten a list, tuple, or NamedTuple node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[TensorOrScalar]): Iterator of leaves.
+        leaves_it (Iterator[OpValue]): Iterator of leaves.
 
     Returns:
-        TensorOrScalar: The unflattened sequence.
+        OpValue: The unflattened sequence.
     """
     children = [_unflatten_node(c_def, leaves_it) for c_def in t_def.children_defs]
     if t_def.node_type is list:
         return list(children)
     if t_def.node_type is tuple:
         return tuple(children)
-    named_res: TensorOrScalar = invoke_callable(t_def.node_type, *children)
+    named_res: OpValue = t_def.node_type(*children)
     return named_res
 
 
-def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
+def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[OpValue]) -> OpValue:
     """Unflatten a single node based on its TreeDef.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[TensorOrScalar]): Iterator of leaves.
+        leaves_it (Iterator[OpValue]): Iterator of leaves.
 
     Returns:
-        TensorOrScalar: The unflattened node.
+        OpValue: The unflattened node.
 
     Raises:
         ValueError: If the node_type is unsupported.
@@ -176,15 +179,15 @@ def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[TensorOrScalar]) -> Tens
     raise ValueError(msg)
 
 
-def tree_unflatten(treedef: TreeDef, leaves: Iterable[TensorOrScalar]) -> TensorOrScalar:
+def tree_unflatten(treedef: TreeDef, leaves: Iterable[OpValue]) -> OpValue:
     """Reconstruct a PyTree from a treedef and a list of leaves.
 
     Args:
         treedef (TreeDef): The TreeDef to use for reconstruction.
-        leaves (Iterable[TensorOrScalar]): The list of leaves to unflatten.
+        leaves (Iterable[OpValue]): The list of leaves to unflatten.
 
     Returns:
-        TensorOrScalar: The reconstructed PyTree.
+        OpValue: The reconstructed PyTree.
 
     Raises:
         ValueError: If there are too many leaves.
@@ -199,16 +202,16 @@ def tree_unflatten(treedef: TreeDef, leaves: Iterable[TensorOrScalar]) -> Tensor
     return res
 
 
-def tree_map(f: TensorOrScalar, tree: PyTree, *rest: PyTree) -> TensorOrScalar:
+def tree_map(f: OpValue, tree: PyTree, *rest: PyTree) -> OpValue:
     """Map a function over the leaves of a PyTree.
 
     Args:
-        f (TensorOrScalar): The function to apply.
+        f (OpValue): The function to apply.
         tree (PyTree): The primary PyTree.
         *rest (PyTree): Additional PyTrees of the same structure.
 
     Returns:
-        TensorOrScalar: A new PyTree with the function applied to its leaves.
+        OpValue: A new PyTree with the function applied to its leaves.
 
     Raises:
         ValueError: If the trees do not have the same structure.
@@ -221,19 +224,20 @@ def tree_map(f: TensorOrScalar, tree: PyTree, *rest: PyTree) -> TensorOrScalar:
             msg = "All trees must have the same structure"
             raise ValueError(msg)
         rest_leaves.append(r_leaves)
-
-    mapped_leaves = [invoke_callable(f, leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
+    _callable_fn_1: OpValue = f
+    assert is_variadic_callable(_callable_fn_1)
+    mapped_leaves = [_callable_fn_1(leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
     return tree_unflatten(treedef, mapped_leaves)
 
 
-def tree_leaves(tree: PyTree) -> list[TensorOrScalar]:
+def tree_leaves(tree: PyTree) -> list[OpValue]:
     """Get the leaves of a PyTree.
 
     Args:
         tree (PyTree): The tree to extract leaves from.
 
     Returns:
-        list[TensorOrScalar]: A list of leaves.
+        list[OpValue]: A list of leaves.
     """
     leaves, _ = tree_flatten(tree)
 
@@ -267,26 +271,26 @@ def tree_all(tree: PyTree) -> bool:
 
 
 def tree_reduce(
-    f: Callable[[TensorOrScalar, TensorOrScalar], TensorOrScalar],
+    f: Callable[[OpValue, OpValue], OpValue],
     tree: PyTree,
-    initializer: TensorOrScalar = None,
-) -> TensorOrScalar:
+    initializer: OpValue = None,
+) -> OpValue:
     """Reduce a PyTree by applying a function over its leaves.
 
     Args:
-        f (Callable[[TensorOrScalar, TensorOrScalar], TensorOrScalar]): The reduction function.
+        f (Callable[[OpValue, OpValue], OpValue]): The reduction function.
         tree (PyTree): The tree to reduce.
-        initializer (TensorOrScalar): Optional initial value.
+        initializer (OpValue): Optional initial value.
 
     Returns:
-        TensorOrScalar: The reduced value.
+        OpValue: The reduced value.
     """
     leaves = tree_leaves(tree)
 
     if initializer is None:
         return functools.reduce(f, leaves)
 
-    acc: TensorOrScalar = initializer
+    acc: OpValue = initializer
     for leaf in leaves:
         acc = f(acc, leaf)
     return acc
@@ -310,7 +314,7 @@ def tree_transpose(
     outer_treedef: TreeDef,
     inner_treedef: TreeDef,
     pytree_to_transpose: PyTree,
-) -> TensorOrScalar:
+) -> OpValue:
     """Transpose a PyTree of PyTrees.
 
     Args:
@@ -319,7 +323,7 @@ def tree_transpose(
         pytree_to_transpose (PyTree): The tree to transpose.
 
     Returns:
-        TensorOrScalar: The transposed tree.
+        OpValue: The transposed tree.
 
     Raises:
         ValueError: If there is a tree size mismatch.

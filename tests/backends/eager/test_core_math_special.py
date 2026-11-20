@@ -32,13 +32,14 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_special import (
     _polygamma,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import MockTestStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-class _EmptyBackend:
+class _EmptyBackend(MockTestStub):
     """Mock backend without any attributes."""
 
     pass
@@ -54,7 +55,7 @@ def test_math_special_all_branches() -> None:
 
     # 1. _erf
     # Case A: backend has erf
-    class BackendErf:
+    class BackendErf(MockTestStub):
         """Backend with erf."""
 
         def erf(self, x: float) -> float:
@@ -68,74 +69,78 @@ def test_math_special_all_branches() -> None:
             """
             return math.erf(x)
 
-    assert ensure_callable(math.isclose)(ensure_callable(_erf)(ensure_callable(BackendErf)(), 0.5), ensure_callable(math.erf)(0.5))
+    assert math.isclose(ensure_ndarray(_erf(BackendErf(), 0.5)), math.erf(0.5))
 
     # Case B: backend lacks erf -> approximation branch
-    class BackendMathOps:
+    class BackendMathOps(MockTestStub):
         """Backend with sign, abs, exp, log, sqrt."""
 
-        def sign(self, x: EagerValue) -> EagerValue:
+        def sign(self, x: BackendArg) -> BackendArg:
             """Sign.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `sign`.
+                BackendArg: Computed output value from `sign`.
             """
-            return ensure_eager_tensor(ensure_callable(np.sign)(x))
+            return np.sign(ensure_ndarray(x))
 
-        def abs(self, x: EagerValue) -> EagerValue:
+        def abs(self, x: BackendArg) -> BackendArg:
             """Abs.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `abs`.
+                BackendArg: Computed output value from `abs`.
             """
-            return ensure_eager_tensor(ensure_callable(np.abs)(x))
+            return np.abs(ensure_ndarray(x))
 
-        def exp(self, x: EagerValue) -> EagerValue:
+        def exp(self, x: BackendArg) -> BackendArg:
             """Exp.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `exp`.
+                BackendArg: Computed output value from `exp`.
             """
-            return ensure_eager_tensor(ensure_callable(np.exp)(x))
+            return np.exp(ensure_ndarray(x))
 
-        def log(self, x: EagerValue) -> EagerValue:
+        def log(self, x: BackendArg) -> BackendArg:
             """Log.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `log`.
+                BackendArg: Computed output value from `log`.
             """
-            return ensure_eager_tensor(ensure_callable(np.log)(x))
+            return np.log(ensure_ndarray(x))
 
-        def sqrt(self, x: EagerValue) -> EagerValue:
+        def sqrt(self, x: BackendArg) -> BackendArg:
             """Sqrt.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `sqrt`.
+                BackendArg: Computed output value from `sqrt`.
             """
-            return ensure_eager_tensor(ensure_callable(np.sqrt)(x))
+            return np.sqrt(ensure_ndarray(x))
 
     bmo = BackendMathOps()
-    erf_approx = _erf(ensure_mod(bmo), np.array([-0.5, 0.0, 0.5]))
-    assert ensure_callable(np.allclose)(erf_approx, [ensure_callable(math.erf)(-0.5), ensure_callable(math.erf)(0.0), ensure_callable(math.erf)(0.5)], atol=1e-4)
+    erf_approx = _erf(bmo, np.array([-0.5, 0.0, 0.5]))
+    assert np.allclose(
+        ensure_ndarray(erf_approx),
+        [math.erf(-0.5), math.erf(0.0), math.erf(0.5)],
+        atol=1e-4,
+    )
 
     # 2. _erfc
     # Case A: backend has erfc
-    class BackendErfc:
+    class BackendErfc(MockTestStub):
         """Backend with erfc."""
 
         def erfc(self, x: float) -> float:
@@ -149,15 +154,15 @@ def test_math_special_all_branches() -> None:
             """
             return math.erfc(x)
 
-    assert ensure_callable(math.isclose)(ensure_callable(_erfc)(ensure_callable(BackendErfc)(), 0.5), ensure_callable(math.erfc)(0.5))
+    assert math.isclose(ensure_ndarray(_erfc(BackendErfc(), 0.5)), math.erfc(0.5))
 
     # Case B: backend lacks erfc -> fallback to 1.0 - _erf
-    erfc_fallback = _erfc(ensure_mod(bmo), 0.5)
-    assert ensure_callable(np.isclose)(erfc_fallback, ensure_callable(math.erfc)(0.5), atol=1e-4)
+    erfc_fallback = _erfc(bmo, 0.5)
+    assert np.isclose(ensure_ndarray(erfc_fallback), math.erfc(0.5), atol=1e-4)
 
     # 3. _erfinv
     # Case A: backend has erfinv
-    class BackendErfinv:
+    class BackendErfinv(MockTestStub):
         """Backend with erfinv."""
 
         def erfinv(self, x: float) -> str:
@@ -171,35 +176,35 @@ def test_math_special_all_branches() -> None:
             """
             return "erfinv_result"
 
-    assert _erfinv(ensure_mod(BackendErfinv()), 0.5) == "erfinv_result"
+    assert _erfinv(BackendErfinv(), 0.5) == "erfinv_result"
 
     # Case B: backend lacks erfinv -> approximation
-    erfinv_approx = _erfinv(ensure_mod(bmo), np.array([0.5]))
-    assert ensure_eager_tensor(erfinv_approx).shape == (1,)
-    assert ensure_eager_tensor(erfinv_approx)[0] > 0
+    erfinv_approx = _erfinv(bmo, np.array([0.5]))
+    assert extract_test_shape(erfinv_approx) == (1,)
+    assert ensure_ndarray(erfinv_approx)[0] > 0
 
     # 4. SciPy special functions
     x_val = 1.5
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_i0)(empty_backend, x_val), 1.64672, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_i0e)(empty_backend, x_val), 0.36743, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_i1)(empty_backend, x_val), 0.981666, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_i1e)(empty_backend, x_val), 0.219039, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_j0)(empty_backend, x_val), 0.511827, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_j1)(empty_backend, x_val), 0.557936, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_jn)(empty_backend, 2, x_val), 0.232087, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_k0)(empty_backend, x_val), 0.213805, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_k0e)(empty_backend, x_val), 0.958210, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_k1)(empty_backend, x_val), 0.277387, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_k1e)(empty_backend, x_val), 1.243165, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_y0)(empty_backend, x_val), 0.382448, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_bessel_y1)(empty_backend, x_val), -0.412308, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_i0(empty_backend, x_val)), 1.64672, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_i0e(empty_backend, x_val)), 0.36743, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_i1(empty_backend, x_val)), 0.981666, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_i1e(empty_backend, x_val)), 0.219039, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_j0(empty_backend, x_val)), 0.511827, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_j1(empty_backend, x_val)), 0.557936, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_jn(empty_backend, 2, x_val)), 0.232087, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_k0(empty_backend, x_val)), 0.213805, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_k0e(empty_backend, x_val)), 0.958210, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_k1(empty_backend, x_val)), 0.277387, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_k1e(empty_backend, x_val)), 1.243165, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_y0(empty_backend, x_val)), 0.382448, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_bessel_y1(empty_backend, x_val)), -0.412308, atol=1e-3)
 
-    assert ensure_callable(np.isclose)(ensure_callable(_digamma)(empty_backend, x_val), 0.036489, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_igammac)(empty_backend, 1.0, x_val), 0.223130, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_polygamma)(empty_backend, 1, x_val), 0.934802, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_igamma)(empty_backend, 1.0, x_val), 0.776869, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_gamma)(empty_backend, x_val), 0.886226, atol=1e-3)
-    assert ensure_callable(np.isclose)(ensure_callable(_np_modifiedbesseli1)(empty_backend, x_val), 0.981666, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_digamma(empty_backend, x_val)), 0.036489, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_igammac(empty_backend, 1.0, x_val)), 0.223130, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_polygamma(empty_backend, 1, x_val)), 0.934802, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_igamma(empty_backend, 1.0, x_val)), 0.776869, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_gamma(empty_backend, x_val)), 0.886226, atol=1e-3)
+    assert np.isclose(ensure_ndarray(_np_modifiedbesseli1(empty_backend, x_val)), 0.981666, atol=1e-3)
 
     # Registry verification
     for op_name in [

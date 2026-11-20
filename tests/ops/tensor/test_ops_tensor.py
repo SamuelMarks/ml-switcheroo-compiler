@@ -8,5 +8,5 @@ from ml_switcheroo_compiler.ops.tensor import allclose, take_along_axis
 
 def test_tensor_exports() -> None:
     """Test function test_tensor_exports."""
-    assert allclose is not None
-    assert take_along_axis is not None
+    assert type(allclose).__name__ == "Allclose"
+    assert type(take_along_axis).__name__ == "function"

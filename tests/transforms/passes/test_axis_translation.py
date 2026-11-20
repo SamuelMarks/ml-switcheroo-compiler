@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import NodeDict
+import pytest
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
-from tests.testing_utils import ensure_eager_tensor, ensure_mutable, has_backend_member
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_axis_translation_no_op() -> None:
@@ -29,7 +29,9 @@ def test_axis_translation_conv2d() -> None:
     inp = IRNode(id="inp_1", op_type="Input", shape_metadata=shape_meta)
 
     # Conv2D node (default layout is NCHW)
-    conv = IRNode(id="conv_1", op_type="Conv2D", inputs=["inp_1"], attributes={"layout": "NCHW"}, shape_metadata=shape_meta)
+    conv = IRNode(
+        id="conv_1", op_type="Conv2D", inputs=["inp_1"], attributes={"layout": "NCHW"}, shape_metadata=shape_meta
+    )
 
     # Consumer node
     relu = IRNode(id="relu_1", op_type="Relu", inputs=["conv_1"], shape_metadata=shape_meta)
@@ -67,7 +69,13 @@ def test_axis_translation_conv2d() -> None:
         {
             "x": IRNode(id="x", op_type="Input", shape_metadata=(1, 3, 8, 8)),
             "w": IRNode(id="w", op_type="Input", shape_metadata=(16, 3, 3, 3)),
-            "conv": IRNode(id="conv", op_type="Conv2D", inputs=["x", "w"], attributes={"layout": "NCHW"}, shape_metadata=(1, 16, 6, 6)),
+            "conv": IRNode(
+                id="conv",
+                op_type="Conv2D",
+                inputs=["x", "w"],
+                attributes={"layout": "NCHW"},
+                shape_metadata=(1, 16, 6, 6),
+            ),
         }
     )
     g2.outputs = ["conv"]
@@ -109,21 +117,22 @@ def test_axis_translation_conv2d_no_shape() -> None:
     # Monkey patch uuid to force the dummy name
     original_uuid4 = uuid.uuid4
 
-    def mock_uuid4() -> EagerValue:
+    def mock_uuid4() -> BackendArg:
         """Test function mock_uuid4.
 
         Returns:
-            EagerValue: Computed output value from `mock_uuid4`.
+            BackendArg: Computed output value from `mock_uuid4`.
         """
+        from tests.testing_utils import MockTestStub
 
-        class MockUUID:
+        class MockUUID(MockTestStub):
             """Test class MockUUID."""
 
             hex = "dummyxxx"
 
-        return ensure_eager_tensor(MockUUID())
+        return MockUUID()
 
-    ensure_mutable(uuid).uuid4 = ensure_eager_tensor(mock_uuid4)
+    pytest.MonkeyPatch().setattr(uuid, "uuid4", mock_uuid4, raising=False)
     try:
         modified = axis_translation_pass(graph)
     finally:
@@ -155,5 +164,5 @@ def test_passes_package_init() -> None:
     """Test passes package __init__ exports."""
     import ml_switcheroo_compiler.transforms.passes as passes
 
-    assert has_backend_member(passes, "axis_translation_pass")
+    assert adapt_backend_module(passes).has_symbol("axis_translation_pass")
     assert passes.axis_translation_pass is not None

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff import grad
 
 
@@ -13,7 +13,7 @@ def test_real_exception() -> None:
     """Test the real exception behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))

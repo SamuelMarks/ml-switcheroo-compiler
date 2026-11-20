@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_ir import IRGraph, IRNode
+
+from ml_switcheroo_compiler.ir.core import clone_logical_node
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 # Ops that are safe and beneficial to run in float16/bfloat16
@@ -12,7 +14,9 @@ SAFE_FP16_OPS: set[str] = {"MatMul", "Conv2D", "BatchMatMul"}
 FP32_OPS: set[str] = {"Exp", "Log", "Softmax", "ReduceSum"}
 
 
-def _cast_inputs(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dict[str, IRNode]) -> tuple[list[str], bool]:
+def _cast_inputs(
+    node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dict[str, IRNode]
+) -> tuple[list[str], bool]:
     """Cast inputs of the given node to the target dtype.
 
     Args:

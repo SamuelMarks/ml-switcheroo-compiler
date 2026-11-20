@@ -1,9 +1,10 @@
-"""Implementation of image operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.common.mixins.image`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.common.mixins.image`."""
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_ir import IRNode
+
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 from .common import CommonASTVisitor
 
@@ -87,7 +88,7 @@ class ImageASTVisitor(CommonASTVisitor):
         batch_size = kwargs.get("batch_size", 1)
         return f"{pfx}_affine_generator({batch_size}, {', '.join(input_vars)})"
 
-    def visit_AffineGrid(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AffineGrid(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the AffineGrid operation.
 
         Args:
@@ -118,7 +119,7 @@ class ImageASTVisitor(CommonASTVisitor):
         interpolation = kwargs.get("interpolation", "nearest")
         return f"{pfx}_affine_transform({input_vars[0]}, {input_vars[1]}, interpolation='{interpolation}')"
 
-    def visit_AugMix(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AugMix(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the AugMix operation.
 
         Args:
@@ -132,7 +133,7 @@ class ImageASTVisitor(CommonASTVisitor):
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_augmix({input_vars[0]})"
 
-    def visit_AutoContrast(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
+    def visit_AutoContrast(self, node: IRNode, input_vars: list[str], **kwargs: BackendArg) -> str:
         """Emit target backend code or IR transformation for the AutoContrast operation.
 
         Args:

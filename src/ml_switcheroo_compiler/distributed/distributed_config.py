@@ -30,3 +30,6 @@ class DistributedConfig(pydantic.BaseModel):
     timeout_sec: float = 1800.0  # 30 minutes default
     topology_type: str | None = None
     options: dict[str, AttributeValue] = pydantic.Field(default_factory=dict)
+
+
+DistributedConfig.model_rebuild(_types_namespace={"OpValue": str, "IRAttrValue": str})

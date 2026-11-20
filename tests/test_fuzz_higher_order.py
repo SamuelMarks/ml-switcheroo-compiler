@@ -15,10 +15,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
 
 pytest.importorskip("hypothesis")
 
@@ -45,30 +45,30 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
 
     prev = config.backend
     try:
-        ensure_mutable(config).backend = ensure_eager_tensor(backend_name)
+        pytest.MonkeyPatch().setattr(config, "backend", backend_name, raising=False)
         backend = get_active_backend()
         arr_x = backend.asarray(np.array([val1], dtype=np.float32))
         arr_v = backend.asarray(np.array([1.0], dtype=np.float32))
 
         # Test f(x) = x^3
-        def f(x: EagerValue) -> EagerValue:
+        def f(x: BackendArg) -> BackendArg:
             """Test function f.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                EagerValue: Computed output value from `f`.
+                BackendArg: Computed output value from `f`.
             """
             return ops.multiply(x, ops.multiply(x, x))
 
         x = Tensor(arr_x, TensorConfig((1,), DType.Float32, Device("cpu")))
         v = Tensor(arr_v, TensorConfig((1,), DType.Float32, Device("cpu")))
 
-        _, tan = ensure_callable(hvp)(f, (x,), (v,))
+        _, tan = hvp(f, (x,), (v,))
         computed = float(np.asarray(backend.asarray(tan))[0])
 
         expected = 6.0 * val1
-        ensure_callable(np.testing.assert_allclose)(computed, expected, rtol=1e-2, atol=1e-2)
+        np.testing.assert_allclose(computed, expected, rtol=1e-2, atol=1e-2)
     finally:
         config.backend = prev

@@ -6,15 +6,14 @@ import typing
 from unittest.mock import patch
 
 import pytest
-from ml_switcheroo_ir import LogicalNode, NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node_dict, ensure_tensor_dict
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_webgpu_instantiation() -> None:
@@ -42,26 +41,28 @@ def test_webgpu_shape_and_strides() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(node1).shape_metadata = ensure_eager_tensor([2, 3])
-    shape, strides = ensure_callable(generator._get_shape_and_strides)(node1)
+    pytest.MonkeyPatch().setattr(node1, "shape_metadata", [2, 3], raising=False)
+    shape, strides = generator._get_shape_and_strides(node1)
     assert shape == [2, 3]
     assert strides == [3, 1]
 
-    node2 = IRNode("Input", "in_2", inputs=[])
-    ensure_mutable(node2).shape_metadata = ensure_eager_tensor(5)
-    shape, strides = ensure_callable(generator._get_shape_and_strides)(node2)
+    from tests.testing_utils import MockNodeStub
+
+    node2 = MockNodeStub("in_2", "Input", inputs=[])
+    pytest.MonkeyPatch().setattr(node2, "shape_metadata", 5, raising=False)
+    shape, strides = generator._get_shape_and_strides(node2)
     assert shape == [5]
     assert strides == [1]
 
     node3 = IRNode("Input", "in_3", inputs=[])
-    ensure_mutable(node3).shape_metadata = ensure_eager_tensor(None)
-    shape, strides = ensure_callable(generator._get_shape_and_strides)(node3)
+    node3.shape_metadata = None
+    shape, strides = generator._get_shape_and_strides(node3)
     assert shape == []
     assert strides == []
 
     node4 = IRNode("Input", "in_4", inputs=[])
-    ensure_mutable(node4).shape_metadata = ensure_eager_tensor([])
-    shape, strides = ensure_callable(generator._get_shape_and_strides)(node4)
+    pytest.MonkeyPatch().setattr(node4, "shape_metadata", [], raising=False)
+    shape, strides = generator._get_shape_and_strides(node4)
     assert shape == []
     assert strides == []
 
@@ -79,8 +80,8 @@ def test_webgpu_generic_visit() -> None:
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
     node = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(node).id = ensure_eager_tensor("in_1")
-    assert ensure_callable(generator.generic_visit)(node, []) == "in_1"
+    node.id = "in_1"
+    assert generator.generic_visit(node, []) == "in_1"
 
 
 def test_webgpu_gen_offset() -> None:
@@ -99,22 +100,22 @@ def test_webgpu_generate() -> None:
     """Test function test_webgpu_generate."""
     graph = IRGraph()
     node = IRNode("Add", "add_1", inputs=["in_1", "in_2"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("add_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2], raising=False)
+    node.id = "add_1"
 
     in1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(in1).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(in1).id = ensure_eager_tensor("in_1")
+    pytest.MonkeyPatch().setattr(in1, "shape_metadata", [2, 2], raising=False)
+    in1.id = "in_1"
     in2 = IRNode("Input", "in_2", inputs=[])
-    ensure_mutable(in2).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(in2).id = ensure_eager_tensor("in_2")
+    pytest.MonkeyPatch().setattr(in2, "shape_metadata", [2, 2], raising=False)
+    in2.id = "in_2"
 
     out_node = IRNode("Output", "out_1", inputs=["add_1"])
-    ensure_mutable(out_node).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(out_node).id = ensure_eager_tensor("out_1")
+    pytest.MonkeyPatch().setattr(out_node, "shape_metadata", [2, 2], raising=False)
+    out_node.id = "out_1"
 
-    graph.nodes = NodeDict(ensure_node_dict({"in_1": in1, "in_2": in2, "add_1": node, "out_1": out_node}))
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([in1, in2, node, out_node])
+    graph.nodes = NodeDict({"in_1": in1, "in_2": in2, "add_1": node, "out_1": out_node})
+    graph.sorted_nodes = [in1, in2, node, out_node]
     graph.inputs = ["in_1", "in_2"]
     graph.outputs = ["out_1"]
 
@@ -130,11 +131,11 @@ def test_webgpu_webrtc_methods() -> None:
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
     node = IRNode("AllReduce", "allr_1", inputs=[])
-    ensure_mutable(node).id = ensure_eager_tensor("allr_1")
-    assert ensure_callable(generator.visit_AllReduce)(node, [])[0][0].startswith("//")
-    assert ensure_callable(generator.visit_AllGather)(node, [])[0][0].startswith("//")
-    assert ensure_callable(generator.visit_AllToAll)(node, [])[0][0].startswith("//")
-    assert ensure_callable(generator.visit_ReduceScatter)(node, [])[0][0].startswith("//")
+    node.id = "allr_1"
+    assert generator.visit_AllReduce(node, [])[0][0].startswith("//")
+    assert generator.visit_AllGather(node, [])[0][0].startswith("//")
+    assert generator.visit_AllToAll(node, [])[0][0].startswith("//")
+    assert generator.visit_ReduceScatter(node, [])[0][0].startswith("//")
 
 
 def test_webgpu_wgsl_for_op() -> None:
@@ -142,19 +143,34 @@ def test_webgpu_wgsl_for_op() -> None:
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
     node = IRNode("Add", "add_1", inputs=["in_1", "in_2"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("add_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2], raising=False)
+    node.id = "add_1"
 
     # Mock some inputs
     in1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(in1).id = ensure_eager_tensor("in_1")
+    in1.id = "in_1"
     in2 = IRNode("Input", "in_2", inputs=[])
-    ensure_mutable(in2).id = ensure_eager_tensor("in_2")
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, in2, node])
+    in2.id = "in_2"
+    generator.sorted_nodes = [in1, in2, node]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body({clean_id}) {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [2, 2], 4, "add_1")
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {
+            "Add": {
+                "variants": {
+                    "edge_wgsl": {
+                        "template": "elementwise",
+                        "expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]",
+                    }
+                }
+            }
+        },
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body({clean_id}) {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [2, 2], 4, "add_1")
             assert len(wgsl) > 0
 
 
@@ -165,41 +181,62 @@ def test_webgpu_wgsl_for_op_branches() -> None:
 
     # Test missing mapping fallback
     node = IRNode("UnknownOp", "u_1", inputs=["in_1"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("u_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2, 2, 2], raising=False)
+    node.id = "u_1"
 
     in1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(in1).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(in1).id = ensure_eager_tensor("in_1")
+    pytest.MonkeyPatch().setattr(in1, "shape_metadata", [2, 2, 2, 2], raising=False)
+    in1.id = "in_1"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, node])
+    generator.sorted_nodes = [in1, node]
 
-    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+        return_value={"body": "fn body() {{}}"},
+    ):
         with pytest.raises(CompilationError, match="cannot be mapped to a valid WGSL compute kernel"):
-            ensure_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "u_1")
+            generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "u_1")
 
     # Test matmul
     node2 = IRNode("MatMul", "m_1", inputs=["in_1", "in_2"])
-    ensure_mutable(node2).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(node2).id = ensure_eager_tensor("m_1")
+    pytest.MonkeyPatch().setattr(node2, "shape_metadata", [2, 2], raising=False)
+    node2.id = "m_1"
     in2 = IRNode("Input", "in_2", inputs=[])
-    ensure_mutable(in2).shape_metadata = ensure_eager_tensor([2, 2])
-    ensure_mutable(in2).id = ensure_eager_tensor("in_2")
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, in2, node2])
+    pytest.MonkeyPatch().setattr(in2, "shape_metadata", [2, 2], raising=False)
+    in2.id = "in_2"
+    generator.sorted_nodes = [in1, in2, node2]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MatMul": {"variants": {"edge_wgsl": {"template": "matmul"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"MatMul": {"variants": {"edge_wgsl": {"template": "matmul"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node2, [2, 2], 4, "m_1")
 
     # Test tiled_matmul
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MatMul": {"variants": {"edge_wgsl": {"template": "tiled_matmul"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"MatMul": {"variants": {"edge_wgsl": {"template": "tiled_matmul"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node2, [2, 2], 4, "m_1")
 
     # Test conv2d
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MatMul": {"variants": {"edge_wgsl": {"template": "conv2d"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"MatMul": {"variants": {"edge_wgsl": {"template": "conv2d"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node2, [2, 2], 4, "m_1")
 
 
 def test_webgpu_wgsl_for_op_attributes() -> None:
@@ -208,28 +245,40 @@ def test_webgpu_wgsl_for_op_attributes() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node = IRNode("MaxPool2D", "max_1", inputs=["in_1"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("max_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2, 2, 2], raising=False)
+    node.id = "max_1"
 
     # window_size as int
-    ensure_mutable(node).attributes = ensure_eager_tensor({"window_size": 2, "stride": 2})
+    node.attributes = {"window_size": 2, "stride": 2}
 
     in1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(in1).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(in1).id = ensure_eager_tensor("in_1")
+    pytest.MonkeyPatch().setattr(in1, "shape_metadata", [2, 2, 2, 2], raising=False)
+    in1.id = "in_1"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, node])
+    generator.sorted_nodes = [in1, node]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MaxPool2D": {"variants": {"edge_wgsl": {"template": "MaxPool2D"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "max_1")
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"MaxPool2D": {"variants": {"edge_wgsl": {"template": "MaxPool2D"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "max_1")
 
     # window_size as list length 1
-    ensure_mutable(node).attributes = ensure_eager_tensor({"window_size": [2], "stride": [2]})
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MaxPool2D": {"variants": {"edge_wgsl": {"template": "MaxPool2D"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "max_1")
-    assert generator is not None
+    node.attributes = {"window_size": [2], "stride": [2]}
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"MaxPool2D": {"variants": {"edge_wgsl": {"template": "MaxPool2D"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "max_1")
+    assert len(wgsl) == 4 and x == "Math.ceil(2 / 64)" and y == "Math.ceil(2 / 1)" and z == "1"
 
 
 def test_webgpu_wgsl_for_op_attributes_2() -> None:
@@ -238,27 +287,33 @@ def test_webgpu_wgsl_for_op_attributes_2() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node = IRNode("Add", "add_1", inputs=["in_1", "in_2", "in_3"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("add_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2, 2, 2], raising=False)
+    node.id = "add_1"
 
     in1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(in1).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(in1).id = ensure_eager_tensor("in_1")
+    pytest.MonkeyPatch().setattr(in1, "shape_metadata", [2, 2, 2, 2], raising=False)
+    in1.id = "in_1"
 
     in2 = IRNode("Input", "in_2", inputs=[])
-    ensure_mutable(in2).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(in2).id = ensure_eager_tensor("in_2")
+    pytest.MonkeyPatch().setattr(in2, "shape_metadata", [2, 2, 2, 2], raising=False)
+    in2.id = "in_2"
 
     in3 = IRNode("Input", "in_3", inputs=[])
-    ensure_mutable(in3).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(in3).id = ensure_eager_tensor("in_3")
+    pytest.MonkeyPatch().setattr(in3, "shape_metadata", [2, 2, 2, 2], raising=False)
+    in3.id = "in_3"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, in2, in3, node])
+    generator.sorted_nodes = [in1, in2, in3, node]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "global_code": "fn helper() {{}}"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "add_1")
-    assert generator is not None
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "global_code": "fn helper() {{}}"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "add_1")
+    assert any("fn helper()" in line or "fn body()" in line for line in wgsl) and str(x) != "" and y == "1" and z == "1"
 
 
 def test_webgpu_wgsl_for_op_attributes_missing_body() -> None:
@@ -267,15 +322,21 @@ def test_webgpu_wgsl_for_op_attributes_missing_body() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node = IRNode("Add", "add_1", inputs=["in_1", "in_2", "in_3"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("add_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2, 2, 2], raising=False)
+    node.id = "add_1"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([node])
+    generator.sorted_nodes = [node]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "global_code": "fn helper() {{}}"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"global_code": "fn helper() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "add_1")
-    assert generator is not None
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "global_code": "fn helper() {{}}"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"global_code": "fn helper() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "add_1")
+    assert len(wgsl) >= 1 and str(x) != "" and y == "1" and z == "1"
 
 
 def test_webgpu_visit_methods() -> None:
@@ -283,24 +344,26 @@ def test_webgpu_visit_methods() -> None:
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
     node = IRNode("If", "if_1", inputs=[])
-    ensure_mutable(node).id = ensure_eager_tensor("if_1")
+    node.id = "if_1"
 
-    ensure_mutable(node).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
+    node.attributes = {"then_branch": IRGraph(), "else_branch": IRGraph()}
 
     node_while = IRNode("WhileLoop", "wl_1", inputs=[])
-    ensure_mutable(node_while).id = ensure_eager_tensor("wl_1")
-    ensure_mutable(node_while).attributes = ensure_eager_tensor({"body": IRGraph(), "cond": IRGraph()})
-    ensure_callable(generator.visit_WhileLoop)(node_while, [])
+    node_while.id = "wl_1"
+    node_while.attributes = {"body": IRGraph(), "cond": IRGraph()}
+    res_while = generator.visit_WhileLoop(node_while, [])
 
     node_cond = IRNode("Cond", "cond_1", inputs=[])
-    ensure_mutable(node_cond).id = ensure_eager_tensor("cond_1")
-    ensure_mutable(node_cond).attributes = ensure_eager_tensor({"then_branch": IRGraph(), "else_branch": IRGraph()})
-    ensure_callable(generator.visit_Cond)(node_cond, [])
+    node_cond.id = "cond_1"
+    node_cond.attributes = {"then_branch": IRGraph(), "else_branch": IRGraph()}
+    res_cond = generator.visit_Cond(node_cond, [])
 
     node_scan = IRNode("Scan", "scan_1", inputs=[])
-    ensure_mutable(node_scan).id = ensure_eager_tensor("scan_1")
-    ensure_callable(generator.visit_Scan)(node_scan, [])
-    assert generator is not None
+    node_scan.id = "scan_1"
+    res_scan = generator.visit_Scan(node_scan, [])
+    assert len(res_scan) == 4
+    assert "@compute" in str(res_while[0][0])
+    assert "@compute" in str(res_cond[0][0])
 
 
 def test_webgpu_wgsl_for_op_attributes_cond_while_scan() -> None:
@@ -308,31 +371,40 @@ def test_webgpu_wgsl_for_op_attributes_cond_while_scan() -> None:
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
 
-    # Test lowering subgraphs in Cond, WhileLoop, Scan
-    # The actual methods handle node attributes
-
     node_cond = IRNode("Cond", "cond_1", inputs=[])
-    ensure_mutable(node_cond).id = ensure_eager_tensor("cond_1")
+    node_cond.id = "cond_1"
     sub_node = IRNode("Add", "add_2", inputs=[])
-    ensure_mutable(sub_node).id = ensure_eager_tensor("add_2")
-    ensure_mutable(sub_node).op_type = ensure_eager_tensor("Add")
+    sub_node.id = "add_2"
+    sub_node.op_type = "Add"
     sub_graph = IRGraph()
-    sub_graph.nodes = NodeDict(ensure_node_dict({"add_2": sub_node}))
-    ensure_mutable(sub_graph).sorted_nodes = ensure_eager_tensor([sub_node])
+    sub_graph.nodes = NodeDict({"add_2": sub_node})
+    sub_graph.sorted_nodes = [sub_node]
 
-    ensure_mutable(node_cond).attributes = ensure_eager_tensor({"then_branch": sub_graph, "else_branch": sub_graph})
+    node_cond.attributes = {"then_branch": sub_graph, "else_branch": sub_graph}
 
-    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-        with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}}):
-            ensure_callable(generator.visit_Cond)(node_cond, [])
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+        return_value={"body": "fn body() {{}}"},
+    ):
+        with patch.dict(
+            "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+            {"Add": {"variants": {"edge_wgsl": {"expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}},
+        ):
+            cond_code = generator.visit_Cond(node_cond, [])
 
     node_while = IRNode("WhileLoop", "wl_1", inputs=[])
-    ensure_mutable(node_while).id = ensure_eager_tensor("wl_1")
-    ensure_mutable(node_while).attributes = ensure_eager_tensor({"body": sub_graph, "cond": sub_graph})
-    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-        with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}}):
-            ensure_callable(generator.visit_WhileLoop)(node_while, [])
-    assert generator is not None
+    node_while.id = "wl_1"
+    node_while.attributes = {"body": sub_graph, "cond": sub_graph}
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+        return_value={"body": "fn body() {{}}"},
+    ):
+        with patch.dict(
+            "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+            {"Add": {"variants": {"edge_wgsl": {"expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}},
+        ):
+            while_code = generator.visit_WhileLoop(node_while, [])
+    assert len(cond_code[0]) > 0 and len(while_code[0]) > 0
 
 
 def test_webgpu_generate_method_details() -> None:
@@ -340,29 +412,22 @@ def test_webgpu_generate_method_details() -> None:
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
 
-    # We need to test the logic inside generate that uses arenas and WebRTC ops
-    # Also dynamic offsets
-
     node1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(node1).id = ensure_eager_tensor("in_1")
-    ensure_mutable(node1).attributes = ensure_eager_tensor({"buffer_id": "arena1", "buffer_offset": 0})
+    node1.id = "in_1"
+    node1.attributes = {"buffer_id": "arena1", "buffer_offset": 0}
 
     node2 = IRNode("AllReduce", "allr_1", inputs=["in_1"])
-    ensure_mutable(node2).id = ensure_eager_tensor("allr_1")
-    ensure_mutable(node2).attributes = ensure_eager_tensor({"buffer_id": "arena1", "buffer_offset": 4})
+    node2.id = "allr_1"
+    node2.attributes = {"buffer_id": "arena1", "buffer_offset": 4}
 
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node1, node2])
+    graph.sorted_nodes = [node1, node2]
     graph.outputs = ["allr_1"]
 
-    ensure_mutable(graph).attributes = ensure_eager_tensor({"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "x", "symbolic_math": "y + 1"}]}})
+    graph.attributes = {"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "x", "symbolic_math": "y + 1"}]}}
 
-    # Needs to mock open for the memory_schemas yaml load
-    # or mock os.path.exists
     with patch("os.path.exists", return_value=False):
-        # Without schema file, it ignores dynamic offset resizing logic
-        generator.generate()
-        pass
-    assert generator is not None
+        out = generator.generate()
+    assert len(out) > 0
 
 
 def test_webgpu_generate_visit_Conv2D() -> None:
@@ -371,21 +436,24 @@ def test_webgpu_generate_visit_Conv2D() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node = IRNode("Conv2D", "conv_1", inputs=["in1", "in2"])
-    ensure_mutable(node).id = ensure_eager_tensor("conv_1")
+    node.id = "conv_1"
 
     in1 = IRNode("Input", "in1", inputs=[])
-    ensure_mutable(in1).shape_metadata = ensure_eager_tensor([1, 3, 224, 224])
-    ensure_mutable(in1).id = ensure_eager_tensor("in1")
+    pytest.MonkeyPatch().setattr(in1, "shape_metadata", [1, 3, 224, 224], raising=False)
+    in1.id = "in1"
 
     in2 = IRNode("Input", "in2", inputs=[])
-    ensure_mutable(in2).shape_metadata = ensure_eager_tensor([64, 3, 3, 3])
-    ensure_mutable(in2).id = ensure_eager_tensor("in2")
+    pytest.MonkeyPatch().setattr(in2, "shape_metadata", [64, 3, 3, 3], raising=False)
+    in2.id = "in2"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, in2, node])
+    generator.sorted_nodes = [in1, in2, node]
 
-    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn conv() {{}}"}):
-        res = ensure_callable(generator.visit_Conv2D)(node, ["in1", "in2"], shape=[1, 64, 222, 222], nelem=1, clean_id="conv_1")
-        assert res is not None
+    with patch(
+        "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+        return_value={"body": "fn conv() {{}}"},
+    ):
+        res = generator.visit_Conv2D(node, ["in1", "in2"], shape=[1, 64, 222, 222], nelem=1, clean_id="conv_1")
+        assert len(res) == 4
 
 
 def test_webgpu_wgsl_for_op_attributes_padding() -> None:
@@ -394,20 +462,26 @@ def test_webgpu_wgsl_for_op_attributes_padding() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node = IRNode("AvgPool2D", "avg_1", inputs=["in_1"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor([2, 2, 2, 2])
-    ensure_mutable(node).id = ensure_eager_tensor("avg_1")
+    pytest.MonkeyPatch().setattr(node, "shape_metadata", [2, 2, 2, 2], raising=False)
+    node.id = "avg_1"
 
     # Check what happens if shape has missing dims
     in1 = IRNode("Input", "in_1", inputs=[])
-    ensure_mutable(in1).shape_metadata = ensure_eager_tensor([2])
-    ensure_mutable(in1).id = ensure_eager_tensor("in_1")
+    pytest.MonkeyPatch().setattr(in1, "shape_metadata", [2], raising=False)
+    in1.id = "in_1"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([in1, node])
+    generator.sorted_nodes = [in1, node]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"AvgPool2D": {"variants": {"edge_wgsl": {"template": "AvgPool2D"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [2], 2, "avg_1")
-    assert generator is not None
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"AvgPool2D": {"variants": {"edge_wgsl": {"template": "AvgPool2D"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [2], 2, "avg_1")
+    assert len(wgsl) == 4 and x == "Math.ceil(1 / 64)" and y == "Math.ceil(1 / 1)" and z == "1"
 
 
 def test_webgpu_wgsl_for_op_attributes_no_shape() -> None:
@@ -416,15 +490,21 @@ def test_webgpu_wgsl_for_op_attributes_no_shape() -> None:
     generator = WebGPUCodeGenerator(graph, [])
 
     node = IRNode("Add", "add_1", inputs=["in_1", "in_2"])
-    ensure_mutable(node).shape_metadata = ensure_eager_tensor(None)
-    ensure_mutable(node).id = ensure_eager_tensor("add_1")
+    node.shape_metadata = None
+    node.id = "add_1"
 
-    ensure_mutable(generator).sorted_nodes = ensure_eager_tensor([node])
+    generator.sorted_nodes = [node]
 
-    with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise"}}}}):
-        with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = ensure_callable(generator._get_wgsl_for_op)(node, [], 0, "add_1")
-    assert generator is not None
+    with patch.dict(
+        "ml_switcheroo_compiler.ops.registry._YAML_REGISTRY",
+        {"Add": {"variants": {"edge_wgsl": {"template": "elementwise"}}}},
+    ):
+        with patch(
+            "ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template",
+            return_value={"body": "fn body() {{}}"},
+        ):
+            wgsl, x, y, z = generator._get_wgsl_for_op(node, [], 0, "add_1")
+    assert len(wgsl) > 0 and str(x) != "" and y == "1" and z == "1"
 
 
 def test_webgpu_tiling_and_webrtc_and_dynamic() -> None:
@@ -439,14 +519,18 @@ def test_webgpu_tiling_and_webrtc_and_dynamic() -> None:
 
         g = IRGraph()
         # Graph attributes for dynamic schema
-        ensure_mutable(g).attributes = ensure_eager_tensor({"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}})
+        g.attributes = {
+            "dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}
+        }
 
         # MatMul with tiling (using our dummy op)
         n_matmul = IRNode("matmul_tiled", "MatMulTiledDummy", inputs=["in1", "in2"], attributes={"tiling": True})
         n_matmul.shape_metadata = (16, 16)
 
         # Conv2D with tiling
-        n_conv = IRNode("conv_tiled", "Conv2D", inputs=["in_img", "in_w"], attributes={"tiling": True, "stride": (1, 1)})
+        n_conv = IRNode(
+            "conv_tiled", "Conv2D", inputs=["in_img", "in_w"], attributes={"tiling": True, "stride": (1, 1)}
+        )
         n_conv.shape_metadata = (1, 16, 16, 16)
 
         # Conv2D with bad shapes to hit < 4 branch
@@ -471,15 +555,43 @@ def test_webgpu_tiling_and_webrtc_and_dynamic() -> None:
         in_w2 = IRNode("in_w2", "Input")
         in_w2.shape_metadata = (3, 3)
 
-        g.nodes = NodeDict({"in1": in1, "in2": in2, "in_img": in_img, "in_w": in_w, "in_img2": in_img2, "in_w2": in_w2, "matmul_tiled": n_matmul, "conv_tiled": n_conv, "conv_bad": n_conv_bad, "allreduce": n_allreduce, "allgather": n_allgather, "alltoall": n_alltoall})
+        g.nodes = NodeDict(
+            {
+                "in1": in1,
+                "in2": in2,
+                "in_img": in_img,
+                "in_w": in_w,
+                "in_img2": in_img2,
+                "in_w2": in_w2,
+                "matmul_tiled": n_matmul,
+                "conv_tiled": n_conv,
+                "conv_bad": n_conv_bad,
+                "allreduce": n_allreduce,
+                "allgather": n_allgather,
+                "alltoall": n_alltoall,
+            }
+        )
         g.inputs = ["in1", "in2", "in_img", "in_w", "in_img2", "in_w2"]
         g.outputs = ["matmul_tiled", "conv_tiled", "conv_bad", "allreduce", "allgather", "alltoall"]
 
         gen = WebGPUCodeGenerator(g)
-        gen.sorted_nodes = [in1, in2, in_img, in_w, in_img2, in_w2, n_matmul, n_conv, n_conv_bad, n_allreduce, n_allgather, n_alltoall]
+        gen.sorted_nodes = [
+            in1,
+            in2,
+            in_img,
+            in_w,
+            in_img2,
+            in_w2,
+            n_matmul,
+            n_conv,
+            n_conv_bad,
+            n_allreduce,
+            n_allgather,
+            n_alltoall,
+        ]
 
         code = gen.generate()
-        assert code is not None
+        assert "@compute" in str(code)
 
     finally:
         OPS_REGISTRY.clear()
@@ -500,13 +612,14 @@ def test_webgpu_webrtc_missing() -> None:
 
 def test_webgpu_dynamic_resize_wasm_fallback() -> None:
     """Test function test_webgpu_dynamic_resize_wasm_fallback."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     import ml_switcheroo_compiler.backends.edge.webgpu as webgpu_mod
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     # Graph attributes for dynamic schema
-    ensure_mutable(g).attributes = ensure_eager_tensor({"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}})
+    g.attributes = {"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}}
 
     in1 = IRNode("in1", "Input")
     in1.shape_metadata = (16, 16)
@@ -520,7 +633,7 @@ def test_webgpu_dynamic_resize_wasm_fallback() -> None:
 
     with patch.object(webgpu_mod, "__file__", "wasm.py"):
         code = gen.generate()
-        assert code is not None
+        assert "func" in str(code)
 
 
 def test_webgpu_webrtc_empty_coverage() -> None:
@@ -529,35 +642,41 @@ def test_webgpu_webrtc_empty_coverage() -> None:
     from unittest.mock import patch
 
     import yaml
+    from ml_switcheroo_ir import IRGraph, IRNode
 
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     with open("src/ml_switcheroo_compiler/backends/edge/memory_schemas.yaml") as f:
-        real_data = yaml.safe_load(f)
+        real_data: dict[str, dict[str, dict[str, BackendArg]]] = yaml.safe_load(f)
 
     mocked_data = copy.deepcopy(real_data)
     mocked_data["schemas"]["js_orchestration_templates"]["dynamic_resize"] = ""
 
     orig_safe_load = yaml.safe_load
 
-    def _conditional_safe_load(stream: EagerValue) -> EagerValue:
+    def _conditional_safe_load(stream: str | bytes | typing.TextIO | typing.BinaryIO) -> BackendArg:
         """Test function _conditional_safe_load.
 
         Args:
             stream: Test parameter `stream`.
 
         Returns:
-            EagerValue: Computed output value from `_conditional_safe_load`.
+            BackendArg: Computed output value from `_conditional_safe_load`.
         """
-        name = ensure_eager_tensor(stream).name
-        if "memory_schemas" in str(name):
-            return ensure_eager_tensor(mocked_data)
-        return ensure_eager_tensor(ensure_callable(orig_safe_load)(stream))
+        if not isinstance(stream, (str, bytes)) and "memory_schemas" in str(stream.name):
+            return mocked_data
+        loaded: BackendArg = orig_safe_load(stream)
+        return loaded
 
-    with patch("yaml.safe_load", side_effect=_conditional_safe_load), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value=""), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value=""):
+    with (
+        patch("yaml.safe_load", side_effect=_conditional_safe_load),
+        patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value=""),
+        patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value=""),
+    ):
         g = IRGraph()
-        ensure_mutable(g).attributes = ensure_eager_tensor({"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}})
+        g.attributes = {
+            "dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}
+        }
         n_allreduce = IRNode("allreduce", "AllReduce", inputs=["in1"])
         in1 = IRNode("in1", "Input", attributes={"buffer_id": 1})
         g.nodes = NodeDict({"in1": in1, "allreduce": n_allreduce})
@@ -573,8 +692,9 @@ def test_webgpu_force_get_wgsl_for_op_coverage() -> None:
     """Test function test_webgpu_force_get_wgsl_for_op_coverage."""
     import copy
 
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
     saved_registry = copy.deepcopy(OPS_REGISTRY)
@@ -587,7 +707,12 @@ def test_webgpu_force_get_wgsl_for_op_coverage() -> None:
         in2 = IRNode("in2", "Input")
         in3 = IRNode("in3", "Input")
 
-        n_dummy = IRNode("dummy", "DummyConv", inputs=["in0", "in1", "in2", "in3"], attributes={"window_size": (2, 2), "stride": (1, 1), "TILE_M": 16, "TILE_N": 16, "TILE_K": 16})
+        n_dummy = IRNode(
+            "dummy",
+            "DummyConv",
+            inputs=["in0", "in1", "in2", "in3"],
+            attributes={"window_size": (2, 2), "stride": (1, 1), "TILE_M": 16, "TILE_N": 16, "TILE_K": 16},
+        )
         n_dummy.shape_metadata = (1, 16, 16, 16)
 
         OPS_REGISTRY["DummyConv"] = {"variants": {"edge_wgsl": {"template": "im2col_conv2d", "expr": "test_expr"}}}
@@ -607,8 +732,9 @@ def test_webgpu_force_get_wgsl_for_op_coverage() -> None:
 
 def test_webgpu_while_loop_cond_reduce_scatter_normal() -> None:
     """Test function test_webgpu_while_loop_cond_reduce_scatter_normal."""
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     body_graph = IRGraph()
     b_in = IRNode("b_in", "Input")
@@ -625,7 +751,9 @@ def test_webgpu_while_loop_cond_reduce_scatter_normal() -> None:
     cond_graph.outputs = ["c_out"]
 
     g = IRGraph()
-    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=ensure_attrs({"body": body_graph, "cond": cond_graph}))
+    n_while = IRNode(
+        "while", "WhileLoop", inputs=["in1"], attributes=ensure_attrs({"body": body_graph, "cond": cond_graph})
+    )
     n_while.shape_metadata = (1,)
 
     then_graph = IRGraph()
@@ -635,7 +763,9 @@ def test_webgpu_while_loop_cond_reduce_scatter_normal() -> None:
     then_graph.inputs = ["t_in"]
     then_graph.outputs = ["t_out"]
 
-    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=ensure_attrs({"then_branch": then_graph}))
+    n_cond = IRNode(
+        "cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=ensure_attrs({"then_branch": then_graph})
+    )
     n_cond.shape_metadata = (1,)
 
     n_reducescatter = IRNode("reducescatter", "ReduceScatter", inputs=["in1"])
@@ -646,14 +776,24 @@ def test_webgpu_while_loop_cond_reduce_scatter_normal() -> None:
     in2 = IRNode("t_in", "Input")
     in3 = IRNode("e_in", "Input")
 
-    g.nodes = NodeDict({"in1": in1, "cond_in": cond_in, "t_in": in2, "e_in": in3, "while": n_while, "cond": n_cond, "reducescatter": n_reducescatter})
+    g.nodes = NodeDict(
+        {
+            "in1": in1,
+            "cond_in": cond_in,
+            "t_in": in2,
+            "e_in": in3,
+            "while": n_while,
+            "cond": n_cond,
+            "reducescatter": n_reducescatter,
+        }
+    )
     g.inputs = ["in1", "cond_in", "t_in", "e_in"]
     g.outputs = ["while", "cond", "reducescatter"]
 
     gen = WebGPUCodeGenerator(g)
     gen.sorted_nodes = [in1, cond_in, in2, in3, n_while, n_cond, n_reducescatter]
-    gen.generate()
-    assert gen is not None
+    wgsl_out = gen.generate()
+    assert len(wgsl_out) > 0
 
 
 def test_webgpu_softmax_and_layernorm() -> None:
@@ -714,7 +854,7 @@ def test_webgpu_additional_coverage() -> None:
     class MockDimNode:
         """Test class MockDimNode."""
 
-        def __init__(self, should_fail: EagerValue = False) -> None:
+        def __init__(self, should_fail: BackendArg = False) -> None:
             """Test function __init__.
 
             Args:
@@ -723,33 +863,34 @@ def test_webgpu_additional_coverage() -> None:
             self.node = self
             self.should_fail = should_fail
 
-        def eval(self, env: EagerValue) -> EagerValue:
+        def eval(self, env: BackendArg) -> BackendArg:
             """Test function eval.
 
             Args:
                 env: Test parameter `env`.
 
             Returns:
-                EagerValue: Computed output value from `eval`.
+                BackendArg: Computed output value from `eval`.
+
+            Raises:
+                ValueError: When raised during `eval` (eval failure).
             """
             if self.should_fail:
                 raise ValueError("eval failure")
             return 8
 
     node_eval_ok = IRNode("eval_ok", "Relu")
-    ensure_mutable(node_eval_ok).shape_metadata = ensure_eager_tensor((MockDimNode(False),))
+    pytest.MonkeyPatch().setattr(node_eval_ok, "shape_metadata", (MockDimNode(False),), raising=False)
     node_eval_fail = IRNode("eval_fail", "Relu")
-    ensure_mutable(node_eval_fail).shape_metadata = ensure_eager_tensor((MockDimNode(True),))
-    node_str = IRNode("str_node", "Relu")
-    node_str.shape_metadata = ("B", 16)
-    node_source = IRNode("src_node", "Relu")
-    node_source.shape_metadata = ("B", 16)
+    pytest.MonkeyPatch().setattr(node_eval_fail, "shape_metadata", (MockDimNode(True),), raising=False)
+    node_str = IRNode("str_node", "Relu", shape_metadata=("B", 16))
+    node_source = IRNode("src_node", "Relu", shape_metadata=("B", 16))
 
     gen.sorted_nodes = [node_source, node_str, node_eval_ok, node_eval_fail]
     gen.apply_shape_telemetry({"src_node": [4, 16]})
-    assert ensure_eager_tensor(node_str.shape_metadata) == ensure_eager_tensor((4, 16))
-    assert ensure_eager_tensor(node_eval_ok.shape_metadata) == ensure_eager_tensor((8,))
-    assert ensure_eager_tensor(node_eval_fail.shape_metadata) == ensure_eager_tensor((1,))
+    assert node_str.shape_metadata == (4, 16)
+    assert node_eval_ok.shape_metadata == (8,)
+    assert node_eval_fail.shape_metadata == (1,)
 
 
 def test_webgpu_shape_telemetry_additional_branches() -> None:
@@ -757,24 +898,31 @@ def test_webgpu_shape_telemetry_additional_branches() -> None:
     g = IRGraph()
     gen = WebGPUCodeGenerator(g)
 
-    node_not_seq = IRNode("not_seq", "Relu")
-    node_not_seq.shape_metadata = (4, 4)
-    node_mismatch = IRNode("mismatch", "Relu")
-    node_mismatch.shape_metadata = (4, 4, 4)
+    node_not_seq = IRNode("not_seq", "Relu", shape_metadata=(4, 4))
+    node_mismatch = IRNode("mismatch", "Relu", shape_metadata=(4, 4, 4))
     node_no_meta = IRNode("no_meta", "Relu")
-    node_no_meta.shape_metadata = None
-    node_empty_meta = IRNode("empty_meta", "Relu")
-    node_empty_meta.shape_metadata = ()
-    node_unsolved = IRNode("unsolved", "Relu")
-    node_unsolved.shape_metadata = ("unsolved_dim",)
+    node_empty_meta = IRNode("empty_meta", "Relu", shape_metadata=())
+    node_unsolved = IRNode("unsolved", "Relu", shape_metadata=("unsolved_dim",))
 
     gen.sorted_nodes = [node_not_seq, node_mismatch, node_no_meta, node_empty_meta, node_unsolved]
     gen.apply_shape_telemetry(ensure_attrs({"not_seq": 123, "mismatch": [4, 4]}))
     assert node_not_seq.shape_metadata == (4, 4)
-    assert ensure_eager_tensor(node_mismatch.shape_metadata) == ensure_eager_tensor((4, 4))
+    assert node_mismatch.shape_metadata == (4, 4)
 
 
-def _test_webgpu_parameterized_control_flow_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestWebgpuParameterizedControlFlowState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_webgpu_parameterized_control_flow` split helpers."""
+
+    body_sub: LogicalGraph
+    cond_sub: LogicalGraph
+    four_in_g: LogicalGraph
+    gen: WebGPUCodeGenerator
+    i1: LogicalNode
+    node_conv: LogicalNode
+    x: LogicalNode
+
+
+def _test_webgpu_parameterized_control_flow_part_1(_state: _TestWebgpuParameterizedControlFlowState) -> None:
     """Execute part 1 of test_webgpu_parameterized_control_flow.
 
     Args:
@@ -829,13 +977,12 @@ def _test_webgpu_parameterized_control_flow_part_1(_state: dict[str, EagerTensor
     body_sub = IRGraph()
     body_sub_node = IRNode(id="step", op_type="Add", attributes={})
     body_sub.nodes = NodeDict({"step": body_sub_node})
-    _state.update(ensure_tensor_dict({"_": _, "body_sub": body_sub, "body_sub_node": body_sub_node, "cond_node": cond_node}))
-    _state.update(ensure_tensor_dict({"cond_sub": cond_sub, "cond_sub_node": cond_sub_node, "g": g, "gen": gen}))
-    _state.update(ensure_tensor_dict({"scan_node": scan_node, "wgsl_cond": wgsl_cond, "wgsl_scan": wgsl_scan, "wgsl_while": wgsl_while}))
-    _state.update(ensure_tensor_dict({"while_node": while_node, "x": x}))
+    _state.update({"body_sub": body_sub})
+    _state.update({"cond_sub": cond_sub, "gen": gen})
+    _state.update({"x": x})
 
 
-def _test_webgpu_parameterized_control_flow_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webgpu_parameterized_control_flow_part_2(_state: _TestWebgpuParameterizedControlFlowState) -> None:
     """Execute part 2 of test_webgpu_parameterized_control_flow.
 
     Args:
@@ -866,47 +1013,44 @@ def _test_webgpu_parameterized_control_flow_part_2(_state: dict[str, EagerTensor
 
     # 5. Softmax, AvgPool2D, LayerNorm, and Trig op resolution
     node_softmax = IRNode(id="sm", op_type="Softmax", inputs=["x"], shape_metadata=[4, 4])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([x, node_softmax])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [x, node_softmax], raising=False)
     wgsl_sm, _, _, _ = gen._get_wgsl_for_op(node_softmax, [4, 4], 16, "sm")
     assert len(wgsl_sm) > 0
 
     node_avgpool = IRNode(id="ap", op_type="AvgPool2D", inputs=["x"], shape_metadata=[1, 1, 4, 4])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([x, node_avgpool])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [x, node_avgpool], raising=False)
     wgsl_ap, _, _, _ = gen._get_wgsl_for_op(node_avgpool, [1, 1, 4, 4], 16, "ap")
     assert len(wgsl_ap) > 0
 
     node_const = IRNode(id="const_1", op_type="Constant", inputs=[], shape_metadata=[1], attributes={"value": 3.14})
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([x, node_const])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [x, node_const], raising=False)
     wgsl_const, _, _, _ = gen._get_wgsl_for_op(node_const, [1], 1, "const_1")
     assert len(wgsl_const) > 0
 
     node_conv = IRNode(id="c2d", op_type="Conv2D", inputs=["x"], shape_metadata=[1, 1, 4, 4])
-    _state.update(ensure_tensor_dict({"_": _, "body_empty": body_empty, "node_avgpool": node_avgpool, "node_const": node_const}))
-    _state.update(ensure_tensor_dict({"node_conv": node_conv, "node_softmax": node_softmax, "wgsl_ap": wgsl_ap, "wgsl_const": wgsl_const}))
-    _state.update(ensure_tensor_dict({"wgsl_sm": wgsl_sm, "wgsl_while_empty": wgsl_while_empty, "wgsl_while_sub": wgsl_while_sub, "while_cond_graph_node": while_cond_graph_node}))
-    _state.update(ensure_tensor_dict({"while_empty_body_node": while_empty_body_node}))
-    _state.update(ensure_tensor_dict({"body_sub": body_sub, "cond_sub": cond_sub, "gen": gen}))
-    _state.update(ensure_tensor_dict({"x": x}))
+    _state.update({"node_conv": node_conv})
+    _state.update({"body_sub": body_sub, "cond_sub": cond_sub, "gen": gen})
+    _state.update({"x": x})
 
 
-def _test_webgpu_parameterized_control_flow_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webgpu_parameterized_control_flow_part_3(_state: _TestWebgpuParameterizedControlFlowState) -> None:
     """Execute part 3 of test_webgpu_parameterized_control_flow.
 
     Args:
         _state: Shared test state dictionary.
     """
     gen, node_conv, x = _state["gen"], _state["node_conv"], _state["x"]
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([x, node_conv])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [x, node_conv], raising=False)
     wgsl_conv, _, _, _ = gen._get_wgsl_for_op(node_conv, [1, 1, 4, 4], 16, "c2d")
     assert len(wgsl_conv) > 0
 
     node_ln = IRNode(id="ln", op_type="LayerNorm", inputs=["x"], shape_metadata=[4, 4])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([x, node_ln])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [x, node_ln], raising=False)
     wgsl_ln, _, _, _ = gen._get_wgsl_for_op(node_ln, [4, 4], 16, "ln")
     assert len(wgsl_ln) > 0
 
     node_trig = IRNode(id="trig", op_type="Trig", inputs=["x"], shape_metadata=[4, 4])
-    ensure_mutable(gen).sorted_nodes = ensure_eager_tensor([x, node_trig])
+    pytest.MonkeyPatch().setattr(gen, "sorted_nodes", [x, node_trig], raising=False)
     wgsl_trig, _, _, _ = gen._get_wgsl_for_op(node_trig, [4, 4], 16, "trig")
     assert len(wgsl_trig) > 0
 
@@ -925,13 +1069,12 @@ def _test_webgpu_parameterized_control_flow_part_3(_state: dict[str, EagerTensor
     # 7. Node with more than 3 inputs to exercise j >= 3 branch
     four_in_g = IRGraph()
     i1 = IRNode(id="i1", op_type="Input")
-    _state.update(ensure_tensor_dict({"_": _, "aot_bundle": aot_bundle, "aot_bundle_repeat": aot_bundle_repeat, "four_in_g": four_in_g}))
-    _state.update(ensure_tensor_dict({"i1": i1, "new_g": new_g, "new_x": new_x, "node_ln": node_ln}))
-    _state.update(ensure_tensor_dict({"node_trig": node_trig, "wgsl_conv": wgsl_conv, "wgsl_ln": wgsl_ln, "wgsl_trig": wgsl_trig}))
-    _state.update(ensure_tensor_dict({"gen": gen, "node_conv": node_conv, "x": x}))
+    _state.update({"four_in_g": four_in_g})
+    _state.update({"i1": i1})
+    _state.update({"gen": gen, "node_conv": node_conv, "x": x})
 
 
-def _test_webgpu_parameterized_control_flow_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webgpu_parameterized_control_flow_part_4(_state: _TestWebgpuParameterizedControlFlowState) -> None:
     """Execute part 4 of test_webgpu_parameterized_control_flow.
 
     Args:
@@ -942,18 +1085,21 @@ def _test_webgpu_parameterized_control_flow_part_4(_state: dict[str, EagerTensor
     i3 = IRNode(id="i3", op_type="Input")
     i4 = IRNode(id="i4", op_type="Input")
     four_op = IRNode(id="four_op", op_type="Add", inputs=["i1", "i2", "i3", "i4"])
-    ensure_mutable(four_in_g).nodes = ensure_eager_tensor(NodeDict(ensure_node_dict({"i1": i1, "i2": i2, "i3": i3, "i4": i4, "four_op": four_op})))
-    ensure_mutable(four_in_g).inputs = ensure_eager_tensor(["i1", "i2", "i3", "i4"])
-    ensure_mutable(four_in_g).outputs = ensure_eager_tensor(["four_op"])
-    gen_four = ensure_callable(WebGPUCodeGenerator)(four_in_g)
+    pytest.MonkeyPatch().setattr(
+        four_in_g,
+        "nodes",
+        NodeDict({"i1": i1, "i2": i2, "i3": i3, "i4": i4, "four_op": four_op}),
+        raising=False,
+    )
+    pytest.MonkeyPatch().setattr(four_in_g, "inputs", ["i1", "i2", "i3", "i4"], raising=False)
+    pytest.MonkeyPatch().setattr(four_in_g, "outputs", ["four_op"], raising=False)
+    gen_four = WebGPUCodeGenerator(four_in_g)
     gen_four.generate()
-    _state.update(ensure_tensor_dict({"four_op": four_op, "gen_four": gen_four, "i2": i2, "i3": i3}))
-    _state.update(ensure_tensor_dict({"i4": i4}))
 
 
 def test_webgpu_parameterized_control_flow() -> None:
     """Verify parameterized WhileLoop, Cond, and Scan emission in WebGPUCodeGenerator."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestWebgpuParameterizedControlFlowState = {}
     _test_webgpu_parameterized_control_flow_part_1(_state)
     _test_webgpu_parameterized_control_flow_part_2(_state)
     _test_webgpu_parameterized_control_flow_part_3(_state)
@@ -1040,7 +1186,7 @@ def test_webgpu_arbitrary_inputs_and_multiple_outputs() -> None:
     graph.nodes[out1.id] = out1
     graph.nodes[out2.id] = out2
 
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([*inputs, multi_op, out1, out2])
+    graph.sorted_nodes = [*inputs, multi_op, out1, out2]
     graph.inputs = [f"in_{i}" for i in range(5)]
     graph.outputs = ["out_primary", "out_secondary"]
 
@@ -1064,7 +1210,8 @@ def test_wgsl_grounding_schema_validation() -> None:
 
     schema = get_wgsl_grounding_schema()
     assert "ops" in schema
-    assert ensure_callable(len)(schema["ops"]) >= 0
+    ops_entry = schema["ops"]
+    assert isinstance(ops_entry, (dict, list)) and len(ops_entry) > 0
 
     assert validate_wgsl_statement("Constant") is True
     assert validate_wgsl_statement("add") is True
@@ -1073,17 +1220,18 @@ def test_wgsl_grounding_schema_validation() -> None:
 
 def test_webgpu_multi_outputs_attribute_and_empty_nodes() -> None:
     """Verify WebGPU generation when node has attributes['outputs'] and when graph has no nodes."""
+    from tests.testing_utils import MockNodeStub
+
     # 1. Node with attributes['outputs'] as list
     graph = IRGraph(name="test_multi_out_attr")
     in_node = IRNode(id="in_0", op_type="Input", inputs=[])
     in_node.shape_metadata = (2, 2)
-    add_node = IRNode(id="add_0", op_type="Add", inputs=["in_0", "in_0"])
-    add_node.shape_metadata = (2, 2)
-    ensure_mutable(add_node).outputs = ensure_eager_tensor(None)
+    add_node = MockNodeStub(id="add_0", op_type="Add", inputs=["in_0", "in_0"], shape_metadata=(2, 2))
     add_node.attributes = {}
     graph.nodes["in_0"] = in_node
     graph.nodes["add_0"] = add_node
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([in_node, add_node])
+    pytest.MonkeyPatch().setattr(add_node, "outputs", None, raising=False)
+    graph.sorted_nodes = [in_node, add_node]
     graph.inputs = ["in_0"]
     graph.outputs = ["add_0"]
 
@@ -1094,7 +1242,7 @@ def test_webgpu_multi_outputs_attribute_and_empty_nodes() -> None:
     # 2. Graph with empty sorted_nodes
     empty_graph = IRGraph(name="empty_graph")
     empty_graph.nodes = NodeDict({})
-    ensure_mutable(empty_graph).sorted_nodes = ensure_eager_tensor([])
+    empty_graph.sorted_nodes = []
     empty_graph.inputs = []
     empty_graph.outputs = []
     gen_empty = WebGPUCodeGenerator(empty_graph, [])
@@ -1102,7 +1250,16 @@ def test_webgpu_multi_outputs_attribute_and_empty_nodes() -> None:
     assert "@group(0)" in js_empty
 
 
-def _test_webgpu_spatial_3d_and_depthwise_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestWebgpuSpatial3dAndDepthwiseOpsState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_webgpu_spatial_3d_and_depthwise_ops` split helpers."""
+
+    dw_op: LogicalNode
+    dw_w: LogicalNode
+    dw_x: LogicalNode
+    graph_dw: LogicalGraph
+
+
+def _test_webgpu_spatial_3d_and_depthwise_ops_part_1(_state: _TestWebgpuSpatial3dAndDepthwiseOpsState) -> None:
     """Execute part 1 of test_webgpu_spatial_3d_and_depthwise_ops.
 
     Args:
@@ -1117,7 +1274,7 @@ def _test_webgpu_spatial_3d_and_depthwise_ops_part_1(_state: dict[str, EagerTens
     c3d.shape_metadata = (1, 4, 3, 6, 6)
     c3d.attributes = {"strides": (1, 1, 1)}
     graph_conv3d.nodes = NodeDict({"in_x": in_x, "in_w": in_w, "c3d": c3d})
-    ensure_mutable(graph_conv3d).sorted_nodes = ensure_eager_tensor([in_x, in_w, c3d])
+    graph_conv3d.sorted_nodes = [in_x, in_w, c3d]
     graph_conv3d.inputs = ["in_x", "in_w"]
     graph_conv3d.outputs = ["c3d"]
 
@@ -1133,26 +1290,27 @@ def _test_webgpu_spatial_3d_and_depthwise_ops_part_1(_state: dict[str, EagerTens
     dw_w = IRNode(id="dw_w", op_type="Input", inputs=[])
     dw_w.shape_metadata = (3, 3)
     dw_op = IRNode(id="dw_op", op_type="DepthwiseConv2D", inputs=["dw_x", "dw_w"])
-    _state.update(ensure_tensor_dict({"c3d": c3d, "code_c3d": code_c3d, "dw_op": dw_op, "dw_w": dw_w}))
-    _state.update(ensure_tensor_dict({"dw_x": dw_x, "gen_c3d": gen_c3d, "graph_conv3d": graph_conv3d, "graph_dw": graph_dw}))
-    _state.update(ensure_tensor_dict({"in_w": in_w, "in_x": in_x}))
+    _state.update({"dw_op": dw_op, "dw_w": dw_w})
+    _state.update({"dw_x": dw_x, "graph_dw": graph_dw})
 
 
-def _test_webgpu_spatial_3d_and_depthwise_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webgpu_spatial_3d_and_depthwise_ops_part_2(_state: _TestWebgpuSpatial3dAndDepthwiseOpsState) -> None:
     """Execute part 2 of test_webgpu_spatial_3d_and_depthwise_ops.
 
     Args:
         _state: Shared test state dictionary.
     """
     dw_op, dw_w, dw_x, graph_dw = _state["dw_op"], _state["dw_w"], _state["dw_x"], _state["graph_dw"]
-    ensure_mutable(dw_op).shape_metadata = ensure_eager_tensor([1, 4, 14, 14])
-    ensure_mutable(dw_op).attributes = ensure_eager_tensor({"strides": (1, 1)})
-    ensure_mutable(graph_dw).nodes = ensure_eager_tensor(NodeDict(ensure_node_dict({"dw_x": dw_x, "dw_w": dw_w, "dw_op": dw_op})))
-    ensure_mutable(graph_dw).sorted_nodes = ensure_eager_tensor([dw_x, dw_w, dw_op])
-    ensure_mutable(graph_dw).inputs = ensure_eager_tensor(["dw_x", "dw_w"])
-    ensure_mutable(graph_dw).outputs = ensure_eager_tensor(["dw_op"])
+    pytest.MonkeyPatch().setattr(dw_op, "shape_metadata", [1, 4, 14, 14], raising=False)
+    pytest.MonkeyPatch().setattr(dw_op, "attributes", {"strides": (1, 1)}, raising=False)
+    pytest.MonkeyPatch().setattr(
+        graph_dw, "nodes", NodeDict({"dw_x": dw_x, "dw_w": dw_w, "dw_op": dw_op}), raising=False
+    )
+    pytest.MonkeyPatch().setattr(graph_dw, "sorted_nodes", [dw_x, dw_w, dw_op], raising=False)
+    pytest.MonkeyPatch().setattr(graph_dw, "inputs", ["dw_x", "dw_w"], raising=False)
+    pytest.MonkeyPatch().setattr(graph_dw, "outputs", ["dw_op"], raising=False)
 
-    gen_dw = ensure_callable(WebGPUCodeGenerator)(graph_dw, [])
+    gen_dw = WebGPUCodeGenerator(graph_dw, [])
     code_dw = gen_dw.generate()
     assert "compute_dw_op" in code_dw
 
@@ -1164,20 +1322,18 @@ def _test_webgpu_spatial_3d_and_depthwise_ops_part_2(_state: dict[str, EagerTens
     mp3d_op.shape_metadata = (1, 2, 2, 4, 4)
     mp3d_op.attributes = {"strides": (2, 2, 2), "window": (2, 2, 2)}
     graph_mp3d.nodes = NodeDict({"mp_x": mp_x, "mp3d_op": mp3d_op})
-    ensure_mutable(graph_mp3d).sorted_nodes = ensure_eager_tensor([mp_x, mp3d_op])
+    graph_mp3d.sorted_nodes = [mp_x, mp3d_op]
     graph_mp3d.inputs = ["mp_x"]
     graph_mp3d.outputs = ["mp3d_op"]
 
     gen_mp3d = WebGPUCodeGenerator(graph_mp3d, [])
     code_mp3d = gen_mp3d.generate()
     assert "compute_mp3d_op" in code_mp3d
-    _state.update(ensure_tensor_dict({"code_dw": code_dw, "code_mp3d": code_mp3d, "gen_dw": gen_dw, "gen_mp3d": gen_mp3d}))
-    _state.update(ensure_tensor_dict({"graph_mp3d": graph_mp3d, "mp3d_op": mp3d_op, "mp_x": mp_x}))
-    _state.update(ensure_tensor_dict({"dw_op": dw_op, "dw_w": dw_w, "dw_x": dw_x}))
-    _state.update(ensure_tensor_dict({"graph_dw": graph_dw}))
+    _state.update({"dw_op": dw_op, "dw_w": dw_w, "dw_x": dw_x})
+    _state.update({"graph_dw": graph_dw})
 
 
-def _test_webgpu_spatial_3d_and_depthwise_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_webgpu_spatial_3d_and_depthwise_ops_part_3(_state: _TestWebgpuSpatial3dAndDepthwiseOpsState) -> None:
     """Execute part 3 of test_webgpu_spatial_3d_and_depthwise_ops.
 
     Args:
@@ -1190,20 +1346,18 @@ def _test_webgpu_spatial_3d_and_depthwise_ops_part_3(_state: dict[str, EagerTens
     ap3d_op.shape_metadata = (1, 2, 2, 4, 4)
     ap3d_op.attributes = {"strides": (2, 2, 2), "window": (2, 2, 2)}
     graph_ap3d.nodes = NodeDict({"ap_x": ap_x, "ap3d_op": ap3d_op})
-    ensure_mutable(graph_ap3d).sorted_nodes = ensure_eager_tensor([ap_x, ap3d_op])
+    graph_ap3d.sorted_nodes = [ap_x, ap3d_op]
     graph_ap3d.inputs = ["ap_x"]
     graph_ap3d.outputs = ["ap3d_op"]
 
     gen_ap3d = WebGPUCodeGenerator(graph_ap3d, [])
     code_ap3d = gen_ap3d.generate()
     assert "compute_ap3d_op" in code_ap3d
-    _state.update(ensure_tensor_dict({"ap3d_op": ap3d_op, "ap_x": ap_x, "code_ap3d": code_ap3d, "gen_ap3d": gen_ap3d}))
-    _state.update(ensure_tensor_dict({"graph_ap3d": graph_ap3d}))
 
 
 def test_webgpu_spatial_3d_and_depthwise_ops() -> None:
     """Verify WGSL code generation for Conv3D, DepthwiseConv2D, MaxPool3D, and AvgPool3D."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestWebgpuSpatial3dAndDepthwiseOpsState = {}
     _test_webgpu_spatial_3d_and_depthwise_ops_part_1(_state)
     _test_webgpu_spatial_3d_and_depthwise_ops_part_2(_state)
     _test_webgpu_spatial_3d_and_depthwise_ops_part_3(_state)
@@ -1217,7 +1371,7 @@ def test_webgpu_custom_strides_and_non_contiguous() -> None:
     node.shape_metadata = (4, 8)
     node.attributes = {"strides": [16, 2]}
     graph.nodes = NodeDict({"stride_node": node})
-    ensure_mutable(graph).sorted_nodes = ensure_eager_tensor([node])
+    graph.sorted_nodes = [node]
 
     gen = WebGPUCodeGenerator(graph, [])
     shape, strides = gen._get_shape_and_strides(node)
@@ -1227,7 +1381,32 @@ def test_webgpu_custom_strides_and_non_contiguous() -> None:
 
 def test_wgsl_shader_compliance() -> None:
     """Verify emitted WGSL compute shaders against ml-ecosystem-snapshots WGSL compliance checker."""
-    from ml_ecosystem_snapshots.compliance import check_wgsl_shader_compliance
+    import importlib.util
+    import os
+
+    try:
+        from ml_ecosystem_snapshots.compliance import check_wgsl_shader_compliance
+    except SyntaxError:
+        comp_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "..",
+                "ml-ecosystem-snapshots",
+                "src",
+                "ml_ecosystem_snapshots",
+                "compliance.py",
+            )
+        )
+        spec = importlib.util.spec_from_file_location("_mes_compliance", comp_path)
+        assert spec is not None and spec.loader is not None
+        comp_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(comp_mod)
+        from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+        check_wgsl_shader_compliance = adapt_backend_module(comp_mod).require_op("check_wgsl_shader_compliance")
 
     # Standard WGSL compute shader
     wgsl_source = """
@@ -1241,4 +1420,4 @@ def test_wgsl_shader_compliance() -> None:
     }
     """
     res = check_wgsl_shader_compliance(wgsl_source)
-    assert res["is_compliant"] is True
+    assert bool(res["is_compliant"] if isinstance(res, dict) else res.is_compliant) is True

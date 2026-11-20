@@ -4,92 +4,62 @@ from __future__ import annotations
 
 import functools  # noqa: F401
 import typing
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from types import TracebackType
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.protocols import has_backend_member
-from ml_switcheroo_compiler.ir import core as _ir_core  # noqa: F401
+from ml_switcheroo_compiler.core.shape import OpValue, is_variadic_callable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-F = typing.TypeVar("F")
+F = typing.TypeVar("F", bound=OpValue)
 
 
-class _GraphMetadataProtocol(typing.Protocol):
-    """Protocol for graph objects exposing a `metadata` dictionary."""
+class DoNotConvertWrapper(typing.Generic[F]):
+    """Typed callable wrapper marking a function to skip AutoGraph AST conversion."""
 
-    metadata: dict[str, LoopOptions | None]
+    def __init__(self, fn: F) -> None:
+        """Initialize wrapper around target callable ``fn``.
 
+        Args:
+            fn (F): Function excluded from AutoGraph AST conversion.
+        """
+        self._fn: F = fn
+        self._autograph_do_not_convert: bool = True
+        self.__wrapped__: DoNotConvertWrapper[F] = self
 
-def _has_graph_metadata(val: LogicalGraph | _GraphLoopOptionsProtocol) -> typing.TypeGuard[_GraphMetadataProtocol]:
-    """Check whether `val` exposes a `metadata` attribute.
+    def __call__(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
+        """Invoke wrapped callable unchanged.
 
-    Args:
-        val (LogicalGraph | _GraphLoopOptionsProtocol): Active graph instance.
+        Args:
+            *args (OpValue): Positional arguments.
+            **kwargs (OpValue): Keyword arguments.
 
-    Returns:
-        bool: True if `val` has `metadata`.
-    """
-    return has_backend_member(val, "metadata")
-
-
-class _GraphLoopOptionsProtocol(typing.Protocol):
-    """Protocol for graph objects supporting `loop_options` attribute assignment."""
-
-    loop_options: LoopOptions | None
-
-
-class _AutographSkippedFnProtocol(typing.Protocol[F]):
-    """Protocol for functions marked with `_autograph_do_not_convert`."""
-
-    _autograph_do_not_convert: bool
-    __wrapped__: F
-
-
-def _is_autograph_fn(fn: F) -> typing.TypeGuard[_AutographSkippedFnProtocol[F]]:
-    """Type guard narrowing `fn` to `_AutographSkippedFnProtocol`.
-
-    Args:
-        fn (F): Target callable.
-
-    Returns:
-        bool: Always True for function objects.
-    """
-    return fn is not None
-
-
-def _is_loop_options_graph(val: LogicalGraph) -> typing.TypeGuard[_GraphLoopOptionsProtocol]:
-    """Type guard narrowing `val` to `_GraphLoopOptionsProtocol`.
-
-    Args:
-        val (LogicalGraph): Active graph instance.
-
-    Returns:
-        bool: Always True for runtime graph objects.
-    """
-    return val is not None
+        Returns:
+            OpValue: Output from wrapped callable.
+        """
+        _callable_fn_1: OpValue = self._fn
+        assert is_variadic_callable(_callable_fn_1)
+        return _callable_fn_1(*args, **kwargs)
 
 
 def _set_graph_loop_options(active_g: LogicalGraph, opts: LoopOptions | None) -> None:
-    """Attach `opts` to `active_g` and its `metadata` dict if present.
+    """Attach ``opts`` to ``active_g`` and its ``metadata`` dictionary.
 
     Args:
         active_g (LogicalGraph): Active graph instance.
         opts (LoopOptions | None): Loop options to attach.
     """
-    assert _is_loop_options_graph(active_g)
     active_g.loop_options = opts
-    if _has_graph_metadata(active_g) and isinstance(active_g.metadata, dict):
-        active_g.metadata["loop_options"] = opts
+    active_g.metadata["loop_options"] = opts
 
 
 ShapeInvariantType = typing.Union[
     tuple[typing.Union[int, "None"], ...],
-    list[tuple[typing.Union[int, "None"], ...]],
-    dict[str, tuple[typing.Union[int, "None"], ...]],
-    list[typing.Union[int, "None"]],
-    tuple[list[typing.Union[int, "None"]], ...],
+    Sequence[tuple[typing.Union[int, "None"], ...]],
+    Mapping[str, tuple[typing.Union[int, "None"], ...]],
+    Sequence[typing.Union[int, "None"]],
+    tuple[Sequence[typing.Union[int, "None"]], ...],
     "None",
 ]
 
@@ -107,10 +77,10 @@ class LoopOptions:
         """Initialize the LoopOptions.
 
         Args:
-            parallel_iterations (Optional[int]): The maximum number of iterations allowed to run in parallel.
-            swap_memory (Optional[bool]): Whether to enable CPU-GPU memory swapping for large loops.
-            maximum_iterations (Optional[int]): The maximum number of loop iterations to execute.
-            shape_invariants (Optional[ShapeInvariantType]): Metadata describing the invariant shape constraints of loop variables.
+            parallel_iterations (int | None): Maximum number of iterations allowed to run in parallel.
+            swap_memory (bool | None): Whether to enable CPU-GPU memory swapping for large loops.
+            maximum_iterations (int | None): Maximum number of loop iterations to execute.
+            shape_invariants (ShapeInvariantType | None): Metadata describing invariant shape constraints.
         """
         self.parallel_iterations: int | None = parallel_iterations
         self.swap_memory: bool | None = swap_memory
@@ -139,9 +109,9 @@ class LoopOptions:
         """Exit loop options context and restore previous tracing state.
 
         Args:
-            exc_type (Optional[type[BaseException]]): Exception type if an exception was raised.
-            exc_val (Optional[BaseException]): Exception instance if an exception was raised.
-            exc_tb (Optional[TracebackType]): Traceback if an exception was raised.
+            exc_type (type[BaseException] | None): Exception type if an exception was raised.
+            exc_val (BaseException | None): Exception instance if an exception was raised.
+            exc_tb (TracebackType | None): Traceback if an exception was raised.
         """
         global_tracing_state.current_loop_options = self._prev_options
         if global_tracing_state.active_graph is not None:
@@ -157,10 +127,10 @@ def set_loop_options(
     """Set dynamic loop unrolling options for a loop in the active graph trace.
 
     Args:
-        parallel_iterations (Optional[int]): The maximum number of parallel loop iterations.
-        swap_memory (Optional[bool]): Enable or disable memory swapping.
-        maximum_iterations (Optional[int]): Hard limit on the number of loop iterations.
-        shape_invariants (Optional[ShapeInvariantType]): Tensor shape invariants to enforce during the loop execution.
+        parallel_iterations (int | None): Maximum number of parallel loop iterations.
+        swap_memory (bool | None): Enable or disable memory swapping.
+        maximum_iterations (int | None): Hard limit on the number of loop iterations.
+        shape_invariants (ShapeInvariantType | None): Tensor shape invariants to enforce during loop execution.
 
     Returns:
         LoopOptions: The configured LoopOptions instance injected into the active trace context.
@@ -177,30 +147,37 @@ def set_loop_options(
     return options
 
 
-def do_not_convert(func: F | None = None) -> F | Callable[[F], F]:
-    """Decorate to prevent AutoGraph from converting a function into a graph representation.
+@typing.overload
+def do_not_convert(func: F) -> DoNotConvertWrapper[F]: ...
+
+
+@typing.overload
+def do_not_convert(func: None = None) -> Callable[[F], DoNotConvertWrapper[F]]: ...
+
+
+def do_not_convert(
+    func: F | None = None,
+) -> DoNotConvertWrapper[F] | Callable[[F], DoNotConvertWrapper[F]]:
+    """Decorate a callable to prevent AutoGraph from converting it into a traced graph.
 
     Args:
-        func (Optional[F]): The function to exclude from AST conversion.
+        func (F | None): Optional callable to wrap directly.
 
     Returns:
-        Union[F, Callable[[F], F]]: The original function, modified to skip AutoGraph processing.
+        DoNotConvertWrapper[F] | Callable[[F], DoNotConvertWrapper[F]]:
+            Wrapped callable or decorator factory.
     """
 
-    def decorator(f: F) -> F:
-        """Attach the do-not-convert attribute to the function.
+    def decorator(f: F) -> DoNotConvertWrapper[F]:
+        """Wrap ``f`` in a ``DoNotConvertWrapper``.
 
         Args:
-            f (F): The function to be marked.
+            f (F): Target callable.
 
         Returns:
-            F: The original function with the skip flag attached.
+            DoNotConvertWrapper[F]: Wrapped callable marked with ``_autograph_do_not_convert``.
         """
-        cand_f: F = f
-        assert _is_autograph_fn(cand_f)
-        cand_f._autograph_do_not_convert = True
-        cand_f.__wrapped__ = f
-        return f
+        return DoNotConvertWrapper(f)
 
     if func is not None:
         return decorator(func)

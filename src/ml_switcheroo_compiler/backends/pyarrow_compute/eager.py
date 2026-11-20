@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import importlib
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor
-from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # Comprehensive mapping of standard IR operations to pyarrow.compute functions
@@ -206,31 +206,31 @@ ARROW_COMPUTE_OP_MAP: dict[str, str] = {
 }
 
 
-def _unwrap_arg(arg: EagerValue) -> EagerValue:
+def _unwrap_arg(arg: BackendArg) -> BackendArg:
     """Unwrap Tensor into underlying array or scalar.
 
     Args:
-        arg (EagerValue): Input argument to unwrap.
+        arg (BackendArg): Input argument to unwrap.
 
     Returns:
-        EagerValue: Unwrapped raw data.
+        BackendArg: Unwrapped raw data.
     """
-    if type(arg).__name__ == "Tensor" and has_backend_member(arg, "data"):
-        return get_backend_member(arg, "data")
+    if type(arg).__name__ == "Tensor" and adapt_backend_module(arg).has_symbol("data"):
+        return adapt_backend_module(arg).require_symbol("data")
     return arg
 
 
 def _dispatch_groupby(
     fn_name: str,
-    actual_args: tuple[EagerValue, ...],
-    kwargs: dict[str, EagerValue],
-) -> tuple[bool, EagerValue]:
+    actual_args: tuple[BackendArg, ...],
+    kwargs: dict[str, BackendArg],
+) -> tuple[bool, BackendArg]:
     """Dispatch table group_by or hash aggregations if applicable.
 
     Args:
         fn_name (str): Lowercase operation name.
-        actual_args (tuple[object, ...]): Operation positional arguments.
-        kwargs (dict[str, object]): Keyword options.
+        actual_args (tuple[BackendArg, ...]): Operation positional arguments.
+        kwargs (dict[str, BackendArg]): Keyword options.
 
     Returns:
         tuple[bool, object]: Handled flag and resulting object.
@@ -240,13 +240,23 @@ def _dispatch_groupby(
     """
     if fn_name in ("group_by", "groupby") and actual_args:
         table_obj = actual_args[0]
-        if has_backend_member(table_obj, "group_by"):
+        if adapt_backend_module(table_obj).has_symbol("group_by"):
             keys = kwargs.get("keys", actual_args[1] if len(actual_args) > 1 else [])
             aggregations = kwargs.get("aggregations", actual_args[2] if len(actual_args) > 2 else [])
             try:
-                grouped = ensure_callable(get_backend_member(table_obj, "group_by"))(keys)
-                return True, ensure_callable(get_backend_member(grouped, "aggregate"))(aggregations)
-            except Exception as exc:
+                grouped = adapt_backend_module(table_obj).require_op("group_by")(keys)
+                return True, adapt_backend_module(grouped).require_op("aggregate")(aggregations)
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ) as exc:
                 msg = f"Failed executing group_by: {exc}"
                 raise BackendNotSupportedError(msg) from exc
 
@@ -255,11 +265,21 @@ def _dispatch_groupby(
         keys = actual_args[1]
         agg_col = actual_args[2]
         agg_name = fn_name[5:]
-        if has_backend_member(table_obj, "group_by"):
+        if adapt_backend_module(table_obj).has_symbol("group_by"):
             try:
-                grouped = ensure_callable(get_backend_member(table_obj, "group_by"))(keys)
-                return True, ensure_callable(get_backend_member(grouped, "aggregate"))([(agg_col, agg_name)])
-            except Exception as exc:
+                grouped = adapt_backend_module(table_obj).require_op("group_by")(keys)
+                return True, adapt_backend_module(grouped).require_op("aggregate")([(agg_col, agg_name)])
+            except (
+                AttributeError,
+                ImportError,
+                LookupError,
+                OSError,
+                ArithmeticError,
+                RuntimeError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+            ) as exc:
                 msg = f"Failed executing {fn_name}: {exc}"
                 raise BackendNotSupportedError(msg) from exc
 
@@ -268,15 +288,15 @@ def _dispatch_groupby(
 
 def _dispatch_cbrt(
     fn_name: str,
-    actual_args: tuple[EagerValue, ...],
-    pc_mod: EagerValue,
-) -> tuple[bool, EagerValue]:
+    actual_args: tuple[BackendArg, ...],
+    pc_mod: BackendArg,
+) -> tuple[bool, BackendArg]:
     """Dispatch cube root via pc_mod power if applicable.
 
     Args:
         fn_name (str): Lowercase operation name.
-        actual_args (tuple[object, ...]): Operation positional arguments.
-        pc_mod (EagerValue): pyarrow.compute module.
+        actual_args (tuple[BackendArg, ...]): Operation positional arguments.
+        pc_mod (BackendArg): pyarrow.compute module.
 
     Returns:
         tuple[bool, object]: Handled flag and resulting object.
@@ -286,8 +306,18 @@ def _dispatch_cbrt(
     """
     if fn_name == "cbrt" and actual_args:
         try:
-            return True, ensure_callable(get_backend_member(pc_mod, "power"))(actual_args[0], 1.0 / 3.0)
-        except Exception as exc:
+            return True, adapt_backend_module(pc_mod).require_op("power")(actual_args[0], 1.0 / 3.0)
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ) as exc:
             msg = f"Failed executing cbrt: {exc}"
             raise BackendNotSupportedError(msg) from exc
     return False, None
@@ -295,25 +325,25 @@ def _dispatch_cbrt(
 
 def execute_op(
     op_type: str,
-    *args: EagerValue,
-    **kwargs: EagerValue,
-) -> EagerValue:
+    *args: BackendArg,
+    **kwargs: BackendArg,
+) -> BackendArg:
     """Execute operation eagerly on Apache Arrow Compute backend.
 
     Args:
         op_type (str): Operation name string.
-        *args (EagerValue): Input tensor parameters.
-        **kwargs (EagerValue): Additional keyword attributes.
+        *args (BackendArg): Input tensor parameters.
+        **kwargs (BackendArg): Additional keyword attributes.
 
     Returns:
-        EagerValue: Evaluated Arrow array or scalar.
+        BackendArg: Evaluated Arrow array or scalar.
 
     Raises:
         BackendNotSupportedError: When the operation cannot be resolved or executed.
     """
     try:
         pc_mod = importlib.import_module("pyarrow.compute")
-    except Exception as exc:
+    except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError) as exc:
         msg = f"pyarrow.compute is required for PyArrow Compute backend execution: {exc}"
         raise BackendNotSupportedError(msg) from exc
 
@@ -331,21 +361,41 @@ def execute_op(
         return res_cbrt
 
     # 3. Direct function lookup on pyarrow.compute
-    if has_backend_member(pc_mod, fn_name):
-        compute_fn = ensure_callable(get_backend_member(pc_mod, fn_name))
+    if adapt_backend_module(pc_mod).has_symbol(fn_name):
+        compute_fn = adapt_backend_module(pc_mod).require_op(fn_name)
         try:
-            return ensure_eager_tensor(compute_fn(*actual_args, **kwargs))
-        except Exception as exc:
+            return compute_fn(*actual_args, **kwargs)
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ) as exc:
             msg = f"Failed executing pyarrow.compute.{fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
 
     # 4. Lookup in standard operation mapping
     target_name = ARROW_COMPUTE_OP_MAP.get(fn_name)
-    if target_name and has_backend_member(pc_mod, target_name):
-        compute_fn = ensure_callable(get_backend_member(pc_mod, target_name))
+    if target_name and adapt_backend_module(pc_mod).has_symbol(target_name):
+        compute_fn = adapt_backend_module(pc_mod).require_op(target_name)
         try:
-            return ensure_eager_tensor(compute_fn(*actual_args, **kwargs))
-        except Exception as exc:
+            return compute_fn(*actual_args, **kwargs)
+        except (
+            AttributeError,
+            ImportError,
+            LookupError,
+            OSError,
+            ArithmeticError,
+            RuntimeError,
+            SyntaxError,
+            TypeError,
+            ValueError,
+        ) as exc:
             msg = f"Failed executing pyarrow.compute.{target_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
 

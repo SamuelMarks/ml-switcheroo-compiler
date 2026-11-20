@@ -8,10 +8,10 @@ import pytest
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.export import export_to_dot
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+from tests.testing_utils import MockTestStub
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_export() -> None:
@@ -21,7 +21,7 @@ def test_export() -> None:
     class DummyNode:
         """Test class DummyNode."""
 
-        def __init__(self, id: EagerValue, op_type: EagerValue, inputs: EagerValue) -> None:
+        def __init__(self, id: BackendArg, op_type: BackendArg, inputs: BackendArg) -> None:
             """Test function __init__.
 
             Args:
@@ -40,23 +40,23 @@ def test_export() -> None:
             """Test function __init__."""
             self.nodes = {"n1": DummyNode("n1", "Input", []), "n2": DummyNode("n2", "Add", ["n1"])}
 
-    class DummyData:
+    class DummyData(MockTestStub):
         """Test class DummyData."""
 
         id = "n2"
 
-    t = ensure_callable(Tensor)(ensure_callable(DummyData)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
+    t = Tensor(DummyData(), TensorConfig((1,), "float32", "cpu"))
 
     state.global_tracing_state.active_graph = None
     with pytest.raises(RuntimeError):
-        ensure_callable(export_to_dot)("test.dot", t)
+        export_to_dot("test.dot", t)
 
-    ensure_mutable(state.global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+    pytest.MonkeyPatch().setattr(state.global_tracing_state, "active_graph", DummyGraph(), raising=False)
 
     import io
 
     f = io.StringIO()
-    ensure_callable(export_to_dot)(f, t)
+    export_to_dot(f, t)
 
     lines = f.getvalue().split("\n")
     assert "digraph G {" in lines
@@ -67,18 +67,18 @@ def test_export() -> None:
     # Test string file path
     import os
 
-    ensure_callable(export_to_dot)("test_export.dot", t)
+    export_to_dot("test_export.dot", t)
     assert os.path.exists("test_export.dot")
     os.remove("test_export.dot")
 
     # Test invalid node
-    class DummyDataInvalid:
+    class DummyDataInvalid(MockTestStub):
         """Test class DummyDataInvalid."""
 
         id = "n3"
 
-    t_inv = ensure_callable(Tensor)(ensure_callable(DummyDataInvalid)(), ensure_callable(TensorConfig)((1,), "float32", "cpu"))
+    t_inv = Tensor(DummyDataInvalid(), TensorConfig((1,), "float32", "cpu"))
 
     f2 = io.StringIO()
-    ensure_callable(export_to_dot)(f2, t_inv)
+    export_to_dot(f2, t_inv)
     assert "n3" not in f2.getvalue()

@@ -7,8 +7,8 @@ import typing
 from collections.abc import Set
 
 import yaml
+from ml_switcheroo_ir import IRGraph, IRNode
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.config_models import BehaviorDescriptorsConfig
 

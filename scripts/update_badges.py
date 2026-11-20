@@ -64,7 +64,11 @@ def _is_overload_decorated(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool
     Returns:
         bool: True if decorated with `@overload`.
     """
-    return any((isinstance(dec, ast.Name) and dec.id == "overload") or (isinstance(dec, ast.Attribute) and dec.attr == "overload") for dec in node.decorator_list)
+    return any(
+        (isinstance(dec, ast.Name) and dec.id == "overload")
+        or (isinstance(dec, ast.Attribute) and dec.attr == "overload")
+        for dec in node.decorator_list
+    )
 
 
 def _is_function_doc_complete(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
@@ -200,7 +204,15 @@ def get_test_coverage() -> float | None:
             os.remove("coverage.json")
 
         return float(data["totals"]["percent_covered"])
-    except Exception as e:
+    except (
+        subprocess.SubprocessError,
+        OSError,
+        ValueError,
+        TypeError,
+        KeyError,
+        AttributeError,
+        RuntimeError,
+    ) as e:
         print(f"Warning: Could not parse test coverage: {e}")
         return None
 
@@ -238,7 +250,7 @@ def get_doc_coverage() -> float | None:
                     visitor.visit(tree)
                     total_nodes += visitor.total_nodes
                     nodes_with_docstrings += visitor.nodes_with_docstrings
-                except Exception:
+                except (SyntaxError, ValueError, TypeError, MemoryError, RecursionError):
                     pass
 
     return 0.0 if total_nodes == 0 else (nodes_with_docstrings / total_nodes) * 100.0

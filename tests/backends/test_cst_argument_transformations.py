@@ -48,7 +48,9 @@ def test_ast_pattern_matcher_argument_transformations() -> None:
     assert transformed_kw[0].keyword.value == "axis"
 
     # 3. Argument reordering: satisfied and unsatisfied permutation lengths
-    matcher.arg_rules.argument_reorderings.append(ArgumentReorderingSpec(op_name="test_reorder", permutation=[1, 0], target_framework="all"))
+    matcher.arg_rules.argument_reorderings.append(
+        ArgumentReorderingSpec(op_name="test_reorder", permutation=[1, 0], target_framework="all")
+    )
     # Unsatisfied (1 arg < 2)
     args_short = [cst.Arg(value=cst.Integer("1"))]
     transformed_short = matcher.transform_args("test_reorder", args_short, "all")

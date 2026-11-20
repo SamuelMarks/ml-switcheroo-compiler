@@ -1,4 +1,4 @@
-"""Implementation of quantized ops operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.nn.quantized_ops`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.ops.nn.quantized_ops`."""
 
 from __future__ import annotations
 
@@ -6,11 +6,10 @@ from collections.abc import Callable  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_tensor
 from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, extract_shape
-from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
+from ml_switcheroo_compiler.core.shape import OpValue, extract_shape
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, ensure_tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.linear_ops import linear
 from ml_switcheroo_compiler.ops.shape.indexing import gather
@@ -159,7 +158,7 @@ def fake_quant_with_min_max_vars(
     max_val: Tensor,
     num_bits: int = 8,
     narrow_range: bool = False,
-) -> TensorOrScalar:
+) -> OpValue:
     """Simulate quantization and dequantization of a tensor using min and max variables.
 
     This function is useful for quantization-aware training, simulating the precision loss
@@ -312,7 +311,7 @@ def quantize_and_dequantize(
     input_min: Tensor,
     input_max: Tensor,
     params: QuantizationParams | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Quantizes and then dequantizes a tensor to simulate lower precision.
 
     This operation applies quantization based on the provided min/max bounds and parameters,
@@ -328,12 +327,12 @@ def quantize_and_dequantize(
         Tensor: The simulated lower precision tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros_like
+        from ml_switcheroo_compiler.ops.creation.api_basic import zeros_like
 
         return zeros_like(input) + input
 
     params = params or QuantizationParams()
-    attrs: dict[str, TensorOrScalar] = {
+    attrs: dict[str, OpValue] = {
         "signed_input": params.signed_input,
         "num_bits": params.num_bits,
         "range_given": params.range_given,
@@ -347,7 +346,7 @@ def quantize_and_dequantize(
 def abs_max_quantize(
     input: Tensor,
     axis: int | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Quantizes an input tensor using absolute maximum quantization scaling.
 
     This method calculates scaling factors based on the absolute maximum values along
@@ -361,7 +360,7 @@ def abs_max_quantize(
         tuple[Tensor, Tensor]: A tuple containing the quantized output tensor and the scale tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros_like
+        from ml_switcheroo_compiler.ops.creation.api_basic import zeros_like
 
         return zeros_like(input), zeros_like(input)
 
@@ -374,7 +373,7 @@ def abs_max_quantize(
 def compute_float8_amax_history(
     x: Tensor,
     amax_history: Tensor,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute and updates the absolute maximum history for float8 quantization scaling.
 
     Args:
@@ -385,7 +384,7 @@ def compute_float8_amax_history(
         Tensor: The updated absolute maximum history tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros_like
+        from ml_switcheroo_compiler.ops.creation.api_basic import zeros_like
 
         return zeros_like(amax_history)
 
@@ -396,7 +395,7 @@ def compute_float8_scale(
     amax_history: Tensor,
     scale: Tensor,
     margin: float = 0.0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Compute the scaling factor for float8 quantization from absolute maximum history.
 
     Args:
@@ -408,7 +407,7 @@ def compute_float8_scale(
         Tensor: The newly computed scale tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros_like
+        from ml_switcheroo_compiler.ops.creation.api_basic import zeros_like
 
         return zeros_like(scale)
 
@@ -420,7 +419,7 @@ def quantize(
     w: Tensor,
     group_size: int = 64,
     bits: int = 4,
-) -> TensorOrScalar:
+) -> OpValue:
     """Quantizes a floating-point weight tensor into a lower-bit representation.
 
     Args:
@@ -432,7 +431,7 @@ def quantize(
         tuple[Tensor, Tensor, Tensor]: A tuple containing the quantized weights, scales, and biases.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros_like
+        from ml_switcheroo_compiler.ops.creation.api_basic import zeros_like
 
         return (
             zeros_like(w),
@@ -474,7 +473,7 @@ class QuantizedOpsConfig(pydantic.BaseModel):
 def quantized_matmul(
     x: Tensor,
     config: QuantizedOpsConfig,
-) -> TensorOrScalar:
+) -> OpValue:
     """Perform a matrix multiplication using a quantized weight matrix configuration.
 
     Args:
@@ -504,7 +503,7 @@ def quantized_matmul(
 def gather_qmm(
     x: Tensor,
     config: QuantizedOpsConfig,
-) -> TensorOrScalar:
+) -> OpValue:
     """Gather elements and performs a matrix multiplication with quantized weights.
 
     Args:
@@ -535,7 +534,7 @@ def gather_qmm(
 def quantized_linear(
     input: Tensor,
     config: QuantizedOpsConfig,
-) -> TensorOrScalar:
+) -> OpValue:
     """Apply a linear transformation to incoming data using quantized parameters.
 
     The weight tensor within the configuration is expected to be quantized (e.g., int4 or int8).
@@ -550,26 +549,18 @@ def quantized_linear(
         Tensor: The transformed output tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        backend = get_active_backend()
-
-        w_val = backend.asarray(config.weight.data)
-        scales_val = backend.asarray(config.scales.data)
-        zeros_val: EagerTensorProtocol | float
+        w_t = Tensor(config.weight.data, TensorConfig(config.weight.shape, DType.Float32, config.weight.device))
+        s_t = Tensor(config.scales.data, TensorConfig(config.scales.shape, DType.Float32, config.scales.device))
         if config.zeros is not None:
-            zeros_val = ensure_eager_tensor(backend.asarray(config.zeros.data))
+            z_t: Tensor | float = Tensor(
+                config.zeros.data, TensorConfig(config.zeros.shape, DType.Float32, config.zeros.device)
+            )
         elif config.biases is not None:
-            zeros_val = ensure_eager_tensor(backend.asarray(config.biases.data))
+            z_t = Tensor(config.biases.data, TensorConfig(config.biases.shape, DType.Float32, config.biases.device))
         else:
-            zeros_val = 0.0
+            z_t = 0.0
 
-        w_float_val = (ensure_eager_tensor(w_val) - zeros_val) * ensure_eager_tensor(scales_val)
-
-        from ml_switcheroo_compiler.core.tensor import TensorConfig
-
-        weight_float = Tensor(w_float_val, TensorConfig(extract_shape(w_float_val), DType.Float32, config.weight.device))
-
+        weight_float = (w_t - z_t) * s_t
         return linear(input, weight_float, bias=config.biases)
     else:
         return linear(input, config.weight, bias=config.biases)
@@ -578,7 +569,7 @@ def quantized_linear(
 def quantized_embedding(
     input: Tensor,
     config: QuantizedOpsConfig,
-) -> TensorOrScalar:
+) -> OpValue:
     """Look up embeddings from a quantized embedding weight table.
 
     Args:
@@ -589,26 +580,18 @@ def quantized_embedding(
         Tensor: The dequantized embedding tensor corresponding to the input indices.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        backend = get_active_backend()
-
-        w_val = backend.asarray(config.weight.data)
-        scales_val = backend.asarray(config.scales.data)
-        zeros_val: EagerTensorProtocol | float
+        w_t = Tensor(config.weight.data, TensorConfig(config.weight.shape, DType.Float32, config.weight.device))
+        s_t = Tensor(config.scales.data, TensorConfig(config.scales.shape, DType.Float32, config.scales.device))
         if config.zeros is not None:
-            zeros_val = ensure_eager_tensor(backend.asarray(config.zeros.data))
+            z_t: Tensor | float = Tensor(
+                config.zeros.data, TensorConfig(config.zeros.shape, DType.Float32, config.zeros.device)
+            )
         elif config.biases is not None:
-            zeros_val = ensure_eager_tensor(backend.asarray(config.biases.data))
+            z_t = Tensor(config.biases.data, TensorConfig(config.biases.shape, DType.Float32, config.biases.device))
         else:
-            zeros_val = 0.0
+            z_t = 0.0
 
-        w_float_val = (ensure_eager_tensor(w_val) - zeros_val) * ensure_eager_tensor(scales_val)
-
-        from ml_switcheroo_compiler.core.tensor import TensorConfig
-
-        weight_float = Tensor(w_float_val, TensorConfig(extract_shape(w_float_val), DType.Float32, config.weight.device))
-
+        weight_float = (w_t - z_t) * s_t
         return gather(weight_float, axis=0, index=input)
     else:
         return gather(config.weight, axis=0, index=input)
@@ -620,7 +603,7 @@ def dequantize(
     biases: Tensor | None = None,
     group_size: int = 64,
     bits: int = 4,
-) -> TensorOrScalar:
+) -> OpValue:
     """Dequantizes a tensor back to a floating point representation.
 
     Args:
@@ -634,21 +617,12 @@ def dequantize(
         Tensor: The dequantized floating point tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        backend = get_active_backend()
-
-        from ml_switcheroo_compiler.core.tensor import TensorConfig
-
-        in_val = backend.asarray(input.data)
-        scales_val = backend.asarray(scales.data)
-        if biases is not None:
-            biases_val = backend.asarray(biases.data)
-        else:
-            biases_val = backend.execute_op("Zeros", 1, dtype="float32")
-
-        res_val = (ensure_eager_tensor(in_val) - ensure_eager_tensor(biases_val)) * ensure_eager_tensor(scales_val)
-        return Tensor(res_val, TensorConfig(extract_shape(res_val), scales.dtype, input.device))
+        in_t = Tensor(input.data, TensorConfig(input.shape, scales.dtype, input.device))
+        s_t = Tensor(scales.data, TensorConfig(scales.shape, scales.dtype, scales.device))
+        b_t: Tensor | float = (
+            Tensor(biases.data, TensorConfig(biases.shape, scales.dtype, biases.device)) if biases is not None else 0.0
+        )
+        return (in_t - b_t) * s_t
 
     inputs = [input, scales]
     if biases is not None:
@@ -664,7 +638,7 @@ def quantized_conv(
     padding: int = 0,
     dilation: int = 1,
     groups: int = 1,
-) -> TensorOrScalar:
+) -> OpValue:
     """Perform a convolution using a quantized weight configuration.
 
     Args:
@@ -680,7 +654,6 @@ def quantized_conv(
     """
     if compiler_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
-        from ml_switcheroo_compiler.core.tensor import TensorConfig
 
         backend = get_active_backend()
 
@@ -694,8 +667,8 @@ def quantized_conv(
             "dilation": dilation,
             "groups": groups,
         }
-        res_val = ensure_eager_tensor(backend.execute_op("QuantizedConv", *args, **kwargs))
-        return Tensor(res_val, TensorConfig(res_val.shape, input.dtype, input.device))
+        res_val = backend.execute_op("QuantizedConv", *args, **kwargs)
+        return Tensor(res_val, TensorConfig(extract_shape(res_val), input.dtype, input.device))
 
     inputs = [input, config.weight, config.scales]
     if config.biases is not None:

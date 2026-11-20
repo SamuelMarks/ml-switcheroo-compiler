@@ -6,26 +6,29 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable
+import pytest
+
+import ml_switcheroo_compiler.ops as _ops_pkg
 
 if typing.TYPE_CHECKING:
     pass
 
-with patch.dict(sys.modules, {"tensorflow": MagicMock()}):
-    from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
-
 
 def test_tf_types() -> None:
     """Test coverage for tensorflow types."""
-    import ml_switcheroo_compiler.backends.tensorflow.types as mod
+    assert _ops_pkg is not None
+    with patch.dict(sys.modules, {"tensorflow": MagicMock()}):
+        import ml_switcheroo_compiler.backends.tensorflow.types as mod
+        from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
 
-    _ = (zeros, array, asarray, item)
-    ensure_mutable(mod).generic_zeros = ensure_eager_tensor(MagicMock(return_value="zeros"))
-    ensure_mutable(mod).generic_array = ensure_eager_tensor(MagicMock(return_value="array"))
-    ensure_mutable(mod).generic_asarray = ensure_eager_tensor(MagicMock(return_value="asarray"))
-    ensure_mutable(mod).generic_item = ensure_eager_tensor(MagicMock(return_value="item"))
+        _ = (zeros, array, asarray, item)
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr(mod, "generic_zeros", MagicMock(return_value="zeros"), raising=False)
+            mp.setattr(mod, "generic_array", MagicMock(return_value="array"), raising=False)
+            mp.setattr(mod, "generic_asarray", MagicMock(return_value="asarray"), raising=False)
+            mp.setattr(mod, "generic_item", MagicMock(return_value=1.0), raising=False)
 
-    assert ensure_callable(mod.zeros)(None, (2, 2)) == "zeros"
-    assert ensure_callable(mod.array)(None, [1]) == "array"
-    assert ensure_callable(mod.asarray)(None, [1]) == "asarray"
-    assert ensure_callable(mod.item)(None, [1]) == "item"
+            assert mod.zeros(None, (2, 2)) == "zeros"
+            assert mod.array(None, [1]) == "array"
+            assert mod.asarray(None, [1]) == "asarray"
+            assert mod.item(None, [1]) == 1.0

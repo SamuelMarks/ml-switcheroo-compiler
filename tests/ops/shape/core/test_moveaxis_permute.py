@@ -10,13 +10,13 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import moveaxis, permute
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_obj
+from tests.testing_utils import coerce_shape, ensure_tensor, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
+def _t(data: BackendArg, shape: tuple[BackendArg, ...]) -> Tensor:
     """Helper to create test tensor.
 
     Args:
@@ -26,7 +26,7 @@ def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
     Returns:
         Tensor: Computed output value from `_t`.
     """
-    return ensure_tensor_obj(ensure_callable(Tensor)(data, ensure_callable(TensorConfig)(shape, "float32", "cpu")))
+    return ensure_tensor(Tensor(data, TensorConfig(coerce_shape(shape), "float32", "cpu")))
 
 
 def test_permute_eager() -> None:
@@ -56,7 +56,7 @@ def test_moveaxis_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([[1, 2, 3]]), (1, 3))
     out = moveaxis(x, 1, 0)
-    assert ensure_eager_tensor(out).shape == (3, 1)
+    assert extract_test_shape(out) == (3, 1)
 
 
 def test_moveaxis_tracing() -> None:
@@ -66,10 +66,10 @@ def test_moveaxis_tracing() -> None:
     try:
         x = _t(np.array([[1, 2, 3]]), (1, 3))
         out = moveaxis(x, 1, 0)
-        assert ensure_eager_tensor(out).shape == (3, 1)
+        assert extract_test_shape(out) == (3, 1)
         out2 = moveaxis(x, [1], [0])
-        assert ensure_eager_tensor(out2).shape == (3, 1)
+        assert extract_test_shape(out2) == (3, 1)
         out3 = moveaxis(x, -1, -2)
-        assert ensure_eager_tensor(out3).shape == (3, 1)
+        assert extract_test_shape(out3) == (3, 1)
     finally:
         global_tracing_state.stop_tracing()

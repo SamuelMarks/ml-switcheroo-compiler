@@ -6,17 +6,12 @@ import os
 import typing
 
 import yaml
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
-from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
-    BufferAllocationPass,
-)
-from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
-    NodePattern,
-)
-from tests.testing_utils import ensure_eager_tensor
+from ml_switcheroo_compiler.transforms.passes.buffer_allocation import BufferAllocationPass
+from ml_switcheroo_compiler.transforms.passes.operator_fusion import NodePattern
+from tests.testing_utils import adapt_backend_module
 
 if typing.TYPE_CHECKING:
     pass
@@ -24,7 +19,16 @@ if typing.TYPE_CHECKING:
 
 def test_memory_layouts_yaml_alignments() -> None:
     """Verify declarative memory alignment schemas in memory_layouts.yaml."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "transforms", "passes", "memory_layouts.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "src",
+        "ml_switcheroo_compiler",
+        "transforms",
+        "passes",
+        "memory_layouts.yaml",
+    )
     assert os.path.exists(yaml_path)
     with open(yaml_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -40,7 +44,9 @@ def test_memory_layouts_yaml_alignments() -> None:
 
 def test_fusion_patterns_yaml_definitions() -> None:
     """Verify expanded operator fusion patterns in fusion_patterns.yaml."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "transforms", "fusion_patterns.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "transforms", "fusion_patterns.yaml"
+    )
     assert os.path.exists(yaml_path)
     with open(yaml_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -66,25 +72,37 @@ def test_subgraph_pattern_matcher_wildcard_and_commutativity() -> None:
     n_add = IRNode(id="add_node", op_type="Add", inputs=["x", "c"])
     graph.nodes = NodeDict({"x": n_in, "c": n_const, "add_node": n_add})
 
+    from ml_switcheroo_compiler.transforms.passes._operator_fusion_patterns import MatchMapType
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import match_pattern
 
-    cap_map: dict[str, str | IRNode] = {}
+    cap_map: MatchMapType = {}
     assert match_pattern(graph, "add_node", p_add, cap_map)
-    assert ensure_eager_tensor(ensure_eager_tensor(cap_map)["c0"].id) == "c"
-    assert ensure_eager_tensor(ensure_eager_tensor(cap_map)["c1"].id) == "x"
+    assert adapt_backend_module(cap_map["c0"]).require_symbol("id") == "c"
+    assert adapt_backend_module(cap_map["c1"]).require_symbol("id") == "x"
 
     # Wildcard pattern
     p_wild = NodePattern(op_type="*", capture="any_op")
-    cap_wild: dict[str, str | IRNode] = {}
+    cap_wild: MatchMapType = {}
     assert match_pattern(graph, "add_node", p_wild, cap_wild)
-    assert ensure_eager_tensor(ensure_eager_tensor(cap_wild)["any_op"].id) == "add_node"
+    assert adapt_backend_module(cap_wild["any_op"]).require_symbol("id") == "add_node"
 
 
 def test_dynamic_buffer_allocation_symbolic_batch() -> None:
     """Verify dynamic buffer allocation handles symbolic batch dimension B using stride multipliers."""
     graph = IRGraph()
-    n_in = IRNode(id="in_0", op_type="Input", shape_metadata=("B", 64, 64), attributes={"shape": ("B", 64, 64), "dtype": "float32"})
-    n_out = IRNode(id="out_0", op_type="Relu", inputs=["in_0"], shape_metadata=("B", 64, 64), attributes={"shape": ("B", 64, 64), "dtype": "float32"})
+    n_in = IRNode(
+        id="in_0",
+        op_type="Input",
+        shape_metadata=("B", 64, 64),
+        attributes={"shape": ("B", 64, 64), "dtype": "float32"},
+    )
+    n_out = IRNode(
+        id="out_0",
+        op_type="Relu",
+        inputs=["in_0"],
+        shape_metadata=("B", 64, 64),
+        attributes={"shape": ("B", 64, 64), "dtype": "float32"},
+    )
     graph.nodes = NodeDict({"in_0": n_in, "out_0": n_out})
     graph.outputs = ["out_0"]
 
@@ -97,7 +115,7 @@ def test_dynamic_buffer_allocation_symbolic_batch() -> None:
     modified = alloc_pass.run(graph)
     assert modified is True
     assert "buffer_offset_symbolic" in n_in.attributes
-    assert "dynamic_memory_schema" in ensure_eager_tensor(ensure_eager_tensor(graph).attributes)
+    assert "dynamic_memory_schema" in graph.attributes
 
 
 def test_pass_manager_optimization_levels_and_fixpoint() -> None:
@@ -114,7 +132,9 @@ def test_pass_manager_optimization_levels_and_fixpoint() -> None:
     # Run fixpoint convergence test on a small graph
     graph = IRGraph()
     n_in = IRNode(id="x", op_type="Input", shape_metadata=(4, 4), attributes={"shape": (4, 4), "dtype": "float32"})
-    n_relu = IRNode(id="r", op_type="Relu", inputs=["x"], shape_metadata=(4, 4), attributes={"shape": (4, 4), "dtype": "float32"})
+    n_relu = IRNode(
+        id="r", op_type="Relu", inputs=["x"], shape_metadata=(4, 4), attributes={"shape": (4, 4), "dtype": "float32"}
+    )
     graph.nodes = NodeDict({"x": n_in, "r": n_relu})
     graph.outputs = ["r"]
 

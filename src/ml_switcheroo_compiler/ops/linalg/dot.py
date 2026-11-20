@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_eager_list, ensure_shape
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list, coerce_shape
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_shape,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -24,11 +24,11 @@ def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
     Returns:
         bool: Computed `bool` output.
     """
-    raw_obj: TensorOrScalar = obj
+    raw_obj: OpValue = obj
     return isinstance(raw_obj, ShapeProtocol) and bool(raw_obj.shape)
 
 
-def _extract_dot_operand_shape(obj: TensorOrScalar) -> tuple[int, ...]:
+def _extract_dot_operand_shape(obj: OpValue) -> tuple[int, ...]:
     """Extract shape tuple from a tensor or shape sequence.
 
     Args:
@@ -70,13 +70,13 @@ class Dot(OpDef):
     Computes the dot product of two arrays
     """
 
-    def infer_shape(self, a: TensorOrScalar = None, b: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: OpValue = None, b: OpValue = None, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer output shape for dot product following standard tensor contraction rules.
 
         Args:
-            a (TensorOrScalar): First input tensor or shape.
-            b (TensorOrScalar): Second input tensor or shape.
-            **kwargs (TensorOrScalar): Optional keyword arguments.
+            a (OpValue): First input tensor or shape.
+            b (OpValue): Second input tensor or shape.
+            **kwargs (OpValue): Optional keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred output shape.
@@ -100,12 +100,12 @@ class DotGeneral(OpDef):
 
     op_name = "DotGeneral"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -118,26 +118,26 @@ class DotGeneral(OpDef):
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        _typed_ret_1: TensorOrScalar = res
+        _typed_ret_1: OpValue = res
         return _typed_ret_1
 
-    def _compute_out_shape(self, lhs_shape: TensorOrScalar, rhs_shape: TensorOrScalar, dimension_numbers: TensorOrScalar) -> TensorOrScalar:
+    def _compute_out_shape(self, lhs_shape: OpValue, rhs_shape: OpValue, dimension_numbers: OpValue) -> OpValue:
         """Compute the compute out shape tensor operation.
 
         Args:
-            lhs_shape (tuple): Input `lhs_shape` argument (lhs shape).
-            rhs_shape (tuple): Input `rhs_shape` argument (rhs shape).
-            dimension_numbers (tuple): Input `dimension_numbers` argument (dimension numbers).
+            lhs_shape (OpValue): Input `lhs_shape` argument (lhs shape).
+            rhs_shape (OpValue): Input `rhs_shape` argument (rhs shape).
+            dimension_numbers (OpValue): Input `dimension_numbers` argument (dimension numbers).
 
         Returns:
             tuple: Computed `tuple` output.
         """
-        dim_nums = ensure_eager_list(dimension_numbers)
-        contracting, batch = ensure_eager_list(dim_nums[0]), ensure_eager_list(dim_nums[1])
-        lhs_contracting, rhs_contracting = ensure_shape(contracting[0]), ensure_shape(contracting[1])
-        lhs_batch, rhs_batch = ensure_shape(batch[0]), ensure_shape(batch[1])
-        l_shape = ensure_shape(lhs_shape)
-        r_shape = ensure_shape(rhs_shape)
+        dim_nums = coerce_operand_list(dimension_numbers)
+        contracting, batch = coerce_operand_list(dim_nums[0]), coerce_operand_list(dim_nums[1])
+        lhs_contracting, rhs_contracting = coerce_shape(contracting[0]), coerce_shape(contracting[1])
+        lhs_batch, rhs_batch = coerce_shape(batch[0]), coerce_shape(batch[1])
+        l_shape = coerce_shape(lhs_shape)
+        r_shape = coerce_shape(rhs_shape)
 
         out_shape = [l_shape[b] for b in lhs_batch]
         out_shape.extend([l_shape[i] for i in range(len(l_shape)) if i not in (lhs_contracting + lhs_batch)])
@@ -153,13 +153,13 @@ class Tensordot(OpDef):
     Computes tensor dot product along specified axes.
     """
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, b: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape of the operation.
 
         Args:
-            a (EagerTensorProtocol): The first input tensor.
-            b (EagerTensorProtocol): The second input tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            a (OpValue): The first input tensor.
+            b (OpValue): The second input tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -173,13 +173,13 @@ class Inner(OpDef):
     Computes the inner product of two vectors or matrices.
     """
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, b: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape of the operation.
 
         Args:
-            a (EagerTensorProtocol): The first input tensor.
-            b (EagerTensorProtocol): The second input tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            a (OpValue): The first input tensor.
+            b (OpValue): The second input tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -193,13 +193,13 @@ class Outer(OpDef):
     Computes the outer product of two vectors.
     """
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, b: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape of the operation.
 
         Args:
-            a (EagerTensorProtocol): The first input tensor.
-            b (EagerTensorProtocol): The second input tensor.
-            **kwargs (TensorOrScalar): Additional keyword arguments.
+            a (OpValue): The first input tensor.
+            b (OpValue): The second input tensor.
+            **kwargs (OpValue): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -210,8 +210,8 @@ def _compute_pdot_shape(lhs_shape: tuple[int, ...], rhs_shape: tuple[int, ...]) 
     """Compute the compute pdot shape tensor operation.
 
     Args:
-        lhs_shape (tuple): Input `lhs_shape` argument (lhs shape).
-        rhs_shape (tuple): Input `rhs_shape` argument (rhs shape).
+        lhs_shape (tuple[int, ...]): Input `lhs_shape` argument (lhs shape).
+        rhs_shape (tuple[int, ...]): Input `rhs_shape` argument (rhs shape).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -235,12 +235,12 @@ class Pdot(OpDef):
 
     op_name = "Pdot"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -253,12 +253,12 @@ class Pdot(OpDef):
         return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 
-def pdot(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def pdot(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the pdot tensor operation.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

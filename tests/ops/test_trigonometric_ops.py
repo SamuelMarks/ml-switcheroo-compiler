@@ -7,12 +7,12 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -34,18 +34,30 @@ def test_sin_op() -> None:
     """Test function test_sin_op."""
     a = Tensor(np.array([0, np.pi / 2, np.pi], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Sin", a)
-    ensure_callable(np.testing.assert_array_almost_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([0, 1, 0], dtype=np.float32), decimal=6)
+    np.testing.assert_array_almost_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([0, 1, 0], dtype=np.float32),
+        decimal=6,
+    )
 
 
 def test_cos_op() -> None:
     """Test function test_cos_op."""
     a = Tensor(np.array([0, np.pi / 2, np.pi], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Cos", a)
-    ensure_callable(np.testing.assert_array_almost_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([1, 0, -1], dtype=np.float32), decimal=6)
+    np.testing.assert_array_almost_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([1, 0, -1], dtype=np.float32),
+        decimal=6,
+    )
 
 
 def test_tan_op() -> None:
     """Test function test_tan_op."""
     a = Tensor(np.array([0, np.pi / 4], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
     res = dispatch_op("Tan", a)
-    ensure_callable(np.testing.assert_array_almost_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([0, 1], dtype=np.float32), decimal=6)
+    np.testing.assert_array_almost_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([0, 1], dtype=np.float32),
+        decimal=6,
+    )

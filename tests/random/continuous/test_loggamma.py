@@ -7,7 +7,6 @@ import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.random.continuous.loggamma import loggamma
-from tests.testing_utils import ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -15,8 +14,10 @@ if typing.TYPE_CHECKING:
 
 def test_loggamma() -> None:
     """Test loggamma function."""
-    with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.loggamma"], "_dispatch_random") as mock_dispatch:
+    with patch.object(
+        sys.modules["ml_switcheroo_compiler.random.continuous.loggamma"], "_dispatch_random"
+    ) as mock_dispatch:
         mock_dispatch.return_value = "mocked_result"
         result = loggamma(1, 2, a=3)
-        assert ensure_eager_tensor(result) == ensure_eager_tensor("mocked_result")
+        assert result == "mocked_result"
         mock_dispatch.assert_called_once_with("loggamma", 1, 2, a=3)

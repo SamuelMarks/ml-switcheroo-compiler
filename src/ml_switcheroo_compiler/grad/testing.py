@@ -4,15 +4,105 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Iterable, Sequence
+from types import ModuleType
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, VariadicCallableProtocol, invoke_callable
+from ml_switcheroo_compiler.core.shape import OpValue, is_variadic_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .jvp_vjp import _unpack_pair, jvp, vjp
 from .options import DEFAULT_GRAD_EPSILON, GradCheckOptions
-from .utils import GradValue, _ensure_grad_tensor, _extract_shape, _unwrap_data
+from .utils import DifferentiableFn, PrimalTree, _extract_shape, _unwrap_data, as_primal_tree
+
+
+@typing.runtime_checkable
+class _FlatBufferProtocol(typing.Protocol):
+    """Protocol for 1-D raveled buffer views supporting element indexing and mutation."""
+
+    @property
+    def size(self) -> int:
+        """Return total element count.
+
+        Returns:
+            int: Element count.
+        """
+        ...
+
+    def __getitem__(self, idx: int) -> float:
+        """Read scalar element at ``idx``.
+
+        Args:
+            idx (int): Flat element index.
+
+        Returns:
+            float: Element value.
+        """
+        ...
+
+    def __setitem__(self, idx: int, val: float) -> None:
+        """Write scalar element ``val`` at ``idx``.
+
+        Args:
+            idx (int): Flat element index.
+            val (float): Replacement value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _MutableRavelArrayProtocol(typing.Protocol):
+    """Protocol for mutable numerical arrays used in finite-difference gradient checking."""
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Return array shape tuple.
+
+        Returns:
+            tuple[int, ...]: Array dimensions.
+        """
+        ...
+
+    def ravel(self) -> _FlatBufferProtocol:
+        """Return contiguous 1-D view of array.
+
+        Returns:
+            _FlatBufferProtocol: Flat mutable buffer view.
+        """
+        ...
+
+    def reshape(self, shape: tuple[int, ...]) -> _MutableRavelArrayProtocol:
+        """Return array reshaped to ``shape``.
+
+        Args:
+            shape (tuple[int, ...]): Target shape tuple.
+
+        Returns:
+            _MutableRavelArrayProtocol: Reshaped array.
+        """
+        ...
+
+    def copy(self) -> OpValue:
+        """Return an independent copy of the array.
+
+        Returns:
+            OpValue: Copied array buffer.
+        """
+        ...
+
+
+def _as_mutable_ravel_array(val: OpValue | _MutableRavelArrayProtocol) -> _MutableRavelArrayProtocol:
+    """Verify and narrow ``val`` to ``_MutableRavelArrayProtocol``.
+
+    Args:
+        val (OpValue | _MutableRavelArrayProtocol): Candidate array buffer.
+
+    Returns:
+        _MutableRavelArrayProtocol: Verified mutable array.
+    """
+    assert isinstance(val, _MutableRavelArrayProtocol) and not isinstance(val, ModuleType)
+    return val
+
 
 __all__ = [
     "DEFAULT_GRAD_EPSILON",
@@ -22,41 +112,42 @@ __all__ = [
 ]
 
 
-def _is_vjp_pullback(val: GradValue) -> typing.TypeGuard[VariadicCallableProtocol]:
-    """Type guard narrowing `val` to `VariadicCallableProtocol`.
+def _as_supports_float(val: OpValue | PrimalTree | typing.SupportsFloat) -> typing.SupportsFloat:
+    """Verify and narrow ``val`` to ``typing.SupportsFloat``.
 
     Args:
-        val (GradValue): Candidate VJP pullback function.
+        val (OpValue | PrimalTree | typing.SupportsFloat): Candidate scalar value.
 
     Returns:
-        bool: True if callable.
+        typing.SupportsFloat: Verified float-convertible value.
     """
-    return callable(val)
+    assert isinstance(val, typing.SupportsFloat)
+    return val
 
 
-def _to_grad_float(val: TensorOrScalar | GradValue) -> float:
+def _to_grad_float(val: OpValue | PrimalTree) -> float:
     """Coerce a scalar tensor or numeric value to float.
 
     Args:
-        val (TensorOrScalar | GradValue): Scalar value.
+        val (OpValue | PrimalTree): Scalar value.
 
     Returns:
         float: Coerced float value.
     """
-    return float(val) if isinstance(val, (int, float)) else 0.0
+    return float(_as_supports_float(val))
 
 
 def check_numerical_grads(
-    f: GradValue,
-    args: GradValue,
-    options: GradCheckOptions | GradValue = None,
+    f: DifferentiableFn,
+    args: PrimalTree | Sequence[PrimalTree],
+    options: GradCheckOptions | None = None,
 ) -> None:
     """Check finite-difference numerical gradients of `f` against analytical VJP gradients.
 
     Args:
-        f (GradValue): Differentiable function under test.
-        args (GradValue): Sequence of input tensor arguments at which to evaluate `f`.
-        options (GradCheckOptions | GradValue): Optional `GradCheckOptions` specifying step size and tolerances.
+        f (DifferentiableFn): Differentiable function under test.
+        args (PrimalTree | Sequence[PrimalTree]): Input tensor argument(s) at which to evaluate `f`.
+        options (GradCheckOptions | None): Optional `GradCheckOptions` specifying step size and tolerances.
 
     Raises:
         SwitcherooError: If analytical and numerical gradients diverge beyond tolerance.
@@ -66,68 +157,72 @@ def check_numerical_grads(
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
     call_f = f
-    args_seq: list[GradValue] = list(args) if isinstance(args, Iterable) else [args]
+    args_seq: list[PrimalTree] = (
+        [as_primal_tree(x) for x in args]
+        if isinstance(args, Iterable) and not isinstance(args, Tensor)
+        else [as_primal_tree(args)]
+    )
 
     with ConfigContext(eager_mode=True):
         vjp_res = vjp(f, *args_seq)
         out, vjp_fn_cand = _unpack_pair(vjp_res)
-        assert _is_vjp_pullback(vjp_fn_cand)
-        vjp_fn: VariadicCallableProtocol = vjp_fn_cand
-        out_arr = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(out)))
+        out_arr = get_active_backend().asarray(_unwrap_data(out))
         cotangent = get_active_backend().execute_op("Ones_like", out_arr)
-        analytical_grads_raw = vjp_fn(cotangent)
-        analytical_grads: list[GradValue] = list(analytical_grads_raw) if isinstance(analytical_grads_raw, (list, tuple)) else [analytical_grads_raw]
-
-        step = opts.step
-        atol = opts.atol
-        rtol = opts.rtol
+        assert is_variadic_callable(vjp_fn_cand)
+        assert is_variadic_callable(call_f)
+        analytical_grads_raw = vjp_fn_cand(cotangent)
+        analytical_grads: list[OpValue] = (
+            list(analytical_grads_raw) if isinstance(analytical_grads_raw, (list, tuple)) else [analytical_grads_raw]
+        )
 
         for arg_idx, arg in enumerate(args_seq):
-            arg_arr = _ensure_grad_tensor(get_active_backend().array(_unwrap_data(arg), dtype="float64"))
-            numerical_grad = _ensure_grad_tensor(get_active_backend().execute_op("Zeros_like", arg_arr))
+            arg_arr = _as_mutable_ravel_array(get_active_backend().array(_unwrap_data(arg), dtype="float64"))
+            raw_num_grad = get_active_backend().execute_op("Zeros_like", arg_arr)
+            numerical_grad = _as_mutable_ravel_array(raw_num_grad)
 
             flat_arg = arg_arr.ravel()
             flat_num_grad = numerical_grad.ravel()
 
+            from ml_switcheroo_compiler.core.device import Device
+
             for i in range(flat_arg.size):
                 orig_val = flat_arg[i]
 
-                flat_arg[i] = orig_val + step
-                args_pos = list(args_seq)
-                from ml_switcheroo_compiler.core.device import Device
-
-                if isinstance(arg, Tensor):
-                    args_pos[arg_idx] = Tensor(
+                flat_arg[i] = orig_val + opts.step
+                args_pos: list[OpValue] = list(args_seq)
+                args_pos[arg_idx] = (
+                    Tensor(
                         arg_arr.reshape(arg_arr.shape).copy(),
                         TensorConfig(arg_arr.shape, DType.Float32, Device("cpu")),
                     )
-                else:
-                    args_pos[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
-                out_pos = invoke_callable(call_f, *args_pos)
-                out_pos_arr = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(out_pos)))
+                    if isinstance(arg, Tensor)
+                    else arg_arr.reshape(arg_arr.shape).copy()
+                )
+                out_pos_arr = get_active_backend().asarray(_unwrap_data(call_f(*args_pos)))
 
-                flat_arg[i] = orig_val - step
-                args_neg = list(args_seq)
-                if isinstance(arg, Tensor):
-                    args_neg[arg_idx] = Tensor(
+                flat_arg[i] = orig_val - opts.step
+                args_neg: list[OpValue] = list(args_seq)
+                args_neg[arg_idx] = (
+                    Tensor(
                         arg_arr.reshape(arg_arr.shape).copy(),
                         TensorConfig(arg_arr.shape, DType.Float32, Device("cpu")),
                     )
-                else:
-                    args_neg[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
-                out_neg = invoke_callable(call_f, *args_neg)
-                out_neg_arr = _ensure_grad_tensor(get_active_backend().asarray(_unwrap_data(out_neg)))
+                    if isinstance(arg, Tensor)
+                    else arg_arr.reshape(arg_arr.shape).copy()
+                )
+                out_neg_arr = get_active_backend().asarray(_unwrap_data(call_f(*args_neg)))
 
                 flat_arg[i] = orig_val
 
-                diff = (out_pos_arr - out_neg_arr) / (2.0 * step)
-                sum_diff = get_active_backend().execute_op("Sum", diff)
-                flat_num_grad[i] = _to_grad_float(sum_diff)
+                diff = get_active_backend().execute_op(
+                    "Divide", get_active_backend().execute_op("Subtract", out_pos_arr, out_neg_arr), 2.0 * opts.step
+                )
+                flat_num_grad[i] = _to_grad_float(get_active_backend().execute_op("Sum", diff))
 
             anal_item = analytical_grads[arg_idx]
             anal_grad = get_active_backend().asarray(_unwrap_data(anal_item))
 
-            if not get_active_backend().execute_op("Allclose", anal_grad, numerical_grad, atol=atol, rtol=rtol):
+            if not get_active_backend().execute_op("Allclose", anal_grad, raw_num_grad, atol=opts.atol, rtol=opts.rtol):
                 msg = chr(10).join(
                     [
                         f"Gradient check failed for argument {arg_idx}.",
@@ -142,20 +237,20 @@ def check_numerical_grads(
 
 
 def check_jvp_vjp_duality(
-    f: GradValue,
-    primals: Sequence[GradValue] | GradValue,
-    tangents: Sequence[GradValue] | GradValue | None = None,
-    cotangents: GradValue | None = None,
+    f: DifferentiableFn,
+    primals: Sequence[PrimalTree] | PrimalTree,
+    tangents: Sequence[PrimalTree] | PrimalTree | None = None,
+    cotangents: PrimalTree = None,
     atol: float = 1e-4,
     rtol: float = 1e-4,
 ) -> None:
     """Validate the adjoint duality identity `<J(x) · v, w> == <v, J*(x) · w>` between JVP and VJP.
 
     Args:
-        f (GradValue): Differentiable mathematical function.
-        primals (Sequence[GradValue] | GradValue): Primal input point(s).
-        tangents (Sequence[GradValue] | GradValue | None): Tangent vector(s) `v` matching `primals`.
-        cotangents (GradValue | None): Cotangent vector `w` matching the output of `f`.
+        f (DifferentiableFn): Differentiable mathematical function.
+        primals (Sequence[PrimalTree] | PrimalTree): Primal input point(s).
+        tangents (Sequence[PrimalTree] | PrimalTree | None): Tangent vector(s) `v` matching `primals`.
+        cotangents (PrimalTree): Cotangent vector `w` matching the output of `f`.
         atol (float): Absolute numerical tolerance.
         rtol (float): Relative numerical tolerance.
 
@@ -167,12 +262,13 @@ def check_jvp_vjp_duality(
 
     with ConfigContext(eager_mode=True):
         backend = get_active_backend()
-        primals_seq: list[GradValue] = list(primals) if isinstance(primals, (list, tuple)) else [primals]
-
-        out = invoke_callable(f, *primals_seq)
+        primals_seq: list[PrimalTree] = list(primals) if isinstance(primals, (list, tuple)) else [primals]
+        _callable_fn_4: OpValue = f
+        assert is_variadic_callable(_callable_fn_4)
+        out = _callable_fn_4(*primals_seq)
         out_arr = backend.asarray(_unwrap_data(out))
 
-        tangents_seq: list[GradValue] = []
+        tangents_seq: list[PrimalTree] = []
         if tangents is None:
             for p in primals_seq:
                 p_arr = backend.asarray(_unwrap_data(p))
@@ -180,11 +276,11 @@ def check_jvp_vjp_duality(
                 if isinstance(p, Tensor):
                     tangents_seq.append(Tensor(tan_arr, TensorConfig(_extract_shape(p_arr), p.dtype, p.device)))
                 else:
-                    tangents_seq.append(tan_arr)
+                    tangents_seq.append(as_primal_tree(tan_arr))
         else:
             tangents_seq = list(tangents) if isinstance(tangents, (list, tuple)) else [tangents]
 
-        cotangents_val: GradValue
+        cotangents_val: PrimalTree
         if cotangents is None:
             cotangents_arr = backend.execute_op("Ones_like", out_arr)
             if isinstance(out, Tensor):
@@ -193,32 +289,29 @@ def check_jvp_vjp_duality(
                     TensorConfig(_extract_shape(out_arr), out.dtype, out.device),
                 )
             else:
-                cotangents_val = cotangents_arr
+                cotangents_val = as_primal_tree(cotangents_arr)
         else:
             cotangents_val = cotangents
 
         jvp_pair = jvp(f, tuple(primals_seq), tuple(tangents_seq))
         _, jvp_out = _unpack_pair(jvp_pair)
-        jvp_arr = _ensure_grad_tensor(backend.asarray(_unwrap_data(jvp_out)))
-        cot_arr = _ensure_grad_tensor(backend.asarray(_unwrap_data(cotangents_val)))
+        jvp_arr = backend.asarray(_unwrap_data(jvp_out))
+        cot_arr = backend.asarray(_unwrap_data(cotangents_val))
 
-        lhs_sum = _ensure_grad_tensor(backend.execute_op("Sum", jvp_arr * cot_arr))
-        lhs = float(lhs_sum)
+        lhs = _to_grad_float(backend.execute_op("Sum", backend.execute_op("Multiply", jvp_arr, cot_arr)))
 
         vjp_pair = vjp(f, *primals_seq)
         _, vjp_fn_cand = _unpack_pair(vjp_pair)
-        assert _is_vjp_pullback(vjp_fn_cand)
-        vjp_fn: VariadicCallableProtocol = vjp_fn_cand
-        vjp_out = vjp_fn(cotangents_val)
+        _callable_fn_5: OpValue = vjp_fn_cand
+        assert is_variadic_callable(_callable_fn_5)
+        vjp_out = _callable_fn_5(cotangents_val)
         vjp_list = list(vjp_out) if isinstance(vjp_out, (list, tuple)) else [vjp_out]
 
         rhs = 0.0
         for t, v_adj in zip(tangents_seq, vjp_list):
             t_arr = backend.asarray(_unwrap_data(t))
-            v_adj_val = _unwrap_data(v_adj)
-            v_arr = _ensure_grad_tensor(backend.asarray(v_adj_val))
-            rhs_sum = _ensure_grad_tensor(backend.execute_op("Sum", t_arr * v_arr))
-            rhs += float(rhs_sum)
+            v_arr = backend.asarray(_unwrap_data(v_adj))
+            rhs += _to_grad_float(backend.execute_op("Sum", backend.execute_op("Multiply", t_arr, v_arr)))
 
         diff = abs(lhs - rhs)
         tol = atol + rtol * max(abs(lhs), abs(rhs))

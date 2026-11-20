@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import types
+
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager.utils import (
@@ -9,19 +11,20 @@ from ml_switcheroo_compiler.backends.eager.utils import (
     _to_numpy_array,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
     EagerTensorProtocol,
-    EagerValue,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_float,
-    ensure_int_list,
-    ensure_opt_str,
-    ensure_shape,
-    ensure_tensor_pair,
+    coerce_array,
+    coerce_float,
+    coerce_int_list,
+    coerce_operand_list,
+    coerce_opt_str,
+    coerce_shape,
+    coerce_str,
     global_eager_registry,
+    unpack_pair,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member, has_backend_member
-from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, adapt_backend_module
+from ml_switcheroo_compiler.core.shape import OpValue as OpValue
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
 
 from .vision_utils import (
@@ -36,7 +39,7 @@ from .vision_utils import (
 
 
 def _standardize_image_input(
-    arr: EagerValue,
+    arr: BackendArg,
     data_format: str | None,
     np_mod: BackendModuleProtocol | None = None,
 ) -> tuple[EagerTensorProtocol, bool]:
@@ -51,7 +54,7 @@ def _standardize_image_input(
         tuple[EagerTensorProtocol, bool]: 4D array and flag indicating if original input was 3D.
     """
     mod = _resolve_backend_mod(np_mod)
-    arr_t = ensure_eager_tensor(arr)
+    arr_t = mod.asarray(arr)
     if arr_t.ndim == 2:
         return arr_t[None, :, :, None], False
     if arr_t.ndim == 3:
@@ -63,7 +66,7 @@ def _standardize_image_input(
     return arr_t, False
 
 
-def _invert_homography(np_mod: BackendModuleProtocol, h_fwd: EagerValue) -> EagerValue:
+def _invert_homography(np_mod: BackendModuleProtocol | types.ModuleType | None, h_fwd: BackendArg) -> BackendArg:
     """Invert single or batched homography matrices.
 
     Args:
@@ -71,21 +74,24 @@ def _invert_homography(np_mod: BackendModuleProtocol, h_fwd: EagerValue) -> Eage
         h_fwd: 3x3 or (B, 3, 3) forward homography matrix.
 
     Returns:
-        EagerValue: Inverse homography matrix mapping destination to source.
+        BackendArg: Inverse homography matrix mapping destination to source.
     """
-    h_fwd_t = ensure_eager_tensor(h_fwd)
+    h_fwd_t = coerce_array(np_mod, h_fwd)
     if h_fwd_t.ndim == 2:
-        return ensure_eager_tensor(get_backend_member(np_mod, "linalg").inv(h_fwd_t))
-    return ensure_eager_tensor(get_backend_member(np_mod, "stack")([get_backend_member(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
+        return adapt_backend_module(np_mod).require_symbol("linalg").inv(h_fwd_t)
+    return adapt_backend_module(np_mod).require_symbol("stack")(
+        [adapt_backend_module(np_mod).require_symbol("linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])],
+        axis=0,
+    )
 
 
 def perspective_transform_eager(
-    backend_module: BackendModuleProtocol | None,
-    images: EagerValue,
-    start_points: EagerValue,
-    end_points: EagerValue,
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    images: BackendArg,
+    start_points: BackendArg,
+    end_points: BackendArg,
     config: PerspectiveConfig,
-) -> EagerValue:
+) -> BackendArg:
     """Execute the eager perspective transform eager operation on the active backend array.
 
     Args:
@@ -96,7 +102,7 @@ def perspective_transform_eager(
         config (PerspectiveConfig): Configuration parameters including interpolation and fill.
 
     Returns:
-        EagerValue: Transformed images matching input backend representation.
+        BackendArg: Transformed images matching input backend representation.
     """
     if images is None:
         return 0
@@ -106,7 +112,7 @@ def perspective_transform_eager(
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = ensure_opt_str(get_backend_member(config, "data_format", None))
+    data_format = coerce_opt_str(adapt_backend_module(config).get_symbol("data_format", None))
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     out: EagerTensorProtocol
@@ -115,7 +121,7 @@ def perspective_transform_eager(
     else:
         h_fwd = _compute_perspective_matrix(np_mod, start_points, end_points)
         h_inv = _invert_homography(np_mod, h_fwd)
-        out = ensure_eager_tensor(_apply_perspective_batch(np_mod, arr, h_inv, config))
+        out = np_mod.asarray(_apply_perspective_batch(np_mod, arr, h_inv, config))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))
@@ -125,41 +131,46 @@ def perspective_transform_eager(
     return _from_numpy_array(backend_module, out, name, images)
 
 
-def _apply_elastic_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, config: TransformInterpolationConfig) -> EagerValue:
+def _apply_elastic_batch(
+    np_mod: BackendModuleProtocol | types.ModuleType | None,
+    imgs: BackendArg,
+    config: TransformInterpolationConfig | None,
+) -> BackendArg:
     """Apply elastic coordinates across a batch.
 
     Args:
         np_mod: NumPy-compatible execution module.
         imgs: Input batched images array of shape (B, H, W, C).
-        config (TransformInterpolationConfig): Configuration containing target coordinates and order.
+        config (TransformInterpolationConfig | None): Configuration containing target coordinates and order.
 
     Returns:
-        EagerValue: Warped batched images array.
+        BackendArg: Warped batched images array, or `0` on `None` inputs.
     """
     if imgs is None or config is None:
         return 0
 
-    np_mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = ensure_shape(get_backend_member(imgs, "shape"))
-    out = get_backend_member(np_mod, "zeros_like")(imgs)
+    mod = _resolve_backend_mod(np_mod)
+    imgs_arr = coerce_array(mod, imgs)
+    b_count, _, _, c_count = coerce_shape(adapt_backend_module(imgs).require_symbol("shape"))
+    out = adapt_backend_module(mod).require_symbol("zeros_like")(imgs)
 
-    y_coords = ensure_eager_tensor(config.new_y)
-    x_coords = ensure_eager_tensor(config.new_x)
+    y_coords = coerce_array(mod, config.new_y)
+    x_coords = coerce_array(mod, config.new_x)
 
     for b in range(b_count):
-        y_idx = min(int(b), int(y_coords.shape[0]) - 1) if get_backend_member(y_coords, "ndim", 2) == 3 else 0
-        x_idx = min(int(b), int(x_coords.shape[0]) - 1) if get_backend_member(x_coords, "ndim", 2) == 3 else 0
-        y_b = y_coords[y_idx] if get_backend_member(y_coords, "ndim", 2) == 3 else y_coords
-        x_b = x_coords[x_idx] if get_backend_member(x_coords, "ndim", 2) == 3 else x_coords
+        y_idx = min(int(b), int(y_coords.shape[0]) - 1) if y_coords.ndim == 3 else 0
+        x_idx = min(int(b), int(x_coords.shape[0]) - 1) if x_coords.ndim == 3 else 0
+        y_b = y_coords[y_idx] if y_coords.ndim == 3 else y_coords
+        x_b = x_coords[x_idx] if x_coords.ndim == 3 else x_coords
         for c in range(c_count):
             out[b, :, :, c] = _np_map_coordinates(
-                np_mod,
-                ensure_eager_tensor(imgs)[b, :, :, c],
+                mod,
+                imgs_arr[b, :, :, c],
                 (y_b, x_b),
                 order=config.order,
                 fill_value=config.fill_value,
             )
-    return ensure_eager_tensor(out)
+    return out
 
 
 class ElasticGridContext(pydantic.BaseModel):
@@ -175,21 +186,21 @@ class ElasticGridContext(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    np_mod: EagerValue
+    np_mod: types.ModuleType | BackendModuleProtocol | None = None
     H: int
     W: int
     B: int
-    disp: EagerValue
+    disp: BackendArg
 
 
-def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
+def _compute_elastic_grid(ctx: ElasticGridContext | None) -> BackendArg:
     """Execute the eager compute elastic grid operation on the active backend array.
 
     Args:
-        ctx (ElasticGridContext): Elastic distortion context.
+        ctx (ElasticGridContext | None): Elastic distortion context.
 
     Returns:
-        EagerValue: Tuple of (new_y, new_x) distorted sampling coordinates.
+        BackendArg: Tuple of (new_y, new_x) distorted sampling coordinates.
     """
     if ctx is None:
         return 0
@@ -198,16 +209,22 @@ def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
     h = ctx.H
     w = ctx.W
 
-    y_grid, x_grid = get_backend_member(np_mod, "meshgrid")(
-        get_backend_member(np_mod, "arange")(h, dtype=get_backend_member(np_mod, "float32")),
-        get_backend_member(np_mod, "arange")(w, dtype=get_backend_member(np_mod, "float32")),
+    y_grid, x_grid = adapt_backend_module(np_mod).require_symbol("meshgrid")(
+        adapt_backend_module(np_mod).require_symbol("arange")(
+            h, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+        ),
+        adapt_backend_module(np_mod).require_symbol("arange")(
+            w, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+        ),
         indexing="ij",
     )
 
     if ctx.disp is None or (isinstance(ctx.disp, (int, float)) and ctx.disp == 0):
         return (y_grid, x_grid)
 
-    disp = get_backend_member(np_mod, "asarray")(ctx.disp, dtype=get_backend_member(np_mod, "float32"))
+    disp = adapt_backend_module(np_mod).require_symbol("asarray")(
+        ctx.disp, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+    )
     if disp.ndim == 3:
         if disp.shape[0] == 2:
             dy, dx = disp[0], disp[1]
@@ -219,17 +236,24 @@ def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
         else:
             dy, dx = disp[..., 0], disp[..., 1]
     else:
-        dy, dx = get_backend_member(np_mod, "zeros")((h, w), dtype=get_backend_member(np_mod, "float32")), get_backend_member(np_mod, "zeros")((h, w), dtype=get_backend_member(np_mod, "float32"))
+        dy, dx = (
+            adapt_backend_module(np_mod).require_symbol("zeros")(
+                (h, w), dtype=adapt_backend_module(np_mod).require_symbol("float32")
+            ),
+            adapt_backend_module(np_mod).require_symbol("zeros")(
+                (h, w), dtype=adapt_backend_module(np_mod).require_symbol("float32")
+            ),
+        )
 
     return (y_grid + dy, x_grid + dx)
 
 
 def elastic_transform_eager(
-    backend_module: BackendModuleProtocol | None,
-    images: EagerValue,
-    displacement: EagerValue,
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    images: BackendArg,
+    displacement: BackendArg,
     config: ElasticConfig,
-) -> EagerValue:
+) -> BackendArg:
     """Execute the eager elastic transform eager operation on the active backend array.
 
     Args:
@@ -239,7 +263,7 @@ def elastic_transform_eager(
         config (ElasticConfig): Configuration containing interpolation and fill options.
 
     Returns:
-        EagerValue: Elastically distorted images.
+        BackendArg: Elastically distorted images.
     """
     if images is None:
         return 0
@@ -249,7 +273,7 @@ def elastic_transform_eager(
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = ensure_opt_str(get_backend_member(config, "data_format", None))
+    data_format = coerce_opt_str(adapt_backend_module(config).get_symbol("data_format", None))
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     b, h, w, _ = arr.shape
@@ -257,15 +281,15 @@ def elastic_transform_eager(
     if displacement is None:
         out = arr.copy()
     else:
-        interp_name = get_backend_member(config, "interpolation", "bilinear")
+        interp_name = coerce_str(adapt_backend_module(config).get_symbol("interpolation", "bilinear"))
         order = _get_resize_interpolation_order(interp_name)
-        fill_val = float(get_backend_member(config, "fill_value", 0.0))
+        fill_val = coerce_float(adapt_backend_module(config).get_symbol("fill_value", 0.0))
 
         ctx = ElasticGridContext(np_mod=np_mod, H=h, W=w, B=b, disp=displacement)
-        elastic_grid = ensure_tensor_pair(_compute_elastic_grid(ctx))
+        elastic_grid = unpack_pair(_compute_elastic_grid(ctx))
         new_y, new_x = elastic_grid[0], elastic_grid[1]
         cfg = TransformInterpolationConfig(order=order, fill_value=fill_val, new_y=new_y, new_x=new_x)
-        out = ensure_eager_tensor(_apply_elastic_batch(np_mod, arr, cfg))
+        out = np_mod.asarray(_apply_elastic_batch(np_mod, arr, cfg))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))
@@ -291,15 +315,17 @@ def _get_resize_interpolation_order(interpolation: str) -> int:
     return 1
 
 
-def _compute_resize_grid(np_mod: BackendModuleProtocol, ctx: ResizeContext | None) -> EagerValue:
+def _compute_resize_grid(
+    np_mod: BackendModuleProtocol | types.ModuleType | None, ctx: ResizeContext | None
+) -> BackendArg:
     """Execute the eager compute resize grid operation on the active backend array.
 
     Args:
         np_mod: NumPy-compatible execution module.
-        ctx (ResizeContext): Spatial resizing context.
+        ctx (ResizeContext | None): Spatial resizing context.
 
     Returns:
-        EagerValue: Tuple of (y_grid, x_grid) continuous coordinates.
+        BackendArg: Tuple of (y_grid, x_grid) continuous coordinates.
     """
     if ctx is None:
         return 0
@@ -308,27 +334,63 @@ def _compute_resize_grid(np_mod: BackendModuleProtocol, ctx: ResizeContext | Non
     h, w = ctx.H, ctx.W
     new_h, new_w = ctx.new_H, ctx.new_W
     align_corners = ctx.align_corners
-    half_pixel = get_backend_member(ctx, "half_pixel_centers", False)
+    half_pixel = adapt_backend_module(ctx).get_symbol("half_pixel_centers", False)
 
     if align_corners:
         scale_y = (h - 1.0) / max(new_h - 1.0, 1.0) if new_h > 1 else 0.0
-        y_coords = get_backend_member(np_mod, "arange")(new_h, dtype=get_backend_member(np_mod, "float32")) * scale_y
+        y_coords = (
+            adapt_backend_module(np_mod).require_symbol("arange")(
+                new_h, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+            )
+            * scale_y
+        )
         scale_x = (w - 1.0) / max(new_w - 1.0, 1.0) if new_w > 1 else 0.0
-        x_coords = get_backend_member(np_mod, "arange")(new_w, dtype=get_backend_member(np_mod, "float32")) * scale_x
+        x_coords = (
+            adapt_backend_module(np_mod).require_symbol("arange")(
+                new_w, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+            )
+            * scale_x
+        )
     else:
         scale_y = float(h) / float(new_h)
         scale_x = float(w) / float(new_w)
         if half_pixel:
-            y_coords = (get_backend_member(np_mod, "arange")(new_h, dtype=get_backend_member(np_mod, "float32")) + 0.5) * scale_y - 0.5
-            x_coords = (get_backend_member(np_mod, "arange")(new_w, dtype=get_backend_member(np_mod, "float32")) + 0.5) * scale_x - 0.5
+            y_coords = (
+                adapt_backend_module(np_mod).require_symbol("arange")(
+                    new_h, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+                )
+                + 0.5
+            ) * scale_y - 0.5
+            x_coords = (
+                adapt_backend_module(np_mod).require_symbol("arange")(
+                    new_w, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+                )
+                + 0.5
+            ) * scale_x - 0.5
         else:
-            y_coords = get_backend_member(np_mod, "arange")(new_h, dtype=get_backend_member(np_mod, "float32")) * scale_y
-            x_coords = get_backend_member(np_mod, "arange")(new_w, dtype=get_backend_member(np_mod, "float32")) * scale_x
+            y_coords = (
+                adapt_backend_module(np_mod).require_symbol("arange")(
+                    new_h, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+                )
+                * scale_y
+            )
+            x_coords = (
+                adapt_backend_module(np_mod).require_symbol("arange")(
+                    new_w, dtype=adapt_backend_module(np_mod).require_symbol("float32")
+                )
+                * scale_x
+            )
 
-    return ensure_eager_tensor(get_backend_member(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
+    return adapt_backend_module(np_mod).require_symbol("meshgrid")(y_coords, x_coords, indexing="ij")
 
 
-def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: EagerValue, coords: EagerValue, order: int) -> EagerValue:
+def _apply_resize_batch(
+    np_mod: BackendModuleProtocol | types.ModuleType | None,
+    imgs: BackendArg,
+    out: BackendArg,
+    coords: BackendArg,
+    order: int,
+) -> BackendArg:
     """Apply the resize operation across a batch of images using interpolation.
 
     Args:
@@ -339,22 +401,32 @@ def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: Ea
         order (int): Spline interpolation order (0, 1, or 3).
 
     Returns:
-        EagerValue: Resized output array.
+        BackendArg: Resized output array, or `0` on `None` inputs.
     """
     if imgs is None or coords is None:
         return 0
 
     mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = ensure_shape(get_backend_member(imgs, "shape"))
-    y_coords, x_coords = ensure_tensor_pair(coords)
 
-    target_out: EagerTensorProtocol = ensure_eager_tensor(out) if out is not None and (has_backend_member(out, "shape") or isinstance(out, list)) else get_backend_member(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=get_backend_member(imgs, "dtype"))
+    imgs_arr = coerce_array(mod, imgs)
+    b_count, _, _, c_count = coerce_shape(adapt_backend_module(imgs).require_symbol("shape"))
+    y_coords, x_coords = unpack_pair(coords)
+    y_shape = coerce_shape(adapt_backend_module(y_coords).require_symbol("shape"))
+
+    target_out = (
+        mod.asarray(out)
+        if out is not None and (adapt_backend_module(out).has_symbol("shape") or isinstance(out, list))
+        else adapt_backend_module(mod).require_symbol("zeros")(
+            (b_count, y_shape[0], y_shape[1], c_count),
+            dtype=adapt_backend_module(imgs).require_symbol("dtype"),
+        )
+    )
 
     for b in range(b_count):
         for c in range(c_count):
             target_out[b, :, :, c] = _np_map_coordinates(
                 mod,
-                ensure_eager_tensor(imgs)[b, :, :, c],
+                imgs_arr[b, :, :, c],
                 (y_coords, x_coords),
                 order=order,
                 fill_value=0.0,
@@ -364,8 +436,8 @@ def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: Ea
 
 def _extract_upsample_size(
     spatial_shape: tuple[int, ...],
-    size: EagerValue,
-    scale_factor: EagerValue,
+    size: BackendArg,
+    scale_factor: BackendArg,
 ) -> tuple[int, ...]:
     """Calculate target spatial dimensions from size or scale_factor arguments.
 
@@ -381,22 +453,25 @@ def _extract_upsample_size(
     if size is not None:
         if isinstance(size, int):
             return (size,) * dim_count
-        return tuple(int(x) for x in ensure_int_list(size))
+        return tuple(int(x) for x in coerce_int_list(size))
 
     if scale_factor is not None:
         if isinstance(scale_factor, (int, float)):
             return tuple(int(dim * scale_factor) for dim in spatial_shape)
-        return tuple(int(dim * float(ensure_float(factor))) for dim, factor in zip(spatial_shape, ensure_eager_list(scale_factor)))
+        return tuple(
+            int(dim * float(coerce_float(factor)))
+            for dim, factor in zip(spatial_shape, coerce_operand_list(scale_factor))
+        )
 
     return spatial_shape
 
 
 def _upsample_1d_linear(
-    x: EagerValue,
+    x: BackendArg,
     target_len: int,
     align_corners: bool = False,
     np_mod: BackendModuleProtocol | None = None,
-) -> EagerValue:
+) -> BackendArg:
     """Upsample 1D tensor along innermost dimension using linear interpolation.
 
     Args:
@@ -406,12 +481,12 @@ def _upsample_1d_linear(
         np_mod: Optional execution backend module.
 
     Returns:
-        EagerValue: Upsampled 1D array of shape (B, C, target_len).
+        BackendArg: Upsampled 1D array of shape (B, C, target_len).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, orig_len = ensure_shape(get_backend_member(x, "shape"))
+    b, c, orig_len = coerce_shape(adapt_backend_module(x).require_symbol("shape"))
     if orig_len == target_len:
-        return ensure_eager_tensor(get_backend_member(x, "copy")())
+        return adapt_backend_module(x).require_symbol("copy")()
 
     if align_corners:
         scale = (orig_len - 1.0) / max(target_len - 1.0, 1.0) if target_len > 1 else 0.0
@@ -424,19 +499,20 @@ def _upsample_1d_linear(
     i1 = mod.clip(i0 + 1, 0, orig_len - 1)
     w = mod.clip(src - i0, 0.0, 1.0)
 
-    out = mod.zeros((b, c, target_len), dtype=get_backend_member(x, "dtype"))
+    x_arr = coerce_array(mod, x)
+    out = mod.zeros((b, c, target_len), dtype=adapt_backend_module(x).require_symbol("dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
-            out[b_idx, c_idx] = (1.0 - w) * ensure_eager_tensor(x)[b_idx, c_idx, i0] + w * ensure_eager_tensor(x)[b_idx, c_idx, i1]
+            out[b_idx, c_idx] = (1.0 - w) * x_arr[b_idx, c_idx, i0] + w * x_arr[b_idx, c_idx, i1]
     return out
 
 
 def _upsample_3d_trilinear(
-    x: EagerValue,
+    x: BackendArg,
     target_shape: tuple[int, int, int],
     align_corners: bool = False,
     np_mod: BackendModuleProtocol | None = None,
-) -> EagerValue:
+) -> BackendArg:
     """Upsample 3D tensor across spatial dimensions using trilinear interpolation.
 
     Args:
@@ -446,13 +522,15 @@ def _upsample_3d_trilinear(
         np_mod: Optional execution backend module.
 
     Returns:
-        EagerValue: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
+        BackendArg: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, d, h, w = ensure_shape(get_backend_member(x, "shape"))
+    b, c, d, h, w = coerce_shape(adapt_backend_module(x).require_symbol("shape"))
     td, th, tw = target_shape
 
-    def _get_coords(orig_len: int, target_len: int) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
+    def _get_coords(
+        orig_len: int, target_len: int
+    ) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
         """Compute coordinate indices and linear interpolation weights for a single dimension.
 
         Args:
@@ -477,10 +555,11 @@ def _upsample_3d_trilinear(
     h0, h1, wh = _get_coords(h, th)
     w0, w1, ww = _get_coords(w, tw)
 
-    out = mod.zeros((b, c, td, th, tw), dtype=get_backend_member(x, "dtype"))
+    x_arr = coerce_array(mod, x)
+    out = mod.zeros((b, c, td, th, tw), dtype=adapt_backend_module(x).require_symbol("dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
-            vol = ensure_eager_tensor(x)[b_idx, c_idx]
+            vol = x_arr[b_idx, c_idx]
             for z in range(td):
                 for y in range(th):
                     c000 = vol[d0[z], h0[y], w0]
@@ -505,7 +584,9 @@ def _upsample_3d_trilinear(
 
 
 @global_eager_registry.register("UpsampleNearest")
-def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _upsample_nearest_eager(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate _upsample_nearest_eager operation across 1D, 2D, or 3D tensors.
 
     Args:
@@ -514,7 +595,7 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
         **kwargs: Keyword arguments containing size, scale_factor, and data_format.
 
     Returns:
-        EagerValue: Upsampled tensor using nearest-neighbor interpolation.
+        BackendArg: Upsampled tensor using nearest-neighbor interpolation.
     """
     if not args or args[0] is None:
         return 0
@@ -539,7 +620,7 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
         scale = float(orig_len) / float(t_len)
         src = (np_mod.arange(t_len, dtype=np_mod.float32) + 0.5) * scale - 0.5
         idx = np_mod.clip(np_mod.round(src).astype(int), 0, orig_len - 1)
-        out: EagerValue = arr[:, :, idx]
+        out: BackendArg = arr[:, :, idx]
     elif len(spatial_shape) == 2:
         # Channels-first to channels-last for 2D resize helper
         arr_last = np_mod.transpose(arr, (0, 2, 3, 1))
@@ -552,7 +633,7 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
             half_pixel_centers=True,
         )
         coords = _compute_resize_grid(np_mod, ctx)
-        out_last: EagerValue = np_mod.zeros(
+        out_last: BackendArg = np_mod.zeros(
             (b, target_spatial[0], target_spatial[1], c),
             dtype=arr.dtype,
         )
@@ -562,9 +643,15 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
         td, th, tw = target_spatial
         d, h, w = spatial_shape
         sd, sh, sw = float(d) / float(td), float(h) / float(th), float(w) / float(tw)
-        id_z = np_mod.clip(np_mod.round((np_mod.arange(td, dtype=np_mod.float32) + 0.5) * sd - 0.5).astype(int), 0, d - 1)
-        id_y = np_mod.clip(np_mod.round((np_mod.arange(th, dtype=np_mod.float32) + 0.5) * sh - 0.5).astype(int), 0, h - 1)
-        id_x = np_mod.clip(np_mod.round((np_mod.arange(tw, dtype=np_mod.float32) + 0.5) * sw - 0.5).astype(int), 0, w - 1)
+        id_z = np_mod.clip(
+            np_mod.round((np_mod.arange(td, dtype=np_mod.float32) + 0.5) * sd - 0.5).astype(int), 0, d - 1
+        )
+        id_y = np_mod.clip(
+            np_mod.round((np_mod.arange(th, dtype=np_mod.float32) + 0.5) * sh - 0.5).astype(int), 0, h - 1
+        )
+        id_x = np_mod.clip(
+            np_mod.round((np_mod.arange(tw, dtype=np_mod.float32) + 0.5) * sw - 0.5).astype(int), 0, w - 1
+        )
         out = arr[:, :, id_z[:, None, None], id_y[None, :, None], id_x[None, None, :]]
     else:
         out = arr.copy()
@@ -575,7 +662,9 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
 @global_eager_registry.register("UpsampleBilinear")
 @global_eager_registry.register("UpsampleTrilinear")
 @global_eager_registry.register("UpsampleLinear")
-def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _upsample_linear_eager(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate linear, bilinear, or trilinear upsampling across spatial dimensions.
 
     Args:
@@ -584,7 +673,7 @@ def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerVa
         **kwargs: Keyword arguments containing size, scale_factor, and align_corners.
 
     Returns:
-        EagerValue: Linearly interpolated upsampled tensor.
+        BackendArg: Linearly interpolated upsampled tensor.
     """
     if not args or args[0] is None:
         return 0
@@ -604,7 +693,7 @@ def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerVa
     target_spatial = _extract_upsample_size(spatial_shape, size, scale_factor)
 
     if len(spatial_shape) == 1:
-        out: EagerValue = _upsample_1d_linear(arr, target_spatial[0], align_corners=align_corners, np_mod=np_mod)
+        out: BackendArg = _upsample_1d_linear(arr, target_spatial[0], align_corners=align_corners, np_mod=np_mod)
     elif len(spatial_shape) == 2:
         arr_last = np_mod.transpose(arr, (0, 2, 3, 1))
         ctx = ResizeContext(
@@ -616,7 +705,7 @@ def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerVa
             half_pixel_centers=not align_corners,
         )
         coords = _compute_resize_grid(np_mod, ctx)
-        out_last: EagerValue = np_mod.zeros(
+        out_last: BackendArg = np_mod.zeros(
             (b, target_spatial[0], target_spatial[1], c),
             dtype=arr.dtype,
         )
@@ -636,7 +725,9 @@ def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerVa
 
 
 @global_eager_registry.register("UpsampleBicubic")
-def _upsample_bicubic_eager(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _upsample_bicubic_eager(
+    backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
+) -> BackendArg:
     """Evaluate 2D bicubic spatial upsampling using Catmull-Rom cubic splines.
 
     Args:
@@ -645,7 +736,7 @@ def _upsample_bicubic_eager(backend_module: BackendModuleProtocol, *args: EagerV
         **kwargs: Keyword arguments containing size, scale_factor, and align_corners.
 
     Returns:
-        EagerValue: Bicubically interpolated upsampled tensor.
+        BackendArg: Bicubically interpolated upsampled tensor.
     """
     if not args or args[0] is None:
         return 0
@@ -674,7 +765,7 @@ def _upsample_bicubic_eager(backend_module: BackendModuleProtocol, *args: EagerV
         half_pixel_centers=not align_corners,
     )
     coords = _compute_resize_grid(np_mod, ctx)
-    out_last: EagerValue = np_mod.zeros((b, target_spatial[0], target_spatial[1], c), dtype=arr.dtype)
+    out_last: BackendArg = np_mod.zeros((b, target_spatial[0], target_spatial[1], c), dtype=arr.dtype)
     out_last = _apply_resize_batch(np_mod, arr_last, out_last, coords, order=3)
     out = np_mod.transpose(out_last, (0, 3, 1, 2))
 
@@ -682,11 +773,11 @@ def _upsample_bicubic_eager(backend_module: BackendModuleProtocol, *args: EagerV
 
 
 def resize_eager(
-    backend_module: BackendModuleProtocol,
-    images: EagerValue,
+    backend_module: BackendModuleProtocol | types.ModuleType | None,
+    images: BackendArg,
     size: tuple[int, int],
     config: ResizeOptions,
-) -> EagerValue:
+) -> BackendArg:
     """Execute the eager resize eager operation on the active backend array.
 
     Args:
@@ -696,7 +787,7 @@ def resize_eager(
         config (ResizeOptions): Configuration options for interpolation and corner alignment.
 
     Returns:
-        EagerValue: Resized images matching input backend representation.
+        BackendArg: Resized images matching input backend representation.
     """
     if images is None or size is None:
         return 0
@@ -706,16 +797,16 @@ def resize_eager(
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = ensure_opt_str(get_backend_member(config, "data_format", None))
+    data_format = coerce_opt_str(adapt_backend_module(config).get_symbol("data_format", None))
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     b, h, w, c = arr.shape
     new_h, new_w = size
 
-    interp_name = get_backend_member(config, "interpolation", "bilinear")
+    interp_name = coerce_str(adapt_backend_module(config).get_symbol("interpolation", "bilinear"))
     order = _get_resize_interpolation_order(interp_name)
-    align_corners = bool(get_backend_member(config, "align_corners", False))
-    half_pixel = bool(get_backend_member(config, "half_pixel_centers", False))
+    align_corners = bool(adapt_backend_module(config).get_symbol("align_corners", False))
+    half_pixel = bool(adapt_backend_module(config).get_symbol("half_pixel_centers", False))
 
     ctx = ResizeContext(
         H=h,
@@ -727,7 +818,7 @@ def resize_eager(
     )
     coords = _compute_resize_grid(np_mod, ctx)
     out: EagerTensorProtocol = np_mod.zeros((b, new_h, new_w, c), dtype=arr.dtype)
-    out = ensure_eager_tensor(_apply_resize_batch(np_mod, arr, out, coords, order=order))
+    out = np_mod.asarray(_apply_resize_batch(np_mod, arr, out, coords, order=order))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))

@@ -6,14 +6,10 @@ import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.jax.distributed_collectives import (
-    jax_all_gather,
-    jax_all_reduce,
-    jax_broadcast,
-)
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.backends.jax.distributed_collectives import jax_all_gather, jax_all_reduce, jax_broadcast
 from ml_switcheroo_compiler.backends.jax.eager import execute_op as jax_execute_op
 from ml_switcheroo_compiler.backends.jax.profiler import JAXProfiler, _sync_jax_result
 from ml_switcheroo_compiler.backends.jax.profiler import _get_process_memory_mb as jax_get_mem
@@ -23,15 +19,10 @@ from ml_switcheroo_compiler.backends.mlx.profiler import (
     _prepare_mlx_inputs,
     _sync_mlx_result,
 )
-from ml_switcheroo_compiler.backends.mlx.profiler import (
-    _get_process_memory_mb as mlx_get_mem,
-)
-from ml_switcheroo_compiler.backends.numpy.profiler import (
-    NumpyProfiler,
-)
-from ml_switcheroo_compiler.backends.numpy.profiler import (
-    _get_process_memory_mb as np_get_mem,
-)
+from ml_switcheroo_compiler.backends.mlx.profiler import _get_process_memory_mb as mlx_get_mem
+from ml_switcheroo_compiler.backends.numba.profiler import NumbaProfiler
+from ml_switcheroo_compiler.backends.numpy.profiler import NumpyProfiler
+from ml_switcheroo_compiler.backends.numpy.profiler import _get_process_memory_mb as np_get_mem
 from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
     pytorch_all_gather,
     pytorch_all_reduce,
@@ -39,14 +30,10 @@ from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
     pytorch_reduce_scatter,
 )
 from ml_switcheroo_compiler.backends.pytorch.eager import execute_op as torch_execute_op
-from ml_switcheroo_compiler.backends.pytorch.profiler import (
-    PyTorchProfiler,
-)
-from ml_switcheroo_compiler.backends.pytorch.profiler import (
-    _get_process_memory_mb as torch_get_mem,
-)
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_tensor_dict, install_profiler_backend_stubs
+from ml_switcheroo_compiler.backends.pytorch.profiler import PyTorchProfiler
+from ml_switcheroo_compiler.backends.pytorch.profiler import _get_process_memory_mb as torch_get_mem
+from ml_switcheroo_compiler.backends.sparse.profiler import SparseProfiler
+from tests.testing_utils import EagerTensorProtocol, install_profiler_backend_stubs
 
 try:
     import jax
@@ -62,7 +49,7 @@ except Exception:
     torch = MagicMock()
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg, EagerTensorProtocol
 
 
 import pytest
@@ -77,10 +64,12 @@ def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     import sys
 
+    import tests.test_backend_profilers_and_collectives as _self_mod
+
     install_profiler_backend_stubs(monkeypatch)
-    monkeypatch.setattr(sys.modules[__name__], "torch", sys.modules["torch"])
-    monkeypatch.setattr(sys.modules[__name__], "jax", sys.modules["jax"])
-    monkeypatch.setattr(sys.modules[__name__], "jnp", sys.modules["jax.numpy"])
+    monkeypatch.setattr(_self_mod, "torch", sys.modules["torch"])
+    monkeypatch.setattr(_self_mod, "jax", sys.modules["jax"])
+    monkeypatch.setattr(_self_mod, "jnp", sys.modules["jax.numpy"])
 
 
 def test_numpy_profiler_branches() -> None:
@@ -119,7 +108,8 @@ def test_jax_profiler_branches() -> None:
         mem = jax_get_mem()
         assert mem > 0.0
 
-    # 2. _sync_jax_result with dictionary whose value has no block_until_ready (line 53-54), single array (line 55), and non-block object (line 56->exit)
+    # 2. _sync_jax_result with dictionary whose value has no block_until_ready (line 53-54), single array (line 55),
+    # and non-block object (line 56->exit)
     _sync_jax_result({"res": 123.0})
     _sync_jax_result(123.0)
     mock_arr = MagicMock()
@@ -234,7 +224,9 @@ def test_pytorch_profiler_branches() -> None:
     g_ops.nodes["x"] = IRNode(id="x", op_type="Input")
     g_ops.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "x"])
     g_ops.outputs = ["add"]
-    with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"add": torch.tensor([2.0])}):
+    with patch(
+        "ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"add": torch.tensor([2.0])}
+    ):
         res_ops = profiler.profile_graph(g_ops, inputs={"x": [1.0]}, num_iters=1, warmup_iters=1)
         assert "latency_ms" in res_ops
 
@@ -242,15 +234,15 @@ def test_pytorch_profiler_branches() -> None:
 def test_pytorch_eager_unresolved_mapping_branch() -> None:
     """Test pytorch/eager.py branch 474->476 when resolve_target_api returns None."""
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
-        out = ensure_callable(torch_execute_op)(None, "Relu", ensure_callable(torch.tensor)([-1.0, 2.0]))
-        assert isinstance(ensure_eager_tensor(out), torch.Tensor)
+        out = torch_execute_op(None, "Relu", torch.tensor([-1.0, 2.0]))
+        assert isinstance(out, torch.Tensor)
 
 
 def test_jax_eager_unresolved_mapping_branch() -> None:
     """Test jax/eager.py branch 391->393 when resolve_target_api returns None."""
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
-        out = ensure_callable(jax_execute_op)(None, "Sin", ensure_callable(jnp.array)([0.0]))
-        assert isinstance(ensure_eager_tensor(out), jax.Array)
+        out = jax_execute_op(None, "Sin", jnp.array([0.0]))
+        assert isinstance(out, jax.Array)
 
 
 def test_pytorch_distributed_collectives() -> None:
@@ -361,7 +353,7 @@ def test_backends_pytorch_distributed_collectives_branches() -> None:
         pytorch_reduce_scatter,
     )
 
-    if ensure_eager_tensor(torch) is not None and dist is not None:
+    if torch is not None and dist is not None:
         t = torch.tensor([1.0, 2.0])
         with patch.object(dist, "is_available", return_value=True):
             with patch.object(dist, "is_initialized", return_value=True):
@@ -394,23 +386,36 @@ def test_backends_pytorch_distributed_collectives_branches() -> None:
             assert pytorch_broadcast("raw_tensor") == "raw_tensor"
 
     import builtins
+    import types
+    from collections.abc import Mapping, Sequence
 
     orig_import = builtins.__import__
 
-    def mock_import(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    def mock_import(
+        name: str,
+        globals_map: Mapping[str, BackendArg] | None = None,
+        locals_map: Mapping[str, BackendArg] | None = None,
+        fromlist: Sequence[str] = (),
+        level: int = 0,
+    ) -> types.ModuleType:
         """Test function mock_import.
 
         Args:
             name: Test parameter `name`.
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
+            globals_map: Test parameter `globals_map`.
+            locals_map: Test parameter `locals_map`.
+            fromlist: Test parameter `fromlist`.
+            level: Test parameter `level`.
 
         Returns:
-            EagerValue: Computed output value from `mock_import`.
+            types.ModuleType: Computed output value from `mock_import`.
+
+        Raises:
+            ImportError: When raised during `mock_import` (torch missing).
         """
         if name in ("torch", "torch.distributed"):
             raise ImportError("torch missing")
-        return ensure_callable(orig_import)(name, *args, **kwargs)
+        return orig_import(name, globals_map, locals_map, fromlist, level)
 
     with patch("builtins.__import__", side_effect=mock_import):
         assert pytorch_all_reduce("raw_tensor") == "raw_tensor"
@@ -459,7 +464,7 @@ def test_edge_profiler_branches() -> None:
     g_inputs = IRGraph()
     g_inputs.nodes["x"] = IRNode(id="x", op_type="Input")
     inputs_payload = {"x": [1.0, 2.0]}
-    prep = ensure_callable(profiler._prepare_inputs)(g_inputs, inputs_payload)
+    prep = profiler._prepare_inputs(g_inputs, inputs_payload)
     assert prep == [[1.0, 2.0]]
 
     # _prepare_inputs when graph has no nodes or input_keys do not match
@@ -485,7 +490,20 @@ def test_edge_profiler_branches() -> None:
     assert "latency_ms" in res_no_ops
 
 
-def _test_numba_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestNumbaProfilerBranchesState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_numba_profiler_branches` split helpers."""
+
+    arr_in: np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+    ]
+    g: LogicalGraph
+    g_both: LogicalGraph
+    g_ops: LogicalGraph
+    profiler: NumbaProfiler | SparseProfiler
+
+
+def _test_numba_profiler_branches_part_1(_state: _TestNumbaProfilerBranchesState) -> None:
     """Execute part 1 of test_numba_profiler_branches.
 
     Args:
@@ -494,10 +512,7 @@ def _test_numba_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol])
     import importlib
 
     from ml_switcheroo_compiler.backends.numba import profiler as nb_prof_mod
-    from ml_switcheroo_compiler.backends.numba.profiler import (
-        NumbaProfiler,
-        _get_process_memory_mb,
-    )
+    from ml_switcheroo_compiler.backends.numba.profiler import NumbaProfiler, _get_process_memory_mb
 
     # 1. Platform checks
     with patch("sys.platform", "darwin"):
@@ -509,7 +524,7 @@ def _test_numba_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol])
     # 2. ImportError branch when numba is not installed
     with patch.dict("sys.modules", {"numba": None}):
         importlib.reload(nb_prof_mod)
-        assert ensure_eager_tensor(ensure_eager_tensor(nb_prof_mod).numba) is None
+        assert nb_prof_mod.numba is None
     importlib.reload(nb_prof_mod)
 
     profiler = NumbaProfiler()
@@ -525,12 +540,12 @@ def _test_numba_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol])
     g_both = IRGraph()
     g_both.nodes["x"] = IRNode(id="x", op_type="Input")
     g_both.nodes["y"] = IRNode(id="y", op_type="Input")
-    _state.update(ensure_tensor_dict({"NumbaProfiler": NumbaProfiler, "_get_process_memory_mb": _get_process_memory_mb, "arr_in": arr_in, "g": g}))
-    _state.update(ensure_tensor_dict({"g_both": g_both, "importlib": importlib, "mem": mem, "nb_prof_mod": nb_prof_mod}))
-    _state.update(ensure_tensor_dict({"prep": prep, "profiler": profiler}))
+    _state.update({"arr_in": arr_in, "g": g})
+    _state.update({"g_both": g_both})
+    _state.update({"profiler": profiler})
 
 
-def _test_numba_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_numba_profiler_branches_part_2(_state: _TestNumbaProfilerBranchesState) -> None:
     """Execute part 2 of test_numba_profiler_branches.
 
     Args:
@@ -538,9 +553,9 @@ def _test_numba_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol])
     """
     arr_in, g, g_both, profiler = _state["arr_in"], _state["g"], _state["g_both"], _state["profiler"]
     prep_both = profiler._prepare_inputs(g_both, {"x": arr_in, "y": [3.0, 4.0]})
-    assert ensure_eager_tensor(len(prep_both)) == 2
-    assert isinstance(ensure_eager_tensor(prep_both[0]), np.ndarray)
-    assert isinstance(ensure_eager_tensor(prep_both[1]), np.ndarray)
+    assert len(prep_both) == 2
+    assert isinstance(prep_both[0], np.ndarray)
+    assert isinstance(prep_both[1], np.ndarray)
 
     # _prepare_inputs fallback when input keys don't match or graph has no nodes
     empty_graph = IRGraph()
@@ -552,13 +567,19 @@ def _test_numba_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol])
     assert len(prep_fallback) == 1
 
     # 4. _compile_graph returning callable and returning None
-    with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value="def evaluate(args): return args[0]"):
+    with patch(
+        "ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate",
+        return_value="def evaluate(args): return args[0]",
+    ):
         fn = profiler._compile_graph(g)
         assert callable(fn)
 
-    with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value="def not_evaluate(): pass"):
+    with patch(
+        "ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate",
+        return_value="def not_evaluate(): pass",
+    ):
         fn_none = profiler._compile_graph(g)
-        assert ensure_eager_tensor(fn_none) is None
+        assert fn_none is None
 
     # 5. profile_graph with compiled function execution
     g_ops = IRGraph()
@@ -567,13 +588,12 @@ def _test_numba_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol])
     with patch.object(profiler, "_compile_graph", return_value=lambda inputs: inputs[0] * 2):
         res_comp = profiler.profile_graph(g_ops, inputs={"x": np.array([2.0])}, num_iters=2, warmup_iters=1)
         assert "mean_latency_ms" in res_comp
-    _state.update(ensure_tensor_dict({"empty_graph": empty_graph, "fn": fn, "fn_none": fn_none, "g_ops": g_ops}))
-    _state.update(ensure_tensor_dict({"prep_both": prep_both, "prep_empty": prep_empty, "prep_fallback": prep_fallback, "res_comp": res_comp}))
-    _state.update(ensure_tensor_dict({"arr_in": arr_in, "g": g, "g_both": g_both}))
-    _state.update(ensure_tensor_dict({"profiler": profiler}))
+    _state.update({"g_ops": g_ops})
+    _state.update({"arr_in": arr_in, "g": g, "g_both": g_both})
+    _state.update({"profiler": profiler})
 
 
-def _test_numba_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_numba_profiler_branches_part_3(_state: _TestNumbaProfilerBranchesState) -> None:
     """Execute part 3 of test_numba_profiler_branches.
 
     Args:
@@ -588,19 +608,28 @@ def _test_numba_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol])
     g_empty = IRGraph()
     res_empty = profiler.profile_graph(g_empty, inputs={}, num_iters=1, warmup_iters=1)
     assert "mean_latency_ms" in res_empty
-    _state.update(ensure_tensor_dict({"g_empty": g_empty, "res_empty": res_empty, "res_err": res_err}))
 
 
 def test_numba_profiler_branches() -> None:
     """Test full line and branch coverage for NumbaProfiler."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestNumbaProfilerBranchesState = {}
     _test_numba_profiler_branches_part_1(_state)
     _test_numba_profiler_branches_part_2(_state)
     _test_numba_profiler_branches_part_3(_state)
     assert len(_state) > 0
 
 
-def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestSparseProfilerBranchesState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_sparse_profiler_branches` split helpers."""
+
+    NoAdd: type
+    g: LogicalGraph
+    g_ops: LogicalGraph
+    profiler: NumbaProfiler | SparseProfiler
+    sp_mod: EagerTensorProtocol
+
+
+def _test_sparse_profiler_branches_part_1(_state: _TestSparseProfilerBranchesState) -> None:
     """Execute part 1 of test_sparse_profiler_branches.
 
     Args:
@@ -609,10 +638,7 @@ def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]
     import importlib
 
     from ml_switcheroo_compiler.backends.sparse import profiler as sp_prof_mod
-    from ml_switcheroo_compiler.backends.sparse.profiler import (
-        SparseProfiler,
-        _get_process_memory_mb,
-    )
+    from ml_switcheroo_compiler.backends.sparse.profiler import SparseProfiler, _get_process_memory_mb
 
     # 1. Platform checks
     with patch("sys.platform", "darwin"):
@@ -624,7 +650,7 @@ def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]
     # 2. ImportError branch when sparse is not installed
     with patch.dict("sys.modules", {"sparse": None}):
         importlib.reload(sp_prof_mod)
-        assert ensure_eager_tensor(ensure_eager_tensor(sp_prof_mod).sparse) is None
+        assert sp_prof_mod.sparse is None
     importlib.reload(sp_prof_mod)
 
     profiler = SparseProfiler()
@@ -642,12 +668,11 @@ def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]
     # Testing all branches of _prepare_inputs: GCXS, np.ndarray, and sequence/scalar
     prep_multi = profiler._prepare_inputs(IRGraph(), {"a": gcxs, "b": np.array([1.0]), "c": [2.0]})
     assert len(prep_multi) == 3
-    _state.update(ensure_tensor_dict({"SparseProfiler": SparseProfiler, "_get_process_memory_mb": _get_process_memory_mb, "coo": coo, "g": g}))
-    _state.update(ensure_tensor_dict({"gcxs": gcxs, "importlib": importlib, "mem": mem, "prep_multi": prep_multi}))
-    _state.update(ensure_tensor_dict({"prep_sp": prep_sp, "profiler": profiler, "sp_mod": sp_mod, "sp_prof_mod": sp_prof_mod}))
+    _state.update({"g": g})
+    _state.update({"profiler": profiler, "sp_mod": sp_mod})
 
 
-def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_sparse_profiler_branches_part_2(_state: _TestSparseProfilerBranchesState) -> None:
     """Execute part 2 of test_sparse_profiler_branches.
 
     Args:
@@ -656,7 +681,9 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
     g, profiler, sp_mod = _state["g"], _state["profiler"], _state["sp_mod"]
     _ = sp_mod
 
-    class _MockSparseNoAttrs:
+    from tests.testing_utils import MockTestStub
+
+    class _MockSparseNoAttrs(MockTestStub):
         """Test class _MockSparseNoAttrs."""
 
         def __init__(self) -> None:
@@ -664,16 +691,19 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
             pass
 
         @property
-        def todense(self) -> EagerValue:
+        def todense(self) -> BackendArg:
             """Test function todense.
 
             Returns:
-                EagerValue: Computed output value from `todense`.
+                BackendArg: Computed output value from `todense`.
+
+            Raises:
+                AttributeError: When raised during `todense` (no todense).
             """
             raise AttributeError("no todense")
 
     mock_sparse_val = _MockSparseNoAttrs()
-    prep_sparse_fallback = ensure_callable(profiler._prepare_inputs)(IRGraph(), {"s": mock_sparse_val})
+    prep_sparse_fallback = profiler._prepare_inputs(IRGraph(), {"s": mock_sparse_val})
     assert prep_sparse_fallback == [mock_sparse_val]
 
     # When sparse is None
@@ -689,24 +719,27 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
     assert len(prep_matched) == 2
 
     # 4. _compile_graph returning callable and returning None
-    with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="def evaluate(args): return args[0]"):
+    with patch(
+        "ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate",
+        return_value="def evaluate(args): return args[0]",
+    ):
         fn = profiler._compile_graph(g)
         assert callable(fn)
-    _state.update(ensure_tensor_dict({"_MockSparseNoAttrs": _MockSparseNoAttrs, "fn": fn, "g_two": g_two, "mock_sparse_val": mock_sparse_val}))
-    _state.update(ensure_tensor_dict({"prep_matched": prep_matched, "prep_no_sp": prep_no_sp, "prep_sparse_fallback": prep_sparse_fallback}))
-    _state.update(ensure_tensor_dict({"g": g, "profiler": profiler, "sp_mod": sp_mod}))
+    _state.update({"g": g, "profiler": profiler, "sp_mod": sp_mod})
 
 
-def _test_sparse_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_sparse_profiler_branches_part_3(_state: _TestSparseProfilerBranchesState) -> None:
     """Execute part 3 of test_sparse_profiler_branches.
 
     Args:
         _state: Shared test state dictionary.
     """
     g, profiler = _state["g"], _state["profiler"]
-    with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="def other(): pass"):
+    with patch(
+        "ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="def other(): pass"
+    ):
         fn_none = profiler._compile_graph(g)
-        assert ensure_eager_tensor(fn_none) is None
+        assert fn_none is None
     g_ops = IRGraph()
     g_ops.nodes["x"] = IRNode(id="x", op_type="Input")
     g_ops.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "x"])
@@ -724,12 +757,11 @@ def _test_sparse_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]
     class NoAdd:
         """Dummy object without addition support."""
 
-    _state.update(ensure_tensor_dict({"NoAdd": NoAdd, "fn_none": fn_none, "g_ops": g_ops, "res_accum": res_accum}))
-    _state.update(ensure_tensor_dict({"res_comp": res_comp}))
-    _state.update(ensure_tensor_dict({"g": g, "profiler": profiler}))
+    _state.update({"NoAdd": NoAdd, "g_ops": g_ops})
+    _state.update({"g": g, "profiler": profiler})
 
 
-def _test_sparse_profiler_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_sparse_profiler_branches_part_4(_state: _TestSparseProfilerBranchesState) -> None:
     """Execute part 4 of test_sparse_profiler_branches.
 
     Args:
@@ -745,12 +777,11 @@ def _test_sparse_profiler_branches_part_4(_state: dict[str, EagerTensorProtocol]
     g_empty = IRGraph()
     res_empty = profiler.profile_graph(g_empty, inputs={}, num_iters=1, warmup_iters=1)
     assert "mean_latency_ms" in res_empty
-    _state.update(ensure_tensor_dict({"g_empty": g_empty, "res_empty": res_empty, "res_no_add": res_no_add}))
 
 
 def test_sparse_profiler_branches() -> None:
     """Test full line and branch coverage for SparseProfiler."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestSparseProfilerBranchesState = {}
     _test_sparse_profiler_branches_part_1(_state)
     _test_sparse_profiler_branches_part_2(_state)
     _test_sparse_profiler_branches_part_3(_state)

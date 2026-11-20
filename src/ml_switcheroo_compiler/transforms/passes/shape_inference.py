@@ -1,4 +1,8 @@
-"""Shape Inference Pass."""
+"""Whole-Graph Topological Shape Propagation & Runtime Learning Pass (Shape Layer 4).
+
+Propagates ``shape_metadata`` and contiguous ``strides`` across ``IRGraph`` DAGs
+and records empirical runtime shape observations for dynamic dimensions.
+"""
 
 from __future__ import annotations
 
@@ -6,18 +10,18 @@ import logging
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.core.shape import ShapeProtocol, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeProtocol, is_variadic_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
 
 from collections.abc import Callable
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.errors import CompilationError, ShapeMismatchError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir import SymInt, SymNode
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.config_models import (
@@ -26,51 +30,6 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
     ShapeLearningProtocolConfig,
     load_shape_learning_protocol,
 )
-
-
-@typing.runtime_checkable
-class _NamedDimProtocol(typing.Protocol):
-    """Protocol for symbolic dimension objects exposing a `name` attribute."""
-
-    name: str
-
-
-@typing.runtime_checkable
-class _StridesNodeProtocol(typing.Protocol):
-    """Protocol for nodes exposing a mutable `strides` attribute."""
-
-    strides: tuple[int, ...]
-
-
-def _is_strides_node(val: IRNode) -> typing.TypeGuard[_StridesNodeProtocol]:
-    """Type guard narrowing `val` to `_StridesNodeProtocol` for strides assignment.
-
-    Args:
-        val (IRNode): Node instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
-
-
-@typing.runtime_checkable
-class _GraphAnnotationsProtocol(typing.Protocol):
-    """Protocol for graphs exposing an `annotations` attribute."""
-
-    annotations: AttributeValue
-
-
-def _is_annotations_holder(val: IRGraph) -> typing.TypeGuard[_GraphAnnotationsProtocol]:
-    """Type guard narrowing `val` to `_GraphAnnotationsProtocol` for annotations assignment.
-
-    Args:
-        val (IRGraph): Graph instance.
-
-    Returns:
-        bool: True if non-None.
-    """
-    return val is not None
 
 
 def _ensure_graph_annotations(graph: IRGraph) -> dict[str, AttributeValue]:
@@ -82,11 +41,7 @@ def _ensure_graph_annotations(graph: IRGraph) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Mutable annotations dictionary.
     """
-    assert _is_annotations_holder(graph)
-    try:
-        existing = graph.annotations
-    except AttributeError:
-        existing = None
+    existing: AttributeValue = graph.annotations
     if isinstance(existing, dict):
         return existing
     new_ann: dict[str, AttributeValue] = {}
@@ -94,39 +49,27 @@ def _ensure_graph_annotations(graph: IRGraph) -> dict[str, AttributeValue]:
     return new_ann
 
 
-def _coerce_shape_tuple(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+def _coerce_shape_tuple(seq: Sequence[int | str | SymNode | SymInt | None]) -> tuple[int | SymNode | SymInt, ...]:
     """Convert a sequence of dimensions into a concrete integer shape tuple.
 
     Args:
-        seq (Sequence[int | str | None]): Shape sequence.
+        seq (Sequence[int | str | SymNode | SymInt | None]): Shape sequence.
 
     Returns:
-        tuple[int, ...]: Concrete integer shape tuple.
+        tuple[int | SymNode | SymInt, ...]: Concrete integer shape tuple.
     """
     return tuple(int(d) for d in seq if isinstance(d, int))
 
 
-def _is_normalized_shape(val: tuple[AttributeValue, ...]) -> typing.TypeGuard[tuple[int, ...]]:
-    """Type guard narrowing a normalized shape tuple to `tuple[int, ...]`.
-
-    Args:
-        val (tuple[AttributeValue, ...]): Normalized shape tuple.
-
-    Returns:
-        bool: True if val is a tuple.
-    """
-    return isinstance(val, tuple)
-
-
 def _infer_constant_shape(
     node: IRNode,
-    shapes: dict[str, tuple[int, ...] | None],
-) -> tuple[int, ...] | None:
+    shapes: dict[str, tuple[int | SymNode | SymInt, ...] | None],
+) -> tuple[int | SymNode | SymInt, ...] | None:
     """Execute infer constant shape for compiler processing.
 
     Args:
         node (IRNode): Input `node` argument (node).
-        shapes (dict): Input `shapes` argument (shapes).
+        shapes (dict[str, tuple[int | SymNode | SymInt, ...] | None]): Input `shapes` argument (shapes).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -141,13 +84,13 @@ def _infer_constant_shape(
 
 def _infer_output_shape(
     node: IRNode,
-    shapes: dict[str, tuple[int, ...] | None],
-) -> tuple[int, ...] | None:
+    shapes: dict[str, tuple[int | SymNode | SymInt, ...] | None],
+) -> tuple[int | SymNode | SymInt, ...] | None:
     """Execute infer output shape for compiler processing.
 
     Args:
         node (IRNode): Input `node` argument (node).
-        shapes (dict): Input `shapes` argument (shapes).
+        shapes (dict[str, tuple[int | SymNode | SymInt, ...] | None]): Input `shapes` argument (shapes).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -177,13 +120,13 @@ def _prepare_op_kwargs(node: IRNode) -> dict[str, AttributeValue]:
 
 def _infer_op_shape(
     node: IRNode,
-    shapes: dict[str, tuple[int, ...] | None],
-) -> tuple[int, ...] | None:
+    shapes: typing.Mapping[str, tuple[int | SymNode | SymInt, ...] | None],
+) -> tuple[int | SymNode | SymInt, ...] | None:
     """Execute infer op shape for compiler processing.
 
     Args:
         node (IRNode): Input `node` argument (node).
-        shapes (dict): Input `shapes` argument (shapes).
+        shapes (typing.Mapping[str, tuple[int | SymNode | SymInt, ...] | None]): Input `shapes` argument (shapes).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -192,18 +135,25 @@ def _infer_op_shape(
     op = op_cls()
     in_shapes = [shapes.get(inp) for inp in node.inputs]
     kwargs = _prepare_op_kwargs(node)
-    result = op.infer_shape(*in_shapes, **kwargs)
-    return result if isinstance(result, tuple) else None
+    _callable_fn_1: OpValue = op.infer_shape
+    assert is_variadic_callable(_callable_fn_1)
+    result = _callable_fn_1(*in_shapes, **kwargs)
+    return _normalize_shape_tuple(result) if isinstance(result, (list, tuple)) else None
 
 
-def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None) -> tuple[int, ...] | None:
-    """Normalize a raw shape container to an optional tuple of ints.
+def _normalize_shape_tuple(
+    raw_shape: Sequence[AttributeValue] | dict[str, AttributeValue] | None,
+) -> tuple[int | SymNode | SymInt, ...] | None:
+    """Normalize a raw shape container to an optional tuple of integer or symbolic dimensions.
 
     Args:
-        raw_shape (tuple | list | dict | None): Raw shape object.
+        raw_shape (Sequence[AttributeValue] | dict[str, AttributeValue] | None): Raw shape object.
 
     Returns:
-        tuple[int, ...] | None: Normalized int shape tuple.
+        tuple[int | SymNode | SymInt, ...] | None: Normalized shape tuple or ``None``.
+
+    Raises:
+        TypeError: When raised during `_normalize_shape_tuple` (Non-integer dimension).
     """
     if raw_shape is None:
         return None
@@ -211,18 +161,15 @@ def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[Attribut
         if any(isinstance(x, str) for x in raw_shape):
             return None
         try:
-            norm_items: list[AttributeValue] = []
+            norm_items: list[int | SymNode | SymInt] = []
             for x in raw_shape:
-                raw_x: TensorOrScalar = x
-                if isinstance(raw_x, _NamedDimProtocol):
+                if isinstance(x, (SymNode, SymInt)):
                     norm_items.append(x)
                 elif isinstance(x, (int, float)) and not isinstance(x, bool):
                     norm_items.append(int(x))
                 else:
                     raise TypeError("Non-integer dimension")
-            norm_tuple = tuple(norm_items)
-            assert _is_normalized_shape(norm_tuple)
-            return norm_tuple
+            return tuple(norm_items)
         except (ValueError, TypeError):
             return None
     return None
@@ -230,16 +177,16 @@ def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[Attribut
 
 def _infer_input_shape(
     node: IRNode,
-    shapes: dict[str, tuple[int, ...] | None],
-) -> tuple[int, ...] | None:
+    shapes: dict[str, tuple[int | SymNode | SymInt, ...] | None],
+) -> tuple[int | SymNode | SymInt, ...] | None:
     """Infer input node shape from metadata.
 
     Args:
         node (IRNode): Input node.
-        shapes (dict[str, tuple[int, ...] | None]): Known shapes.
+        shapes (dict[str, tuple[int | SymNode | SymInt, ...] | None]): Known shapes.
 
     Returns:
-        tuple[int, ...] | None: Normalized shape.
+        tuple[int | SymNode | SymInt, ...] | None: Normalized shape.
     """
     del shapes
     return _normalize_shape_tuple(node.shape_metadata)
@@ -247,7 +194,7 @@ def _infer_input_shape(
 
 _SPECIAL_OP_HANDLERS: dict[
     str,
-    Callable[[IRNode, dict[str, tuple[int, ...] | None]], tuple[int, ...] | None],
+    Callable[[IRNode, dict[str, tuple[int | SymNode | SymInt, ...] | None]], tuple[int | SymNode | SymInt, ...] | None],
 ] = {
     "Constant": _infer_constant_shape,
     "Input": _infer_input_shape,
@@ -255,12 +202,14 @@ _SPECIAL_OP_HANDLERS: dict[
 }
 
 
-def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> tuple[int, ...] | None:
+def _determine_node_shape(
+    node: IRNode, shapes: dict[str, tuple[int | SymNode | SymInt, ...] | None]
+) -> tuple[int | SymNode | SymInt, ...] | None:
     """Execute determine node shape for compiler processing.
 
     Args:
         node (IRNode): Input `node` argument (node).
-        shapes (dict): Input `shapes` argument (shapes).
+        shapes (dict[str, tuple[int | SymNode | SymInt, ...] | None]): Input `shapes` argument (shapes).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -280,17 +229,17 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
             return _normalize_shape_tuple(node.shape_metadata)
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
-    except (TypeError, Exception) as e:
+    except (ImportError, LookupError, OSError, ArithmeticError, RuntimeError, SyntaxError, TypeError) as e:
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
 
 
-def _propagate_subgraph_shapes(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> bool:
+def _propagate_subgraph_shapes(node: IRNode, shapes: dict[str, tuple[int | SymNode | SymInt, ...] | None]) -> bool:
     """Propagate input shapes into a node's nested subgraphs and run shape inference on them.
 
     Args:
         node (IRNode): Parent node containing subgraphs.
-        shapes (dict[str, tuple[int, ...] | None]): Known shapes of nodes in the parent graph.
+        shapes (dict[str, tuple[int | SymNode | SymInt, ...] | None]): Known shapes of nodes in the parent graph.
 
     Returns:
         bool: True if any nested subgraph was modified, False otherwise.
@@ -306,14 +255,15 @@ def _propagate_subgraph_shapes(node: IRNode, shapes: dict[str, tuple[int, ...] |
     return modified
 
 
-def _fallback_subgraph_output_shape(node: IRNode) -> tuple[int, ...] | None:
+def _fallback_subgraph_output_shape(node: IRNode) -> tuple[int | SymNode | SymInt, ...] | None:
     """Attempt to extract output shape from a node's nested subgraphs.
 
     Args:
         node (IRNode): Node whose subgraphs are inspected.
 
     Returns:
-        tuple[int, ...] | None: Normalized output shape from the first subgraph with an output shape, or None.
+        tuple[int | SymNode | SymInt, ...] | None: Normalized output shape from the first subgraph with an output
+            shape, or None.
     """
     for sub in node.subgraphs.values():
         if isinstance(sub, IRGraph) and sub.outputs and sub.outputs[0] in sub.nodes:
@@ -323,17 +273,17 @@ def _fallback_subgraph_output_shape(node: IRNode) -> tuple[int, ...] | None:
     return None
 
 
-def _apply_inferred_shape(node: IRNode, out_shape: tuple[int, ...]) -> bool:
+def _apply_inferred_shape(node: IRNode, out_shape: tuple[int | SymNode | SymInt, ...]) -> bool:
     """Update a node's shape metadata and contiguous strides.
 
     Args:
         node (IRNode): Node to update.
-        out_shape (tuple[int, ...]): Inferred concrete shape tuple.
+        out_shape (tuple[int | SymNode | SymInt, ...]): Inferred concrete or symbolic shape tuple.
 
     Returns:
         bool: True if the node's shape_metadata was changed, False otherwise.
     """
-    from ml_switcheroo_compiler.ops.shape_inference import compute_contiguous_strides
+    from ml_switcheroo_compiler.ir.shape_system import compute_contiguous_strides
 
     modified = False
     if node.shape_metadata != out_shape:
@@ -342,7 +292,6 @@ def _apply_inferred_shape(node: IRNode, out_shape: tuple[int, ...]) -> bool:
     strides = compute_contiguous_strides(out_shape)
     node.attributes["strides"] = strides
     try:
-        assert _is_strides_node(node)
         node.strides = strides
     except (AttributeError, TypeError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -360,7 +309,7 @@ def shape_inference_pass(graph: IRGraph) -> bool:
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
-    shapes: dict[str, tuple[int, ...] | None] = {}
+    shapes: dict[str, tuple[int | SymNode | SymInt, ...] | None] = {}
 
     for node in sorted_nodes:
         if _propagate_subgraph_shapes(node, shapes):
@@ -416,7 +365,10 @@ def record_runtime_observation(
     current_shape = node.shape_metadata
     if current_shape is not None and isinstance(current_shape, (tuple, list)):
         if len(current_shape) != len(norm_shape):
-            raise ShapeMismatchError(f"Rank mismatch for node '{node_id}': expected rank {len(current_shape)}, but observed rank {len(norm_shape)} (shape: {norm_shape}).")
+            raise ShapeMismatchError(
+                f"Rank mismatch for node '{node_id}': expected rank {len(current_shape)}, but observed rank "
+                f"{len(norm_shape)} (shape: {norm_shape})."
+            )
 
     node.shape_metadata = norm_shape
 
@@ -432,16 +384,23 @@ def record_runtime_observation(
     )
 
 
+ObservedShapesInput: typing.TypeAlias = typing.Union[  # noqa: UP007
+    typing.Mapping[str, typing.Sequence[int]],
+    ShapeInspectionPayload,
+    RuntimeShapePacket,
+    None,
+]
+
+
 def annotate_learned_shapes(
     graph: IRGraph,
-    observed_shapes: (dict[str, tuple[int, ...]] | dict[str, list[int]] | ShapeInspectionPayload | RuntimeShapePacket),
+    observed_shapes: ObservedShapesInput,
 ) -> bool:
     """Annotate graph nodes with concrete runtime shapes captured during browser or hardware execution.
 
     Args:
         graph (IRGraph): The computation graph to annotate with learned shapes.
-        observed_shapes (Union[dict[str, tuple[int, ...]], dict[str, list[int]], ShapeInspectionPayload, RuntimeShapePacket]):
-            Mapping of node IDs to observed concrete shapes or full runtime payload.
+        observed_shapes (ObservedShapesInput): Mapping of node IDs to observed concrete shapes or full runtime payload.
 
     Returns:
         bool: True if any node shape metadata was updated, False otherwise.

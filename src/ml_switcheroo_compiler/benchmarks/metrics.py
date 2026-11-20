@@ -6,10 +6,41 @@ import csv
 import io
 import json
 import math
+import typing
 
 import yaml
 
 from ml_switcheroo_compiler.benchmarks.config_models import BenchmarkRunResult
+
+
+class ProfileMetricsDict(typing.TypedDict, total=False):
+    """Typed profiling metrics dictionary returned by backend profilers and statistical aggregation."""
+
+    latencies: list[float]
+    latencies_ms: list[float]
+    latency_ms: float
+    mean_ms: float
+    mean_latency_ms: float
+    median_ms: float
+    p50_ms: float
+    p50_latency_ms: float
+    p90_ms: float
+    p90_latency_ms: float
+    p95_ms: float
+    p95_latency_ms: float
+    p99_ms: float
+    p99_latency_ms: float
+    min_ms: float
+    min_latency_ms: float
+    max_ms: float
+    max_latency_ms: float
+    std_ms: float
+    std_latency_ms: float
+    throughput_items_per_sec: float
+    gflops: float
+    bandwidth_gb_s: float
+    peak_memory_mb: float
+    warmup_iterations: int
 
 
 def compute_statistical_metrics(
@@ -19,7 +50,7 @@ def compute_statistical_metrics(
     warmup_iters: int = 2,
     total_flops: float = 0.0,
     total_bytes_accessed: float = 0.0,
-) -> dict[str, list[float] | float]:
+) -> ProfileMetricsDict:
     """Calculate comprehensive statistical latency and throughput metrics across iterations.
 
     Args:
@@ -31,7 +62,7 @@ def compute_statistical_metrics(
         total_bytes_accessed (float): Memory buffer bytes accessed per step.
 
     Returns:
-        dict[str, Union[list[float], float]]: Comprehensive metrics payload.
+        ProfileMetricsDict: Comprehensive metrics payload.
     """
     sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
     n: int = len(latencies)

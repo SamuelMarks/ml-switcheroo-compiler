@@ -11,15 +11,13 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_b
 # Import all backends to register them with the backend registry dynamically
 # but gracefully handle missing dependencies by failing registry instead of import
 def _safe_import_backend(name: str) -> None:
-    """Safe import.
+    """Import a backend module safely while ignoring missing optional backend packages.
 
     Args:
-        name: The name parameter.
+        name (str): Submodule name under ``ml_switcheroo_compiler.backends``.
     """
-    import importlib
-
     try:
-        importlib.import_module(f"ml_switcheroo_compiler.backends.{name}")
+        BackendRegistry.load_scoped_module(f"ml_switcheroo_compiler.backends.{name}")
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

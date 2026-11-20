@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ops.linalg.solvers import VectorNorm
+from ml_switcheroo_compiler.ops.linalg.decompositions.norms import VectorNorm
 
 
 def test_vector_norm_shape() -> None:

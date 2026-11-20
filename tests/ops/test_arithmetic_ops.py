@@ -7,12 +7,12 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -36,7 +36,10 @@ def test_add_op() -> None:
     b = Tensor(np.array([4, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Add", a, b)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([5, 7, 9], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([5, 7, 9], dtype=np.float32),
+    )
 
 
 def test_subtract_op() -> None:
@@ -45,7 +48,10 @@ def test_subtract_op() -> None:
     b = Tensor(np.array([4, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Subtract", a, b)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([-3, -3, -3], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([-3, -3, -3], dtype=np.float32),
+    )
 
 
 def test_multiply_op() -> None:
@@ -54,7 +60,10 @@ def test_multiply_op() -> None:
     b = Tensor(np.array([4, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Multiply", a, b)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([4, 10, 18], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([4, 10, 18], dtype=np.float32),
+    )
 
 
 def test_true_divide_op() -> None:
@@ -63,7 +72,10 @@ def test_true_divide_op() -> None:
     b = Tensor(np.array([2, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("TrueDivide", a, b)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([2, 2, 3], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([2, 2, 3], dtype=np.float32),
+    )
 
 
 def test_negative_op() -> None:
@@ -71,7 +83,10 @@ def test_negative_op() -> None:
     a = Tensor(np.array([1, -2, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Negative", a)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([-1, 2, -3], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([-1, 2, -3], dtype=np.float32),
+    )
 
 
 def test_abs_op() -> None:
@@ -79,4 +94,7 @@ def test_abs_op() -> None:
     a = Tensor(np.array([1, -2, -3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Abs", a)
-    ensure_callable(np.testing.assert_array_equal)(ensure_callable(ensure_eager_tensor(ensure_eager_tensor(res).numpy))(), ensure_callable(np.array)([1, 2, 3], dtype=np.float32))
+    np.testing.assert_array_equal(
+        ensure_ndarray(res.numpy()),
+        np.array([1, 2, 3], dtype=np.float32),
+    )

@@ -18,8 +18,8 @@ from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import SnapshotGroundingError
-from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
+from ml_switcheroo_compiler.core.shape import OpValue as AttributeValue
 
 
 @typing.runtime_checkable
@@ -362,12 +362,18 @@ def _validate_keyword_args(
         if not kw or kw in allowed_kwargs or kw.startswith("_"):
             continue
         if kw in pos_only_kwargs:
-            errors.append(f"Argument '{kw}' for endpoint '{endpoint}' in backend '{backend_name}' is positional-only and cannot be passed as keyword")
+            errors.append(
+                f"Argument '{kw}' for endpoint '{endpoint}' in backend '{backend_name}' is positional-only "
+                "and cannot be passed as keyword"
+            )
             continue
 
         replacement: str | None = _find_discrepancy_replacement(kw, allowed_kwargs, ep_allowed, backend_name, endpoint)
         if replacement is not None:
-            errors.append(f"Endpoint '{endpoint}' in backend '{backend_name}' does not accept keyword '{kw}'. Did you mean '{replacement}'?")
+            errors.append(
+                f"Endpoint '{endpoint}' in backend '{backend_name}' does not accept keyword '{kw}'. Did you "
+                f"mean '{replacement}'?"
+            )
         else:
             errors.append(f"Unknown keyword argument '{kw}' for endpoint '{endpoint}' in backend '{backend_name}'")
     return errors
@@ -470,7 +476,7 @@ def _is_snapshot_file_complete(file_path: str, backend_name: str) -> bool:
                 data = json.load(f)
         categories: AttributeValue = data.get("categories") if isinstance(data, dict) else None
         return isinstance(categories, dict) and "array" in categories
-    except Exception:
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, RuntimeError):
         return False
 
 
@@ -577,7 +583,17 @@ def _hydrate_ghost_ref(data: dict[str, AttributeValue]) -> ExtendedGhostRef | No
         clean_data["overloads"] = []
     try:
         return ExtendedGhostRef.model_validate(clean_data)
-    except Exception:
+    except (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    ):
         return None
 
 
@@ -625,8 +641,12 @@ def _populate_from_grounding_engine(
     if engine is None or target is None:
         return
     try:
-        raw_engine: TensorOrScalar | AttributeValue = engine
-        if endpoints and isinstance(raw_engine, _DiscoverTargetFilesProtocol) and not raw_engine._discover_target_files(target.framework):
+        raw_engine: OpValue | AttributeValue | _DiscoverTargetFilesProtocol | _LoadTargetProtocol = engine
+        if (
+            endpoints
+            and isinstance(raw_engine, _DiscoverTargetFilesProtocol)
+            and not raw_engine._discover_target_files(target.framework)
+        ):
             return
         if not isinstance(raw_engine, _LoadTargetProtocol):
             return
@@ -658,7 +678,18 @@ def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
         if isinstance(list_node, ast.List) and ("CANONICAL_" in unparsed or "_DEFS" in unparsed):
             raw_ops = ast.literal_eval(list_node)
             assert isinstance(raw_ops, list)
-            collected.extend({"name": it[0], "api_path": it[1], "kind": it[2], "params": [{"name": p[0], "kind": p[1], "default": p[2]} for p in it[-2]], "docstring": it[-1]} if isinstance(it, tuple) else it for it in raw_ops)
+            collected.extend(
+                {
+                    "name": it[0],
+                    "api_path": it[1],
+                    "kind": it[2],
+                    "params": [{"name": p[0], "kind": p[1], "default": p[2]} for p in it[-2]],
+                    "docstring": it[-1],
+                }
+                if isinstance(it, tuple)
+                else it
+                for it in raw_ops
+            )
     return collected
 
 
@@ -722,11 +753,11 @@ def _populate_from_snapshot_data(
                 ref_map[sym] = hydrated
 
 
-def _param_to_dict(p: TensorOrScalar | AttributeValue) -> dict[str, AttributeValue]:
+def _param_to_dict(p: OpValue | AttributeValue) -> dict[str, AttributeValue]:
     """Convert a parameter model or mapping into a dictionary specification.
 
     Args:
-        p (TensorOrScalar | AttributeValue): Parameter model or dictionary.
+        p (OpValue | AttributeValue): Parameter model or dictionary.
 
     Returns:
         dict[str, AttributeValue]: Parameter spec dictionary.
@@ -756,8 +787,12 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
 
     if ref.overloads:
         for ov in ref.overloads:
-            raw_ov: TensorOrScalar | AttributeValue = ov
-            ov_params: AttributeValue = raw_ov.params if isinstance(raw_ov, _OverloadParamsProtocol) else (ov.get("params") if isinstance(ov, dict) else None)
+            raw_ov: OpValue | AttributeValue | _OverloadParamsProtocol = ov
+            ov_params: AttributeValue = (
+                raw_ov.params
+                if isinstance(raw_ov, _OverloadParamsProtocol)
+                else (ov.get("params") if isinstance(ov, dict) else None)
+            )
             if isinstance(ov_params, list) and ov_params:
                 ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
                 signatures.extend(_split_signature_params(ov_sig))
@@ -805,7 +840,14 @@ class SnapshotGroundingEngine:
         if config is None:
             config = load_backend_snapshot_targets()
         self.config: BackendSnapshotTargetsConfig = config
-        is_repo_root = snapshot_dir is not None and os.path.basename(os.path.normpath(snapshot_dir)) == "ml-ecosystem-snapshots" and (not os.path.isdir(snapshot_dir) or not any(f.endswith((".json", ".json.gz")) for f in os.listdir(snapshot_dir)))
+        is_repo_root = (
+            snapshot_dir is not None
+            and os.path.basename(os.path.normpath(snapshot_dir)) == "ml-ecosystem-snapshots"
+            and (
+                not os.path.isdir(snapshot_dir)
+                or not any(f.endswith((".json", ".json.gz")) for f in os.listdir(snapshot_dir))
+            )
+        )
         eff_dir = None if is_repo_root else snapshot_dir
         self._is_default_snapshot_dir: bool = eff_dir is None
         self.snapshot_dir: str = os.path.abspath(eff_dir) if eff_dir is not None else _resolve_default_snapshot_dir()
@@ -816,8 +858,24 @@ class SnapshotGroundingEngine:
         self._ghost_ref_cache: dict[str, dict[str, ExtendedGhostRef]] = {}
         self._raw_snapshots: dict[str, dict[str, AttributeValue] | list[AttributeValue]] = {}
         sibling_fw_dir: str = os.path.abspath(os.path.join(os.path.dirname(self.snapshot_dir), "frameworks"))
-        repo_fw_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ml-ecosystem-snapshots", "src", "ml_ecosystem_snapshots", "frameworks"))
-        self.frameworks_dir: str = repo_fw_dir if (self._is_default_snapshot_dir and not os.path.isdir(sibling_fw_dir) and os.path.isdir(repo_fw_dir)) else sibling_fw_dir
+        repo_fw_dir: str = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "..",
+                "ml-ecosystem-snapshots",
+                "src",
+                "ml_ecosystem_snapshots",
+                "frameworks",
+            )
+        )
+        self.frameworks_dir: str = (
+            repo_fw_dir
+            if (self._is_default_snapshot_dir and not os.path.isdir(sibling_fw_dir) and os.path.isdir(repo_fw_dir))
+            else sibling_fw_dir
+        )
 
         self._grounding_engine: AttributeValue | None = None
 
@@ -834,7 +892,9 @@ class SnapshotGroundingEngine:
         """
         if not os.path.exists(sdir) or not os.path.isdir(sdir):
             return None
-        all_candidates: list[str] = [f for f in os.listdir(sdir) if f.startswith(prefix) and (f.endswith(suffix) or f.endswith(f"{suffix}.gz"))]
+        all_candidates: list[str] = [
+            f for f in os.listdir(sdir) if f.startswith(prefix) and (f.endswith(suffix) or f.endswith(f"{suffix}.gz"))
+        ]
         if not all_candidates:
             return None
         versioned: list[str] = sorted([f for f in all_candidates if "unknown" not in f])
@@ -1148,9 +1208,11 @@ class SnapshotGroundingEngine:
         target: BackendSnapshotTargetModel | None = self.config.targets.get(backend_name)
         if target is not None and self._grounding_engine is not None:
             try:
-                raw_ge: TensorOrScalar | AttributeValue = self._grounding_engine
+                raw_ge: OpValue | AttributeValue | _SuggestClosestSymbolProtocol = self._grounding_engine
                 if isinstance(raw_ge, _SuggestClosestSymbolProtocol):
-                    suggested: str | None = raw_ge.suggest_closest_symbol(target.framework, candidate, max_distance=max_distance)
+                    suggested: str | None = raw_ge.suggest_closest_symbol(
+                        target.framework, candidate, max_distance=max_distance
+                    )
                     if suggested:
                         return suggested
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -1202,12 +1264,16 @@ class SnapshotGroundingEngine:
         all_sig_errors: list[list[str]] = []
         kw_set: set[str] = set(keyword_arg_names)
         all_params: list[dict[str, AttributeValue]] = self.get_endpoint_parameters(backend_name, endpoint) or []
-        endpoint_allowed_kwargs: set[str] = {str(p.get("name")) for p in all_params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
+        endpoint_allowed_kwargs: set[str] = {
+            str(p.get("name")) for p in all_params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")
+        }
 
         for sig in signatures:
             sig_errors: list[str] = []
             has_var_kw: bool = any(p.get("kind") == "VAR_KEYWORD" for p in sig)
-            allowed_kwargs: set[str] = {str(p.get("name")) for p in sig if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
+            allowed_kwargs: set[str] = {
+                str(p.get("name")) for p in sig if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")
+            }
             pos_only_kwargs: set[str] = {str(p.get("name")) for p in sig if p.get("kind") == "POSITIONAL_ONLY"}
 
             sig_errors.extend(
@@ -1223,11 +1289,16 @@ class SnapshotGroundingEngine:
             )
 
             has_var_pos: bool = any(p.get("kind") == "VAR_POSITIONAL" for p in sig)
-            pos_params: list[dict[str, AttributeValue]] = [p for p in sig if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")]
+            pos_params: list[dict[str, AttributeValue]] = [
+                p for p in sig if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")
+            ]
             max_pos: int = len(pos_params)
 
             if not has_var_pos and positional_args_count > max_pos:
-                sig_errors.append(f"Too many positional arguments ({positional_args_count} > {max_pos}) for endpoint '{endpoint}' in backend '{backend_name}'")
+                sig_errors.append(
+                    f"Too many positional arguments ({positional_args_count} > {max_pos}) for endpoint "
+                    f"'{endpoint}' in backend '{backend_name}'"
+                )
 
             min_required: int = 0
             for p in pos_params:
@@ -1238,7 +1309,10 @@ class SnapshotGroundingEngine:
                     min_required += 1
 
             if positional_args_count < min_required:
-                sig_errors.append(f"Missing required arguments (expected at least {min_required}, got {positional_args_count}) for endpoint '{endpoint}' in backend '{backend_name}'")
+                sig_errors.append(
+                    f"Missing required arguments (expected at least {min_required}, got {positional_args_count}) "
+                    f"for endpoint '{endpoint}' in backend '{backend_name}'"
+                )
 
             if not sig_errors:
                 return []

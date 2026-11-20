@@ -64,7 +64,11 @@ def test_compare_snapshot_files(tmp_path: Path) -> None:
         json.dumps(
             {
                 "version": "1.1.0",
-                "categories": {"math": [{"name": "add", "api_path": "torch.add", "params": [{"name": "a"}, {"name": "b", "default": 0}]}]},
+                "categories": {
+                    "math": [
+                        {"name": "add", "api_path": "torch.add", "params": [{"name": "a"}, {"name": "b", "default": 0}]}
+                    ]
+                },
             }
         ),
         encoding="utf-8",
@@ -317,7 +321,9 @@ def test_check_directory_drift_missing_default_target(tmp_path: Path) -> None:
     with (
         patch("scripts.check_snapshot_drift._resolve_default_snapshot_dir", return_value=str(tmp_path)),
         patch("scripts.check_snapshot_drift.SnapshotGroundingEngine.get_snapshot_path", return_value=None),
-        patch("ml_switcheroo_compiler.backends.snapshot_grounding.load_backend_snapshot_targets", return_value=fake_cfg),
+        patch(
+            "ml_switcheroo_compiler.backends.snapshot_grounding.load_backend_snapshot_targets", return_value=fake_cfg
+        ),
     ):
         _, breaking = check_directory_drift(str(tmp_path), str(tmp_path))
         assert any("nonexistent_backend" in b for b in breaking)
@@ -356,11 +362,31 @@ def test_is_breaking_and_flatten_edge_cases() -> None:
     assert _is_breaking_param_change([{"name": "x"}], [{"name": "x"}, {"name": "y", "default": None}]) is True
     assert _is_breaking_param_change([{"name": "x", "default": "1"}], [{"name": "x", "default": None}]) is True
     assert _is_breaking_param_change([{"name": "x", "default": "1"}], [{"name": "x", "default": "2"}]) is True
-    assert _is_breaking_param_change([{"name": "x", "default": "1"}], [{"name": "x", "default": "1"}, {"name": "args", "kind": "VAR_POSITIONAL"}]) is False
+    assert (
+        _is_breaking_param_change(
+            [{"name": "x", "default": "1"}], [{"name": "x", "default": "1"}, {"name": "args", "kind": "VAR_POSITIONAL"}]
+        )
+        is False
+    )
 
     res_non_break = diff_snapshots(
-        {"categories": {"math": [{"api_path": "f", "params": [{"name": "x", "annotation": "int"}]}, {"api_path": "same", "params": [{"name": "x"}]}]}},
-        {"categories": {"math": [{"api_path": "f", "params": [{"name": "x", "annotation": "float"}]}, {"api_path": "same", "params": [{"name": "x"}]}, {"api_path": "added_fn", "params": []}]}},
+        {
+            "categories": {
+                "math": [
+                    {"api_path": "f", "params": [{"name": "x", "annotation": "int"}]},
+                    {"api_path": "same", "params": [{"name": "x"}]},
+                ]
+            }
+        },
+        {
+            "categories": {
+                "math": [
+                    {"api_path": "f", "params": [{"name": "x", "annotation": "float"}]},
+                    {"api_path": "same", "params": [{"name": "x"}]},
+                    {"api_path": "added_fn", "params": []},
+                ]
+            }
+        },
     )
     assert res_non_break.non_breaking_signature_changed == ["f"]
     assert res_non_break.added == ["added_fn"]

@@ -7,6 +7,7 @@ import typing
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
     _assoc_scan_jvp,
     _assoc_scan_vjp,
@@ -19,10 +20,9 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
     _scan_jvp,
     _scan_vjp,
 )
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor, ensure_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_inline_subgraph() -> None:
@@ -51,8 +51,16 @@ def test_inline_grad_subgraph() -> None:
 
 def test_if_vjp() -> None:
     """Test _if_vjp."""
+    from tests.testing_utils import require_callable
+
+    assert require_callable(_scan_jvp)(None, None, "t") == ""
     g = LogicalGraph()
-    n = LogicalNode(id="n", op_type="If", inputs=["cond", "a", "b"], attributes=ensure_attrs({"true_branch": LogicalGraph(), "false_branch": LogicalGraph()}))
+    n = LogicalNode(
+        id="n",
+        op_type="If",
+        inputs=["cond", "a", "b"],
+        attributes=ensure_attrs({"true_branch": LogicalGraph(), "false_branch": LogicalGraph()}),
+    )
     res = _if_vjp(g, n, "cot")
     assert len(res) >= 1
 
@@ -60,7 +68,9 @@ def test_if_vjp() -> None:
 def test_loop_vjp() -> None:
     """Test _loop_vjp."""
     g = LogicalGraph()
-    n = LogicalNode(id="n", op_type="Loop", inputs=["init", "n_iter"], attributes=ensure_attrs({"body": LogicalGraph()}))
+    n = LogicalNode(
+        id="n", op_type="Loop", inputs=["init", "n_iter"], attributes=ensure_attrs({"body": LogicalGraph()})
+    )
     res = _loop_vjp(g, n, "cot")
     assert len(res) >= 1
 
@@ -76,7 +86,12 @@ def test_scan_vjp() -> None:
 def test_assoc_scan_vjp() -> None:
     """Test _assoc_scan_vjp."""
     g = LogicalGraph()
-    n = LogicalNode(id="n", op_type="AssociativeScan", inputs=["a", "b", "c"], attributes=ensure_attrs({"combine_fn": LogicalGraph()}))
+    n = LogicalNode(
+        id="n",
+        op_type="AssociativeScan",
+        inputs=["a", "b", "c"],
+        attributes=ensure_attrs({"combine_fn": LogicalGraph()}),
+    )
     res = _assoc_scan_vjp(g, n, "cot")
     assert len(res) >= 1
 
@@ -84,12 +99,19 @@ def test_assoc_scan_vjp() -> None:
 def test_jvps() -> None:
     """Test control flow JVPs."""
     g = LogicalGraph()
-    n1 = LogicalNode(id="n1", op_type="If", inputs=["cond", "a", "b"], attributes=ensure_attrs({"then_branch": LogicalGraph(), "else_branch": LogicalGraph()}))
+    n1 = LogicalNode(
+        id="n1",
+        op_type="If",
+        inputs=["cond", "a", "b"],
+        attributes=ensure_attrs({"then_branch": LogicalGraph(), "else_branch": LogicalGraph()}),
+    )
     assert _if_jvp(g, n1, ["t1", "t2", "t3"]) == "n1_jvp"
     with pytest.raises(ValueError):
         _if_jvp(g, n1, ["t1", "t2"])
 
-    n2 = LogicalNode(id="n2", op_type="Loop", inputs=["init", "n_iter"], attributes=ensure_attrs({"body": LogicalGraph()}))
+    n2 = LogicalNode(
+        id="n2", op_type="Loop", inputs=["init", "n_iter"], attributes=ensure_attrs({"body": LogicalGraph()})
+    )
     assert _loop_jvp(g, n2, ["t1", "t2"]) == ""
     assert _loop_jvp(g, n2, ["t1"]) == ""
 
@@ -97,7 +119,12 @@ def test_jvps() -> None:
     assert _scan_jvp(g, n3, ["t1", "t2"]) == ""
     assert _scan_jvp(g, n3, ["t1"]) == ""
 
-    n4 = LogicalNode(id="n4", op_type="AssociativeScan", inputs=["a", "b", "c"], attributes=ensure_attrs({"combine_fn": LogicalGraph()}))
+    n4 = LogicalNode(
+        id="n4",
+        op_type="AssociativeScan",
+        inputs=["a", "b", "c"],
+        attributes=ensure_attrs({"combine_fn": LogicalGraph()}),
+    )
     assert _assoc_scan_jvp(g, n4, ["t1", "t2", "t3"]) == ""
     assert _assoc_scan_jvp(g, n4, ["t1", "t2"]) == ""
 
@@ -106,7 +133,8 @@ def test_checkpoint_vjp() -> None:
     """Test checkpoint_vjp with subgraph."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import checkpoint_vjp
 
     sg = IRGraph()
@@ -131,19 +159,26 @@ def test_checkpoint_vjp() -> None:
         mock_grad.return_value = sg_grad
 
         res = checkpoint_vjp(main_graph, node, "cotangent_id")
-        assert res is not None
+        assert len(res) == 1
 
 
 def test_if_jvp() -> None:
     """Test if_jvp and recompute_vjp."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _assoc_scan_jvp, _if_jvp, _loop_jvp, _scan_jvp, recompute_vjp
+    from ml_switcheroo_ir import IRGraph, IRNode
 
-    assert ensure_callable(_scan_jvp)(None, None, None) == ""
-    assert ensure_callable(_assoc_scan_jvp)(None, None, None) == ""
-    assert ensure_callable(_loop_jvp)(None, None, None) == ""
+    from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
+        _assoc_scan_jvp,
+        _if_jvp,
+        _loop_jvp,
+        _scan_jvp,
+        recompute_vjp,
+    )
+
+    assert _scan_jvp(IRGraph(), IRNode("s", "Scan"), []) == ""
+    assert _assoc_scan_jvp(IRGraph(), IRNode("as", "AssociativeScan"), []) == ""
+    assert _loop_jvp(IRGraph(), IRNode("l", "Loop"), []) == ""
 
     n_recompute = IRNode(id="r", op_type="Recompute", inputs=["x"], attributes={"original_op": "Exp"})
     g_recompute = IRGraph()
@@ -169,7 +204,8 @@ def test_if_jvp() -> None:
 
 def test_custom_vjp_vjp() -> None:
     """Test custom_vjp_vjp with bwd_fn."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_vjp_vjp
 
     graph = IRGraph()
@@ -184,7 +220,8 @@ def test_custom_vjp_vjp() -> None:
 
 def test_custom_vjp_rules_empty_attributes() -> None:
     """Test _cond_vjp, _scan_vjp, _while_loop_vjp, _cond_jvp, and _while_loop_jvp with empty attributes."""
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_ir import IRGraph
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
         _cond_jvp,
         _cond_vjp,
@@ -211,17 +248,18 @@ def test_checkpoint_vjp_with_fun() -> None:
     """Test checkpoint_vjp when fun is provided in node.attributes."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import checkpoint_vjp
 
-    def sample_fn(x: EagerValue) -> EagerValue:
+    def sample_fn(x: BackendArg) -> BackendArg:
         """Identity sample function for tracing.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `sample_fn`.
+            BackendArg: Computed output value from `sample_fn`.
         """
         return x
 
@@ -246,7 +284,8 @@ def test_cond_vjp_with_branches() -> None:
     """Test _cond_vjp when both branches are provided."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _cond_vjp
 
     tb = IRGraph()
@@ -257,7 +296,12 @@ def test_cond_vjp_with_branches() -> None:
     eb.outputs = ["e_out"]
 
     graph = IRGraph()
-    node = IRNode(id="cond_node", op_type="Cond", inputs=["pred", "x"], attributes=ensure_attrs({"then_branch": tb, "else_branch": eb}))
+    node = IRNode(
+        id="cond_node",
+        op_type="Cond",
+        inputs=["pred", "x"],
+        attributes=ensure_attrs({"then_branch": tb, "else_branch": eb}),
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_grad:
         mock_grad.return_value = IRGraph()
@@ -270,7 +314,8 @@ def test_scan_vjp_with_body() -> None:
     """Test _scan_vjp when body subgraph is provided."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _scan_vjp
 
     body = IRGraph()
@@ -278,7 +323,9 @@ def test_scan_vjp_with_body() -> None:
     body.outputs = ["b_out"]
 
     graph = IRGraph()
-    node = IRNode(id="scan_node", op_type="Scan", inputs=["init", "xs"], attributes=ensure_attrs({"body": body, "reverse": False}))
+    node = IRNode(
+        id="scan_node", op_type="Scan", inputs=["init", "xs"], attributes=ensure_attrs({"body": body, "reverse": False})
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_grad:
         mock_grad.return_value = IRGraph()
@@ -291,7 +338,8 @@ def test_while_loop_vjp_with_body() -> None:
     """Test _while_loop_vjp when body subgraph is provided."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _while_loop_vjp
 
     body = IRGraph()
@@ -299,7 +347,12 @@ def test_while_loop_vjp_with_body() -> None:
     body.outputs = ["b_out"]
 
     graph = IRGraph()
-    node = IRNode(id="while_node", op_type="WhileLoop", inputs=["init"], attributes=ensure_attrs({"body": body, "cond": IRGraph()}))
+    node = IRNode(
+        id="while_node",
+        op_type="WhileLoop",
+        inputs=["init"],
+        attributes=ensure_attrs({"body": body, "cond": IRGraph()}),
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_grad:
         mock_grad.return_value = IRGraph()
@@ -312,7 +365,8 @@ def test_cond_jvp_with_branches() -> None:
     """Test _cond_jvp when both branches are provided."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _cond_jvp
 
     tb = IRGraph()
@@ -323,7 +377,12 @@ def test_cond_jvp_with_branches() -> None:
     eb.outputs = ["e_out"]
 
     graph = IRGraph()
-    node = IRNode(id="cond_node", op_type="Cond", inputs=["pred", "x"], attributes=ensure_attrs({"then_branch": tb, "else_branch": eb}))
+    node = IRNode(
+        id="cond_node",
+        op_type="Cond",
+        inputs=["pred", "x"],
+        attributes=ensure_attrs({"then_branch": tb, "else_branch": eb}),
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_jvp:
         mock_jvp.return_value = IRGraph()
@@ -336,7 +395,8 @@ def test_while_loop_jvp_with_body() -> None:
     """Test _while_loop_jvp when body is provided."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _while_loop_jvp
 
     body = IRGraph()
@@ -344,7 +404,9 @@ def test_while_loop_jvp_with_body() -> None:
     body.outputs = ["b_out"]
 
     graph = IRGraph()
-    node = IRNode(id="while_node", op_type="WhileLoop", inputs=["x"], attributes=ensure_attrs({"body": body, "cond": "mock_cond"}))
+    node = IRNode(
+        id="while_node", op_type="WhileLoop", inputs=["x"], attributes=ensure_attrs({"body": body, "cond": "mock_cond"})
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_jvp:
         mock_jvp.return_value = IRGraph()
@@ -357,7 +419,8 @@ def test_scan_jvp_with_body() -> None:
     """Test _scan_jvp when body is provided."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import _scan_jvp
 
     body = IRGraph()
@@ -365,7 +428,9 @@ def test_scan_jvp_with_body() -> None:
     body.outputs = ["b_out"]
 
     graph = IRGraph()
-    node = IRNode(id="scan_node", op_type="Scan", inputs=["x"], attributes=ensure_attrs({"body": body, "reverse": True}))
+    node = IRNode(
+        id="scan_node", op_type="Scan", inputs=["x"], attributes=ensure_attrs({"body": body, "reverse": True})
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_jvp:
         mock_jvp.return_value = IRGraph()
@@ -376,7 +441,8 @@ def test_scan_jvp_with_body() -> None:
 
 def test_custom_vjp_vjp_with_bwd_subgraph() -> None:
     """Test custom_vjp_vjp when bwd_subgraph is provided."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_vjp_vjp
 
     # Test case 1: bwd_subgraph has inputs and nodes dict, plus extra inputs to cover i >= len(node.inputs)
@@ -389,30 +455,38 @@ def test_custom_vjp_vjp_with_bwd_subgraph() -> None:
     bwd_sg.outputs = ["grad_x"]
 
     main_graph = IRGraph()
-    node = IRNode(id="cvjp_node", op_type="CustomVJP", inputs=["x_main"], attributes=ensure_attrs({"bwd_graph": bwd_sg}))
+    node = IRNode(
+        id="cvjp_node", op_type="CustomVJP", inputs=["x_main"], attributes=ensure_attrs({"bwd_graph": bwd_sg})
+    )
 
     res = custom_vjp_vjp(main_graph, node, "cot_main")
     assert len(res) == 1
 
     # Test case 2: bwd_subgraph has empty inputs and list of nodes
-    class DummyGraphWithList:
+    from tests.testing_utils import MockGraphStub
+
+    class DummyGraphWithList(MockGraphStub):
         """Dummy graph container with a list of nodes."""
 
         def __init__(self) -> None:
             """Initialize dummy graph."""
-            self.inputs = ensure_tensor_list([])
-            self.outputs = ensure_tensor_list([])
-            self.nodes = [IRNode(id="n1", op_type="Exp", inputs=[])]
+            super().__init__()
+            self.inputs = []
+            self.outputs = []
+            pytest.MonkeyPatch().setattr(self, "nodes", [IRNode(id="n1", op_type="Exp", inputs=[])], raising=False)
 
     dummy_sg = DummyGraphWithList()
-    node2 = IRNode(id="cvjp_node2", op_type="CustomVJP", inputs=[], attributes=ensure_attrs({"custom_backward_subgraph": dummy_sg}))
+    node2 = IRNode(
+        id="cvjp_node2", op_type="CustomVJP", inputs=[], attributes=ensure_attrs({"custom_backward_subgraph": dummy_sg})
+    )
     res2 = custom_vjp_vjp(main_graph, node2, "cot2")
     assert len(res2) == 0
 
 
 def test_custom_jvp_jvp() -> None:
     """Test custom_jvp_jvp with subgraph and with fallback rule."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_jvp_jvp
 
     # Subgraph path with outputs
@@ -429,23 +503,33 @@ def test_custom_jvp_jvp() -> None:
     assert res is not None
 
     # Subgraph path with empty outputs and list of nodes, single tangent
-    class DummyJVPGraphList:
+    from tests.testing_utils import MockGraphStub
+
+    class DummyJVPGraphList(MockGraphStub):
         """Dummy JVP graph container with a list of nodes."""
 
         def __init__(self) -> None:
             """Initialize dummy JVP graph."""
+            super().__init__()
             self.inputs = ["x1", "x2", "extra"]
-            self.outputs = ensure_tensor_list([])
-            self.nodes = [IRNode(id="k1", op_type="Identity", inputs=[])]
+            self.outputs: list[str] = []
+            pytest.MonkeyPatch().setattr(self, "nodes", [IRNode(id="k1", op_type="Identity", inputs=[])], raising=False)
 
-    node2 = IRNode(id="cjvp_node2", op_type="CustomJVP", inputs=["x1"], attributes=ensure_attrs({"custom_forward_subgraph": DummyJVPGraphList()}))
+    node2 = IRNode(
+        id="cjvp_node2",
+        op_type="CustomJVP",
+        inputs=["x1"],
+        attributes=ensure_attrs({"custom_forward_subgraph": DummyJVPGraphList()}),
+    )
     res2 = custom_jvp_jvp(main_g, node2, "t_single")
     assert res2 == "t_single"
 
     # Fallback path (no subgraph)
-    node_fb = IRNode(id="cjvp_fb", op_type="CustomJVP", inputs=["x"], attributes={"jvp_rule": "mock_rule", "fun": "mock_fun"})
+    node_fb = IRNode(
+        id="cjvp_fb", op_type="CustomJVP", inputs=["x"], attributes={"jvp_rule": "mock_rule", "fun": "mock_fun"}
+    )
     res_fb = custom_jvp_jvp(main_g, node_fb, ["t_x"])
-    assert ensure_eager_tensor("cjvp_tan_") in ensure_eager_tensor(res_fb)
+    assert "cjvp_tan_" in str(res_fb)
     assert res_fb in main_g.nodes
 
 
@@ -453,17 +537,18 @@ def test_custom_jvp_vjp() -> None:
     """Test custom_jvp_vjp with fun and fallback without fun."""
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_jvp_vjp
 
-    def sample_fn(x: EagerValue) -> EagerValue:
+    def sample_fn(x: BackendArg) -> BackendArg:
         """Identity function for custom JVP VJP test.
 
         Args:
             x: Test parameter `x`.
 
         Returns:
-            EagerValue: Computed output value from `sample_fn`.
+            BackendArg: Computed output value from `sample_fn`.
         """
         return x
 
@@ -490,7 +575,8 @@ def test_custom_jvp_vjp() -> None:
 
 def test_indexing_and_zeros_autodiff_rules() -> None:
     """Test getitem_vjp, index_put_jvp, and zeros_like_jvp."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_ir import IRGraph, IRNode
+
     from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import getitem_vjp, index_put_jvp, zeros_like_jvp
 
     g = IRGraph()

@@ -1,10 +1,11 @@
-"""Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.tensorflow.types`)."""
+"""Operations and utilities for `ml_switcheroo_compiler.backends.tensorflow.types`."""
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import sys
-import typing
+import types
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -12,30 +13,31 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_callable, ensure_eager_tensor, ensure_float
-from ml_switcheroo_compiler.backends.protocols import ensure_mod
+from ml_switcheroo_compiler.backends.eager_registry import (
+    BackendArg,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if typing.TYPE_CHECKING:
-    import tensorflow as tf
+_has_tf = sys.modules.get("tensorflow") is not None or (
+    "tensorflow" not in sys.modules and importlib.util.find_spec("tensorflow") is not None
+)
+tf: types.ModuleType | BackendModuleProtocol | None = importlib.import_module("tensorflow") if _has_tf else None
 
-_has_tf = sys.modules.get("tensorflow") is not None or ("tensorflow" not in sys.modules and importlib.util.find_spec("tensorflow") is not None)
-ensure_mod(sys.modules[__name__]).tf = ensure_mod(importlib.import_module("tensorflow") if _has_tf else None)
 
-
-def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
+def zeros(cls: type | None, shape: tuple[int, ...]) -> BackendArg:
     """Execute zeros for compiler processing.
 
     Args:
-        cls (type): Class.
-        shape (tuple): Shape.
+        cls (type | None): Class.
+        shape (tuple[int, ...]): Shape.
 
     Args:
-        cls (type): Class.
-        shape (tuple): Shape.
+        cls (type | None): Class.
+        shape (tuple[int, ...]): Shape.
 
     Args:
-        cls (type): The class.
-    shape (tuple): Input `shape` argument (shape).
+        cls (type | None): The class.
+    shape (tuple[int, ...]): Input `shape` argument (shape).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -43,67 +45,67 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     return generic_zeros(tf, shape)
 
 
-def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
+def array(cls: type | None, data: BackendArg, dtype: BackendArg = None) -> BackendArg:
     """Execute array for compiler processing.
 
     Args:
-        cls (type): Class.
-        data (EagerValue): Data.
-        dtype (EagerValue): Dtype.
+        cls (type | None): Class.
+        data (BackendArg): Data.
+        dtype (BackendArg): Dtype.
 
     Args:
-        cls (type): Class.
-        data (EagerValue): Data.
-        dtype (EagerValue): Dtype.
+        cls (type | None): Class.
+        data (BackendArg): Data.
+        dtype (BackendArg): Dtype.
 
     Args:
-        cls (type): The class.
-    data (EagerValue): Input `data` argument (data).
-        dtype (EagerValue): Input `dtype` argument (dtype).
+        cls (type | None): The class.
+    data (BackendArg): Input `data` argument (data).
+        dtype (BackendArg): Input `dtype` argument (dtype).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return ensure_eager_tensor(ensure_callable(generic_array)(tf, data, dtype))
+    return generic_array(tf, data, dtype)
 
 
-def asarray(cls: type, data: EagerValue) -> EagerValue:
+def asarray(cls: type | None, data: BackendArg) -> BackendArg:
     """Execute asarray for compiler processing.
 
     Args:
-        cls (type): Class.
-        data (EagerValue): Data.
+        cls (type | None): Class.
+        data (BackendArg): Data.
 
     Args:
-        cls (type): Class.
-        data (EagerValue): Data.
+        cls (type | None): Class.
+        data (BackendArg): Data.
 
     Args:
-        cls (type): The class.
-    data (EagerValue): Input `data` argument (data).
+        cls (type | None): The class.
+    data (BackendArg): Input `data` argument (data).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return ensure_eager_tensor(ensure_callable(generic_asarray)(tf, data))
+    return generic_asarray(tf, data)
 
 
-def item(cls: type, data: EagerValue) -> float:
+def item(cls: type | None, data: BackendArg) -> float:
     """Execute item for compiler processing.
 
     Args:
-        cls (type): Class.
-        data (EagerValue): Data.
+        cls (type | None): Class.
+        data (BackendArg): Data.
 
     Args:
-        cls (type): Class.
-        data (EagerValue): Data.
+        cls (type | None): Class.
+        data (BackendArg): Data.
 
     Args:
-        cls (type): The class.
-    data (EagerValue): Input `data` argument (data).
+        cls (type | None): The class.
+    data (BackendArg): Input `data` argument (data).
 
     Returns:
         float: Computed `float` output.
     """
-    return ensure_float(ensure_callable(generic_item)(tf, data))
+    return generic_item(tf, data)

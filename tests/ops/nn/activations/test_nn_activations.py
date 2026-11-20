@@ -5,17 +5,40 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_tensor_dict
+from ml_switcheroo_compiler.ops.nn.activations import (
+    LogSoftmax,
+    OneHot,
+    Rrelu,
+    Sigmoid,
+    Softmax,
+    crelu,
+    log_softmax,
+    one_hot,
+    rrelu,
+    sigmoid,
+    softmax,
+    softplus,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def _test_nn_activations_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
+class _TestNnActivationsCoverageState(typing.TypedDict, total=False):
+    """Typed shared state for `_test_nn_activations_coverage` split helpers."""
+
+    DummyShape: type
+    original_eager: bool
+    t: Tensor
+    t_idx: Tensor
+
+
+def _test_nn_activations_coverage_part_1(_state: _TestNnActivationsCoverageState) -> None:
     """Execute part 1 of test_nn_activations_coverage.
 
     Args:
@@ -51,10 +74,10 @@ def _test_nn_activations_coverage_part_1(_state: dict[str, EagerTensorProtocol])
     assert OneHot().infer_shape(DummyShape(), 5) == (1, 2, 5)
     assert OneHot().infer_shape(DummyShape(), depth=5) == (1, 2, 5)
     assert OneHot().infer_shape() == (1,)
-    _state.update(ensure_tensor_dict({"DummyShape": DummyShape, "t": t, "t_idx": t_idx}))
+    _state.update({"DummyShape": DummyShape, "t": t, "t_idx": t_idx})
 
 
-def _test_nn_activations_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_nn_activations_coverage_part_2(_state: _TestNnActivationsCoverageState) -> None:
     """Execute part 2 of test_nn_activations_coverage.
 
     Args:
@@ -79,11 +102,11 @@ def _test_nn_activations_coverage_part_2(_state: dict[str, EagerTensorProtocol])
 
     # tracing
     original_eager = config.eager_mode
-    _state.update(ensure_tensor_dict({"HardSilu": HardSilu, "HardSwish": HardSwish, "Squareplus": Squareplus, "original_eager": original_eager}))
-    _state.update(ensure_tensor_dict({"DummyShape": DummyShape}))
+    _state.update({"original_eager": original_eager})
+    _state.update({"DummyShape": DummyShape})
 
 
-def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
+def _test_nn_activations_coverage_part_3(_state: _TestNnActivationsCoverageState) -> None:
     """Execute part 3 of test_nn_activations_coverage.
 
     Args:
@@ -100,9 +123,9 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = ensure_tensor_dict({})
+            nodes: dict[str, LogicalNode] = {}
 
-            def add_node(self, node: EagerValue) -> None:
+            def add_node(self, node: BackendArg) -> None:
                 """Test function add_node.
 
                 Args:
@@ -110,13 +133,13 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
                 """
                 pass
 
-        ensure_mutable(global_tracing_state).active_graph = ensure_eager_tensor(DummyGraph())
+        pytest.MonkeyPatch().setattr(global_tracing_state, "active_graph", DummyGraph(), raising=False)
 
         res = softmax(t)
         assert res is not None
         res = log_softmax(t)
         assert res is not None
-        res = ensure_callable(sigmoid)(t)
+        res = sigmoid(t)
         assert res is not None
         res = one_hot(t_idx, 2)
         assert res is not None
@@ -124,13 +147,13 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
         assert res is not None
 
     finally:
-        ensure_mutable(config).eager_mode = ensure_eager_tensor(original_eager)
+        pytest.MonkeyPatch().setattr(config, "eager_mode", original_eager, raising=False)
         global_tracing_state.is_tracing = False
 
 
 def test_nn_activations_coverage() -> None:
     """Test function test_nn_activations_coverage."""
-    _state: dict[str, EagerTensorProtocol] = {}
+    _state: _TestNnActivationsCoverageState = {}
     _test_nn_activations_coverage_part_1(_state)
     _test_nn_activations_coverage_part_2(_state)
     _test_nn_activations_coverage_part_3(_state)

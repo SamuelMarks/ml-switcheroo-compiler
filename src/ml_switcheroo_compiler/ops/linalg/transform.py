@@ -5,14 +5,13 @@ from __future__ import annotations
 import ml_switcheroo_compiler.ops.binary as _math
 import ml_switcheroo_compiler.ops.shape.joining as _joining
 import ml_switcheroo_compiler.ops.shape.slicing as _slicing
-from ml_switcheroo_compiler.backends.registry import ensure_callable
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
-from ml_switcheroo_compiler.ops.creation.frontend_basic import array
-from ml_switcheroo_compiler.ops.shape.frontend import reshape
+from ml_switcheroo_compiler.ops.creation.api_basic import array
+from ml_switcheroo_compiler.ops.shape.api import reshape
 
 
-def hadamard_transform(x: Tensor, scale: float = 1.0) -> TensorOrScalar:
+def hadamard_transform(x: Tensor, scale: float = 1.0) -> OpValue:
     """Apply the Walsh-Hadamard Transform to the last dimension of the input tensor.
 
     Args:
@@ -22,8 +21,10 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> TensorOrScalar:
     Returns:
         Tensor: The transformed tensor.
     """
+    from ml_switcheroo_compiler.core.shape import extract_shape
+
     h = 1
-    n = x.shape[-1]
+    n = extract_shape(x)[-1]
     res = x
     while h < n:
         res = reshape(res, list(res.shape[:-1]) + [-1, 2, h])
@@ -39,7 +40,9 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> TensorOrScalar:
         res = reshape(ensure_tensor(stacked), list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        res = _math.multiply(res, ensure_callable(array)([scale], dtype="float32"))
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        res = _math.multiply(res, array([scale], dtype=DType.Float32))
     return res
 
 

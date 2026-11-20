@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import typing
+from pathlib import Path
 
 import yaml
 
@@ -16,10 +17,9 @@ from ml_switcheroo_compiler.distributed.config_models import (
     PipelineTopologiesConfig,
     StageCommunicationConfig,
 )
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_pipeline_config_model() -> None:
@@ -31,7 +31,7 @@ def test_pipeline_config_model() -> None:
             "stage_communication": {"protocol": "p2p_queue"},
         }
     }
-    config = ensure_callable(PipelineTopologiesConfig)(root=data)
+    config = PipelineTopologiesConfig.model_validate(data)
     default_config = config.get("default")
     assert default_config is not None
     assert default_config.microbatch_splitting.num_microbatches == 4
@@ -49,7 +49,9 @@ def test_pipeline_config_model() -> None:
 
 def test_pipeline_topologies_yaml_file_validation() -> None:
     """Validate that pipeline_topologies.yaml conforms strictly to PipelineTopologiesConfig schema."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/pipeline_topologies.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/pipeline_topologies.yaml"
+    )
     with open(yaml_path, encoding="utf-8") as f:
         raw_data = yaml.safe_load(f)
 
@@ -128,7 +130,7 @@ def test_load_consolidated_topology_file() -> None:
     assert cfg.webrtc_topology is not None
 
 
-def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> None:
+def test_load_consolidated_topology_fallback(tmp_path: Path) -> None:
     """Test load_consolidated_topology fallback when distributed_topology.yaml is missing.
 
     Args:
@@ -170,7 +172,7 @@ def test_load_consolidated_topology_fallback(tmp_path: EagerTensorProtocol) -> N
         assert cfg_empty.webrtc_topology is None
 
 
-def test_load_distributed_topologies(tmp_path: EagerTensorProtocol) -> None:
+def test_load_distributed_topologies(tmp_path: Path) -> None:
     """Test load_distributed_topologies loader function.
 
     Args:
@@ -180,13 +182,15 @@ def test_load_distributed_topologies(tmp_path: EagerTensorProtocol) -> None:
 
     # Default path
     cfg = load_distributed_topologies()
-    assert cfg is not None
-    assert cfg.cluster_meshes is not None
+    assert type(cfg).__name__ == "DistributedTopologiesConfig"
+    assert "mesh_dp_tp" in cfg.cluster_meshes
 
     # Custom path
-    yaml_path = os.path.join(os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/distributed_topologies.yaml")
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/distributed_topologies.yaml"
+    )
     cfg_custom = load_distributed_topologies(path=yaml_path)
-    assert cfg_custom is not None
+    assert type(cfg_custom).__name__ == "DistributedTopologiesConfig"
 
 
 def test_load_cluster_topology() -> None:

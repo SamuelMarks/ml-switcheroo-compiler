@@ -6,8 +6,8 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import TensorOrScalar as TensorOrScalar
+from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+from ml_switcheroo_compiler.core.shape import OpValue as OpValue
 
 
 @typing.runtime_checkable
@@ -25,7 +25,7 @@ class FormatterContext(pydantic.BaseModel):
     prefix: str
     op_type: str
     input_vars: list[str]
-    kwargs: dict[str, EagerValue]
+    kwargs: dict[str, BackendArg]
     axis_kwarg: str = "axis"
     keepdims_kwarg: str = "keepdims"
 
@@ -34,7 +34,7 @@ class OpFormatter:
     """Formatter for backend operation strings."""
 
     @staticmethod
-    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, EagerValue]) -> str:
+    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, BackendArg]) -> str:
         """Replace format placeholders with variables and kwargs.
 
         Args:
@@ -110,10 +110,10 @@ class FallbackHandler:
 
     @staticmethod
     def generate_fallback_code(
-        node: EagerValue,
+        node: BackendArg,
         input_vars: list[str],
         prefix: str,
-        **kwargs: EagerValue,
+        **kwargs: BackendArg,
     ) -> str:
         """Generate fallback code for an unsupported operation.
 

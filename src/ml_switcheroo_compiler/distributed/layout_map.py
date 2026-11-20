@@ -6,10 +6,12 @@ import re
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import OpValue
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
+
+_EqT = typing.TypeVar("_EqT")
 
 
 @typing.runtime_checkable
@@ -29,11 +31,11 @@ class _NamedMeshProtocol(typing.Protocol):
 class ShardingSpec:
     """Specification of how a tensor is sharded across a DeviceMesh."""
 
-    def __init__(self, mesh: TensorOrScalar, mesh_mapping: Sequence[str | None]) -> None:
+    def __init__(self, mesh: OpValue, mesh_mapping: Sequence[str | None]) -> None:
         """Initialize ShardingSpec.
 
         Args:
-            mesh (TensorOrScalar): The DeviceMesh.
+            mesh (OpValue): The DeviceMesh.
             mesh_mapping (Sequence[Optional[str]]): Sequence of mesh axis names or None for replicated dimensions.
         """
         self.mesh = mesh
@@ -47,20 +49,18 @@ class ShardingSpec:
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def __eq__(self, other: TensorOrScalar | ShardingSpec) -> bool:
+    def __eq__(self, other: _EqT) -> bool:
         """Check equality with another `ShardingSpec`.
 
         Args:
-            other (TensorOrScalar | ShardingSpec): Other object to compare.
+            other (_EqT): Other object to compare.
 
         Returns:
             bool: True if equal.
         """
-        from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_tensor
-
         if not isinstance(other, ShardingSpec):
             return False
-        return bool(ensure_eager_tensor(self.mesh) == ensure_eager_tensor(other.mesh)) and self.mesh_mapping == other.mesh_mapping
+        return bool(self.mesh == other.mesh) and self.mesh_mapping == other.mesh_mapping
 
     _eq = __eq__
 
@@ -68,11 +68,11 @@ class ShardingSpec:
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(self, device_mesh: TensorOrScalar = None) -> None:
+    def __init__(self, device_mesh: OpValue = None) -> None:
         """Initialize LayoutMap.
 
         Args:
-            device_mesh (TensorOrScalar): Optional device mesh.
+            device_mesh (OpValue): Optional device mesh.
         """
         self.device_mesh = device_mesh
         self._map: dict[str, ShardingSpec] = {}
@@ -133,19 +133,24 @@ class LayoutMap:
         """Convert LayoutMap to a serializable dictionary.
 
         Returns:
-            dict[str, str | dict[str, dict[str, str | list[str | None] | None]] | None]: Serialized layout map representation.
+            dict[str, str | dict[str, dict[str, str | list[str | None] | None]] | None]: Serialized layout map
+                representation.
         """
         specs_dict: dict[str, dict[str, str | list[str | None] | None]] = {}
         for path, spec in self._map.items():
-            raw_mesh: TensorOrScalar = spec.mesh
+            raw_mesh: OpValue = spec.mesh
             specs_dict[path] = {
-                "mesh_name": (raw_mesh.name if isinstance(raw_mesh, _NamedMeshProtocol) else "default") if spec.mesh else None,
+                "mesh_name": (raw_mesh.name if isinstance(raw_mesh, _NamedMeshProtocol) else "default")
+                if spec.mesh
+                else None,
                 "mesh_mapping": list(spec.mesh_mapping),
             }
-        raw_dev_mesh: TensorOrScalar = self.device_mesh
+        raw_dev_mesh: OpValue = self.device_mesh
         return {
             "version": "1.0",
-            "device_mesh": (raw_dev_mesh.name if isinstance(raw_dev_mesh, _NamedMeshProtocol) else None) if self.device_mesh else None,
+            "device_mesh": (raw_dev_mesh.name if isinstance(raw_dev_mesh, _NamedMeshProtocol) else None)
+            if self.device_mesh
+            else None,
             "specs": specs_dict,
         }
 

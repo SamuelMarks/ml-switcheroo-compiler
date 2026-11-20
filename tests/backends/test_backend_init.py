@@ -4,15 +4,9 @@ from __future__ import annotations
 
 import importlib
 import sys
-import typing
 from unittest.mock import patch
 
 import pytest
-
-from tests.testing_utils import ensure_callable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 backends_to_test = {
     "mlx": "The 'mlx' backend requires the 'mlx' library to be installed.",
@@ -28,12 +22,12 @@ backends_to_test = {
 
 
 @pytest.mark.parametrize("backend,error_msg", backends_to_test.items())
-def test_backend_import_error(backend: EagerTensorProtocol, error_msg: EagerTensorProtocol) -> None:
+def test_backend_import_error(backend: str, error_msg: str) -> None:
     """Test function test_backend_import_error.
 
     Args:
-        backend: Test parameter `backend`.
-        error_msg: Test parameter `error_msg`.
+        backend (str): Test parameter `backend`.
+        error_msg (str): Test parameter `error_msg`.
     """
     mod_name = f"ml_switcheroo_compiler.backends.{backend}"
     mod = importlib.import_module(mod_name)
@@ -45,16 +39,16 @@ def test_backend_import_error(backend: EagerTensorProtocol, error_msg: EagerTens
             if "sphinx" in sys.modules:
                 del sys.modules["sphinx"]
 
-            with ensure_callable(pytest.raises)(ImportError, match=error_msg):
+            with pytest.raises(ImportError, match=error_msg):
                 importlib.reload(mod)
 
 
 @pytest.mark.parametrize("backend", backends_to_test.keys())
-def test_backend_value_error(backend: EagerTensorProtocol) -> None:
+def test_backend_value_error(backend: str) -> None:
     """Test function test_backend_value_error.
 
     Args:
-        backend: Test parameter `backend`.
+        backend (str): Test parameter `backend`.
     """
     mod_name = f"ml_switcheroo_compiler.backends.{backend}"
     mod = importlib.import_module(mod_name)

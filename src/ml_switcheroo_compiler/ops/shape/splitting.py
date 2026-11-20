@@ -7,17 +7,15 @@ from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.backends.registry import (
-    EagerTensorProtocol,
-    ensure_eager_list,
-    ensure_eager_tensor,
-    ensure_int,
+    coerce_int,
+    coerce_operand_list,
     get_active_backend,
 )
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeProtocol,
-    TensorOrScalar,
     extract_data,
     extract_device,
     extract_shape,
@@ -32,14 +30,14 @@ from ml_switcheroo_compiler.tracing import builder
 class _UnstackBackendProtocol(typing.Protocol):
     """Protocol for backends exposing `.unstack`."""
 
-    unstack: TensorOrScalar
+    unstack: OpValue
 
 
-def _calculate_num_splits(input: TensorOrScalar, split_size_or_sections: int | Sequence[int], axis: int) -> TensorOrScalar:  #
+def _calculate_num_splits(input: OpValue, split_size_or_sections: int | Sequence[int], axis: int) -> OpValue:  #
     """Calculate the number of splits for a tensor.
 
     Args:
-        input (Tensor): The input tensor
+        input (OpValue): The input tensor
         split_size_or_sections (int | Sequence[int]): The size of a single chunk or list of sizes
         axis (int): The dimension along which to split
 
@@ -57,16 +55,16 @@ def _calculate_num_splits(input: TensorOrScalar, split_size_or_sections: int | S
 
     in_shape = extract_shape(input)
     if in_shape and in_shape[axis] % split_size_or_sections == 0:
-        return ensure_eager_tensor(in_shape[axis] // split_size_or_sections)
+        return in_shape[axis] // split_size_or_sections
 
     return split_size_or_sections
 
 
-def _validate_split_axis(input: TensorOrScalar, axis: int) -> TensorOrScalar:  #
+def _validate_split_axis(input: OpValue, axis: int) -> OpValue:  #
     """Validate the split axis against the input tensor shape.
 
     Args:
-        input (Tensor): Input `input` argument (input).
+        input (OpValue): Input `input` argument (input).
         axis (int): Input `axis` argument (axis).
 
     Returns:
@@ -87,11 +85,11 @@ def _validate_split_axis(input: TensorOrScalar, axis: int) -> TensorOrScalar:  #
 # pylint: disable=too-many-locals
 
 
-def _split_even(input: TensorOrScalar, split_size: int, axis: int, num_splits: int) -> TensorOrScalar:
+def _split_even(input: OpValue, split_size: int, axis: int, num_splits: int) -> OpValue:
     """Handle splitting when an integer split_size_or_sections is provided.
 
     Args:
-        input (Tensor): Input `input` argument (input).
+        input (OpValue): Input `input` argument (input).
         split_size (int): Input `split_size` argument (split size).
         axis (int): Input `axis` argument (axis).
         num_splits (int): Input `num_splits` argument (num splits).
@@ -105,7 +103,9 @@ def _split_even(input: TensorOrScalar, split_size: int, axis: int, num_splits: i
         datas = backend.execute_op("Split", input_data, split_size, axis=axis)
         input_dtype = _extract_shape_dtype(input, _extract_shape_dtype(backend.array(input_data), None))
         input_device = extract_device(input, config.default_device)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in coerce_operand_list(datas)
+        )
 
     inputs = [input]
     out_shape = extract_shape(inputs[0]) if len(inputs) > 0 else ()
@@ -125,16 +125,16 @@ def _split_even(input: TensorOrScalar, split_size: int, axis: int, num_splits: i
 
 
 def _split_sections(  # pylint: disable=too-many-locals
-    input: TensorOrScalar,
+    input: OpValue,
     sections: Sequence[int],
     axis: int,
     num_splits: int,  #
-) -> TensorOrScalar:
+) -> OpValue:
     """Handle splitting when a sequence of sections is provided.
 
     Args:
-        input (Tensor): Input `input` argument (input).
-        sections (Sequence): Input `sections` argument (sections).
+        input (OpValue): Input `input` argument (input).
+        sections (Sequence[int]): Input `sections` argument (sections).
         axis (int): Input `axis` argument (axis).
         num_splits (int): Input `num_splits` argument (num splits).
 
@@ -147,7 +147,9 @@ def _split_sections(  # pylint: disable=too-many-locals
         datas = backend.execute_op("Split", input_data, sections, axis=axis)
         input_dtype = _extract_shape_dtype(input, _extract_shape_dtype(backend.array(input_data), None))
         input_device = extract_device(input, config.default_device)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in coerce_operand_list(datas)
+        )
 
     inputs = [input]
     out_shape = extract_shape(inputs[0]) if len(inputs) > 0 else ()
@@ -167,14 +169,14 @@ def _split_sections(  # pylint: disable=too-many-locals
 
 
 def split(
-    input: TensorOrScalar,  #
+    input: OpValue,  #
     split_size_or_sections: int | Sequence[int],
     axis: int = 0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Split the input tensor into multiple sub-tensors.
 
     Args:
-        input (Tensor): Input `input` argument (input).
+        input (OpValue): Input `input` argument (input).
         split_size_or_sections (int | Sequence[int]): Input `split_size_or_sections` argument (split size or sections).
         axis (int): Input `axis` argument (axis).
 
@@ -182,31 +184,37 @@ def split(
         Sequence: Computed `Sequence` output.
     """
     valid_axis = _validate_split_axis(input, axis)
-    num_splits = _calculate_num_splits(input, split_size_or_sections, ensure_int(valid_axis))
+    num_splits = _calculate_num_splits(input, split_size_or_sections, coerce_int(valid_axis))
 
     if isinstance(split_size_or_sections, int):
-        return _split_even(input, split_size_or_sections, ensure_int(valid_axis), ensure_int(num_splits))
-    return _split_sections(input, split_size_or_sections, ensure_int(valid_axis), ensure_int(num_splits))
+        return _split_even(input, split_size_or_sections, coerce_int(valid_axis), coerce_int(num_splits))
+    return _split_sections(input, split_size_or_sections, coerce_int(valid_axis), coerce_int(num_splits))
 
 
-def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
+def unstack(input: OpValue, axis: int = 0) -> OpValue:
     """Unstack the input tensor along a specified dimension into a sequence of tensors.
 
     Args:
-        input (Tensor): Input `input` argument (input).
+        input (OpValue): Input `input` argument (input).
         axis (int): Input `axis` argument (axis).
 
     Returns:
         Sequence: Computed `Sequence` output.
     """
     if config.eager_mode:
-        backend: TensorOrScalar = get_active_backend()
+        backend: OpValue | _UnstackBackendProtocol = get_active_backend()
         act_backend = get_active_backend()
         in_data = extract_data(input)
-        datas = act_backend.execute_op("Unstack", in_data, axis=axis) if isinstance(backend, _UnstackBackendProtocol) else act_backend.execute_op("Moveaxis", in_data, axis, 0)
+        datas = (
+            act_backend.execute_op("Unstack", in_data, axis=axis)
+            if isinstance(backend, _UnstackBackendProtocol)
+            else act_backend.execute_op("Moveaxis", in_data, axis, 0)
+        )
         input_dtype = _extract_shape_dtype(input, _extract_shape_dtype(act_backend.array(in_data), None))
         input_device = extract_device(input, config.default_device)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), input_dtype, input_device)) for d in coerce_operand_list(datas)
+        )
     inputs = [input]
     base_shape = extract_shape(inputs[0]) if len(inputs) > 0 else ()
     rank = len(base_shape)
@@ -230,14 +238,14 @@ def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
 
 
 def array_split(
-    ary: TensorOrScalar,  #
+    ary: OpValue,  #
     indices_or_sections: int | Sequence[int],
     axis: int = 0,
-) -> TensorOrScalar:
+) -> OpValue:
     """Split an array into multiple sub-arrays.
 
     Args:
-        ary (Tensor): Input `ary` argument (ary).
+        ary (OpValue): Input `ary` argument (ary).
         indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
         axis (int): Input `axis` argument (axis).
 
@@ -247,7 +255,10 @@ def array_split(
     if config.eager_mode:
         backend = get_active_backend()
         datas = backend.execute_op("ArraySplit", extract_data(ary), indices_or_sections, axis=axis)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None)))
+            for d in coerce_operand_list(datas)
+        )
     return (
         _emit_shape_node(
             "ArraySplit",
@@ -259,11 +270,11 @@ def array_split(
     )
 
 
-def vsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> TensorOrScalar:
+def vsplit(ary: OpValue, indices_or_sections: int | Sequence[int]) -> OpValue:
     """Split an array into multiple sub-arrays vertically (row-wise).
 
     Args:
-        ary (Tensor): Input `ary` argument (ary).
+        ary (OpValue): Input `ary` argument (ary).
         indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
 
     Returns:
@@ -272,11 +283,16 @@ def vsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     if config.eager_mode:
         backend = get_active_backend()
         datas = backend.execute_op("Vsplit", extract_data(ary), indices_or_sections)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None)))
+            for d in coerce_operand_list(datas)
+        )
 
     ary_shape = extract_shape(ary)
     num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
-    node = _emit_shape_node("Vsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None))
+    node = _emit_shape_node(
+        "Vsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None)
+    )
     out_tensors = []
 
     # Calculate output shapes
@@ -298,11 +314,11 @@ def vsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     return tuple(out_tensors)
 
 
-def hsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> TensorOrScalar:
+def hsplit(ary: OpValue, indices_or_sections: int | Sequence[int]) -> OpValue:
     """Split an array into multiple sub-arrays horizontally (column-wise).
 
     Args:
-        ary (Tensor): Input `ary` argument (ary).
+        ary (OpValue): Input `ary` argument (ary).
         indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
 
     Returns:
@@ -311,11 +327,16 @@ def hsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     if config.eager_mode:
         backend = get_active_backend()
         datas = backend.execute_op("Hsplit", extract_data(ary), indices_or_sections)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None)))
+            for d in coerce_operand_list(datas)
+        )
 
     ary_shape = extract_shape(ary)
     num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
-    node = _emit_shape_node("Hsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None))
+    node = _emit_shape_node(
+        "Hsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None)
+    )
     out_tensors = []
 
     out_shapes = []
@@ -335,11 +356,11 @@ def hsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     return tuple(out_tensors)
 
 
-def dsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> TensorOrScalar:
+def dsplit(ary: OpValue, indices_or_sections: int | Sequence[int]) -> OpValue:
     """Split array into multiple sub-arrays along the 3rd axis (depth).
 
     Args:
-        ary (Tensor): Input `ary` argument (ary).
+        ary (OpValue): Input `ary` argument (ary).
         indices_or_sections (int | Sequence[int]): Input `indices_or_sections` argument (indices or sections).
 
     Returns:
@@ -348,11 +369,16 @@ def dsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
     if config.eager_mode:
         backend = get_active_backend()
         datas = backend.execute_op("Dsplit", extract_data(ary), indices_or_sections)
-        return tuple(Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None))) for d in ensure_eager_list(datas))
+        return tuple(
+            Tensor(d, TensorConfig(extract_shape(d), _extract_shape_dtype(ary, None), extract_device(ary, None)))
+            for d in coerce_operand_list(datas)
+        )
 
     ary_shape = extract_shape(ary)
     num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
-    node = _emit_shape_node("Dsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None))
+    node = _emit_shape_node(
+        "Dsplit", [ary], {"indices_or_sections": indices_or_sections}, ary_shape, _extract_shape_dtype(ary, None)
+    )
     out_tensors = []
 
     out_shapes = []
@@ -376,12 +402,12 @@ def dsplit(ary: TensorOrScalar, indices_or_sections: int | Sequence[int]) -> Ten
 class GetItemOp(OpDef):
     """Operation to retrieve an item from a tensor."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> tuple[int, ...]:
         """Infer shape for Unstack.
 
         Args:
-            *args (EagerTensorProtocol): Positional arguments (e.g. input tensor).
-            **kwargs (EagerTensorProtocol): Keyword arguments.
+            *args (OpValue): Positional arguments (e.g. input tensor).
+            **kwargs (OpValue): Keyword arguments.
 
         Returns:
             tuple[int, ...]: Inferred shape.
@@ -397,16 +423,16 @@ old_split = split
 class Unstack(OpDef):
     """Unstack op for shape inference."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape for Unstack.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         input_shape = extract_shape(args[0])
-        ax = int(ensure_int(kwargs.get("axis", 0)))
-        return tuple([ensure_eager_tensor(input_shape)[:ax] + ensure_eager_tensor(input_shape)[ax + 1 :]] * int(input_shape[ax]))
+        ax = int(coerce_int(kwargs.get("axis", 0)))
+        return tuple([input_shape[:ax] + input_shape[ax + 1 :]] * int(input_shape[ax]))

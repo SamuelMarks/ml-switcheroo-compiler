@@ -18,12 +18,11 @@ from ml_switcheroo_compiler.backends.numpy.eager.distributed import (
     _np_shard_tensor,
     set_np_distributed_context,
 )
-from tests.testing_utils import ensure_eager_tensor
 
 
 def test_axis_index() -> None:
     """Verify axis index resolution for distributed backend."""
-    assert _np_axis_index(ensure_eager_tensor(np)) == 0
+    assert _np_axis_index(np) == 0
 
 
 def test_tcp_dist_ctx_init() -> None:
@@ -40,7 +39,9 @@ def test_tcp_dist_ctx_initialize_tree() -> None:
         with patch("threading.Thread"):
             with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener") as mock_listener:
                 mock_listener.return_value.accept.return_value = "conn"
-                with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
+                with patch(
+                    "ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError
+                ):
                     with patch("time.sleep"):
                         ctx.initialize()
 
@@ -68,7 +69,7 @@ def test_tcp_dist_ctx_all_reduce_ops() -> None:
 
     for op in ["sum", "prod", "max", "min"]:
         mock_recv.recv.return_value = np.array([2.0])
-        res = ctx.all_reduce_ring(arr, op_type=op, backend_module=ensure_eager_tensor(np))
+        res = ctx.all_reduce_ring(arr, op_type=op, backend_module=np)
         assert res is not None
 
     ctx1 = TCPDistributedContext(world_size=1)
@@ -113,17 +114,17 @@ def test_tcp_distributed_ops_dispatch() -> None:
             "ml_switcheroo_compiler.backends.numpy.eager.distributed.TCPDistributedContext.all_reduce_ring",
             return_value=np.array([3.0]),
         ):
-            reduced = _np_all_reduce(ensure_eager_tensor(np), np.array([1.0]), op_type="sum")
-            assert np.allclose(np.asarray(ensure_eager_tensor(reduced)), np.array([3.0]))
+            reduced = _np_all_reduce(np, np.array([1.0]), op_type="sum")
+            assert np.allclose(np.asarray(reduced), np.array([3.0]))
 
-        gathered = _np_all_gather(ensure_eager_tensor(np), np.array([1.0]), axis=0)
-        assert np.asarray(ensure_eager_tensor(gathered)).shape == (2,)
-        _np_broadcast(ensure_eager_tensor(np), np.array([1.0]), root_rank=1)
+        gathered = _np_all_gather(np, np.array([1.0]), axis=0)
+        assert np.asarray(gathered).shape == (2,)
+        _np_broadcast(np, np.array([1.0]), root_rank=1)
 
         for op in ["sum", "prod", "max", "min", "unknown"]:
-            _np_reduce_scatter(ensure_eager_tensor(np), np.array([1.0, 2.0]), op_type=op, axis=0)
-            _np_reduce(ensure_eager_tensor(np), np.array([1.0]), root_rank=0, op_type=op)
+            _np_reduce_scatter(np, np.array([1.0, 2.0]), op_type=op, axis=0)
+            _np_reduce(np, np.array([1.0]), root_rank=0, op_type=op)
 
-        _np_all_to_all(ensure_eager_tensor(np), np.array([1.0, 2.0]))
-        sharded = _np_shard_tensor(ensure_eager_tensor(np), np.array([1.0]))
-        assert np.asarray(ensure_eager_tensor(sharded)).shape == (1,)
+        _np_all_to_all(np, np.array([1.0, 2.0]))
+        sharded = _np_shard_tensor(np, np.array([1.0]))
+        assert np.asarray(sharded).shape == (1,)

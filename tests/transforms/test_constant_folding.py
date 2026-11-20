@@ -8,17 +8,14 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, LogicalNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.constant_folding import (
-    _evaluate_constant_node,
-    constant_folding_pass,
-)
-from tests.testing_utils import ensure_attrs, ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from ml_switcheroo_compiler.ir.core import ensure_attrs
+from ml_switcheroo_compiler.transforms.passes.constant_folding import _evaluate_constant_node, constant_folding_pass
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_constant_folding_coverage_brute() -> None:
@@ -58,8 +55,10 @@ def test_constant_folding_numel_branch(monkeypatch: pytest.MonkeyPatch) -> None:
     graph.nodes["n0"] = n0
     graph.nodes["n1"] = n1
 
-    class MockVal:
-        """Mock value implementing numel()."""
+    from tests.testing_utils import MockTestStub
+
+    class MockVal(MockTestStub):
+        """Mock value implementing numel without size."""
 
         def numel(self) -> int:
             """Return element count.
@@ -69,24 +68,26 @@ def test_constant_folding_numel_branch(monkeypatch: pytest.MonkeyPatch) -> None:
             """
             return 1
 
-    def mock_eval(g: EagerValue, inputs: dict[str, EagerValue], backend: EagerValue = None) -> dict[str, EagerValue]:
+    def mock_eval(g: BackendArg, inputs: dict[str, BackendArg], backend: BackendArg = None) -> dict[str, BackendArg]:
         """Return mock evaluation output.
 
         Args:
-            g (EagerValue): Graph argument.
-            inputs (dict[str, object]): Inputs mapping.
-            backend (EagerValue): Backend argument.
+            g (BackendArg): Graph argument.
+            inputs (dict[str, BackendArg]): Inputs mapping.
+            backend (BackendArg): Backend argument.
 
         Returns:
-            dict[str, object]: Evaluated outputs dictionary.
+            dict[str, BackendArg]: Evaluated outputs dictionary.
         """
         _ = (g, inputs, backend)
-        return {"n1": ensure_callable(MockVal)()}
+        return {"n1": MockVal()}
 
     monkeypatch.setattr("ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph", mock_eval)
     mock_backend = MagicMock()
     mock_backend.item.return_value = 42
-    monkeypatch.setattr("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", lambda: mock_backend)
+    monkeypatch.setattr(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", lambda: mock_backend
+    )
     assert constant_folding_pass(graph) is True
     assert graph.nodes["n1"].op_type == "Constant"
     assert graph.nodes["n1"].attributes["value"] == 42
@@ -101,7 +102,7 @@ def test_constant_folding() -> None:
     assert constant_folding_pass(g) is True
     assert g.nodes["n1"].op_type == "Constant"
     val = g.nodes["n1"].attributes["value"]
-    ensure_callable(np.testing.assert_allclose)(ensure_eager_tensor(val), np.array([5.0]))
+    np.testing.assert_allclose(ensure_ndarray(val), np.array([5.0]))
 
 
 def test_constant_folding_unsupported_op() -> None:
@@ -137,12 +138,15 @@ def test_constant_folding_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     graph.nodes["n0"] = n0
     graph.nodes["n1"] = n1
 
-    def mock_eval(*args: EagerValue, **kwargs: EagerValue) -> None:
+    def mock_eval(*args: BackendArg, **kwargs: BackendArg) -> None:
         """Test function mock_eval.
 
         Args:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
+
+        Raises:
+            KeyError: When raised during `mock_eval` (Testing other exceptions).
         """
         _ = (args, kwargs)
         raise KeyError("Testing other exceptions")
@@ -159,11 +163,11 @@ def test_constant_folding_backend_item_branch() -> None:
         """Dummy backend implementing item method."""
 
         @staticmethod
-        def item(val: EagerValue) -> int:
+        def item(val: BackendArg) -> int:
             """Extract item.
 
             Args:
-                val (EagerValue): Input value.
+                val (BackendArg): Input value.
 
             Returns:
                 int: Evaluated item.
@@ -193,28 +197,29 @@ def test_constant_folding_backend_item_branch() -> None:
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"n1": ScalarNoItem()},
     ):
-        val2 = ensure_callable(_evaluate_constant_node)(node, ["c1"], graph, backend=None)
+        val2 = _evaluate_constant_node(node, ["c1"], graph, backend=None)
         assert type(val2).__name__ == "ScalarNoItem"
 
     with mock.patch(
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"n1": np.array([42])},
     ):
-        val3 = ensure_callable(_evaluate_constant_node)(node, ["c1"], graph, backend=None)
+        val3 = _evaluate_constant_node(node, ["c1"], graph, backend=None)
         assert val3 == 42
 
 
 def test_constant_folding_backend_instance_item_branch() -> None:
     """Test constant folding pass with backend having item method on instance."""
+    from tests.testing_utils import MockTestStub
 
-    class MockBackendWithItem:
+    class MockBackendWithItem(MockTestStub):
         """Mock backend with item method."""
 
-        def item(self, val: EagerValue) -> float:
+        def item(self, val: BackendArg) -> float:
             """Return float item.
 
             Args:
-                val (EagerValue): Input value.
+                val (BackendArg): Input value.
 
             Returns:
                 float: Unwrapped item.
@@ -228,15 +233,13 @@ def test_constant_folding_backend_instance_item_branch() -> None:
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"c0": np.array([42.0])},
     ):
-        val = ensure_callable(_evaluate_constant_node)(node, [], graph, ensure_callable(MockBackendWithItem)())
+        val = _evaluate_constant_node(node, [], graph, MockBackendWithItem())
         assert val == 42.0
 
 
 def test_constant_folding_exceptions_and_fallback() -> None:
     """Test constant folding pass with fallback backend, ValueError, and UnimplementedMathError."""
-
-    class UnimplementedMathError(Exception):
-        """Custom math exception."""
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
     g = LogicalGraph(name="g", outputs=["n_out"])
     c1 = LogicalNode(id="c1", op_type="Constant", attributes={"value": 1.0})
@@ -245,7 +248,12 @@ def test_constant_folding_exceptions_and_fallback() -> None:
     n_out = LogicalNode(id="n_out", op_type="Relu", inputs=["c1"])
     g.nodes = NodeDict({"c1": c1, "n_err": n_val_err, "n_unimpl": n_unimpl, "n_out": n_out})
 
-    def mock_eval(node: LogicalNode, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+    def mock_eval(
+        node: LogicalNode, *args: BackendArg, **kwargs: BackendArg
+    ) -> np.ndarray[
+        tuple[int, ...],
+        np.dtype[np.generic],
+    ]:
         """Test function mock_eval.
 
         Args:
@@ -254,7 +262,11 @@ def test_constant_folding_exceptions_and_fallback() -> None:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed output value from `mock_eval`.
+            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `mock_eval`.
+
+        Raises:
+            UnimplementedMathError: When raised during `mock_eval` (Unimplemented math).
+            ValueError: When raised during `mock_eval` (Value error in folding).
         """
         _ = (args, kwargs)
         if node.id == "n_err":
@@ -264,7 +276,9 @@ def test_constant_folding_exceptions_and_fallback() -> None:
         return np.array([2.0])
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", return_value=None):
-        with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding._evaluate_constant_node", side_effect=mock_eval):
+        with mock.patch(
+            "ml_switcheroo_compiler.transforms.passes.constant_folding._evaluate_constant_node", side_effect=mock_eval
+        ):
             res = constant_folding_pass(g)
             assert res is True
 
@@ -311,7 +325,10 @@ def test_constant_folding_attributes_subgraph_and_exceptions() -> None:
     g2 = LogicalGraph(name="g2", outputs=["c1"])
     g2.nodes = NodeDict({"c1": LogicalNode(id="c1", op_type="Constant", attributes={"value": 1.0})})
     with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", return_value=None):
-        with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding.BackendRegistry.get", side_effect=Exception("No numpy")):
+        with mock.patch(
+            "ml_switcheroo_compiler.transforms.passes.constant_folding.BackendRegistry.get",
+            side_effect=RuntimeError("No numpy"),
+        ):
             assert constant_folding_pass(g2) is False
 
     subgraph_unmodified = LogicalGraph(name="unmod", outputs=["c1"])
@@ -334,7 +351,7 @@ def test_constant_folding_attributes_subgraph_and_exceptions() -> None:
     err_node = LogicalNode(id="err_node", op_type="Add", inputs=["c3"])
     g3.nodes = NodeDict({"c3": c3, "err_node": err_node})
 
-    def raise_custom(*args: EagerValue, **kwargs: EagerValue) -> None:
+    def raise_custom(*args: BackendArg, **kwargs: BackendArg) -> None:
         """Raise an unhandled KeyError to test exception propagation.
 
         Args:
@@ -347,6 +364,8 @@ def test_constant_folding_attributes_subgraph_and_exceptions() -> None:
         _ = (args, kwargs)
         raise KeyError("Fatal unhandled error")
 
-    with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding._evaluate_constant_node", side_effect=raise_custom):
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding._evaluate_constant_node", side_effect=raise_custom
+    ):
         with pytest.raises(KeyError, match="Fatal unhandled error"):
             constant_folding_pass(g3)

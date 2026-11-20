@@ -4,16 +4,51 @@ from __future__ import annotations
 
 import math
 import typing
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 import ml_switcheroo_compiler.core.dtype as dtypes
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.configs import InitializerConfig
+from ml_switcheroo_compiler.core.shape import OpValue
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.configs import InitializerConfig as InitializerConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.qr import qr as _qr_op
-from ml_switcheroo_compiler.ops.shape.frontend import reshape as _reshape_op
+from ml_switcheroo_compiler.ops.shape.api import reshape as _reshape_op
 
-InitializerFn = Callable[[typing.Union[Tensor, int, "None"], tuple[int, ...], typing.Union[dtypes.DType, str, "None"]], Tensor]
+
+class InitializerFn(typing.Protocol):
+    """Protocol for neural network weight initializer callables."""
+
+    def __call__(
+        self,
+        key: Tensor | int | None,
+        shape: tuple[int, ...],
+        init_dtype: dtypes.DType | str | None = None,
+    ) -> Tensor:
+        """Sample or construct an initialized parameter tensor.
+
+        Args:
+            key (Tensor | int | None): PRNG key or integer seed.
+            shape (tuple[int, ...]): Output tensor shape tuple.
+            init_dtype (dtypes.DType | str | None): Optional override data type.
+
+        Returns:
+            Tensor: Initialized tensor.
+        """
+        ...
+
+
+def _as_init_tensor(val: OpValue, shape: tuple[int, ...], dt: dtypes.DType) -> Tensor:
+    """Ensure ``val`` is wrapped as a ``Tensor`` instance.
+
+    Args:
+        val (OpValue): Evaluated tensor or raw backend value.
+        shape (tuple[int, ...]): Expected tensor shape.
+        dt (dtypes.DType): Expected tensor data type.
+
+    Returns:
+        Tensor: ``val`` if already a ``Tensor``, otherwise wrapped in ``Tensor``.
+    """
+    return val if isinstance(val, Tensor) else Tensor(val, TensorConfig(shape, dt, "cpu"))
 
 
 def _resolve_dtype(
@@ -275,7 +310,9 @@ def variance_scaling(config: InitializerConfig) -> InitializerFn:
         Returns:
             Tensor: Variance-scaled initialized tensor.
         """
-        default_dt: dtypes.DType | str = config.dtype if isinstance(config.dtype, (dtypes.DType, str)) else dtypes.DType.Float32
+        default_dt: dtypes.DType | str = (
+            config.dtype if isinstance(config.dtype, (dtypes.DType, str)) else dtypes.DType.Float32
+        )
         dt = _resolve_dtype(init_dtype, default_dt)
         in_ax = int(config.in_axis) if isinstance(config.in_axis, int) else -2
         out_ax = int(config.out_axis) if isinstance(config.out_axis, int) else -1
@@ -495,6 +532,39 @@ def he_normal(
 kaiming_normal = he_normal
 
 
+@typing.runtime_checkable
+class _QrNamespaceProtocol(typing.Protocol):
+    """Protocol for an operations namespace providing ``qr`` decomposition."""
+
+    def qr(self, a: Tensor) -> OpValue:
+        """Compute QR decomposition of a 2-D matrix tensor.
+
+        Args:
+            a (Tensor): Input 2-D matrix tensor.
+
+        Returns:
+            OpValue: Tuple of ``(Q, R)`` factors.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ReshapeNamespaceProtocol(typing.Protocol):
+    """Protocol for an operations namespace providing ``reshape``."""
+
+    def reshape(self, a: Tensor, shape: tuple[int, ...]) -> OpValue:
+        """Reshape a tensor to ``shape``.
+
+        Args:
+            a (Tensor): Input tensor.
+            shape (tuple[int, ...]): Target shape tuple.
+
+        Returns:
+            OpValue: Reshaped tensor.
+        """
+        ...
+
+
 def orthogonal(
     scale: float = 1.0,
     column_axis: int = -1,
@@ -535,29 +605,21 @@ def orthogonal(
         for idx, dim in enumerate(shape):
             if idx != col_ax:
                 rows *= dim
-        from ml_switcheroo_compiler.backends.protocols import ensure_callable, get_backend_member
-        from ml_switcheroo_compiler.core.shape import TensorOrScalar
-
-        def _is_init_tensor(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
-            """Validate that `val` is a valid tensor value.
-
-            Args:
-                val (TensorOrScalar): Candidate value.
-
-            Returns:
-                bool: True if non-None.
-            """
-            return val is not None
-
-        flat_matrix = ops.randn(max(rows, cols), min(rows, cols), dtype=dt)
-        assert _is_init_tensor(flat_matrix)
-        qr_fn = ensure_callable(get_backend_member(ops, "qr", _qr_op))
-        qr_res = qr_fn(flat_matrix)
-        q_raw = qr_res[0]
-        assert _is_init_tensor(q_raw)
-        reshape_fn = ensure_callable(get_backend_member(ops, "reshape", _reshape_op))
-        reshaped = reshape_fn(q_raw, shape)
-        assert _is_init_tensor(reshaped)
+        mat_shape = (max(rows, cols), min(rows, cols))
+        mat_tensor = _as_init_tensor(ops.randn(*mat_shape, dtype=dt), mat_shape, dt)
+        ops_ns: OpValue | _QrNamespaceProtocol | _ReshapeNamespaceProtocol = ops
+        qr_out: OpValue = (
+            ops_ns.qr(mat_tensor)
+            if isinstance(ops_ns, _QrNamespaceProtocol) and callable(ops_ns.qr)
+            else _qr_op(mat_tensor)
+        )
+        q_raw: OpValue = qr_out[0] if isinstance(qr_out, (tuple, list)) else qr_out
+        q_tensor = _as_init_tensor(q_raw, mat_shape, dt)
+        reshaped = (
+            ops_ns.reshape(q_tensor, shape)
+            if isinstance(ops_ns, _ReshapeNamespaceProtocol) and callable(ops_ns.reshape)
+            else _reshape_op(q_tensor, shape)
+        )
         return ops.scalar_mul(reshaped, float(scale))
 
     return init

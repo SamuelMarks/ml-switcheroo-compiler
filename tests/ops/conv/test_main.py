@@ -12,7 +12,6 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.conv import conv_general_dilated_local
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -22,7 +21,7 @@ def test_conv_general_dilated_local_coverage() -> None:
     """Test the conv general dilated local coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     with pytest.raises(TypeError):
         device = Device(DeviceType.CPU, 0)
@@ -31,6 +30,6 @@ def test_conv_general_dilated_local_coverage() -> None:
             try:
                 t1 = Tensor("dummy1", TensorConfig((1, 1, 5, 5), DType.Float32, device))
                 t2 = Tensor("dummy2", TensorConfig((1, 1, 3, 3), DType.Float32, device))
-                ensure_callable(conv_general_dilated_local)(t1, t2, (1, 1), "SAME", (3, 3))
+                conv_general_dilated_local(t1, t2, (1, 1), "SAME", (3, 3))
             finally:
                 global_tracing_state.stop_tracing()

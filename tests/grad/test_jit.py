@@ -1,0 +1,138 @@
+"""Behavioral unit tests for jit."""
+
+from __future__ import annotations
+
+import importlib
+import typing
+
+import ml_switcheroo_compiler.grad as grad_pkg
+from tests.testing_utils import adapt_backend_module
+
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
+
+
+class _MockBackendModule:
+    """Mock backend module implementing zeros, array, and asarray."""
+
+    def zeros(self, shape: tuple[int, ...]) -> tuple[str, tuple[int, ...]]:
+        """Mock zeros.
+
+        Args:
+            shape (tuple[int, ...]): Output shape.
+
+        Returns:
+            tuple[str, tuple[int, ...]]: Mock zeros descriptor.
+        """
+        return ("zeros", shape)
+
+    def array(self, data: BackendArg, dtype: BackendArg = None) -> tuple[str, BackendArg, BackendArg]:
+        """Mock array.
+
+        Args:
+            data (BackendArg): Input data.
+            dtype (BackendArg): Optional data type.
+
+        Returns:
+            tuple[str, object, object]: Mock array descriptor.
+        """
+        return ("array", data, dtype)
+
+    def asarray(self, data: BackendArg) -> tuple[str, BackendArg]:
+        """Mock asarray.
+
+        Args:
+            data (BackendArg): Input data.
+
+        Returns:
+            tuple[str, object]: Mock asarray descriptor.
+        """
+        return ("asarray", data)
+
+
+class _MockItemObject:
+    """Mock object implementing item()."""
+
+    def item(self) -> float:
+        """Return scalar item value.
+
+        Returns:
+            float: Scalar float value.
+        """
+        return 42.5
+
+
+class _MockDaskDtypeWrapper:
+    """Mock dtype object with value attribute."""
+
+    def __init__(self, val: str) -> None:
+        """Initialize mock dtype wrapper.
+
+        Args:
+            val (str): Type name.
+        """
+        self.value = val
+
+
+def _sample_add_fn(x: int, y: int = 10) -> int:
+    """Add two integers.
+
+    Args:
+        x (int): First int.
+        y (int): Second int.
+
+    Returns:
+        int: Sum of x and y.
+    """
+    return x + y
+
+
+def _sample_shape_fn(a: int, b: int) -> tuple[int, int]:
+    """Sample shape function returning tuple.
+
+    Args:
+        a (int): First dimension.
+        b (int): Second dimension.
+
+    Returns:
+        tuple[int, int]: Pair (a, b).
+    """
+    return (a, b)
+
+
+def test_grad_init_and_jit() -> None:
+    """Verify grad package exports, JitOptions, jit wrapper, disable_jit context, and eval_shape."""
+    jit_mod = importlib.import_module("ml_switcheroo_compiler.grad.jit")
+
+    # grad __init__ re-exports
+    assert adapt_backend_module(grad_pkg).has_symbol("grad")
+    assert adapt_backend_module(grad_pkg).has_symbol("value_and_grad")
+    assert adapt_backend_module(grad_pkg).has_symbol("jit")
+    assert adapt_backend_module(grad_pkg).has_symbol("disable_jit")
+    assert adapt_backend_module(grad_pkg).has_symbol("eval_shape")
+    assert "grad" in grad_pkg.__all__
+    assert "jit" in grad_pkg.__all__
+
+    # JitOptions defaults
+    opts = jit_mod.JitOptions()
+    assert opts.static_argnums is None
+    assert opts.static_argnames is None
+    assert opts.donate_argnums is None
+    assert opts.donate_argnames is None
+    assert opts.keep_unused is False
+    assert opts.device is None
+    assert opts.backend is None
+    assert opts.inline is False
+    assert opts.abstracted_axes is None
+
+    jitted1 = jit_mod.jit(_sample_add_fn)
+    assert jitted1(5, y=15) == 20
+
+    jitted2 = jit_mod.jit(_sample_add_fn, options=opts)
+    assert jitted2(3) == 13
+
+    # disable_jit context manager
+    with jit_mod.disable_jit():
+        pass
+
+    assert jit_mod.eval_shape(_sample_shape_fn, 3, 4) == (3, 4)

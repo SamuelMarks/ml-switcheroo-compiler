@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list, get_active_backend
+from ml_switcheroo_compiler.backends.registry import coerce_operand_list, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     extract_data,
     extract_dtype,
     extract_shape,
@@ -22,19 +22,19 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
-def _compute_gru_gates(x_parts: TensorOrScalar, r_parts: TensorOrScalar, state: Tensor) -> TensorOrScalar:
+def _compute_gru_gates(x_parts: OpValue, r_parts: OpValue, state: Tensor) -> OpValue:
     """Compute the compute gru gates tensor operation.
 
     Args:
-        x_parts (tuple): Input `x_parts` argument (x parts).
-        r_parts (tuple): Input `r_parts` argument (r parts).
+        x_parts (OpValue): Input `x_parts` argument (x parts).
+        r_parts (OpValue): Input `r_parts` argument (r parts).
         state (Tensor): Input `state` argument (state).
 
     Returns:
         Tensor: Computed `Tensor` output.
     """
-    x_seq = [ensure_tensor(t) for t in ensure_eager_list(x_parts)]
-    r_seq = [ensure_tensor(t) for t in ensure_eager_list(r_parts)]
+    x_seq = [ensure_tensor(t) for t in coerce_operand_list(x_parts)]
+    r_seq = [ensure_tensor(t) for t in coerce_operand_list(r_parts)]
     x_z, x_r, x_h = x_seq[0], x_seq[1], x_seq[2]
     recurrent_z, recurrent_r, recurrent_h = r_seq[0], r_seq[1], r_seq[2]
     z = _sigmoid(add(x_z, recurrent_z))
@@ -49,7 +49,7 @@ def gru_cell(
     kernel: Tensor,
     recurrent_kernel: Tensor,
     bias: Tensor | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Fused GRU cell math.
 
     Args:
@@ -57,7 +57,7 @@ def gru_cell(
         state (Tensor): Input `state` argument (state).
         kernel (Tensor): Input `kernel` argument (kernel).
         recurrent_kernel (Tensor): Input `recurrent_kernel` argument (recurrent kernel).
-        bias (Optional): Input `bias` argument (bias).
+        bias (Tensor | None): Input `bias` argument (bias).
 
     Returns:
         tuple: Computed `tuple` output.
@@ -81,12 +81,12 @@ class Gru(OpDef):
 
     op_name = "Gru"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -94,12 +94,12 @@ class Gru(OpDef):
         return args[0] if args else ()
 
 
-def gru(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def gru(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """GRU layer.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
         Tensor: Computed `Tensor` output.

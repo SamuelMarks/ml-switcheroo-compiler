@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import IRGraph, IRNode, NodeDict
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.cse import cse_pass
-from tests.testing_utils import ensure_attrs, ensure_eager_tensor
 
 
 def test_cse_basic() -> None:
@@ -208,7 +207,7 @@ def test_cse_structural_hash_and_input_rewrite() -> None:
 
     node = IRNode(id="sample", op_type="Add", inputs=["a", "b"], attributes={"dtype": "float32"})
     sig = compute_node_structural_hash(node, ["a", "b"])
-    assert bool(ensure_eager_tensor(isinstance(sig, str))) and len(sig) == 64
+    assert bool(isinstance(sig, str)) and len(sig) == 64
 
     # Test case where a subsequent node has its inputs rewritten,
     # but the graph outputs are unchanged (already canonical).

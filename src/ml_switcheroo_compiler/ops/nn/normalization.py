@@ -8,7 +8,7 @@ from collections.abc import Sequence
 import pydantic
 
 from ml_switcheroo_compiler.core.shape import (
-    TensorOrScalar,
+    OpValue,
     TracedDataProtocol,
     extract_dtype,
     extract_shape,
@@ -38,7 +38,7 @@ from ml_switcheroo_compiler.ops.reductions import (
     sum,
     variance,
 )
-from ml_switcheroo_compiler.ops.shape.frontend import reshape
+from ml_switcheroo_compiler.ops.shape.api import reshape
 from ml_switcheroo_compiler.ops.unary import sqrt
 
 
@@ -60,11 +60,11 @@ class _LRNConfigProtocol(typing.Protocol):
     beta: float
 
 
-def _node_input_id(obj: TensorOrScalar) -> str:
+def _node_input_id(obj: OpValue) -> str:
     """Resolve tracing node input identifier string from `obj`.
 
     Args:
-        obj (TensorOrScalar): Input tensor or proxy.
+        obj (OpValue): Input tensor or proxy.
 
     Returns:
         str: String node identifier.
@@ -99,7 +99,7 @@ def local_response_normalization(
     bias: float = 1.0,
     alpha: float = 1.0,
     beta: float = 0.5,
-) -> TensorOrScalar:
+) -> OpValue:
     """Local Response Normalization.
 
     Args:
@@ -130,7 +130,7 @@ def batch_normalization(
     variance: Tensor,
     axis: int | Sequence[int],
     config: BatchNormConfig | None = None,
-) -> TensorOrScalar:
+) -> OpValue:
     """Batch normalization.
 
     Args:
@@ -164,7 +164,7 @@ def rms_normalization(
     x: Tensor,
     scale: Tensor,
     epsilon: float = 1e-3,
-) -> TensorOrScalar:
+) -> OpValue:
     """RMS normalization.
 
     Args:
@@ -196,22 +196,22 @@ class BatchNormGlobalConfig(pydantic.BaseModel):
 
 
 def batch_norm_with_global_normalization(
-    t: TensorOrScalar,
-    m: TensorOrScalar,
-    v: TensorOrScalar,
-    beta: TensorOrScalar,
-    gamma: TensorOrScalar,
-    **kwargs: TensorOrScalar,
-) -> TensorOrScalar:
+    t: OpValue,
+    m: OpValue,
+    v: OpValue,
+    beta: OpValue,
+    gamma: OpValue,
+    **kwargs: OpValue,
+) -> OpValue:
     """Batch normalization with global normalization.
 
     Args:
-        t (TensorOrScalar): Input `t` argument (t).
-        m (TensorOrScalar): Input `m` argument (m).
-        v (TensorOrScalar): Input `v` argument (v).
-        beta (TensorOrScalar): Input `beta` argument (beta).
-        gamma (TensorOrScalar): Input `gamma` argument (gamma).
-        **kwargs (TensorOrScalar): Keyword args.
+        t (OpValue): Input `t` argument (t).
+        m (OpValue): Input `m` argument (m).
+        v (OpValue): Input `v` argument (v).
+        beta (OpValue): Input `beta` argument (beta).
+        gamma (OpValue): Input `gamma` argument (gamma).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -232,13 +232,13 @@ def batch_norm_with_global_normalization(
     )
 
 
-def lrn(input: TensorOrScalar, config: LRNConfig | TensorOrScalar = None, name: TensorOrScalar = None) -> TensorOrScalar:
+def lrn(input: OpValue, config: LRNConfig | OpValue = None, name: OpValue = None) -> OpValue:
     """Compute the lrn tensor operation.
 
     Args:
-        input (TensorOrScalar): Input `input` argument (input).
-        config (LRNConfig): Input `config` argument (config).
-        name (TensorOrScalar): Input `name` argument (name).
+        input (OpValue): Input `input` argument (input).
+        config (LRNConfig | OpValue): Input `config` argument (config).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -270,15 +270,21 @@ def l2_normalize(
     return multiply(x, x_inv_norm)
 
 
-def moments(x: TensorOrScalar, axes: TensorOrScalar, shift: TensorOrScalar = None, keepdims: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
+def moments(
+    x: OpValue,
+    axes: OpValue,
+    shift: OpValue = None,
+    keepdims: OpValue = False,
+    name: OpValue = None,
+) -> OpValue:
     """Calculate the mean and variance of x.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        axes (TensorOrScalar): Input `axes` argument (axes).
-        shift (TensorOrScalar): Input `shift` argument (shift).
-        keepdims (TensorOrScalar): Input `keepdims` argument (keepdims).
-        name (TensorOrScalar): Input `name` argument (name).
+        x (OpValue): Input `x` argument (x).
+        axes (OpValue): Input `axes` argument (axes).
+        shift (OpValue): Input `shift` argument (shift).
+        keepdims (OpValue): Input `keepdims` argument (keepdims).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -286,15 +292,21 @@ def moments(x: TensorOrScalar, axes: TensorOrScalar, shift: TensorOrScalar = Non
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
 
-def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_ss: TensorOrScalar, shift: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
+def normalize_moments(
+    counts: OpValue,
+    mean_ss: OpValue,
+    variance_ss: OpValue,
+    shift: OpValue,
+    name: OpValue = None,
+) -> OpValue:
     """Calculate the mean and variance of based on the sufficient statistics.
 
     Args:
-        counts (TensorOrScalar): Input `counts` argument (counts).
-        mean_ss (TensorOrScalar): Input `mean_ss` argument (mean ss).
-        variance_ss (TensorOrScalar): Input `variance_ss` argument (variance ss).
-        shift (TensorOrScalar): Input `shift` argument (shift).
-        name (TensorOrScalar): Input `name` argument (name).
+        counts (OpValue): Input `counts` argument (counts).
+        mean_ss (OpValue): Input `mean_ss` argument (mean ss).
+        variance_ss (OpValue): Input `variance_ss` argument (variance ss).
+        shift (OpValue): Input `shift` argument (shift).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -336,25 +348,33 @@ def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_
     )
 
 
-def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: TensorOrScalar = None, keepdims: TensorOrScalar = False, name: TensorOrScalar = None) -> TensorOrScalar:
+def sufficient_statistics(
+    x: OpValue,
+    axes: OpValue,
+    shift: OpValue = None,
+    keepdims: OpValue = False,
+    name: OpValue = None,
+) -> OpValue:
     """Calculate the sufficient statistics for the mean and variance of x.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        axes (TensorOrScalar): Input `axes` argument (axes).
-        shift (TensorOrScalar): Input `shift` argument (shift).
-        keepdims (TensorOrScalar): Input `keepdims` argument (keepdims).
-        name (TensorOrScalar): Input `name` argument (name).
+        x (OpValue): Input `x` argument (x).
+        axes (OpValue): Input `axes` argument (axes).
+        shift (OpValue): Input `shift` argument (shift).
+        keepdims (OpValue): Input `keepdims` argument (keepdims).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
-        TensorOrScalar: Sufficient statistics tuple.
+        OpValue: Sufficient statistics tuple.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("SufficientStatistics", x, axes, shift=shift, keepdims=keepdims, name=name)
+        return get_active_backend().execute_op(
+            "SufficientStatistics", x, axes, shift=shift, keepdims=keepdims, name=name
+        )
     import uuid
 
     from ml_switcheroo_ir import LogicalNode
@@ -374,7 +394,14 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
         id=out_id_counts,
         op_type="SufficientStatistics",
         inputs=[_node_input_id(x), _node_input_id(axes)],
-        attributes=ensure_attrs({"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]}),
+        attributes=ensure_attrs(
+            {
+                "shift": shift,
+                "keepdims": keepdims,
+                "name": name,
+                "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift],
+            }
+        ),
         shape_metadata=x_shape,
     )
     global_tracing_state.add_node(node)
@@ -389,30 +416,32 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
 
 
 def weighted_moments(
-    x: TensorOrScalar,
-    axes: TensorOrScalar,
-    frequency_weights: TensorOrScalar,
-    name: TensorOrScalar = None,
-    keepdims: TensorOrScalar = False,
-) -> TensorOrScalar:
+    x: OpValue,
+    axes: OpValue,
+    frequency_weights: OpValue,
+    name: OpValue = None,
+    keepdims: OpValue = False,
+) -> OpValue:
     """Return the frequency-weighted mean and variance of x.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        axes (TensorOrScalar): Input `axes` argument (axes).
-        frequency_weights (TensorOrScalar): Input `frequency_weights` argument (frequency weights).
-        name (TensorOrScalar): Input `name` argument (name).
-        keepdims (TensorOrScalar): Input `keepdims` argument (keepdims).
+        x (OpValue): Input `x` argument (x).
+        axes (OpValue): Input `axes` argument (axes).
+        frequency_weights (OpValue): Input `frequency_weights` argument (frequency weights).
+        name (OpValue): Input `name` argument (name).
+        keepdims (OpValue): Input `keepdims` argument (keepdims).
 
     Returns:
-        TensorOrScalar: Weighted `(mean, variance)` tuple.
+        OpValue: Weighted `(mean, variance)` tuple.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("WeightedMoments", x, axes, frequency_weights, name=name, keepdims=keepdims)
+        return get_active_backend().execute_op(
+            "WeightedMoments", x, axes, frequency_weights, name=name, keepdims=keepdims
+        )
     import uuid
 
     from ml_switcheroo_ir import LogicalNode
@@ -444,12 +473,12 @@ def weighted_moments(
     )
 
 
-def zero_fraction(value: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrScalar:
+def zero_fraction(value: OpValue, name: OpValue = None) -> OpValue:
     """Return the fraction of zeros in value.
 
     Args:
-        value (TensorOrScalar): Input `value` argument (value).
-        name (TensorOrScalar): Input `name` argument (name).
+        value (OpValue): Input `value` argument (value).
+        name (OpValue): Input `name` argument (name).
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -463,7 +492,7 @@ def layer_norm(
     scale: Tensor | None = None,
     offset: Tensor | None = None,
     epsilon: float = 1e-5,
-) -> TensorOrScalar:
+) -> OpValue:
     """Layer normalization.
 
     Args:
@@ -501,14 +530,14 @@ def group_norm(
     scale: Tensor | None = None,
     offset: Tensor | None = None,
     epsilon: float = 1e-5,
-) -> TensorOrScalar:
+) -> OpValue:
     """Group normalization.
 
     Args:
         x (Tensor): Input `x` argument (x).
         num_groups (int): Input `num_groups` argument (num groups).
-        scale (Optional): Input `scale` argument (scale).
-        offset (Optional): Input `offset` argument (offset).
+        scale (Tensor | None): Input `scale` argument (scale).
+        offset (Tensor | None): Input `offset` argument (offset).
         epsilon (float): Input `epsilon` argument (epsilon).
 
     Returns:
@@ -517,7 +546,7 @@ def group_norm(
     Raises:
         ValueError: If invalid inputs or unsupported runtime conditions trigger `ValueError`.
     """
-    C = x.shape[1]
+    C = extract_shape(x)[1]
     if C % num_groups != 0:
         raise ValueError("Number of channels must be divisible by number of groups")
 
@@ -545,7 +574,7 @@ def instance_norm(
     scale: Tensor | None = None,
     offset: Tensor | None = None,
     epsilon: float = 1e-5,
-) -> TensorOrScalar:
+) -> OpValue:
     """Instance normalization.
 
     Args:
@@ -558,8 +587,7 @@ def instance_norm(
         Tensor: Normalized tensor.
     """
     # Instance norm is equivalent to group norm with num_groups = C
-    original_shape = x.shape
-    C = original_shape[1]
+    C = extract_shape(x)[1]
     return group_norm(x, num_groups=C, scale=scale, offset=offset, epsilon=epsilon)
 
 

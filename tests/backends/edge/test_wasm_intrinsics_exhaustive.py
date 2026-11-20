@@ -5,21 +5,21 @@ from __future__ import annotations
 import typing
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def get_all_ops() -> EagerValue:
+def get_all_ops() -> BackendArg:
     """Extract all operations from the registry.
 
     Returns:
-        EagerValue: Computed output value from `get_all_ops`.
+        BackendArg: Computed output value from `get_all_ops`.
     """
     return list(OPS_REGISTRY.keys())
 
@@ -39,7 +39,8 @@ def test_wasm_scalar_fallback_and_simd() -> None:
         try:
             generator = WasmCodeGenerator(graph)
             wat_code = generator.generate()
-            assert "(module" in wat_code
+            assert "#include <wasm_simd128.h>" in wat_code
+            assert 'extern "C"' in wat_code
             generated_modules += 1
         except UnimplementedMathError as e:
             pytest.fail(f"Operation {op} triggered UnimplementedMathError: {e}")

@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
+import types
 import typing
 
 import pytest
 
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-from ml_switcheroo_compiler.core.shape import (
-    _broadcast_dim,
-    broadcast_shapes,
-    validate_matrix_multiply_shapes,
-)
-from tests.testing_utils import ensure_callable
+from ml_switcheroo_compiler.core.shape import _broadcast_dim, broadcast_shapes, validate_matrix_multiply_shapes
 
 if typing.TYPE_CHECKING:
     pass
@@ -28,8 +24,8 @@ def test_broadcast_dim_ones_and_symbolic() -> None:
     """Test broadcasting unit and symbolic wildcard dimensions."""
     assert _broadcast_dim(1, 8, (1,), (8,)) == 8
     assert _broadcast_dim(8, 1, (8,), (1,)) == 8
-    assert ensure_callable(_broadcast_dim)("?", 16, ("?",), (16,)) == 16
-    assert ensure_callable(_broadcast_dim)(16, "?", (16,), ("?",)) == 16
+    assert _broadcast_dim("?", 16, ("?",), (16,)) == 16
+    assert _broadcast_dim(16, "?", (16,), ("?",)) == 16
     assert _broadcast_dim(-1, 32, (-1,), (32,)) == 32
     assert _broadcast_dim(32, -1, (32,), (-1,)) == 32
 
@@ -45,7 +41,7 @@ def test_broadcast_shapes_success() -> None:
     assert broadcast_shapes((), (3, 4)) == (3, 4)
     assert broadcast_shapes((1, 4), (5, 1)) == (5, 4)
     assert broadcast_shapes((2, 1, 6), (3, 6)) == (2, 3, 6)
-    assert ensure_callable(broadcast_shapes)(("?", 1), (10, 4)) == (10, 4)
+    assert broadcast_shapes(("?", 1), (10, 4)) == (10, 4)
 
 
 def test_broadcast_shapes_failure() -> None:
@@ -57,7 +53,7 @@ def test_broadcast_shapes_failure() -> None:
 def test_validate_matmul_shapes_strict_2d() -> None:
     """Test strict 2-D matrix multiplication validation rules."""
     assert validate_matrix_multiply_shapes((2, 3), (3, 4), strict_2d=True) == (2, 4)
-    assert ensure_callable(validate_matrix_multiply_shapes)(("?", 3), (3, "?"), strict_2d=True) == ("?", "?")
+    assert validate_matrix_multiply_shapes(("?", 3), (3, "?"), strict_2d=True) == ("?", "?")
 
     # Incompatible inner dimension
     with pytest.raises(ShapeMismatchError):
@@ -82,7 +78,7 @@ def test_validate_matmul_shapes_zero_rank() -> None:
 def test_validate_matmul_shapes_1d_dot() -> None:
     """Test 1-D vector dot product shape inference."""
     assert validate_matrix_multiply_shapes((4,), (4,)) == ()
-    assert ensure_callable(validate_matrix_multiply_shapes)(("?",), (4,)) == ()
+    assert validate_matrix_multiply_shapes(("?",), (4,)) == ()
 
     with pytest.raises(ShapeMismatchError):
         validate_matrix_multiply_shapes((4,), (5,))
@@ -118,3 +114,58 @@ def test_validate_matmul_shapes_batched() -> None:
     with pytest.raises(ShapeMismatchError):
         # Mismatched batch dimension
         validate_matrix_multiply_shapes((3, 2, 4), (4, 4, 5))
+
+
+def test_shape_ellipsis_version_branches(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify both Python <3.10 and >=3.10 EllipsisType resolution branches in ``core.shape``.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+    """
+    import importlib
+    import sys
+
+    import ml_switcheroo_compiler.core._shape_types as shape_types_mod
+    import ml_switcheroo_compiler.core.shape as shape_mod
+
+    monkeypatch.setattr(types, "EllipsisType", type(Ellipsis), raising=False)
+    monkeypatch.setattr(typing, "TypeAlias", type, raising=False)
+    monkeypatch.setattr(sys, "version_info", (3, 10, 0, "final", 0))
+    importlib.reload(shape_types_mod)
+    importlib.reload(shape_mod)
+    assert shape_mod.broadcast_shapes((2, 1), (1, 3)) == (2, 3)
+    monkeypatch.undo()
+    monkeypatch.setattr(sys, "version_info", (3, 9, 0, "final", 0))
+    importlib.reload(shape_types_mod)
+    importlib.reload(shape_mod)
+    monkeypatch.undo()
+    importlib.reload(shape_types_mod)
+    importlib.reload(shape_mod)
+    assert shape_mod.broadcast_shapes((4, 1), (1, 5)) == (4, 5)
+
+    from collections.abc import Sequence
+
+    class MetaOnlyStub:
+        """Stub exposing ``shape_metadata`` without ``shape``."""
+
+        shape_metadata: Sequence[shape_mod.ShapeDim] | None = (2, "N")
+
+    class ShapeOnlyStub:
+        """Stub exposing ``shape`` directly."""
+
+        shape: Sequence[shape_mod.ShapeDim] = (3, "B")
+
+    assert shape_mod.extract_symbolic_shape(ShapeOnlyStub()) == (3, "B")
+    assert shape_mod.extract_symbolic_shape(MetaOnlyStub()) == (2, "N")
+    assert shape_mod.extract_symbolic_shape(42, default=(1,)) == (1,)
+    assert shape_mod.extract_shape(MetaOnlyStub()) == (2, -1)
+    assert shape_mod.extract_shape(42, default=(1,)) == (1,)
+    assert shape_mod.extract_dtype(42, default="int32") == "int32"
+    assert shape_mod.extract_device(42, default="cpu") == "cpu"
+    assert shape_mod.extract_data(42) == 42
+
+    from tests.fixtures import build_test_graph, build_test_node
+
+    n_fix = build_test_node("n0", "Relu", ["x"], {"alpha": 0.0})
+    g_fix = build_test_graph("g_fix", {"n0": n_fix}, ["x"], ["n0"])
+    assert g_fix.nodes["n0"].op_type == "Relu"

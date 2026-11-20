@@ -29,7 +29,6 @@ from ml_switcheroo_compiler.ops.nn.loss import (
     sparse_categorical_crossentropy,
     tversky_loss,
 )
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -45,15 +44,18 @@ def test_loss_coverage() -> None:
     assert categorical_generalized_cross_entropy(t_true, t_pred) is not None
     assert _compute_circle_margins(0.25) == (1.25, -0.25, 0.75, 0.25)
 
-    lp, ln = ensure_callable(_compute_circle_logits)(t_pred, 0.25, 256.0)
-    assert ensure_eager_tensor(lp) is not None and ln is not None
+    lp, ln = _compute_circle_logits(t_pred, 0.25, 256.0)
+    assert lp is not None and ln is not None
 
     assert (
-        ensure_callable(_compute_circle_loss_reduction)(
+        _compute_circle_loss_reduction(
             lp,
             ln,
             t_true,
-            ensure_callable(Tensor)(ensure_callable(np.array)([[0.0, 1.0]]), ensure_callable(TensorConfig)(shape=(1, 2), dtype=ensure_callable(DType)("float32"), device=ensure_callable(Device)("cpu"))),
+            Tensor(
+                np.array([[0.0, 1.0]]),
+                TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")),
+            ),
         )
         is not None
     )

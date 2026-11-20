@@ -2,65 +2,72 @@
 
 from __future__ import annotations
 
+import types
 import typing
 
+from ml_switcheroo_compiler.core.shape import OpValue
 
+
+@typing.runtime_checkable
 class ZerosModule(typing.Protocol):
     """Protocol for module providing zeros."""
 
     def zeros(
         self,
         shape: tuple[int, ...],
-    ) -> tuple[str, tuple[int, ...]] | tuple[int, ...]:
+    ) -> OpValue:
         """Create zeros.
 
         Args:
-            shape: Input `shape` argument (shape).
+            shape (tuple[int, ...]): Input `shape` argument (shape).
 
         Returns:
-            Union[tuple[str, tuple[int, ...]], tuple[int, ...]]: Computed result.
+            OpValue: Computed result.
         """
         ...
 
 
+@typing.runtime_checkable
 class ArrayModule(typing.Protocol):
     """Protocol for module providing array."""
 
     def array(
         self,
-        data: list[int] | list[float] | tuple[int, ...] | int | float | str,
-        dtype: str | type | None = None,
-    ) -> tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str, str | type | None] | list[int] | list[float]:
+        data: OpValue,
+        dtype: OpValue = None,
+    ) -> OpValue:
         """Create array.
 
         Args:
-            data: Input `data` argument (data).
-            dtype: Input `dtype` argument (dtype).
+            data (OpValue): Input `data` argument (data).
+            dtype (OpValue): Input `dtype` argument (dtype).
 
         Returns:
-            Union[tuple[str, Union[list[int], list[float], tuple[int, ...], int, float, str], Union[str, type, None]], list[int], list[float]]: Computed result.
+            OpValue: Computed result.
         """
         ...
 
 
+@typing.runtime_checkable
 class AsArrayModule(typing.Protocol):
     """Protocol for module providing asarray."""
 
     def asarray(
         self,
-        data: list[int] | list[float] | tuple[int, ...] | int | float | str,
-    ) -> tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str] | list[int] | list[float]:
+        data: OpValue,
+    ) -> OpValue:
         """Create asarray.
 
         Args:
-            data: Input `data` argument (data).
+            data (OpValue): Input `data` argument (data).
 
         Returns:
-            Union[tuple[str, Union[list[int], list[float], tuple[int, ...], int, float, str]], list[int], list[float]]: Computed result.
+            OpValue: Computed result.
         """
         ...
 
 
+@typing.runtime_checkable
 class HasItem(typing.Protocol):
     """Protocol for objects providing item method."""
 
@@ -68,78 +75,99 @@ class HasItem(typing.Protocol):
         """Extract item.
 
         Returns:
-            Union[float, int]: Computed result.
+            float | int: Computed result.
         """
         ...
 
 
 InputData = typing.Union[list[int], list[float], tuple[int, ...], int, float, "str"]
-ArrayResult = typing.Union[tuple[str, InputData, typing.Union[str, type, "None"]], tuple[str, InputData], list[int], "list[float]"]
+
+ArrayResult = typing.Union[
+    tuple[str, InputData, typing.Union[str, type, "None"]], tuple[str, InputData], list[int], "list[float]"
+]
 
 
 def generic_zeros(
-    mod: ZerosModule,
+    mod: types.ModuleType | ZerosModule | OpValue,
     shape: tuple[int, ...],
-) -> tuple[str, tuple[int, ...]] | tuple[int, ...]:
+) -> OpValue:
     """Provide generic zeros.
 
     Args:
-        mod (ZerosModule): Input `module` argument (module).
+        mod (types.ModuleType | ZerosModule | OpValue): Input `module` argument (module).
         shape (tuple[int, ...]): Input `shape` argument (shape).
 
     Returns:
-        tuple[str, tuple[int, ...]] | tuple[int, ...]: Computed `tuple[str, tuple[int, ...]] | tuple[int, ...]` output.
+        OpValue: Computed zeros array.
     """
-    return mod.zeros(shape)
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+    if isinstance(mod, ZerosModule) and not isinstance(mod, types.ModuleType):
+        return mod.zeros(shape)
+    return adapt_backend_module(mod).zeros(shape)
 
 
 def generic_array(
-    mod: ArrayModule,
-    data: InputData,
-    dtype: str | type | None = None,
-) -> ArrayResult:
+    mod: types.ModuleType | ArrayModule | OpValue,
+    data: OpValue,
+    dtype: OpValue = None,
+) -> OpValue:
     """Provide generic array.
 
     Args:
-        mod (ArrayModule): Input `module` argument (module).
-        data (InputData): Input `data` argument (data).
-        dtype (Union[str, type, None]): Input `dtype` argument (dtype).
+        mod (types.ModuleType | ArrayModule | OpValue): Input `module` argument (module).
+        data (OpValue): Input `data` argument (data).
+        dtype (OpValue): Input `dtype` argument (dtype).
 
     Returns:
-        ArrayResult: Computed `ArrayResult` output.
+        OpValue: Computed array result.
     """
-    if dtype is not None:
-        return mod.array(data, dtype=dtype)
-    return mod.array(data)
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+    if isinstance(mod, ArrayModule) and not isinstance(mod, types.ModuleType):
+        if dtype is not None:
+            return mod.array(data, dtype=dtype)
+        return mod.array(data)
+    fn = adapt_backend_module(mod).require_op("array")
+    return fn(data, dtype=dtype) if dtype is not None else fn(data)
 
 
 def generic_asarray(
-    mod: AsArrayModule,
-    data: InputData,
-) -> tuple[str, InputData] | list[int] | list[float]:
+    mod: types.ModuleType | AsArrayModule | OpValue,
+    data: OpValue,
+) -> OpValue:
     """Provide generic asarray.
 
     Args:
-        mod (AsArrayModule): Input `module` argument (module).
-        data (InputData): Input `data` argument (data).
+        mod (types.ModuleType | AsArrayModule | OpValue): Input `module` argument (module).
+        data (OpValue): Input `data` argument (data).
 
     Returns:
-        tuple[str, InputData] | list[int] | list[float]: Computed `tuple[str, InputData] | list[int] | list[float]` output.
+        OpValue: Computed array result.
     """
-    return mod.asarray(data)
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+    if isinstance(mod, AsArrayModule) and not isinstance(mod, types.ModuleType):
+        return mod.asarray(data)
+    return adapt_backend_module(mod).asarray(data)
 
 
 def generic_item(
-    mod: ZerosModule | ArrayModule | AsArrayModule | None,
-    data: HasItem,
+    mod: types.ModuleType | ZerosModule | ArrayModule | AsArrayModule | OpValue,
+    data: HasItem | OpValue,
 ) -> float:
     """Provide generic item.
 
     Args:
-        mod (ZerosModule | ArrayModule | AsArrayModule | None): Input `module` argument (module).
-        data (HasItem): Input `data` argument (data).
+        mod (types.ModuleType | ZerosModule | ArrayModule | AsArrayModule | OpValue): Input `module` argument (module).
+        data (HasItem | OpValue): Input `data` argument (data).
 
     Returns:
-        float: Computed `float` output.
+        float: Extracted scalar float.
     """
-    return float(data.item())
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_float
+
+    _ = mod
+    if isinstance(data, HasItem):
+        return float(data.item())
+    return coerce_float(data)

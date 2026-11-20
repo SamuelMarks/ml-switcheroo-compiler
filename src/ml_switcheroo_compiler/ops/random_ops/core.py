@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import ensure_eager_list, ensure_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.backends.registry import coerce_int, coerce_operand_list
+from ml_switcheroo_compiler.core.shape import OpValue
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -13,12 +13,12 @@ class Rademacher(OpDef):
 
     op_name = "Rademacher"
 
-    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -29,15 +29,15 @@ class Rademacher(OpDef):
             return ()
         if isinstance(s, int):
             return (s,)
-        return tuple(int(ensure_int(d)) for d in ensure_eager_list(s))
+        return tuple(int(coerce_int(d)) for d in coerce_operand_list(s))
 
 
-def rademacher(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rademacher(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Draw samples from a Rademacher distribution.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

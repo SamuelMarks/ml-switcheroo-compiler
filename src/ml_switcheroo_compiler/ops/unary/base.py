@@ -8,8 +8,9 @@ from ml_switcheroo_compiler.core.shape import extract_shape
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if typing.TYPE_CHECKING:
+    from ml_switcheroo_ir import IRNode
+
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ir.core import IRNode
 
 
 class UnaryMathOp(OpDef):

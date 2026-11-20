@@ -8,12 +8,13 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.ops as ops
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from tests.testing_utils import ensure_callable
+from tests.testing_utils import EagerTensorProtocol
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -46,4 +47,9 @@ def test_einsum_ellipsis(backend_name: EagerTensorProtocol) -> None:
         t_b_b = Tensor(get_active_backend().asarray(b_np), TensorConfig(b_np.shape, DType.Float32, Device("cpu")))
         out_b = ops.einsum("...ab,...bc->...ac", t_a_b, t_b_b)
 
-    ensure_callable(np.testing.assert_allclose)(ensure_callable(get_active_backend)().asarray(out_ref), ensure_callable(get_active_backend)().asarray(out_b), rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(
+        ensure_ndarray(get_active_backend().asarray(out_ref)),
+        ensure_ndarray(get_active_backend().asarray(out_b)),
+        rtol=1e-5,
+        atol=1e-5,
+    )

@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from tests.testing_utils import ensure_callable
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+from tests.testing_utils import BackendArg, MockTestStub
 
 
 def test_householder_product_coverage() -> None:
@@ -20,11 +16,11 @@ def test_householder_product_coverage() -> None:
     tau = np.array([0, 0], dtype=float)
 
     # Let's mock a backend_module with householder_product
-    class MockBackend:
+    class MockBackend(MockTestStub):
         """Test class MockBackend."""
 
         @staticmethod
-        def householder_product(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def householder_product(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
             """Test function householder_product.
 
             Args:
@@ -32,20 +28,20 @@ def test_householder_product_coverage() -> None:
                 kwargs: Test parameter `kwargs`.
 
             Returns:
-                EagerValue: Computed output value from `householder_product`.
+                BackendArg: Computed output value from `householder_product`.
             """
             return np.array([[1, 0], [0, 1]])
 
-    assert ensure_callable(np.array_equal)(ensure_callable(_householder_product)(MockBackend, v, tau), v)
+    assert np.array_equal(ensure_ndarray(_householder_product(MockBackend(), v, tau)), v)
 
-    class MockBackendLinalg:
+    class MockBackendLinalg(MockTestStub):
         """Test class MockBackendLinalg."""
 
         class linalg:
             """Test class linalg."""
 
             @staticmethod
-            def householder_product(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+            def householder_product(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
                 """Test function householder_product.
 
                 Args:
@@ -53,8 +49,8 @@ def test_householder_product_coverage() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    EagerValue: Computed output value from `householder_product`.
+                    BackendArg: Computed output value from `householder_product`.
                 """
                 return np.array([[1, 0], [0, 1]])
 
-    assert ensure_callable(np.array_equal)(ensure_callable(_householder_product)(MockBackendLinalg, v, tau), v)
+    assert np.array_equal(ensure_ndarray(_householder_product(MockBackendLinalg(), v, tau)), v)

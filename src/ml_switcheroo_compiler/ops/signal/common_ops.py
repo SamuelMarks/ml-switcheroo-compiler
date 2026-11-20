@@ -2,34 +2,34 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, ensure_tensor
+from ml_switcheroo_compiler.core.shape import OpValue, ShapeDim
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
 def _emit_signal_node(
     op_type: str,
-    inputs: Sequence[Tensor | TensorOrScalar],
-    attrs: dict[str, TensorOrScalar] | None,
-    out_shape: Sequence[int | str],
+    inputs: Sequence[Tensor | OpValue],
+    attrs: Mapping[str, OpValue] | None,
+    out_shape: Sequence[ShapeDim],
     dtype: DType | str | None,
-) -> Tensor:
+) -> OpValue:
     """Emit a symbolic signal processing IR node and return its proxy `Tensor`.
 
     Args:
         op_type (str): Canonical IR operation type name.
-        inputs (Sequence[Tensor | TensorOrScalar]): Input tensor operands.
-        attrs (dict[str, TensorOrScalar] | None): Optional dictionary of operation attributes.
-        out_shape (Sequence[int | str]): Inferred output tensor shape.
+        inputs (Sequence[Tensor | OpValue]): Input tensor operands.
+        attrs (Mapping[str, OpValue] | None): Optional mapping of operation attributes.
+        out_shape (Sequence[ShapeDim]): Inferred output tensor shape.
         dtype (DType | str | None): Output tensor data type.
 
     Returns:
-        Tensor: Symbolic `Tensor` wrapping the emitted `LogicalNode`.
+        OpValue: Symbolic `Tensor` wrapping the emitted `LogicalNode`.
     """
-    return ensure_tensor(_emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype]))
+    return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])
 
 
 def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, str | float]:

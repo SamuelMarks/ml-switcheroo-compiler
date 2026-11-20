@@ -3,19 +3,18 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
+from ml_switcheroo_ir import IRGraph, IRNode
 
 from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import ensure_callable
 
 if typing.TYPE_CHECKING:
     import tensorflow as tf
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 tf = pytest.importorskip("tensorflow")
 
@@ -24,11 +23,17 @@ def test_tensorflow_generator_coverage() -> None:
     """Test the tensorflow generator coverage behavior.
 
     Returns:
-        TensorOrScalar: The inferred shape or computed result.
+        OpValue: The inferred shape or computed result.
     """
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
-    n_conv = IRNode(id="n1", op_type="ConvTranspose", inputs=["x", "w"], attributes={"strides": 2, "padding": "SAME"}, shape_metadata=None)
+    n_conv = IRNode(
+        id="n1",
+        op_type="ConvTranspose",
+        inputs=["x", "w"],
+        attributes={"strides": 2, "padding": "SAME"},
+        shape_metadata=None,
+    )
     assert "convtranspose" in gen.visit(n_conv, ["x", "w"])
     n_ragged = IRNode(id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None)
     assert "tf_ragged_dot" in gen.visit(n_ragged, ["x", "y"])
@@ -54,18 +59,17 @@ def test_tensorflow_generator_coverage() -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises((NotImplementedError, BackendNotSupportedError)):
-        ensure_callable(execute_op)(None, "UnknownFakeOp", 1)
-    ensure_callable(execute_op)(None, "Add", 1, 1)
-    assert ensure_callable(zeros)(None, (2,)) is not None
+        execute_op(None, "UnknownFakeOp", 1)
+    execute_op(None, "Add", 1, 1)
+    assert zeros(None, (2,)) is not None
     with pytest.raises(AttributeError):
-        ensure_callable(array)(None, [1, 2])
+        array(None, [1, 2])
     with pytest.raises(AttributeError):
-        ensure_callable(asarray)(None, [3, 4])
-    with pytest.raises(AttributeError):
-        ensure_callable(item)(None, ensure_callable(tf.constant)([5]))
+        asarray(None, [3, 4])
+    assert item(None, tf.constant([5])) == 5
 
 
-def test_tensorflow_generator_methods(tmp_path: EagerTensorProtocol) -> None:
+def test_tensorflow_generator_methods(tmp_path: Path) -> None:
     """Test coverage.
 
     Args:
@@ -87,7 +91,9 @@ def test_tensorflow_generator_methods(tmp_path: EagerTensorProtocol) -> None:
     assert gen._format_transpose({"axes": "[1, 0]"}) == "tf.transpose({0}, perm={axes})"
     ragged = IRNode(id="n", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None)
     assert gen.visit_RaggedDot(ragged, ["x", "y"]) == "tf_ragged_dot(x, y)"
-    einsum = IRNode(id="n2", op_type="Einsum", inputs=["a", "b"], attributes={"equation": "ij,jk->ik"}, shape_metadata=None)
+    einsum = IRNode(
+        id="n2", op_type="Einsum", inputs=["a", "b"], attributes={"equation": "ij,jk->ik"}, shape_metadata=None
+    )
     assert gen.visit_Einsum(einsum, ["a", "b"], equation="ij,jk->ik") == "tf.einsum('ij,jk->ik', a, b)"
     einsum2 = IRNode(id="n3", op_type="Einsum", inputs=["a"], attributes={}, shape_metadata=None)
     assert gen.visit_Einsum(einsum2, ["a"]) == "tf.einsum('', a)"

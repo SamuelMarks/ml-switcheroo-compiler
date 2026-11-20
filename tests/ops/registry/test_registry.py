@@ -7,11 +7,17 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.base import OpDef
-from ml_switcheroo_compiler.ops.registry import get_frontend, get_op, get_util, register_frontend, register_op, register_util
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from ml_switcheroo_compiler.ops.registry import (
+    get_frontend,
+    get_op,
+    get_util,
+    register_frontend,
+    register_op,
+    register_util,
+)
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
 def test_registry_register_op() -> None:
@@ -21,11 +27,11 @@ def test_registry_register_op() -> None:
     class TestRegistryOp1(OpDef):
         """Test class TestRegistryOp1."""
 
-        def infer_shape(self) -> EagerValue:
+        def infer_shape(self) -> BackendArg:
             """Test function infer_shape.
 
             Returns:
-                EagerValue: Computed output value from `infer_shape`.
+                BackendArg: Computed output value from `infer_shape`.
             """
             return ()
 
@@ -42,11 +48,11 @@ def test_registry_register_op() -> None:
         class AnotherOpClass(OpDef):
             """Test class AnotherOpClass."""
 
-            def infer_shape(self) -> EagerValue:
+            def infer_shape(self) -> BackendArg:
                 """Test function infer_shape.
 
                 Returns:
-                    EagerValue: Computed output value from `infer_shape`.
+                    BackendArg: Computed output value from `infer_shape`.
                 """
                 return ()
 
@@ -55,11 +61,11 @@ def test_registry_util() -> None:
     """Test function test_registry_util."""
 
     @register_util("my_util")
-    def my_util_fn() -> EagerValue:
+    def my_util_fn() -> BackendArg:
         """Test function my_util_fn.
 
         Returns:
-            EagerValue: Computed output value from `my_util_fn`.
+            BackendArg: Computed output value from `my_util_fn`.
         """
         return 42
 
@@ -72,16 +78,11 @@ def test_registry_util() -> None:
 def test_registry_frontend() -> None:
     """Test function test_registry_frontend."""
 
-    @ensure_callable(register_frontend)("my_frontend")
-    def my_frontend_fn() -> EagerValue:
-        """Test function my_frontend_fn.
+    @register_frontend("my_frontend")
+    class MyFrontend:
+        """Test class MyFrontend."""
 
-        Returns:
-            EagerValue: Computed output value from `my_frontend_fn`.
-        """
-        return 42
-
-    assert get_frontend("my_frontend") == my_frontend_fn
+    assert get_frontend("my_frontend") == MyFrontend
 
     with pytest.raises(KeyError, match="not found"):
         get_frontend("non_existent_frontend")
@@ -98,12 +99,34 @@ def test_get_op_not_found() -> None:
 
 def test_registry_files_load() -> None:
     """Test function test_registry_files_load."""
-    from ml_switcheroo_compiler.ops.registry import _REGISTRY, _YAML_REGISTRY, _RegistryShim, backend_mapping_registry, get_all_ops, get_backend_mapping, get_op
+    from ml_switcheroo_compiler.ops.registry import (
+        _REGISTRY,
+        _YAML_REGISTRY,
+        _RegistryShim,
+        backend_mapping_registry,
+        get_all_ops,
+        get_backend_mapping,
+        get_op,
+    )
 
     ops = get_all_ops()
     assert len(ops) > 0
-    op = get_op("Conv2D")
-    assert ensure_eager_tensor(ensure_eager_tensor(op).get_yaml_data)() is not None
+
+    @typing.runtime_checkable
+    class _YamlDataProto(typing.Protocol):
+        """Protocol for DynamicOpDef classes exposing `get_yaml_data`."""
+
+        def get_yaml_data(self) -> BackendArg:
+            """Return backing YAML entry.
+
+            Returns:
+                BackendArg: YAML dictionary.
+            """
+            ...
+
+    op_inst = get_op("Conv2D")()
+    assert isinstance(op_inst, _YamlDataProto)
+    assert op_inst.get_yaml_data() is not None
     assert backend_mapping_registry.get_generator_mapping("numpy", "NonExistentOp") is None
     assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
     assert get_backend_mapping("NonExistentOp") == {}
@@ -120,10 +143,13 @@ def test_registry_files_load() -> None:
     assert backend_mapping_registry.get_op("Add") is not None
 
     # Test dynamic class builder
-    ensure_eager_tensor(_YAML_REGISTRY)["FakeYamlOp"] = {"some": "data"}
+    fake_yaml_data: dict[str, dict[str, dict[str, str]]] = {"variants": {"numpy": {"eager": "add"}}}
+    _YAML_REGISTRY["FakeYamlOp"] = fake_yaml_data
     fake_op_cls = get_op("FakeYamlOp")
     assert fake_op_cls.__name__ == "FakeYamlOp"
-    assert ensure_eager_tensor(ensure_eager_tensor(fake_op_cls).get_yaml_data)() == {"some": "data"}
+    fake_op_inst = fake_op_cls()
+    assert isinstance(fake_op_inst, _YamlDataProto)
+    assert fake_op_inst.get_yaml_data() == fake_yaml_data
     _REGISTRY.pop("FakeYamlOp", None)
     _YAML_REGISTRY.pop("FakeYamlOp", None)
 

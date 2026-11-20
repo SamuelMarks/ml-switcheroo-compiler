@@ -10,11 +10,11 @@ from __future__ import annotations
 from collections import namedtuple
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_shape, ensure_str
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, coerce_shape, coerce_str
 from ml_switcheroo_compiler.core.shape import (
+    OpValue,
     ShapeMetadataProtocol,
     ShapeProtocol,
-    TensorOrScalar,
     broadcast_shapes,
     extract_shape,
 )
@@ -24,17 +24,17 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
 
 
-def _infer_poly_shape(args: Sequence[EagerTensorProtocol | TensorOrScalar]) -> TensorOrScalar:
+def _infer_poly_shape(args: Sequence[EagerTensorProtocol | OpValue]) -> OpValue:
     """Infer shape for polynomial binary operations.
 
     Args:
-        args (Sequence[EagerTensorProtocol | TensorOrScalar]): Input arguments.
+        args (Sequence[EagerTensorProtocol | OpValue]): Input arguments.
 
     Returns:
-        TensorOrScalar: ShapeHolder namedtuple, first argument, or empty tuple.
+        OpValue: ShapeHolder namedtuple, first argument, or empty tuple.
     """
     if args:
-        first: EagerTensorProtocol | TensorOrScalar = args[0]
+        first: EagerTensorProtocol | OpValue = args[0]
         if isinstance(first, ShapeProtocol):
             return ShapeHolder(extract_shape(first))
         return args[0]
@@ -50,19 +50,36 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol | TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *shapes: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *shapes (EagerTensorProtocol | TensorOrScalar): Positional args.
-            **kwargs (TensorOrScalar): Keyword args.
+            *shapes (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        raw_shapes: Sequence[EagerTensorProtocol | TensorOrScalar] = shapes
+        raw_shapes: Sequence[EagerTensorProtocol | OpValue] = shapes
         if raw_shapes and all(isinstance(s, tuple) for s in raw_shapes):
-            tuple_shapes = [ensure_shape(s) for s in raw_shapes]
+            tuple_shapes: list[tuple[int | str, ...]] = []
+            has_symbolic = False
+            for s in raw_shapes:
+                assert isinstance(s, tuple)
+                if any(not isinstance(d, int) or isinstance(d, bool) for d in s):
+                    has_symbolic = True
+                else:
+                    tuple_shapes.append(coerce_shape(s))
+            if has_symbolic:
+                from ml_switcheroo_compiler.ops.shape_inference import (
+                    _to_shape_type,
+                )
+                from ml_switcheroo_compiler.ops.shape_inference import (
+                    broadcast_shapes as _sym_bs,
+                )
+
+                sym_shapes = [_to_shape_type(s) for s in raw_shapes if isinstance(s, tuple)]
+                return _sym_bs(*sym_shapes) if len(sym_shapes) > 1 else sym_shapes[0]
             return _bs(*tuple_shapes) if len(tuple_shapes) > 1 else tuple_shapes[0]
         return shapes[0] if shapes else ()
 
@@ -397,12 +414,12 @@ class Diff(OpDef):
 
     op_name = "Diff"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -417,18 +434,18 @@ class Digitize(OpDef):
 
     op_name = "Digitize"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
         # Returns indices matching input shape
-        raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
+        raw_args: Sequence[EagerTensorProtocol | OpValue] = args
         if raw_args and isinstance(raw_args[0], ShapeProtocol):
             return extract_shape(raw_args[0])
         return ()
@@ -440,12 +457,12 @@ class ArrayEquiv(OpDef):
 
     op_name = "ArrayEquiv"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -483,7 +500,10 @@ class Zeta(BinaryMathOp):
 
 @register_op("BesselJn")
 class BesselJn(BinaryMathOp):
-    """Provide an operation class for computing the Bessel function of the first kind of real order and complex argument."""
+    """Provide an operation class for computing the Bessel function of the first kind of real order and complex.
+
+    argument.
+    """
 
     op_name = "BesselJn"
 
@@ -501,14 +521,14 @@ class Betainc(OpDef):
 
     op_name = "Betainc"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, x: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: OpValue, b: OpValue, x: OpValue = None, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            a (EagerTensorProtocol): Input `a` argument (a).
-            b (EagerTensorProtocol): Input `b` argument (b).
-            x (TensorOrScalar): Input `x` argument (x).
-            **kwargs (TensorOrScalar): Keyword args.
+            a (OpValue): Input `a` argument (a).
+            b (OpValue): Input `b` argument (b).
+            x (OpValue): Input `x` argument (x).
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -568,189 +588,99 @@ class TruncateMod(BinaryMathOp):
     op_name = "TruncateMod"
 
 
+class PolynomialBinaryOp(BinaryMathOp):
+    """Base class for polynomial binary operations sharing coefficient shape inference."""
+
+    def infer_shape(self, *shapes: OpValue, **kwargs: OpValue) -> OpValue:
+        """Infer output shape for polynomial coefficient operations.
+
+        Args:
+            *shapes (OpValue): Input polynomial shapes or tensors.
+            **kwargs (OpValue): Additional keyword arguments.
+
+        Returns:
+            OpValue: Computed output shape.
+        """
+        del kwargs
+        return _infer_poly_shape(shapes)
+
+
 @register_op("Polyadd")
-class Polyadd(BinaryMathOp):
+class Polyadd(PolynomialBinaryOp):
     """Polyadd operator definition."""
 
     op_name = "Polyadd"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polysub")
-class Polysub(BinaryMathOp):
+class Polysub(PolynomialBinaryOp):
     """Polysub operator definition."""
 
     op_name = "Polysub"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polymul")
-class Polymul(BinaryMathOp):
+class Polymul(PolynomialBinaryOp):
     """Polymul operator definition."""
 
     op_name = "Polymul"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polydiv")
-class Polydiv(BinaryMathOp):
+class Polydiv(PolynomialBinaryOp):
     """Polydiv operator definition."""
 
     op_name = "Polydiv"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polyval")
-class Polyval(BinaryMathOp):
+class Polyval(PolynomialBinaryOp):
     """Polyval operator definition."""
 
     op_name = "Polyval"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Poly")
-class Poly(BinaryMathOp):
+class Poly(PolynomialBinaryOp):
     """Poly operator definition."""
 
     op_name = "Poly"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polyder")
-class Polyder(BinaryMathOp):
+class Polyder(PolynomialBinaryOp):
     """Polyder operator definition."""
 
     op_name = "Polyder"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polyfit")
-class Polyfit(BinaryMathOp):
+class Polyfit(PolynomialBinaryOp):
     """Polyfit operator definition."""
 
     op_name = "Polyfit"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Polyint")
-class Polyint(BinaryMathOp):
+class Polyint(PolynomialBinaryOp):
     """Polyint operator definition."""
 
     op_name = "Polyint"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("Roots")
-class Roots(BinaryMathOp):
+class Roots(PolynomialBinaryOp):
     """Roots operator definition."""
 
     op_name = "Roots"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
-        """Infer shape.
-
-        Args:
-            *args (EagerTensorProtocol): Arguments.
-            **kwargs (EagerTensorProtocol): Keyword arguments.
-
-        Returns: Tensor: Computed shape.
-        """
-        return _infer_poly_shape(args)
-
 
 @register_op("IgammaGradA")
 class IgammaGradA(BinaryMathOp):
-    """Provide an operation class for computing the gradient of the regularized lower incomplete gamma function with respect to a."""
+    """Provide an operation class for computing the gradient of the regularized lower incomplete gamma function.
+
+    with respect to a.
+    """
 
     op_name = "IgammaGradA"
 
@@ -780,30 +710,30 @@ class Atan2(BinaryMathOp):
 class Clip(OpDef):
     """Operator Clip."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: OpValue, **kwargs: OpValue) -> OpValue:
         """Infer shape.
 
         Args:
-            *args (EagerTensorProtocol): Positional args.
-            **kwargs (EagerTensorProtocol): Keyword args.
+            *args (OpValue): Positional args.
+            **kwargs (OpValue): Keyword args.
 
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
-        raw_args: Sequence[EagerTensorProtocol | TensorOrScalar] = args
+        raw_args: Sequence[EagerTensorProtocol | OpValue] = args
         if raw_args and isinstance(raw_args[0], ShapeProtocol):
             return extract_shape(raw_args[0])
         return ()
 
 
-def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def clip(x: OpValue, min_val: OpValue = None, max_val: OpValue = None, **kwargs: OpValue) -> OpValue:
     """Clip values in a tensor.
 
     Args:
-        x (TensorOrScalar): Input `x` argument (x).
-        min_val (TensorOrScalar): Input `min_val` argument (min val).
-        max_val (TensorOrScalar): Input `max_val` argument (max val).
-        **kwargs (TensorOrScalar): Keyword args.
+        x (OpValue): Input `x` argument (x).
+        min_val (OpValue): Input `min_val` argument (min val).
+        max_val (OpValue): Input `max_val` argument (max val).
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -819,15 +749,15 @@ def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrSca
     kwargs["a_min"] = min_val
     kwargs["a_max"] = max_val
     shape_meta = extract_shape(x) if isinstance(x, ShapeMetadataProtocol) and x.shape_metadata is not None else None
-    return emit_ir_node(None, "Clip", [ensure_str(x)], shape_meta, kwargs)
+    return emit_ir_node(None, "Clip", [coerce_str(x)], shape_meta, kwargs)
 
 
-def rem(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def rem(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the rem tensor operation.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -907,12 +837,12 @@ class LegendrePolynomialP(BinaryMathOp):
     op_name = "LegendrePolynomialP"
 
 
-def igamma_grad_a(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def igamma_grad_a(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the gradient of the regularized incomplete gamma function.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -922,12 +852,12 @@ def igamma_grad_a(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrSc
     return dispatch_op("IgammaGradA", *args, **kwargs)
 
 
-def random_gamma_grad(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def random_gamma_grad(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Compute the derivative of a Gamma random variable.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
@@ -937,12 +867,12 @@ def random_gamma_grad(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor
     return dispatch_op("RandomGammaGrad", *args, **kwargs)
 
 
-def sort_key_val(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+def sort_key_val(*args: OpValue, **kwargs: OpValue) -> OpValue:
     """Sort keys and values.
 
     Args:
-        *args (TensorOrScalar): Positional args.
-        **kwargs (TensorOrScalar): Keyword args.
+        *args (OpValue): Positional args.
+        **kwargs (OpValue): Keyword args.
 
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.

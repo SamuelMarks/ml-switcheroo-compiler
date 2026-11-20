@@ -11,13 +11,13 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.jvp_vjp import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-from tests.testing_utils import ensure_callable, ensure_eager_tensor
+from tests.testing_utils import extract_test_dtype, extract_test_shape
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 
 
-def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
+def make_tensor(val: BackendArg, shape: tuple[int, ...] | None = None) -> Tensor:
     """Test function make_tensor.
 
     Args:
@@ -25,18 +25,17 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
         shape: Test parameter `shape`.
 
     Returns:
-        EagerValue: Computed output value from `make_tensor`.
+        Tensor: Computed output value from `make_tensor`.
     """
-    val = np.array(val, dtype=np.float32)
-    if shape is None:
-        shape = val.shape
-    return ensure_callable(Tensor)(val, ensure_callable(TensorConfig)(shape, DType.Float32, ensure_callable(Device)("cpu")))
+    arr = np.array(val, dtype=np.float32)
+    resolved_shape: tuple[int, ...] = shape if shape is not None else arr.shape
+    return Tensor(arr, TensorConfig(resolved_shape, DType.Float32, Device("cpu")))
 
 
 def test_vjp_shape_dtype_inference() -> None:
     """Test function test_vjp_shape_dtype_inference."""
 
-    def f(x: EagerValue, y: EagerValue) -> EagerValue:
+    def f(x: BackendArg, y: BackendArg) -> BackendArg:
         """Test function f.
 
         Args:
@@ -44,21 +43,22 @@ def test_vjp_shape_dtype_inference() -> None:
             y: Test parameter `y`.
 
         Returns:
-            EagerValue: Computed output value from `f`.
+            BackendArg: Computed output value from `f`.
         """
         return dispatch_op("Multiply", x, y)
 
     x = make_tensor(np.ones((2, 3), dtype=np.float32))
     y = make_tensor(np.ones((2, 3), dtype=np.float32))
 
-    out, vjp_fn = ensure_callable(vjp)(f, x, y)
+    out, vjp_fn = vjp(f, x, y)
 
-    assert ensure_eager_tensor(out).shape == (2, 3)
-    assert ensure_eager_tensor(ensure_eager_tensor(out).dtype).value == "float32"
+    assert extract_test_shape(out) == (2, 3)
+    out_dt = extract_test_dtype(out)
+    assert isinstance(out_dt, DType) and out_dt.value == "float32"
 
     cot = make_tensor(np.ones((2, 3), dtype=np.float32))
-    grads = ensure_callable(vjp_fn)(cot)
+    grads = vjp_fn(cot)
 
-    assert ensure_callable(len)(grads) == 2
-    assert ensure_eager_tensor(grads)[0].shape == (2, 3)
-    assert ensure_eager_tensor(grads)[1].shape == (2, 3)
+    assert len(grads) == 2
+    assert extract_test_shape(grads[0]) == (2, 3)
+    assert extract_test_shape(grads[1]) == (2, 3)
