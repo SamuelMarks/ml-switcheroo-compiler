@@ -3,8 +3,16 @@ name: CI
 on:
   push:
     branches: [ master ]
+    tags:
+      - "v*"
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release version tag (e.g., v0.0.1) for manual workflow dispatch"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -17,178 +25,369 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-    - uses: actions/checkout@v4
-      with:
-        repository: SamuelMarks/ml-switcheroo-ir
-        path: ml-switcheroo-ir
+      - uses: actions/checkout@v7
+        with:
+          repository: SamuelMarks/ml-switcheroo-ir
+          path: ml-switcheroo-ir
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
 
-    - name: Install Dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install --upgrade setuptools wheel
-        python3 -m pip install ruff build radon pylint mypy interrogate
-        python3 -m pip install -r requirements.txt
-        python3 -m pip install -r requirements-dev.txt
-        for req in requirements-backend-*.txt; do python3 -m pip install -r "$req" || true; done
-        python3 -m pip install -e ./ml-switcheroo-ir
-        if [ -f "pyproject.toml" ]; then python3 -m pip install -e . --no-deps; fi
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade setuptools wheel
+          python3 -m pip install ruff build radon pylint mypy interrogate
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r requirements-dev.txt
+          for req in requirements-backend-*.txt; do python3 -m pip install -r "$req" || true; done
+          python3 -m pip install -e ./ml-switcheroo-ir
+          if [ -f "pyproject.toml" ]; then python3 -m pip install -e . --no-deps; fi
 
-    - name: Check Code Formatting (Ruff)
-      run: ruff format --config pyproject.toml --check
+      - name: Check Code Formatting (Ruff)
+        run: ruff format --config pyproject.toml --check
 
-    - name: Check Linting (Ruff)
-      run: ruff check --config pyproject.toml
+      - name: Check Linting (Ruff)
+        run: ruff check --config pyproject.toml
 
-    - name: Static Type Checking (MyPy)
-      run: mypy --config-file pyproject.toml src/ml_switcheroo_compiler scripts tests
+      - name: Static Type Checking (MyPy)
+        run: mypy --config-file pyproject.toml src/ml_switcheroo_compiler scripts tests
 
-    - name: Docstring Coverage (Interrogate & Granular AST Check)
-      run: |
-        interrogate -c pyproject.toml src/ml_switcheroo_compiler scripts tests
-        python3 scripts/check_docs.py src/ml_switcheroo_compiler scripts tests
+      - name: Docstring Coverage (Interrogate & Granular AST Check)
+        run: |
+          interrogate -c pyproject.toml src/ml_switcheroo_compiler scripts tests
+          python3 scripts/check_docs.py src/ml_switcheroo_compiler scripts tests
 
-    - name: Architectural, Dependency, Typing & Test AST Guards
-      run: |
-        python3 scripts/lint_dependencies.py
-        python3 scripts/lint_numpy_leak.py
-        python3 scripts/lint_dynamic_numpy.py
-        python3 scripts/lint_any.py --max-count 0
-        python3 scripts/lint_typing.py
-        python3 scripts/lint_pass.py --check-zero-assertions
+      - name: Architectural, Dependency, Typing & Test AST Guards
+        run: |
+          python3 scripts/lint_dependencies.py
+          python3 scripts/lint_numpy_leak.py
+          python3 scripts/lint_dynamic_numpy.py
+          python3 scripts/lint_any.py --max-count 0
+          python3 scripts/lint_typing.py
+          python3 scripts/lint_pass.py --check-zero-assertions
 
-    - name: Cyclomatic Complexity
-      run: |
-        radon cc src/ -a --total-average | grep "Average complexity: A"
+      - name: Cyclomatic Complexity
+        run: |
+          radon cc src/ -a --total-average | grep "Average complexity: A"
 
-    - name: Duplicate Code Check
-      run: |
-        pids=""
-        for d in src/ml_switcheroo_compiler/*/; do
-          pylint "$d" --disable=all --enable=duplicate-code --ignore-patterns=".*stubs?\.pyi" &
-          pids="$pids $!"
-        done
-        for pid in $pids; do
-          if ! wait "$pid"; then
-            kill $pids 2>/dev/null || true
-            exit 1
-          fi
-        done
+      - name: Duplicate Code Check
+        run: |
+          pids=""
+          for d in src/ml_switcheroo_compiler/*/; do
+            pylint "$d" --disable=all --enable=duplicate-code --ignore-patterns=".*stubs?\.pyi" &
+            pids="$pids $!"
+          done
+          for pid in $pids; do
+            if ! wait "$pid"; then
+              kill $pids 2>/dev/null || true
+              exit 1
+            fi
+          done
 
-    - name: Validate Backend Mappings, Parameters & Rules
-      run: |
-        python3 scripts/validate_backend_mappings.py
-        python3 scripts/validate_parameters.py
-        python3 scripts/validate_rules.py
-        python3 scripts/verify_typeclasses.py
+      - name: Validate Backend Mappings, Parameters & Rules
+        run: |
+          python3 scripts/validate_backend_mappings.py
+          python3 scripts/validate_parameters.py
+          python3 scripts/validate_rules.py
+          python3 scripts/verify_typeclasses.py
 
-    - name: Check Snapshot Drift
-      run: python3 scripts/check_snapshot_drift.py
+      - name: Check Snapshot Drift
+        run: python3 scripts/check_snapshot_drift.py
 
-    - name: Run JavaScript Runtime Tests
-      run: |
-        sudo apt-get update -qq && sudo apt-get install -y -qq wabt
-        node --test tests_js/*.js
+      - name: Run JavaScript Runtime Tests
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq wabt
+          node --test tests_js/*.js
 
-    - name: Build Package
-      run: python3 -m build
+      - name: Build Package
+        run: python3 -m build
 
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ["3.10", "3.11", "3.12"]
         backend: [cupy, dask, jax, keras, mlx, numba, numpy, onnx, sparse, tensorflow, torch]
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-    - uses: actions/checkout@v4
-      with:
-        repository: SamuelMarks/ml-switcheroo-ir
-        path: ml-switcheroo-ir
+      - uses: actions/checkout@v7
+        with:
+          repository: SamuelMarks/ml-switcheroo-ir
+          path: ml-switcheroo-ir
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install Dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install --upgrade setuptools wheel
-        python3 -m pip install pytest pytest-cov pytest-mock pytest-asyncio pytest-xdist mypy
-        python3 -m pip install -r requirements.txt
-        python3 -m pip install -r requirements-dev.txt
-        python3 -m pip install -r requirements-backend-${{ matrix.backend }}.txt || true
-        python3 -m pip install -e ./ml-switcheroo-ir
-        if [ -f "pyproject.toml" ]; then python3 -m pip install -e . --no-deps; fi
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade setuptools wheel
+          python3 -m pip install pytest pytest-cov pytest-mock pytest-asyncio pytest-xdist mypy
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r requirements-dev.txt
+          python3 -m pip install -r requirements-backend-${{ matrix.backend }}.txt || true
+          python3 -m pip install -e ./ml-switcheroo-ir
+          if [ -f "pyproject.toml" ]; then python3 -m pip install -e . --no-deps; fi
 
-    - name: Test & Coverage
-      run: |
-        # Set KERAS_BACKEND for frameworks that Keras directly supports
-        export KERAS_BACKEND=${{ matrix.backend }}
-        if [ "${KERAS_BACKEND}" = "cupy" ] || [ "${KERAS_BACKEND}" = "dask" ] || [ "${KERAS_BACKEND}" = "keras" ] || [ "${KERAS_BACKEND}" = "mlx" ] || [ "${KERAS_BACKEND}" = "numba" ] || [ "${KERAS_BACKEND}" = "onnx" ] || [ "${KERAS_BACKEND}" = "sparse" ]; then
-          export KERAS_BACKEND=numpy
-        fi
-        pytest -n auto --dist loadfile -x --cov=src/ml_switcheroo_compiler --cov=scripts --cov-branch --cov-report=xml --cov-fail-under=0
+      - name: Test & Coverage
+        run: |
+          # Set KERAS_BACKEND for frameworks that Keras directly supports
+          export KERAS_BACKEND=${{ matrix.backend }}
+          if [ "${KERAS_BACKEND}" = "cupy" ] || [ "${KERAS_BACKEND}" = "dask" ] || [ "${KERAS_BACKEND}" = "keras" ] || [ "${KERAS_BACKEND}" = "mlx" ] || [ "${KERAS_BACKEND}" = "numba" ] || [ "${KERAS_BACKEND}" = "onnx" ] || [ "${KERAS_BACKEND}" = "sparse" ]; then
+            export KERAS_BACKEND=numpy
+          fi
+          pytest -n auto --dist loadfile -x --cov=src/ml_switcheroo_compiler --cov=scripts --cov-branch --cov-report=xml --cov-fail-under=0
 
-    - name: Upload Coverage
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-${{ matrix.python-version }}-${{ matrix.backend }}
-        path: .coverage
-        include-hidden-files: true
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.python-version }}-${{ matrix.backend }}
+          path: .coverage
+          include-hidden-files: true
 
   update-badges:
     needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-    - uses: actions/checkout@v4
-      with:
-        repository: SamuelMarks/ml-switcheroo-ir
-        path: ml-switcheroo-ir
+      - uses: actions/checkout@v7
+        with:
+          repository: SamuelMarks/ml-switcheroo-ir
+          path: ml-switcheroo-ir
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
 
-    - name: Install Dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install coverage
-        python3 -m pip install -r requirements.txt
-        python3 -m pip install -r requirements-dev.txt
-        python3 -m pip install -e ./ml-switcheroo-ir
-        if [ -f "pyproject.toml" ]; then python3 -m pip install -e . --no-deps; fi
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install coverage
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r requirements-dev.txt
+          python3 -m pip install -e ./ml-switcheroo-ir
+          if [ -f "pyproject.toml" ]; then python3 -m pip install -e . --no-deps; fi
 
-    - name: Download all coverage files
-      uses: actions/download-artifact@v4
-      with:
-        path: coverage-files
+      - name: Download all coverage files
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-*
+          path: coverage-files
 
-    - name: Combine Coverage
-      run: |
-        for dir in coverage-files/*/; do
-          mv "$dir/.coverage" ".coverage.$(basename $dir)"
-        done
-        python3 -m coverage combine
-        python3 -m coverage report --show-missing --fail-under=100
-        python3 -m coverage xml -o coverage.xml
+      - name: Combine Coverage
+        run: |
+          for dir in coverage-files/*/; do
+            mv "$dir/.coverage" ".coverage.$(basename $dir)"
+          done
+          python3 -m coverage combine
+          python3 -m coverage report --show-missing --fail-under=100
+          python3 -m coverage xml -o coverage.xml
 
-    - name: Update Badges
-      run: |
-        python3 scripts/update_badges.py
-        if ! git diff --exit-code README.md; then
-          echo "Coverage badges in README.md are out of date. Please run pre-commit or the update badges script locally and commit the changes."
-          exit 1
-        fi
+      - name: Update Badges
+        run: |
+          python3 scripts/update_badges.py
+          if ! git diff --exit-code README.md; then
+            echo "Coverage badges in README.md are out of date. Please run pre-commit or the update badges script locally and commit the changes."
+            exit 1
+          fi
+
+  build-wheels:
+    name: Build Wheel and Source Distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip build hatchling hatch-requirements-txt
+
+      - name: Sync version with git tag
+        shell: bash
+        env:
+          RAW_TAG: ${{ (github.event_name == 'workflow_dispatch' && inputs.tag) || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
+        run: |
+          if [[ "$RAW_TAG" == v* ]]; then
+            export VERSION="${RAW_TAG#v}"
+            python -c '
+          import os
+          from pathlib import Path
+          version = os.environ["VERSION"]
+          p = Path("src/ml_switcheroo_compiler/__init__.py")
+          text = p.read_text(encoding="utf-8")
+          old_line = [line for line in text.splitlines() if line.startswith("__version__")][0]
+          p.write_text(text.replace(old_line, f"__version__ = {chr(34)}{version}{chr(34)}"), encoding="utf-8")
+          '
+          fi
+
+      - name: Build wheel and sdist
+        run: python -m build --outdir dist
+
+      - name: Verify built distributions
+        run: ls -la dist/
+
+      - name: Upload Python distributions artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-dist
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  build-binaries:
+    name: Build Binary (${{ matrix.os_name }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            os_name: linux
+            arch: x86_64
+            ext: ""
+          - runner: ubuntu-24.04-arm
+            os_name: linux
+            arch: aarch64
+            ext: ""
+          - runner: macos-latest
+            os_name: macos
+            arch: arm64
+            ext: ""
+          - runner: windows-latest
+            os_name: windows
+            arch: x86_64
+            ext: ".exe"
+          - runner: windows-11-arm
+            os_name: windows
+            arch: arm64
+            ext: ".exe"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Sync version with git tag
+        shell: bash
+        env:
+          RAW_TAG: ${{ (github.event_name == 'workflow_dispatch' && inputs.tag) || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
+        run: |
+          if [[ "$RAW_TAG" == v* ]]; then
+            export VERSION="${RAW_TAG#v}"
+            python -c '
+          import os
+          from pathlib import Path
+          version = os.environ["VERSION"]
+          p = Path("src/ml_switcheroo_compiler/__init__.py")
+          text = p.read_text(encoding="utf-8")
+          old_line = [line for line in text.splitlines() if line.startswith("__version__")][0]
+          p.write_text(text.replace(old_line, f"__version__ = {chr(34)}{version}{chr(34)}"), encoding="utf-8")
+          '
+          fi
+
+      - name: Install dependencies and PyInstaller
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip wheel pyinstaller
+          python -m pip install -r requirements.txt
+          python -m pip install --no-deps .
+
+      - name: Build standalone OS+arch binary
+        shell: bash
+        run: |
+          BIN_NAME="ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}"
+          pyinstaller --onefile --clean --name "${BIN_NAME}" --paths src --collect-all ml_switcheroo_compiler --collect-all ml_switcheroo_ir src/ml_switcheroo_compiler/__main__.py
+
+      - name: Smoke test binary
+        shell: bash
+        run: |
+          BIN_PATH="dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+          chmod +x "$BIN_PATH" || true
+          "$BIN_PATH" --version
+          "$BIN_PATH" backends
+
+      - name: Package binary archive
+        shell: bash
+        run: |
+          BIN_FILE="ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+          cd dist
+          if [ "${{ matrix.os_name }}" = "windows" ]; then
+            7z a "ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.zip" "$BIN_FILE"
+          else
+            tar -czvf "ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.tar.gz" "$BIN_FILE"
+          fi
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: binary-${{ matrix.os_name }}-${{ matrix.arch }}
+          path: |
+            dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}
+            dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.tar.gz
+            dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.zip
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.tag, 'v'))
+    needs:
+      - lint
+      - test
+      - update-badges
+      - build-wheels
+      - build-binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download Python distribution artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: release-assets
+
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: binary-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA256 checksums
+        shell: bash
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.tag, 'v'))
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ (github.event_name == 'workflow_dispatch' && inputs.tag) || github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          files: |
+            release-assets/*

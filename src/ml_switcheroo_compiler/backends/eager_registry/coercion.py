@@ -1,4 +1,4 @@
-"""Sound runtime scalar, shape, and sequence coercion helpers without TypeGuards or disguised casts."""
+"""Sound runtime scalar, shape, and sequence coercion helpers without disguised casts."""
 
 from __future__ import annotations
 
@@ -16,6 +16,9 @@ from .protocols import (
     EagerTensorProtocol,
 )
 from .types_base import BackendArg, BackendOperand
+
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
 
 _ItemT_co = typing.TypeVar("_ItemT_co", bound=BackendArg, covariant=True)
 _CallRetT = typing.TypeVar("_CallRetT")
@@ -84,20 +87,24 @@ class IndexableSequenceProtocol(typing.Protocol[_ItemT_co]):
         ...
 
 
-def _can_unwrap_item(val: BackendOperand) -> bool:
-    """Return `True` when `val` is a non-module object whose `.item` will not auto-vivify a mock child.
+def _can_unwrap_item(val: BackendOperand) -> typing.TypeGuard[_ItemMemberProtocol]:
+    """Return `True` when `val` is a non-module object exposing `.item` without auto-vivifying a mock child.
 
     Args:
         val (BackendOperand): Candidate scalar wrapper.
 
     Returns:
-        bool: `True` if `.item()` may be safely inspected.
+        typing.TypeGuard[_ItemMemberProtocol]: `True` if `.item()` may be safely invoked.
     """
     from unittest.mock import NonCallableMock
 
+    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
+
     if type(val) is types.ModuleType:
         return False
-    return not (isinstance(val, NonCallableMock) and "item" not in val._mock_children)
+    if isinstance(val, NonCallableMock):
+        return "item" in dir(val)
+    return isinstance(val, _ItemMemberProtocol)
 
 
 def coerce_int(val: BackendOperand, default: int = 0, *, _unwrap_item: bool = True) -> int:
@@ -120,9 +127,7 @@ def coerce_int(val: BackendOperand, default: int = 0, *, _unwrap_item: bool = Tr
         return int(val)
     if isinstance(val, (int, float, str, bytes)):
         return int(val)
-    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
-
-    if _unwrap_item and _can_unwrap_item(val) and isinstance(val, _ItemMemberProtocol):
+    if _unwrap_item and _can_unwrap_item(val):
         try:
             return coerce_int(val.item(), default=default, _unwrap_item=False)
         except (TypeError, ValueError):
@@ -165,9 +170,7 @@ def coerce_float(val: BackendOperand, default: float = 0.0, *, _unwrap_item: boo
         return default
     if isinstance(val, (int, float, str, bytes)):
         return float(val)
-    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
-
-    if _unwrap_item and _can_unwrap_item(val) and isinstance(val, _ItemMemberProtocol):
+    if _unwrap_item and _can_unwrap_item(val):
         try:
             return coerce_float(val.item(), default=default, _unwrap_item=False)
         except (TypeError, ValueError):

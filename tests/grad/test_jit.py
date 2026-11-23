@@ -249,3 +249,37 @@ def test_eval_shape_zero_allocation_symbolic_inference() -> None:
     assert out_spec.shape == (4, 5)
     assert out_spec.dtype == "float32"
     assert inferred["tag"] == "symbolic"
+
+
+def test_jit_ephemeral_closure_no_id_collision_across_gc() -> None:
+    """Verify ephemeral closures compiled with `jit` retain `fun` references and never collide across GC."""
+    import gc
+
+    from ml_switcheroo_compiler.grad.api import value_and_grad
+
+    jit_mod.clear_jit_cache()
+    x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, "cpu"))
+
+    for factor in (2.0, 3.0, 5.0, 7.0):
+
+        def _ephemeral(t: Tensor, scale: float = factor) -> Tensor:
+            """Scale `t` by `scale`.
+
+            Args:
+                t (Tensor): Input tensor.
+                scale (float): Scalar multiplier.
+
+            Returns:
+                Tensor: Scaled tensor.
+            """
+            return t * scale
+
+        vg = value_and_grad(_ephemeral)
+        res = jit_mod.jit(vg)(x)
+        del _ephemeral, vg
+        gc.collect()
+        assert isinstance(res, tuple) and len(res) == 2
+        val_t, grad_t = res
+        assert isinstance(val_t, Tensor) and isinstance(grad_t, Tensor)
+        assert np.allclose(np.asarray(val_t.data), np.array([2.0 * factor], dtype=np.float32))
+        assert np.allclose(np.asarray(grad_t.data), np.array([factor], dtype=np.float32))

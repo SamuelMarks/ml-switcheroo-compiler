@@ -85,6 +85,7 @@ class _CompiledOutputLeaf:
 class _CompiledJitEntry:
     """Cached compiled `LogicalGraph` artifact and PyTree reconstruction metadata."""
 
+    fun_ref: DifferentiableFn
     graph: LogicalGraph
     dyn_input_ids: tuple[str, ...]
     out_leaves: tuple[_CompiledOutputLeaf, ...]
@@ -380,6 +381,7 @@ def _trace_and_compile_jit(
     ir_graph.outputs = out_ids
     opt_graph = _optimize_jit_graph(ir_graph, cfg.keep_unused)
     return _CompiledJitEntry(
+        fun_ref=fun,
         graph=opt_graph,
         dyn_input_ids=tuple(dyn_input_ids),
         out_leaves=tuple(compiled_leaves),

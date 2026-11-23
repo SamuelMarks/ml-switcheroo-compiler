@@ -30,13 +30,15 @@ if typing.TYPE_CHECKING:
 
 
 def _restore_backend_registry(orig_backends: dict[str, type[BaseGenerator]]) -> None:
-    """Restore ``BackendRegistry._registry`` while preserving newly imported built-in lazy backends.
+    """Restore ``BackendRegistry._registry`` and clear the JIT cache after test execution.
 
     Args:
         orig_backends (dict[str, type[BaseGenerator]]): Snapshot of registered backends prior to test execution.
     """
     import ml_switcheroo_compiler.backends.registry as reg
+    from ml_switcheroo_compiler.grad.jit import clear_jit_cache
 
+    clear_jit_cache()
     lazy_keys = set(reg.BackendRegistry._LAZY_MODULES.keys())
     newly_loaded = {k: v for k, v in reg.BackendRegistry._registry.items() if k in lazy_keys and k not in orig_backends}
     reg.BackendRegistry._registry.clear()

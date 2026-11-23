@@ -271,7 +271,6 @@ def test_update_readme_success() -> None:
     """Verify `update_readme` updates both test and doc coverage badges in `README.md`."""
     readme_content = """# Project
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
-[![Release](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-50%25-red.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-50%25-red.svg)](#)
 """
@@ -287,7 +286,7 @@ def test_update_readme_success() -> None:
 
     written = "".join([call.args[0] for call in m_open().write.call_args_list])
     assert (
-        "[![Release](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/release.yml)"
+        "[![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)"
         in written
     )
     assert "test_coverage-100%25-brightgreen" in written

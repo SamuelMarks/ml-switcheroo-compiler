@@ -308,10 +308,31 @@ def test_coerce_int_and_float_mock_and_module_guards() -> None:
     assert coerce_int(item_mock) == 7
     assert coerce_float(item_mock) == 7.0
 
+    attr_item_mock = MagicMock()
+    attr_item_mock.item = lambda: 9
+    assert coerce_int(attr_item_mock) == 9
+    assert coerce_float(attr_item_mock) == 9.0
+
+    deleted_item_mock = MagicMock()
+    _ = deleted_item_mock.item
+    del deleted_item_mock.item
+    assert coerce_int(deleted_item_mock) == 1
+    assert coerce_float(deleted_item_mock) == 1.0
+
     nested_mock = MagicMock()
     nested_mock.item.return_value = MagicMock()
     assert coerce_int(nested_mock) == 1
     assert coerce_float(nested_mock) == 1.0
+
+    scalar_arr = np.array(5)
+    assert coerce_int(scalar_arr) == 5
+    assert coerce_float(scalar_arr) == 5.0
+
+    multi_arr = np.array([1, 2])
+    with pytest.raises(TypeError):
+        coerce_int(multi_arr)
+    with pytest.raises(TypeError):
+        coerce_float(multi_arr)
 
     with pytest.raises(TypeError):
         coerce_int(types)
