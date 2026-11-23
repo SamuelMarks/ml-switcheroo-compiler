@@ -58,7 +58,10 @@ def _is_from_buffer_backend(val: OpValue) -> typing.TypeGuard[_FromBufferBackend
     Returns:
         bool: True if `val` has `from_buffer`.
     """
-    return isinstance(val, _FromBufferBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _FromBufferBackendProtocol)
+    return found or is_mock_with_attrs(val, "from_buffer")
 
 
 def _is_safetensors_array(val: OpValue) -> typing.TypeGuard[_SafetensorsArrayProtocol]:
@@ -70,7 +73,10 @@ def _is_safetensors_array(val: OpValue) -> typing.TypeGuard[_SafetensorsArrayPro
     Returns:
         bool: True if `val` has `dtype`, `shape`, and `tobytes`.
     """
-    return isinstance(val, _SafetensorsArrayProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _SafetensorsArrayProtocol)
+    return found or is_mock_with_attrs(val, "dtype", "shape", "tobytes")
 
 
 class SafetensorsWeightFormat(WeightLoader, WeightSaver):

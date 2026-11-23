@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -379,3 +381,53 @@ SHARD_31_READERS: dict[str, MemberReader] = {
     "mape": lambda t: (True, t.mape) if isinstance(t, _HasMember31_43) else (False, None),
     "mape_loss": lambda t: (True, t.mape_loss) if isinstance(t, _HasMember31_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember31_00,
+        _HasMember31_01,
+        _HasMember31_02,
+        _HasMember31_03,
+        _HasMember31_04,
+        _HasMember31_05,
+        _HasMember31_06,
+        _HasMember31_07,
+        _HasMember31_08,
+        _HasMember31_09,
+        _HasMember31_10,
+        _HasMember31_11,
+        _HasMember31_12,
+        _HasMember31_13,
+        _HasMember31_14,
+        _HasMember31_15,
+        _HasMember31_16,
+        _HasMember31_17,
+        _HasMember31_18,
+        _HasMember31_19,
+        _HasMember31_20,
+        _HasMember31_21,
+        _HasMember31_22,
+        _HasMember31_23,
+        _HasMember31_24,
+        _HasMember31_25,
+        _HasMember31_26,
+        _HasMember31_27,
+        _HasMember31_28,
+        _HasMember31_29,
+        _HasMember31_30,
+        _HasMember31_31,
+        _HasMember31_32,
+        _HasMember31_33,
+        _HasMember31_34,
+        _HasMember31_35,
+        _HasMember31_36,
+        _HasMember31_37,
+        _HasMember31_38,
+        _HasMember31_39,
+        _HasMember31_40,
+        _HasMember31_41,
+        _HasMember31_42,
+        _HasMember31_43,
+        _HasMember31_44,
+    )
+)

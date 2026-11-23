@@ -48,6 +48,21 @@ class CleanableResourceProtocol(typing.Protocol):
         ...
 
 
+def _is_cleanable_resource(val: CleanableResourceProtocol | BackendArg) -> typing.TypeGuard[CleanableResourceProtocol]:
+    """Check whether `val` exposes `.cleanup()`.
+
+    Args:
+        val (CleanableResourceProtocol | BackendArg): Candidate resource handle.
+
+    Returns:
+        typing.TypeGuard[CleanableResourceProtocol]: `True` when `val` exposes `.cleanup()`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, CleanableResourceProtocol)
+    return found or is_mock_with_attrs(val, "cleanup")
+
+
 def _resolve_visitor_method(
     target: VisitorProtocol,
     method_name: str,
@@ -106,7 +121,7 @@ class CompiledArtifact(pydantic.BaseModel):
 
     def cleanup(self) -> None:
         """Clean up associated temporary directory resources if active."""
-        if isinstance(self.temp_dir, CleanableResourceProtocol):
+        if _is_cleanable_resource(self.temp_dir):
             self.temp_dir.cleanup()
             self.temp_dir = None
 

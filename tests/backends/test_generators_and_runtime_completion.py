@@ -129,20 +129,54 @@ class _NullAvalShapeVar:
 
 def test_all_backend_generators_get_eager_adapter() -> None:
     """Verify `get_eager_adapter()` across all 13 backend code generators."""
-    expected_pairs: list[tuple[str, EagerBackendAdapter]] = [
-        ("awkward", AwkwardGenerator.get_eager_adapter()),
-        ("cupy", CupyGenerator.get_eager_adapter()),
-        ("dask", DaskGenerator.get_eager_adapter()),
-        ("jax", JAXCodeGenerator.get_eager_adapter()),
-        ("keras", KerasCodeGenerator.get_eager_adapter()),
-        ("mlx", MLXCodeGenerator.get_eager_adapter()),
-        ("numba", NumbaGenerator.get_eager_adapter()),
-        ("pure_python", PurePythonGenerator.get_eager_adapter()),
-        ("pyarrow", PyArrowComputeGenerator.get_eager_adapter()),
-        ("pytorch", PyTorchCodeGenerator.get_eager_adapter()),
-        ("sparse", SparseGenerator.get_eager_adapter()),
-        ("tensorflow", TensorFlowCodeGenerator.get_eager_adapter()),
-    ]
+    import importlib.util
+    from unittest.mock import MagicMock
+
+    stub_mods: dict[str, MagicMock] = {}
+
+    def _ensure_stub(pkg_name: str, submods: tuple[str, ...] = ()) -> None:
+        """Populate `stub_mods` with `MagicMock` package placeholders when `pkg_name` is uninstalled.
+
+        Args:
+            pkg_name (str): Root package name.
+            submods (tuple[str, ...]): Dotted submodule names to attach.
+        """
+        if importlib.util.find_spec(pkg_name) is not None:
+            return
+        root = MagicMock(name=pkg_name)
+        root.__path__ = []
+        stub_mods[pkg_name] = root
+        for sub in submods:
+            leaf = MagicMock(name=f"{pkg_name}.{sub}")
+            setattr_patch = pytest.MonkeyPatch()
+            setattr_patch.setattr(root, sub, leaf, raising=False)
+            stub_mods[f"{pkg_name}.{sub}"] = leaf
+
+    _ensure_stub("cupy")
+    _ensure_stub("dask", ("array",))
+    _ensure_stub("jax", ("numpy", "scipy", "lax"))
+    _ensure_stub("keras", ("ops",))
+    _ensure_stub("mlx", ("core",))
+    _ensure_stub("numba")
+    _ensure_stub("sparse")
+    _ensure_stub("tensorflow")
+    _ensure_stub("torch")
+
+    with patch.dict(sys.modules, stub_mods):
+        expected_pairs: list[tuple[str, EagerBackendAdapter]] = [
+            ("awkward", AwkwardGenerator.get_eager_adapter()),
+            ("cupy", CupyGenerator.get_eager_adapter()),
+            ("dask", DaskGenerator.get_eager_adapter()),
+            ("jax", JAXCodeGenerator.get_eager_adapter()),
+            ("keras", KerasCodeGenerator.get_eager_adapter()),
+            ("mlx", MLXCodeGenerator.get_eager_adapter()),
+            ("numba", NumbaGenerator.get_eager_adapter()),
+            ("pure_python", PurePythonGenerator.get_eager_adapter()),
+            ("pyarrow", PyArrowComputeGenerator.get_eager_adapter()),
+            ("pytorch", PyTorchCodeGenerator.get_eager_adapter()),
+            ("sparse", SparseGenerator.get_eager_adapter()),
+            ("tensorflow", TensorFlowCodeGenerator.get_eager_adapter()),
+        ]
     for expected_prefix, adapter in expected_pairs:
         assert isinstance(adapter, EagerBackendAdapter)
         assert expected_prefix in adapter.backend_name
@@ -164,6 +198,16 @@ def test_jax_savez_compressed_when_symbol_is_none(
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
         tmp_path (pathlib.Path): Temporary directory fixture.
     """
+    import importlib.util
+
+    if importlib.util.find_spec("jax") is None:
+        fake_jax = types.ModuleType("jax")
+        fake_jax.__path__ = []
+        fake_jnp = types.ModuleType("jax.numpy")
+        monkeypatch.setattr(fake_jax, "numpy", fake_jnp, raising=False)
+        monkeypatch.setitem(sys.modules, "jax", fake_jax)
+        monkeypatch.setitem(sys.modules, "jax.numpy", fake_jnp)
+
     import jax.numpy as jnp
 
     out_file = tmp_path / "unused_archive.npz"

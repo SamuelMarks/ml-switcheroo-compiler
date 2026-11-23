@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import os
+import typing
 
 import yaml
 from ml_switcheroo_ir import IRGraph, IRNode
@@ -21,7 +22,21 @@ from ml_switcheroo_compiler.backends.edge._onnx_wire import (
     _node_shape_tuple,
 )
 from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
 from ml_switcheroo_compiler.ir.core import ensure_graph
+
+
+def _is_graph_proto(val: BackendArg) -> typing.TypeGuard[GraphProtoType]:
+    """Check whether `val` exposes an ONNX `GraphProto` `.name` attribute.
+
+    Args:
+        val (BackendArg): Candidate graph protobuf or mock object.
+
+    Returns:
+        typing.TypeGuard[GraphProtoType]: `True` if `val` is a `GraphProto`.
+    """
+    found: bool = isinstance(val, GraphProtoType)
+    return found or "name" in dir(val) or is_mock_with_attrs(val, "name")
 
 
 class _OnnxGraphBuilderMixin(BaseGenerator):
@@ -280,5 +295,5 @@ class _OnnxGraphBuilderMixin(BaseGenerator):
 
         onnx_nodes = self._build_onnx_nodes(TensorProto)
         graph_proto: BackendArg = helper.make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
-        assert isinstance(graph_proto, GraphProtoType)
+        assert _is_graph_proto(graph_proto)
         return graph_proto

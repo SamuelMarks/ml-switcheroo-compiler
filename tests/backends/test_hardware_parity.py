@@ -180,15 +180,15 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
 
     a_np: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     b_np: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
     ref_matmul: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ] = np.matmul(a_np, b_np)
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
     np.testing.assert_allclose(ensure_ndarray(np_res), ref_matmul, rtol=1e-05, atol=1e-05)
@@ -199,7 +199,7 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
 
         torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
         np.testing.assert_allclose(
-            adapt_backend_module(torch_res).require_symbol("detach")().cpu().numpy(),
+            ensure_ndarray(adapt_backend_module(torch_res).require_symbol("detach")().cpu().numpy()),
             ref_matmul,
             rtol=1e-05,
             atol=1e-05,
@@ -220,11 +220,11 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
         np.testing.assert_allclose(np.array(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
     x_np: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     ref_sum: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ] = np.sum(x_np, axis=-1, keepdims=True)
     ref_mean = np.mean(x_np, axis=-1, keepdims=True)
     np.testing.assert_allclose(
@@ -235,15 +235,15 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     )
     x_act: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64 | np.float32],
     ] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
     ref_sig: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64 | np.float32],
     ] = 1.0 / (1.0 + np.exp(-x_act))
     ref_tanh: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64 | np.float32],
     ] = np.tanh(x_act)
     np.testing.assert_allclose(
         ensure_ndarray(NumpyGenerator.execute_op("Sigmoid", x_act)), ref_sig, rtol=1e-05, atol=1e-05
@@ -405,11 +405,11 @@ class _TestGoldenSeedCrossBackendFloatEquivalenceState(typing.TypedDict, total=F
 
     x_np: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ]
     y_np: np.ndarray[
         tuple[int, ...],
-        np.dtype[np.float64 | np.float32 | np.int64 | np.int32 | np.uint8 | np.bool_],
+        np.dtype[np.float64] | np.dtype[np.float32] | np.dtype[np.int64] | np.dtype[np.int32] | np.dtype[np.uint8],
     ]
     z_ref: EagerTensorProtocol
 

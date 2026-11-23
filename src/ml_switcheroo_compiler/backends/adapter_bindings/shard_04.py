@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -389,3 +391,53 @@ SHARD_04_READERS: dict[str, MemberReader] = {
     "SignalingServer": lambda t: (True, t.SignalingServer) if isinstance(t, _HasMember04_43) else (False, None),
     "SobolSample": lambda t: (True, t.SobolSample) if isinstance(t, _HasMember04_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember04_00,
+        _HasMember04_01,
+        _HasMember04_02,
+        _HasMember04_03,
+        _HasMember04_04,
+        _HasMember04_05,
+        _HasMember04_06,
+        _HasMember04_07,
+        _HasMember04_08,
+        _HasMember04_09,
+        _HasMember04_10,
+        _HasMember04_11,
+        _HasMember04_12,
+        _HasMember04_13,
+        _HasMember04_14,
+        _HasMember04_15,
+        _HasMember04_16,
+        _HasMember04_17,
+        _HasMember04_18,
+        _HasMember04_19,
+        _HasMember04_20,
+        _HasMember04_21,
+        _HasMember04_22,
+        _HasMember04_23,
+        _HasMember04_24,
+        _HasMember04_25,
+        _HasMember04_26,
+        _HasMember04_27,
+        _HasMember04_28,
+        _HasMember04_29,
+        _HasMember04_30,
+        _HasMember04_31,
+        _HasMember04_32,
+        _HasMember04_33,
+        _HasMember04_34,
+        _HasMember04_35,
+        _HasMember04_36,
+        _HasMember04_37,
+        _HasMember04_38,
+        _HasMember04_39,
+        _HasMember04_40,
+        _HasMember04_41,
+        _HasMember04_42,
+        _HasMember04_43,
+        _HasMember04_44,
+    )
+)

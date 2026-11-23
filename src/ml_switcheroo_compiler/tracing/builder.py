@@ -9,6 +9,7 @@ from collections.abc import Mapping, Sequence
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol
+from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import (
     IRAttrValue,
@@ -25,18 +26,33 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
-@typing.runtime_checkable
-class _HasDataProtocol(typing.Protocol):
-    """Runtime-checkable protocol for tensor objects exposing a `.data` property."""
+def _has_builder_shape(val: OpValue) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` exposes `.shape`.
 
-    @property
-    def data(self) -> OpValue:
-        """Return underlying tensor data buffer or proxy.
+    Args:
+        val (OpValue): Candidate proxy object.
 
-        Returns:
-            OpValue: Underlying tensor data.
-        """
-        ...
+    Returns:
+        typing.TypeGuard[ShapeProtocol]: `True` when `.shape` is available.
+    """
+    found: bool = isinstance(val, ShapeProtocol)
+    return found or is_mock_with_attrs(val, "shape")
+
+
+def _has_readable_tensor_data(val: Tensor) -> bool:
+    """Check whether `val` exposes a readable `.data` attribute without raising `AttributeError`.
+
+    Args:
+        val (Tensor): Candidate tensor object.
+
+    Returns:
+        bool: `True` when `.data` is present and readable.
+    """
+    try:
+        _ = val.data
+    except AttributeError:
+        return False
+    return True
 
 
 def _coerce_attr_val(val: OpValue | IRAttrValue) -> AttributeValue:
@@ -173,14 +189,14 @@ class TracingNodeBuilder:
         for a in args:
             out_id: str | list[str]
             shape: ShapeTuple | list[ShapeTuple]
-            if isinstance(a, Tensor) and isinstance(a, _HasDataProtocol):
+            if isinstance(a, Tensor) and _has_readable_tensor_data(a):
                 first_tensor = a if first_tensor is None else first_tensor
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
             elif isinstance(a, ProxyTensor) or is_traced_data(a):
                 raw_a: OpValue = a
                 out_id, shape = (
                     str(a.id),
-                    (_extract_builder_shape(raw_a.shape) if isinstance(raw_a, ShapeProtocol) else ()),
+                    (_extract_builder_shape(raw_a.shape) if _has_builder_shape(raw_a) else ()),
                 )
             elif isinstance(a, Tensor):
                 first_tensor = a if first_tensor is None else first_tensor

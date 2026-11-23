@@ -51,6 +51,21 @@ class Convolve2d(OpDef):
         return extract_shape(args[0])
 
 
+def _has_opt_shape(val: OpValue | _OptionalShapeProto) -> typing.TypeGuard[_OptionalShapeProto]:
+    """Check whether `val` exposes an optional `.shape` attribute.
+
+    Args:
+        val (OpValue | _OptionalShapeProto): Candidate tensor.
+
+    Returns:
+        typing.TypeGuard[_OptionalShapeProto]: `True` if `val` exposes `.shape`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _OptionalShapeProto)
+    return found or is_mock_with_attrs(val, "shape")
+
+
 def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
     """Validate that input tensors to `convolve2d` have statically known shapes.
 
@@ -63,12 +78,7 @@ def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
     """
     raw_in1: OpValue | _OptionalShapeProto = in1
     raw_in2: OpValue | _OptionalShapeProto = in2
-    if (
-        not isinstance(raw_in1, _OptionalShapeProto)
-        or raw_in1.shape is None
-        or not isinstance(raw_in2, _OptionalShapeProto)
-        or raw_in2.shape is None
-    ):
+    if not _has_opt_shape(raw_in1) or raw_in1.shape is None or not _has_opt_shape(raw_in2) or raw_in2.shape is None:
         raise ValueError("Inputs to convolve2d must have statically known shapes.")
 
 

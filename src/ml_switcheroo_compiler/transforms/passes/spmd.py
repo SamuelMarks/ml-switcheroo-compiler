@@ -14,6 +14,10 @@ from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode, PartitionSpec
 
 from ml_switcheroo_compiler.core._shape_types import IRAttrValue
 from ml_switcheroo_compiler.core.shape import OpValue
+from ml_switcheroo_compiler.distributed.sharding_lattice import (
+    COMPILER_SHARDING_MONOID,
+    ShardingLatticeElem,
+)
 from ml_switcheroo_compiler.ir.core import as_opt_pspec
 
 
@@ -732,3 +736,44 @@ def spmd_partitioning_pass(graph: IRGraph) -> bool:
                 collective_injected = True
 
     return prop_modified or comm_modified or collective_injected
+
+
+def sharding_to_lattice_elem(sharding: PartitionSpec | None) -> ShardingLatticeElem:
+    """Project a ``PartitionSpec`` or ``SPMDShardingAnnotation`` into a canonical ``ShardingLatticeElem``.
+
+    Args:
+        sharding (PartitionSpec | None): Node sharding specification or ``None``.
+
+    Returns:
+        ShardingLatticeElem: ``bottom()`` when replicated/unspecified, else canonical axis sharding element.
+    """
+    if sharding is None:
+        return ShardingLatticeElem.bottom()
+    normalized: list[str | None] = []
+    for axis in sharding.axes:
+        if axis is None:
+            normalized.append(None)
+        elif isinstance(axis, (str, int)):
+            normalized.append(str(axis))
+        else:
+            normalized.append("+".join(str(sub_ax) for sub_ax in axis))
+    return ShardingLatticeElem.from_axes(normalized)
+
+
+def join_input_shardings_lattice(node: IRNode, graph: IRGraph) -> ShardingLatticeElem:
+    """Fold all upstream input shardings of ``node`` in ``graph`` over ``COMPILER_SHARDING_MONOID``.
+
+    Args:
+        node (IRNode): Consumer IR node whose input shardings are being joined.
+        graph (IRGraph): Enclosing computation graph.
+
+    Returns:
+        ShardingLatticeElem: Least upper bound sharding (``top()`` when upstream inputs conflict).
+    """
+    acc = COMPILER_SHARDING_MONOID.empty()
+    for inp_id in node.inputs:
+        inp_node = graph.nodes.get(inp_id)
+        if inp_node is not None:
+            inp_elem = sharding_to_lattice_elem(as_opt_pspec(inp_node.sharding))
+            acc = COMPILER_SHARDING_MONOID.semigroup.combine(acc, inp_elem)
+    return acc

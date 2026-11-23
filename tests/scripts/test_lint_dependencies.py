@@ -187,11 +187,14 @@ def test_check_module_name_empty_and_upward_imports() -> None:
 
 def test_main_and_entrypoint() -> None:
     """Test main() return codes and __main__ CLI execution."""
-    with patch("scripts.lint_dependencies.check_dependencies", return_value=[]):
-        assert main() == 0
+    import scripts.lint_dependencies as lint_dep_mod
 
-    with patch("scripts.lint_dependencies.check_dependencies", return_value=["test.py:1: error"]):
-        assert main() == 1
+    _ = main
+    with patch.object(lint_dep_mod, "check_dependencies", return_value=[]):
+        assert lint_dep_mod.main() == 0
+
+    with patch.object(lint_dep_mod, "check_dependencies", return_value=["test.py:1: error"]):
+        assert lint_dep_mod.main() == 1
 
     with patch.object(sys, "argv", ["lint_dependencies.py"]):
         with patch("scripts.lint_dependencies.check_dependencies", return_value=[]):

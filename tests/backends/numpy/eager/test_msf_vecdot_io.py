@@ -9,7 +9,7 @@ import ml_switcheroo_compiler.ops as ops_mod
 import tests.backends.numpy.eager._math_advanced_test_ns as mod
 from ml_switcheroo_compiler.backends.eager_registry import BackendArg, coerce_operand_list, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
-from tests.testing_utils import MockTestStub, require_callable
+from tests.testing_utils import GenericNDArray, MockTestStub, require_callable
 
 
 class _LinalgVecdotBackend(MockTestStub):
@@ -19,7 +19,7 @@ class _LinalgVecdotBackend(MockTestStub):
         """Nested `linalg` namespace providing `vecdot`."""
 
         @staticmethod
-        def vecdot(x: BackendArg, y: BackendArg, axis: int = -1) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def vecdot(x: BackendArg, y: BackendArg, axis: int = -1) -> GenericNDArray:
             """Compute inner product along `axis`.
 
             Args:
@@ -28,7 +28,7 @@ class _LinalgVecdotBackend(MockTestStub):
                 axis (int): Reduction axis.
 
             Returns:
-                np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Inner product array.
+                GenericNDArray: Inner product array.
             """
             return ensure_ndarray(np.sum(np.conj(np.asarray(x)) * np.asarray(y), axis=axis))
 
@@ -37,7 +37,7 @@ class _TopLevelVecdotBackend(MockTestStub):
     """Backend stub exposing top-level `vecdot` without `linalg.vecdot`."""
 
     @staticmethod
-    def vecdot(x: BackendArg, y: BackendArg, axis: int = -1) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def vecdot(x: BackendArg, y: BackendArg, axis: int = -1) -> GenericNDArray:
         """Compute inner product along `axis`.
 
         Args:
@@ -46,7 +46,7 @@ class _TopLevelVecdotBackend(MockTestStub):
             axis (int): Reduction axis.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Inner product array.
+            GenericNDArray: Inner product array.
         """
         return ensure_ndarray(np.sum(np.conj(np.asarray(x)) * np.asarray(y), axis=axis))
 
@@ -67,19 +67,21 @@ class _FallbackVecdotBackend(MockTestStub):
         return bool(np.iscomplexobj(np.asarray(x)))
 
     @staticmethod
-    def conj(x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def conj(
+        x: BackendArg,
+    ) -> GenericNDArray:
         """Compute complex conjugate of `x`.
 
         Args:
             x (BackendArg): Input array.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Complex-conjugated array.
+            GenericNDArray: Complex-conjugated array.
         """
         return ensure_ndarray(np.conj(np.asarray(x)))
 
     @staticmethod
-    def sum(x: BackendArg, axis: int = -1) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def sum(x: BackendArg, axis: int = -1) -> GenericNDArray:
         """Sum `x` along `axis`.
 
         Args:
@@ -87,7 +89,7 @@ class _FallbackVecdotBackend(MockTestStub):
             axis (int): Reduction axis.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Reduced array.
+            GenericNDArray: Reduced array.
         """
         return ensure_ndarray(np.sum(np.asarray(x), axis=axis))
 
@@ -96,20 +98,22 @@ class _DescriptiveAndRemBackend(MockTestStub):
     """Backend stub exposing custom `descriptive` and `rem` methods."""
 
     @staticmethod
-    def descriptive(x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def descriptive(
+        x: BackendArg,
+    ) -> GenericNDArray:
         """Return summary moments `[mean, var, std]`.
 
         Args:
             x (BackendArg): Input array.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Summary vector.
+            GenericNDArray: Summary vector.
         """
         arr = np.asarray(x)
         return np.array([float(np.mean(arr)), float(np.var(arr)), float(np.std(arr))], dtype=np.float64)
 
     @staticmethod
-    def rem(x: BackendArg, y: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def rem(x: BackendArg, y: BackendArg) -> GenericNDArray:
         """Return elementwise remainder.
 
         Args:
@@ -117,7 +121,7 @@ class _DescriptiveAndRemBackend(MockTestStub):
             y (BackendArg): Divisor array.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Elementwise remainder.
+            GenericNDArray: Elementwise remainder.
         """
         return ensure_ndarray(np.remainder(np.asarray(x), np.asarray(y)))
 
@@ -125,14 +129,14 @@ class _DescriptiveAndRemBackend(MockTestStub):
 class _CustomDescriptiveMeta(type):
     """Metaclass returning summary moments array when its class is called."""
 
-    def __call__(cls, x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def __call__(cls, x: BackendArg) -> GenericNDArray:
         """Compute `[mean, var, std]` directly on class invocation.
 
         Args:
             x (BackendArg): Input array.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Summary moments.
+            GenericNDArray: Summary moments.
         """
         arr = np.asarray(x, dtype=np.float64)
         return np.array([float(np.mean(arr)), float(np.var(arr)), float(np.std(arr))], dtype=np.float64)

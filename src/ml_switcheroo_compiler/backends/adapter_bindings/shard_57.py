@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -379,3 +381,53 @@ SHARD_57_READERS: dict[str, MemberReader] = {
     "zeros": lambda t: (True, t.zeros) if isinstance(t, _HasMember57_43) else (False, None),
     "zeros_like": lambda t: (True, t.zeros_like) if isinstance(t, _HasMember57_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember57_00,
+        _HasMember57_01,
+        _HasMember57_02,
+        _HasMember57_03,
+        _HasMember57_04,
+        _HasMember57_05,
+        _HasMember57_06,
+        _HasMember57_07,
+        _HasMember57_08,
+        _HasMember57_09,
+        _HasMember57_10,
+        _HasMember57_11,
+        _HasMember57_12,
+        _HasMember57_13,
+        _HasMember57_14,
+        _HasMember57_15,
+        _HasMember57_16,
+        _HasMember57_17,
+        _HasMember57_18,
+        _HasMember57_19,
+        _HasMember57_20,
+        _HasMember57_21,
+        _HasMember57_22,
+        _HasMember57_23,
+        _HasMember57_24,
+        _HasMember57_25,
+        _HasMember57_26,
+        _HasMember57_27,
+        _HasMember57_28,
+        _HasMember57_29,
+        _HasMember57_30,
+        _HasMember57_31,
+        _HasMember57_32,
+        _HasMember57_33,
+        _HasMember57_34,
+        _HasMember57_35,
+        _HasMember57_36,
+        _HasMember57_37,
+        _HasMember57_38,
+        _HasMember57_39,
+        _HasMember57_40,
+        _HasMember57_41,
+        _HasMember57_42,
+        _HasMember57_43,
+        _HasMember57_44,
+    )
+)

@@ -170,4 +170,8 @@ def generic_item(
     _ = mod
     if isinstance(data, HasItem):
         return float(data.item())
+    from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
+
+    if not isinstance(data, types.ModuleType) and adapt_backend_module(data).has_symbol("numpy"):
+        return generic_item(mod, adapt_backend_module(data).require_op("numpy")())
     return coerce_float(data)

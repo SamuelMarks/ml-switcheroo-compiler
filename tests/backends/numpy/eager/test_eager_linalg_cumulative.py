@@ -309,10 +309,27 @@ def test_core_math_ops_cholesky_funcs() -> None:
             """
             return b
 
+        def solve_banded(self, a: BackendArg, b: BackendArg) -> BackendArg:
+            """Test function solve_banded.
+
+            Args:
+                a: Test parameter `a`.
+                b: Test parameter `b`.
+
+            Returns:
+                BackendArg: Computed output value from `solve_banded`.
+            """
+            _ = b
+            return a
+
     dbf = DummyBackendFlat()
     assert _cholesky(dbf, x) is not None
     assert _cholesky_ex(dbf, x) is not None
     assert _cholesky_solve(dbf, b, x) is not None
+
+    from ml_switcheroo_compiler.backends.eager.core_math_ops import _banded_triangular_solve
+
+    assert _banded_triangular_solve(dbf, x, b) is not None
 
 
 def test_core_math_ops_banded_householder_funcs() -> None:

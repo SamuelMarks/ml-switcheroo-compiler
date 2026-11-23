@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -385,3 +387,53 @@ SHARD_15_READERS: dict[str, MemberReader] = {
     "decode_image": lambda t: (True, t.decode_image) if isinstance(t, _HasMember15_43) else (False, None),
     "decode_image_bytes": lambda t: (True, t.decode_image_bytes) if isinstance(t, _HasMember15_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember15_00,
+        _HasMember15_01,
+        _HasMember15_02,
+        _HasMember15_03,
+        _HasMember15_04,
+        _HasMember15_05,
+        _HasMember15_06,
+        _HasMember15_07,
+        _HasMember15_08,
+        _HasMember15_09,
+        _HasMember15_10,
+        _HasMember15_11,
+        _HasMember15_12,
+        _HasMember15_13,
+        _HasMember15_14,
+        _HasMember15_15,
+        _HasMember15_16,
+        _HasMember15_17,
+        _HasMember15_18,
+        _HasMember15_19,
+        _HasMember15_20,
+        _HasMember15_21,
+        _HasMember15_22,
+        _HasMember15_23,
+        _HasMember15_24,
+        _HasMember15_25,
+        _HasMember15_26,
+        _HasMember15_27,
+        _HasMember15_28,
+        _HasMember15_29,
+        _HasMember15_30,
+        _HasMember15_31,
+        _HasMember15_32,
+        _HasMember15_33,
+        _HasMember15_34,
+        _HasMember15_35,
+        _HasMember15_36,
+        _HasMember15_37,
+        _HasMember15_38,
+        _HasMember15_39,
+        _HasMember15_40,
+        _HasMember15_41,
+        _HasMember15_42,
+        _HasMember15_43,
+        _HasMember15_44,
+    )
+)

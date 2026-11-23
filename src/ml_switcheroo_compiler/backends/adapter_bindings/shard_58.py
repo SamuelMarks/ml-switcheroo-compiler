@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -227,3 +229,34 @@ SHARD_58_READERS: dict[str, MemberReader] = {
     "read": lambda t: (True, t.read) if isinstance(t, _HasMember58_24) else (False, None),
     "status": lambda t: (True, t.status) if isinstance(t, _HasMember58_25) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember58_00,
+        _HasMember58_01,
+        _HasMember58_02,
+        _HasMember58_03,
+        _HasMember58_04,
+        _HasMember58_05,
+        _HasMember58_06,
+        _HasMember58_07,
+        _HasMember58_08,
+        _HasMember58_09,
+        _HasMember58_10,
+        _HasMember58_11,
+        _HasMember58_12,
+        _HasMember58_13,
+        _HasMember58_14,
+        _HasMember58_15,
+        _HasMember58_16,
+        _HasMember58_17,
+        _HasMember58_18,
+        _HasMember58_19,
+        _HasMember58_20,
+        _HasMember58_21,
+        _HasMember58_22,
+        _HasMember58_23,
+        _HasMember58_24,
+        _HasMember58_25,
+    )
+)

@@ -8,9 +8,24 @@ from collections.abc import Mapping, Sequence
 
 import pydantic
 import yaml
-from ml_switcheroo_ir import AttributeValue, IRGraph, IRNode
+from ml_switcheroo_ir import (
+    AcyclicSortedPhase,
+    AttributeValue,
+    Codec,
+    CodecError,
+    Err,
+    IRGraph,
+    IRNode,
+    Ok,
+    ProvenGraph,
+    Result,
+    is_non_bool_int,
+    prove_acyclic_sorted,
+)
+from ml_switcheroo_ir.typeclasses import compose_codec, refine_codec
 
 from ml_switcheroo_compiler.ir import SymInt, SymNode
+from ml_switcheroo_compiler.serialization.codecs import UTF8_BYTES_STR_CODEC
 
 
 @typing.runtime_checkable
@@ -87,12 +102,12 @@ def _normalize_shape_dim(dim: AttributeValue | int | str | SymNode | SymInt | No
     """Normalize a single shape dimension to int or str.
 
     Args:
-        dim: Raw dimension value.
+        dim (AttributeValue | int | str | SymNode | SymInt | None): Raw dimension value.
 
     Returns:
         int | str: Normalized dimension.
     """
-    if isinstance(dim, int):
+    if is_non_bool_int(dim):
         return dim
     if isinstance(dim, str) and dim.isdigit():
         return int(dim)
@@ -324,6 +339,144 @@ def yaml_to_graph(yaml_str: str) -> IRGraph:
     """
     data: dict[str, AttributeValue] = yaml.safe_load(yaml_str) or {}
     return _parse_serialization_dict(data)
+
+
+def graph_to_json_result(graph: IRGraph) -> Result[CodecError, str]:
+    """Serialize ``graph`` to formatted JSON as a total ``Result[CodecError, str]``.
+
+    Args:
+        graph (IRGraph): Intermediate representation graph to serialize.
+
+    Returns:
+        Result[CodecError, str]: ``Ok(json_str)`` on success or ``Err(CodecError)`` on serialization failure.
+    """
+    try:
+        return Ok(graph_to_json(graph))
+    except (TypeError, ValueError, pydantic.ValidationError) as exc:
+        return Err(
+            CodecError(
+                path=(),
+                expected="IRGraph",
+                actual_description=type(graph).__name__,
+                message=str(exc),
+            )
+        )
+
+
+def json_to_graph_result(json_str: str) -> Result[CodecError, IRGraph]:
+    """Decode a JSON string into an ``IRGraph`` as a total ``Result[CodecError, IRGraph]``.
+
+    Args:
+        json_str (str): Raw JSON string representation.
+
+    Returns:
+        Result[CodecError, IRGraph]: ``Ok(IRGraph)`` on success or ``Err(CodecError)`` on invalid JSON/schema.
+    """
+    try:
+        parsed = json.loads(json_str)
+    except json.JSONDecodeError as exc:
+        return Err(CodecError(path=(), expected="JSON object", actual_description="invalid JSON", message=str(exc)))
+    if not isinstance(parsed, dict):
+        return Err(
+            CodecError(
+                path=(),
+                expected="JSON object",
+                actual_description=type(parsed).__name__,
+                message="Serialized IRGraph payload must be a JSON object.",
+            )
+        )
+    try:
+        return Ok(_parse_serialization_dict(parsed))
+    except (TypeError, ValueError, KeyError, pydantic.ValidationError) as exc:
+        return Err(
+            CodecError(
+                path=(),
+                expected="GraphSerializationModel",
+                actual_description="dict",
+                message=str(exc),
+            )
+        )
+
+
+def yaml_to_graph_result(yaml_str: str) -> Result[CodecError, IRGraph]:
+    """Decode a YAML string into an ``IRGraph`` as a total ``Result[CodecError, IRGraph]``.
+
+    Args:
+        yaml_str (str): Raw YAML string representation.
+
+    Returns:
+        Result[CodecError, IRGraph]: ``Ok(IRGraph)`` on success or ``Err(CodecError)`` on invalid YAML/schema.
+    """
+    try:
+        loaded = yaml.safe_load(yaml_str)
+    except yaml.YAMLError as exc:
+        return Err(CodecError(path=(), expected="YAML mapping", actual_description="invalid YAML", message=str(exc)))
+    payload = {} if loaded is None else loaded
+    if not isinstance(payload, dict):
+        return Err(
+            CodecError(
+                path=(),
+                expected="YAML mapping",
+                actual_description=type(payload).__name__,
+                message="Serialized IRGraph YAML payload must be a mapping.",
+            )
+        )
+    try:
+        return Ok(_parse_serialization_dict(payload))
+    except (TypeError, ValueError, KeyError, pydantic.ValidationError) as exc:
+        return Err(
+            CodecError(
+                path=(),
+                expected="GraphSerializationModel",
+                actual_description="dict",
+                message=str(exc),
+            )
+        )
+
+
+COMPILER_IR_STR_CODEC: Codec[str, IRGraph] = Codec(
+    encode=graph_to_json,
+    decode=json_to_graph_result,
+)
+
+COMPILER_IR_YAML_CODEC: Codec[str, IRGraph] = Codec(
+    encode=graph_to_yaml,
+    decode=yaml_to_graph_result,
+)
+
+COMPILER_IR_BYTES_CODEC: Codec[bytes, IRGraph] = compose_codec(
+    UTF8_BYTES_STR_CODEC,
+    COMPILER_IR_STR_CODEC,
+)
+
+
+def _refine_graph_acyclic(graph: IRGraph) -> Result[CodecError, ProvenGraph[AcyclicSortedPhase]]:
+    """Refine a decoded ``IRGraph`` into ``ProvenGraph[AcyclicSortedPhase]`` or ``Err(CodecError)``.
+
+    Args:
+        graph (IRGraph): Decoded intermediate representation graph.
+
+    Returns:
+        Result[CodecError, ProvenGraph[AcyclicSortedPhase]]: ``Ok`` proven acyclic graph or ``Err(CodecError)``.
+    """
+    proven = prove_acyclic_sorted(graph)
+    if isinstance(proven, Err):
+        return Err(
+            CodecError(
+                path=("nodes",),
+                expected="acyclic DAG",
+                actual_description="cyclic IRGraph",
+                message=str(proven.error),
+            )
+        )
+    return Ok(proven.value)
+
+
+COMPILER_PROVEN_ACYCLIC_JSON_CODEC: Codec[str, ProvenGraph[AcyclicSortedPhase]] = refine_codec(
+    COMPILER_IR_STR_CODEC,
+    _refine_graph_acyclic,
+    lambda proven: proven.graph,
+)
 
 
 def graph_to_protobuf(graph: IRGraph) -> bytes:

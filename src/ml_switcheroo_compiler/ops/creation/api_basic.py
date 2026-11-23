@@ -100,7 +100,10 @@ def _is_array_backend(val: OpValue) -> typing.TypeGuard[_ArrayBackendProtocol]:
     Returns:
         bool: True if `val` satisfies `_ArrayBackendProtocol`.
     """
-    return isinstance(val, _ArrayBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ArrayBackendProtocol)
+    return found or is_mock_with_attrs(val, "array")
 
 
 def _is_convert_to_numpy_backend(val: OpValue) -> typing.TypeGuard[_ConvertToNumpyBackendProtocol]:
@@ -112,7 +115,10 @@ def _is_convert_to_numpy_backend(val: OpValue) -> typing.TypeGuard[_ConvertToNum
     Returns:
         bool: True if `val` satisfies `_ConvertToNumpyBackendProtocol`.
     """
-    return isinstance(val, _ConvertToNumpyBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ConvertToNumpyBackendProtocol)
+    return found or is_mock_with_attrs(val, "convert_to_numpy")
 
 
 def _is_asarray_backend(val: OpValue) -> typing.TypeGuard[_AsarrayBackendProtocol]:
@@ -124,7 +130,10 @@ def _is_asarray_backend(val: OpValue) -> typing.TypeGuard[_AsarrayBackendProtoco
     Returns:
         bool: True if `val` satisfies `_AsarrayBackendProtocol`.
     """
-    return isinstance(val, _AsarrayBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _AsarrayBackendProtocol)
+    return found or is_mock_with_attrs(val, "asarray")
 
 
 def _is_numpy_method_obj(val: OpValue) -> typing.TypeGuard[_NumpyMethodProtocol]:
@@ -136,7 +145,26 @@ def _is_numpy_method_obj(val: OpValue) -> typing.TypeGuard[_NumpyMethodProtocol]
     Returns:
         bool: True if `val` satisfies `_NumpyMethodProtocol`.
     """
-    return isinstance(val, _NumpyMethodProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _NumpyMethodProtocol)
+    return found or is_mock_with_attrs(val, "numpy")
+
+
+def _can_read_data_holder(val: DataHolderProtocol) -> bool:
+    """Verify accessing `val.data` does not raise `AttributeError`.
+
+    Args:
+        val (DataHolderProtocol): Candidate data holder.
+
+    Returns:
+        bool: `True` when `val.data` is readable.
+    """
+    try:
+        _ = val.data
+    except AttributeError:
+        return False
+    return True
 
 
 def _is_data_holder_obj(val: OpValue) -> typing.TypeGuard[DataHolderProtocol]:
@@ -148,7 +176,10 @@ def _is_data_holder_obj(val: OpValue) -> typing.TypeGuard[DataHolderProtocol]:
     Returns:
         bool: True if `val` satisfies `DataHolderProtocol`.
     """
-    return isinstance(val, DataHolderProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, DataHolderProtocol) and _can_read_data_holder(val)
+    return found or is_mock_with_attrs(val, "data")
 
 
 def _is_item_holder_obj(val: OpValue) -> typing.TypeGuard[_ItemProtocol]:
@@ -160,7 +191,10 @@ def _is_item_holder_obj(val: OpValue) -> typing.TypeGuard[_ItemProtocol]:
     Returns:
         bool: True if `val` satisfies `_ItemProtocol`.
     """
-    return isinstance(val, _ItemProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ItemProtocol)
+    return found or is_mock_with_attrs(val, "item")
 
 
 def _is_value_holder_obj(val: OpValue) -> typing.TypeGuard[_ValueHolderProtocol]:
@@ -172,7 +206,10 @@ def _is_value_holder_obj(val: OpValue) -> typing.TypeGuard[_ValueHolderProtocol]
     Returns:
         bool: True if `val` satisfies `_ValueHolderProtocol`.
     """
-    return isinstance(val, _ValueHolderProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ValueHolderProtocol)
+    return found or is_mock_with_attrs(val, "value")
 
 
 def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int | OpValue, ...]:

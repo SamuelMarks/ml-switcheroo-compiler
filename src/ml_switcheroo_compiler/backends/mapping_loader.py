@@ -137,7 +137,7 @@ def _resolve_custom_code(custom_code: str, backend_module: AttributeValue | None
         backend_module (AttributeValue | None): Module container for context.
 
     Returns:
-        Optional[object]: Evaluated callable or None.
+        AttributeValue | None: Evaluated callable or None.
     """
     local_env: dict[str, AttributeValue] = {"backend_module": backend_module}
     if backend_module:

@@ -33,7 +33,13 @@ from ml_switcheroo_compiler.benchmarks.config_models import BenchmarkPlan, Bench
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator, _isolated_worker
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.shape import OpValue
-from tests.testing_utils import EagerTensorProtocol, MockTestStub, adapt_backend_module, coerce_operand_list
+from tests.testing_utils import (
+    EagerTensorProtocol,
+    GenericNDArray,
+    MockTestStub,
+    adapt_backend_module,
+    coerce_operand_list,
+)
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -751,14 +757,11 @@ def test_keras_profiler_branches() -> None:
 
         def numpy(
             self,
-        ) -> np.ndarray[
-            tuple[int, ...],
-            np.dtype[np.generic],
-        ]:
+        ) -> GenericNDArray:
             """Return numpy array.
 
             Returns:
-                np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `numpy`.
+                GenericNDArray: Computed output value from `numpy`.
             """
             return np.array([1.0])
 
@@ -997,10 +1000,7 @@ def test_sparse_profiler_branches() -> None:
 class _TestDaskProfilerBranchesState(typing.TypedDict, total=False):
     """Typed shared state for `_test_dask_profiler_branches` split helpers."""
 
-    arr: np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]
+    arr: GenericNDArray
     dask_prof: types.ModuleType
     graph: LogicalGraph
     importlib: types.ModuleType
@@ -1124,10 +1124,7 @@ def test_dask_profiler_branches() -> None:
 class _TestKerasProfilerAdditionalBranchesState(typing.TypedDict, total=False):
     """Typed shared state for `_test_keras_profiler_additional_branches` split helpers."""
 
-    arr: np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]
+    arr: GenericNDArray
     graph: LogicalGraph
     importlib: types.ModuleType
     k_prof: types.ModuleType

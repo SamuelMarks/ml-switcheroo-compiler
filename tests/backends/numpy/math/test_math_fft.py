@@ -35,7 +35,13 @@ from ml_switcheroo_compiler.backends.eager.reference_math.math_signal import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.core.shape import OpValue
-from tests.testing_utils import EagerTensorProtocol, coerce_operand_list, extract_test_shape, require_callable
+from tests.testing_utils import (
+    EagerTensorProtocol,
+    GenericNDArray,
+    coerce_operand_list,
+    extract_test_shape,
+    require_callable,
+)
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -82,8 +88,8 @@ class _TestMathFftOpsState(typing.TypedDict, total=False):
 
     c_sig2d: EagerTensorProtocol | OpValue
     r_sig2d: EagerTensorProtocol | OpValue
-    signal_1d: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
-    signal_2d: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    signal_1d: GenericNDArray
+    signal_2d: GenericNDArray
 
 
 def _test_math_fft_ops_part_1(_state: _TestMathFftOpsState) -> None:

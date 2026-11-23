@@ -12,6 +12,8 @@ import enum
 import typing
 from collections.abc import Callable, Mapping, Sequence
 
+from ml_switcheroo_ir import Eq, Invalid, Valid, Validation
+
 from ml_switcheroo_compiler.backends.eager_registry.coercion import (
     coerce_opt_int_seq,
     coerce_opt_str,
@@ -966,10 +968,315 @@ def build_core_eager_dictionary_from_ops(
     )
 
 
+@dataclasses.dataclass(frozen=True)
+class MinimalCoreEagerPrimitives(typing.Generic[TensorT]):
+    """Haskell-style Minimal Complete Definition (MCD) basis for ``CoreEagerTypeclass``.
+
+    Supplies irreducible creation/ring/transcendental/linalg/reduction primitives alongside
+    Haskell ``Fractional``-style ``divide_fn | reciprocal_fn`` and optional overrides for
+    algebraically derivable operations (``asarray``, ``subtract``, ``divide``, ``sqrt``, ``abs``, ``tanh``, ``mean``).
+    """
+
+    zeros_fn: Callable[[tuple[int, ...], str | None], TensorT]
+    ones_fn: Callable[[tuple[int, ...], str | None], TensorT]
+    array_fn: Callable[[BackendOperand, str | None], TensorT]
+    exp_fn: Callable[[TensorT], TensorT]
+    log_fn: Callable[[TensorT], TensorT]
+    sin_fn: Callable[[TensorT], TensorT]
+    cos_fn: Callable[[TensorT], TensorT]
+    add_fn: Callable[[TensorT, TensorT], TensorT]
+    multiply_fn: Callable[[TensorT, TensorT], TensorT]
+    matmul_fn: Callable[[TensorT, TensorT], TensorT]
+    reshape_fn: Callable[[TensorT, tuple[int, ...]], TensorT]
+    transpose_fn: Callable[[TensorT, Sequence[int] | None], TensorT]
+    sum_fn: Callable[[TensorT, Sequence[int] | int | None, bool], TensorT]
+    divide_fn: Callable[[TensorT, TensorT], TensorT] | None = None
+    reciprocal_fn: Callable[[TensorT], TensorT] | None = None
+    asarray_fn: Callable[[BackendOperand, str | None], TensorT] | None = None
+    subtract_fn: Callable[[TensorT, TensorT], TensorT] | None = None
+    sqrt_fn: Callable[[TensorT], TensorT] | None = None
+    abs_fn: Callable[[TensorT], TensorT] | None = None
+    tanh_fn: Callable[[TensorT], TensorT] | None = None
+    mean_fn: Callable[[TensorT, Sequence[int] | int | None, bool], TensorT] | None = None
+
+
+def _resolve_divide_primitive(
+    primitives: MinimalCoreEagerPrimitives[TensorT],
+) -> Callable[[TensorT, TensorT], TensorT]:
+    """Resolve ``divide`` from ``divide_fn`` or ``reciprocal_fn`` (Haskell ``Fractional`` MCD).
+
+    Args:
+        primitives (MinimalCoreEagerPrimitives[TensorT]): Minimal primitive basis.
+
+    Returns:
+        Callable[[TensorT, TensorT], TensorT]: Concrete or reciprocal-derived binary division function.
+
+    Raises:
+        ValueError: If neither ``divide_fn`` nor ``reciprocal_fn`` is provided.
+    """
+    if primitives.divide_fn is not None:
+        return primitives.divide_fn
+    if primitives.reciprocal_fn is not None:
+        recip = primitives.reciprocal_fn
+        return lambda lhs, rhs: primitives.multiply_fn(lhs, recip(rhs))
+    raise ValueError("MinimalCoreEagerPrimitives requires at least one of divide_fn or reciprocal_fn.")
+
+
+def derive_core_eager_dictionary(
+    primitives: MinimalCoreEagerPrimitives[TensorT],
+) -> CoreEagerDictionary[TensorT]:
+    """Derive a complete ``CoreEagerDictionary[TensorT]`` from a ``MinimalCoreEagerPrimitives`` basis.
+
+    Args:
+        primitives (MinimalCoreEagerPrimitives[TensorT]): Minimal primitive basis with optional overrides.
+
+    Returns:
+        CoreEagerDictionary[TensorT]: Complete typeclass dictionary satisfying ``CoreEagerTypeclass[TensorT]``.
+    """
+    divide_impl = _resolve_divide_primitive(primitives)
+    asarray_impl: Callable[[BackendOperand, str | None], TensorT] = (
+        primitives.asarray_fn if primitives.asarray_fn is not None else primitives.array_fn
+    )
+
+    def _default_subtract(lhs: TensorT, rhs: TensorT) -> TensorT:
+        """Compute ``lhs - rhs`` as ``lhs + (rhs * -1.0)``.
+
+        Args:
+            lhs (TensorT): Left operand.
+            rhs (TensorT): Right operand.
+
+        Returns:
+            TensorT: Elementwise difference.
+        """
+        neg_one = primitives.array_fn(-1.0, None)
+        return primitives.add_fn(lhs, primitives.multiply_fn(rhs, neg_one))
+
+    subtract_impl: Callable[[TensorT, TensorT], TensorT] = (
+        primitives.subtract_fn if primitives.subtract_fn is not None else _default_subtract
+    )
+
+    def _default_sqrt(x: TensorT) -> TensorT:
+        """Compute ``sqrt(x)`` as ``exp(0.5 * log(x))``.
+
+        Args:
+            x (TensorT): Non-negative input tensor.
+
+        Returns:
+            TensorT: Principal square root tensor.
+        """
+        half = primitives.array_fn(0.5, None)
+        return primitives.exp_fn(primitives.multiply_fn(half, primitives.log_fn(x)))
+
+    sqrt_impl: Callable[[TensorT], TensorT] = primitives.sqrt_fn if primitives.sqrt_fn is not None else _default_sqrt
+
+    def _default_abs(x: TensorT) -> TensorT:
+        """Compute ``abs(x)`` as ``sqrt(x * x)``.
+
+        Args:
+            x (TensorT): Input tensor.
+
+        Returns:
+            TensorT: Elementwise magnitude tensor.
+        """
+        return sqrt_impl(primitives.multiply_fn(x, x))
+
+    abs_impl: Callable[[TensorT], TensorT] = primitives.abs_fn if primitives.abs_fn is not None else _default_abs
+
+    def _default_tanh(x: TensorT) -> TensorT:
+        """Compute ``tanh(x)`` as ``(exp(x) - exp(-x)) / (exp(x) + exp(-x))``.
+
+        Args:
+            x (TensorT): Input tensor.
+
+        Returns:
+            TensorT: Hyperbolic tangent tensor.
+        """
+        neg_x = primitives.multiply_fn(x, primitives.array_fn(-1.0, None))
+        ep = primitives.exp_fn(x)
+        em = primitives.exp_fn(neg_x)
+        return divide_impl(subtract_impl(ep, em), primitives.add_fn(ep, em))
+
+    tanh_impl: Callable[[TensorT], TensorT] = primitives.tanh_fn if primitives.tanh_fn is not None else _default_tanh
+
+    def _default_mean(
+        x: TensorT,
+        axis: Sequence[int] | int | None = None,
+        keepdims: bool = False,
+    ) -> TensorT:
+        """Compute ``mean(x, axis, keepdims)`` algebraically via ``sum(x) / sum(ones_like(x))``.
+
+        Args:
+            x (TensorT): Input tensor.
+            axis (Sequence[int] | int | None): Reduction axis or axes.
+            keepdims (bool): Whether to retain reduced dimensions.
+
+        Returns:
+            TensorT: Reduced mean tensor.
+        """
+        zero_s = primitives.array_fn(0.0, None)
+        one_s = primitives.array_fn(1.0, None)
+        ones_like_x = primitives.add_fn(primitives.multiply_fn(x, zero_s), one_s)
+        denom = primitives.sum_fn(ones_like_x, axis, keepdims)
+        return divide_impl(primitives.sum_fn(x, axis, keepdims), denom)
+
+    mean_impl: Callable[[TensorT, Sequence[int] | int | None, bool], TensorT] = (
+        primitives.mean_fn if primitives.mean_fn is not None else _default_mean
+    )
+
+    return CoreEagerDictionary[TensorT](
+        creation=CreationDictionary[TensorT](
+            zeros_fn=primitives.zeros_fn,
+            ones_fn=primitives.ones_fn,
+            array_fn=primitives.array_fn,
+            asarray_fn=asarray_impl,
+        ),
+        unary=ElementwiseUnaryDictionary[TensorT](
+            abs_fn=abs_impl,
+            exp_fn=primitives.exp_fn,
+            log_fn=primitives.log_fn,
+            sqrt_fn=sqrt_impl,
+            sin_fn=primitives.sin_fn,
+            cos_fn=primitives.cos_fn,
+            tanh_fn=tanh_impl,
+        ),
+        binary=ElementwiseBinaryDictionary[TensorT](
+            add_fn=primitives.add_fn,
+            subtract_fn=subtract_impl,
+            multiply_fn=primitives.multiply_fn,
+            divide_fn=divide_impl,
+        ),
+        linalg=LinearAlgebraDictionary[TensorT](
+            matmul_fn=primitives.matmul_fn,
+            reshape_fn=primitives.reshape_fn,
+            transpose_fn=primitives.transpose_fn,
+        ),
+        reduction=ReductionDictionary[TensorT](
+            sum_fn=primitives.sum_fn,
+            mean_fn=mean_impl,
+        ),
+    )
+
+
+def verify_core_eager_algebraic_laws(
+    eager_dict: CoreEagerTypeclass[TensorT],
+    approx_eq: Eq[TensorT],
+    label: str = "CoreEager",
+) -> Validation[tuple[str, ...], None]:
+    """Verify ring, inverse, matrix-associativity, transpose-involution, and trig/exp laws on ``eager_dict``.
+
+    Args:
+        eager_dict (CoreEagerTypeclass[TensorT]): Parameterized eager tensor dictionary witness.
+        approx_eq (Eq[TensorT]): Approximate numerical equality witness over ``TensorT``.
+        label (str): Human-readable backend identifier for error messages.
+
+    Returns:
+        Validation[tuple[str, ...], None]: ``Valid(None)`` when all laws hold, else ``Invalid`` tuple.
+    """
+    z = eager_dict.zeros((2, 2), None)
+    o = eager_dict.ones((2, 2), None)
+    a = eager_dict.reshape(eager_dict.array([1.0, 2.0, 3.0, 4.0], None), (2, 2))
+    b = eager_dict.reshape(eager_dict.array([0.5, -1.0, 2.0, 1.5], None), (2, 2))
+    c = eager_dict.reshape(eager_dict.array([2.0, 0.5, 1.0, 3.0], None), (2, 2))
+    eye2 = eager_dict.reshape(eager_dict.array([1.0, 0.0, 0.0, 1.0], None), (2, 2))
+
+    obligations: tuple[tuple[str, TensorT, TensorT], ...] = (
+        ("add_zero_identity", eager_dict.add(z, a), a),
+        ("add_commutativity", eager_dict.add(a, b), eager_dict.add(b, a)),
+        ("add_associativity", eager_dict.add(eager_dict.add(a, b), c), eager_dict.add(a, eager_dict.add(b, c))),
+        ("mul_one_identity", eager_dict.multiply(o, a), a),
+        (
+            "left_distributivity",
+            eager_dict.multiply(a, eager_dict.add(b, c)),
+            eager_dict.add(eager_dict.multiply(a, b), eager_dict.multiply(a, c)),
+        ),
+        ("subtract_inverse", eager_dict.add(eager_dict.subtract(a, b), b), a),
+        ("divide_inverse", eager_dict.multiply(eager_dict.divide(a, c), c), a),
+        ("matmul_left_identity", eager_dict.matmul(eye2, a), a),
+        (
+            "matmul_associativity",
+            eager_dict.matmul(eager_dict.matmul(a, b), c),
+            eager_dict.matmul(a, eager_dict.matmul(b, c)),
+        ),
+        ("transpose_involution", eager_dict.transpose(eager_dict.transpose(a, (1, 0)), (1, 0)), a),
+        ("sqrt_square", eager_dict.sqrt(eager_dict.multiply(c, c)), c),
+        ("log_exp_inverse", eager_dict.log(eager_dict.exp(b)), b),
+        (
+            "pythagorean_trig",
+            eager_dict.add(
+                eager_dict.multiply(eager_dict.sin(b), eager_dict.sin(b)),
+                eager_dict.multiply(eager_dict.cos(b), eager_dict.cos(b)),
+            ),
+            o,
+        ),
+    )
+    violations = [f"{label}: failed {name}" for name, lhs, rhs in obligations if not approx_eq.eq(lhs, rhs)]
+    if violations:
+        return Invalid(tuple(violations))
+    return Valid(None)
+
+
+@dataclasses.dataclass(frozen=True)
+class CodeEmitterDictionary:
+    """Explicit GHC-style capability dictionary implementing ``CodeEmitterTypeclass``."""
+
+    generate_fn: Callable[[], str]
+
+    def generate(self) -> str:
+        """Emit target source code using the bound ``generate_fn`` witness.
+
+        Returns:
+            str: Generated target source text.
+        """
+        return self.generate_fn()
+
+
+@dataclasses.dataclass(frozen=True)
+class AOTCompilerDictionary:
+    """Explicit GHC-style capability dictionary implementing ``AOTCompilerTypeclass``."""
+
+    compile_aot_fn: Callable[[], VariadicCallableProtocol]
+
+    def compile_aot(self) -> VariadicCallableProtocol:
+        """Compile bound IR graph into an executable callable via ``compile_aot_fn``.
+
+        Returns:
+            VariadicCallableProtocol: Compiled runner callable.
+        """
+        return self.compile_aot_fn()
+
+
+@dataclasses.dataclass(frozen=True)
+class BackendCapabilityBundle(typing.Generic[TensorT]):
+    """Composed dictionary-passing record bundling codegen, AOT, and eager typeclass witnesses."""
+
+    backend_name: str
+    code_emitter: CodeEmitterTypeclass | None = None
+    aot_compiler: AOTCompilerTypeclass | None = None
+    core_eager: CoreEagerTypeclass[TensorT] | None = None
+
+    def capabilities(self) -> frozenset[CapabilityKind]:
+        """Derive ``frozenset[CapabilityKind]`` directly from populated capability dictionaries.
+
+        Returns:
+            frozenset[CapabilityKind]: Set of active backend capabilities.
+        """
+        caps: set[CapabilityKind] = set()
+        if self.code_emitter is not None:
+            caps.add(CapabilityKind.CODE_EMIT)
+        if self.aot_compiler is not None:
+            caps.add(CapabilityKind.AOT_COMPILE)
+        if self.core_eager is not None:
+            caps.add(CapabilityKind.CORE_EAGER)
+        return frozenset(caps)
+
+
 __all__ = [
+    "AOTCompilerDictionary",
     "AOTCompilerTypeclass",
+    "BackendCapabilityBundle",
     "CORE_EAGER_REQUIRED_OPS",
     "CapabilityKind",
+    "CodeEmitterDictionary",
     "CodeEmitterTypeclass",
     "CoreEagerDictionary",
     "CoreEagerTypeclass",
@@ -981,11 +1288,14 @@ __all__ = [
     "ElementwiseUnaryTypeclass",
     "LinearAlgebraDictionary",
     "LinearAlgebraTypeclass",
+    "MinimalCoreEagerPrimitives",
     "ReductionDictionary",
     "ReductionTypeclass",
     "TensorT",
     "TensorT_co",
     "build_core_eager_dictionary_from_ops",
     "build_typeclass_op_table",
+    "derive_core_eager_dictionary",
+    "verify_core_eager_algebraic_laws",
     "verify_core_eager_typeclass",
 ]

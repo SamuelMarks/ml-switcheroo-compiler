@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -395,3 +397,53 @@ SHARD_03_READERS: dict[str, MemberReader] = {
     "PurePythonTensor": lambda t: (True, t.PurePythonTensor) if isinstance(t, _HasMember03_43) else (False, None),
     "PyTorchProfiler": lambda t: (True, t.PyTorchProfiler) if isinstance(t, _HasMember03_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember03_00,
+        _HasMember03_01,
+        _HasMember03_02,
+        _HasMember03_03,
+        _HasMember03_04,
+        _HasMember03_05,
+        _HasMember03_06,
+        _HasMember03_07,
+        _HasMember03_08,
+        _HasMember03_09,
+        _HasMember03_10,
+        _HasMember03_11,
+        _HasMember03_12,
+        _HasMember03_13,
+        _HasMember03_14,
+        _HasMember03_15,
+        _HasMember03_16,
+        _HasMember03_17,
+        _HasMember03_18,
+        _HasMember03_19,
+        _HasMember03_20,
+        _HasMember03_21,
+        _HasMember03_22,
+        _HasMember03_23,
+        _HasMember03_24,
+        _HasMember03_25,
+        _HasMember03_26,
+        _HasMember03_27,
+        _HasMember03_28,
+        _HasMember03_29,
+        _HasMember03_30,
+        _HasMember03_31,
+        _HasMember03_32,
+        _HasMember03_33,
+        _HasMember03_34,
+        _HasMember03_35,
+        _HasMember03_36,
+        _HasMember03_37,
+        _HasMember03_38,
+        _HasMember03_39,
+        _HasMember03_40,
+        _HasMember03_41,
+        _HasMember03_42,
+        _HasMember03_43,
+        _HasMember03_44,
+    )
+)

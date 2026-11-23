@@ -11,7 +11,7 @@ from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.shape import OpValue
-from tests.testing_utils import EagerTensorProtocol, extract_test_shape, require_callable, unpack_pair
+from tests.testing_utils import EagerTensorProtocol, GenericNDArray, extract_test_shape, require_callable, unpack_pair
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -44,8 +44,8 @@ class _TestNumbaParallelLoopEmissionState(typing.TypedDict, total=False):
     g_bmm: LogicalGraph
     g_matmul: LogicalGraph
     gen_nopar: NumbaGenerator
-    w_conv: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
-    x_conv: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    w_conv: GenericNDArray
+    x_conv: GenericNDArray
 
 
 def _test_numba_parallel_loop_emission_part_1(_state: _TestNumbaParallelLoopEmissionState) -> None:

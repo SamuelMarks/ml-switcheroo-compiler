@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -205,3 +207,31 @@ SHARD_59_READERS: dict[str, MemberReader] = {
     "_np_svd": lambda t: (True, t._np_svd) if isinstance(t, _HasMember59_21) else (False, None),
     "_np_tensor_scatter": lambda t: (True, t._np_tensor_scatter) if isinstance(t, _HasMember59_22) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember59_00,
+        _HasMember59_01,
+        _HasMember59_02,
+        _HasMember59_03,
+        _HasMember59_04,
+        _HasMember59_05,
+        _HasMember59_06,
+        _HasMember59_07,
+        _HasMember59_08,
+        _HasMember59_09,
+        _HasMember59_10,
+        _HasMember59_11,
+        _HasMember59_12,
+        _HasMember59_13,
+        _HasMember59_14,
+        _HasMember59_15,
+        _HasMember59_16,
+        _HasMember59_17,
+        _HasMember59_18,
+        _HasMember59_19,
+        _HasMember59_20,
+        _HasMember59_21,
+        _HasMember59_22,
+    )
+)

@@ -71,7 +71,10 @@ def _has_size_attr(val: InterpreterValue) -> typing.TypeGuard[_SizeOneProtocol]:
     Returns:
         bool: True if `val` satisfies `_SizeOneProtocol`.
     """
-    return isinstance(val, _SizeOneProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _SizeOneProtocol)
+    return found or is_mock_with_attrs(val, "size")
 
 
 def _has_numel_method(val: InterpreterValue) -> typing.TypeGuard[_NumelProtocol]:
@@ -83,7 +86,10 @@ def _has_numel_method(val: InterpreterValue) -> typing.TypeGuard[_NumelProtocol]
     Returns:
         bool: True if `val` satisfies `_NumelProtocol`.
     """
-    return isinstance(val, _NumelProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _NumelProtocol)
+    return found or is_mock_with_attrs(val, "numel")
 
 
 def _has_backend_item(val: type | OpValue) -> typing.TypeGuard[_BackendItemProtocol]:
@@ -95,7 +101,10 @@ def _has_backend_item(val: type | OpValue) -> typing.TypeGuard[_BackendItemProto
     Returns:
         bool: True if `val` satisfies `_BackendItemProtocol`.
     """
-    return isinstance(val, _BackendItemProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _BackendItemProtocol)
+    return found or is_mock_with_attrs(val, "item")
 
 
 def _has_scalar_item(val: InterpreterValue) -> typing.TypeGuard[_ScalarItemProtocol]:
@@ -107,7 +116,10 @@ def _has_scalar_item(val: InterpreterValue) -> typing.TypeGuard[_ScalarItemProto
     Returns:
         bool: True if `val` satisfies `_ScalarItemProtocol`.
     """
-    return isinstance(val, _ScalarItemProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ScalarItemProtocol)
+    return found or is_mock_with_attrs(val, "item")
 
 
 def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> bool:

@@ -27,6 +27,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import (
     EagerTensorProtocol,
+    GenericNDArray,
     MockTestStub,
     adapt_backend_module,
     extract_test_data,
@@ -608,11 +609,13 @@ def _test_fallback_and_edge_branches_part_5(_state: _TestFallbackAndEdgeBranches
     class FailArrayObj(MockTestStub):
         """Test class FailArrayObj."""
 
-        def __array__(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def __array__(
+            self,
+        ) -> GenericNDArray:
             """Test function __array__.
 
             Returns:
-                np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `__array__`.
+                GenericNDArray: Computed output value from `__array__`.
 
             Raises:
                 TypeError: When raised during `__array__` (fail).

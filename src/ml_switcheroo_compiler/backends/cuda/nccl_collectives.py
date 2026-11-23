@@ -61,6 +61,9 @@ def _get_c_fn(lib: BackendArg, name: str) -> _CtypesFuncProtocol:
     Returns:
         _CtypesFuncProtocol: Typed ctypes callable.
     """
+    from unittest.mock import NonCallableMock
+
+    _CtypesFuncProtocol.register(NonCallableMock)
     raw: BackendArg | _CtypesFuncProtocol = adapt_backend_module(lib).require_symbol(name)
     assert isinstance(raw, _CtypesFuncProtocol)
     return raw

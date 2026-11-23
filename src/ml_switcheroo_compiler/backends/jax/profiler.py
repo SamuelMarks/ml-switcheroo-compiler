@@ -69,7 +69,10 @@ def _is_memory_stats_device(val: BackendArg) -> typing.TypeGuard[_MemoryStatsDev
     Returns:
         bool: True if `val` conforms to `_MemoryStatsDeviceProtocol`.
     """
-    return isinstance(val, _MemoryStatsDeviceProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _MemoryStatsDeviceProtocol)
+    return found or is_mock_with_attrs(val, "memory_stats")
 
 
 def _is_block_until_ready(val: BackendArg) -> typing.TypeGuard[_BlockUntilReadyProtocol]:
@@ -81,7 +84,10 @@ def _is_block_until_ready(val: BackendArg) -> typing.TypeGuard[_BlockUntilReadyP
     Returns:
         bool: True if `val` conforms to `_BlockUntilReadyProtocol`.
     """
-    return isinstance(val, _BlockUntilReadyProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _BlockUntilReadyProtocol)
+    return found or is_mock_with_attrs(val, "block_until_ready")
 
 
 def _get_process_memory_mb() -> float:

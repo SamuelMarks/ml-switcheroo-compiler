@@ -61,23 +61,24 @@ def test_dask_eager_execute_op() -> None:
         """
         return "dummy_eager_res"
 
-    global_eager_registry.register("TestOpDask")(dummy_eager)
-    res = execute_op(None, "TestOpDask")
-    assert res == "dummy_eager_res"
-    if "Add" in global_eager_registry._registry:
-        del global_eager_registry._registry["Add"]
-    with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
-        mock_schema = type(
-            "Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}}
-        )()
-        mock_mappings.return_value = mock_schema
-        with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": cp_mock}):
-            res2 = execute_op(None, "Add")
-            assert res2 == "add_res"
-    if "UnknownOpDask" in global_eager_registry._registry:
-        del global_eager_registry._registry["UnknownOpDask"]
-    with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        execute_op(None, "UnknownOpDask")
+    with patch.dict(global_eager_registry._registry):
+        global_eager_registry.register("TestOpDask")(dummy_eager)
+        res = execute_op(None, "TestOpDask")
+        assert res == "dummy_eager_res"
+        if "Add" in global_eager_registry._registry:
+            del global_eager_registry._registry["Add"]
+        with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
+            mock_schema = type(
+                "Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}}
+            )()
+            mock_mappings.return_value = mock_schema
+            with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": cp_mock}):
+                res2 = execute_op(None, "Add")
+                assert res2 == "add_res"
+        if "UnknownOpDask" in global_eager_registry._registry:
+            del global_eager_registry._registry["UnknownOpDask"]
+        with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
+            execute_op(None, "UnknownOpDask")
 
 
 def test_dask_eager_execute_op_exception() -> None:

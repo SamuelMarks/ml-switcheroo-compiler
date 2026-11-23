@@ -22,7 +22,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 )
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.shape import OpValue
-from tests.testing_utils import EagerTensorProtocol, MockTestStub, extract_test_shape
+from tests.testing_utils import EagerTensorProtocol, GenericNDArray, MockTestStub, extract_test_shape
 
 
 class _BareMod(MockTestStub):
@@ -537,8 +537,8 @@ class _TestAllCoreMathOpsCoverageState(typing.TypedDict, total=False):
     """Typed shared state for `_test_all_core_math_ops_coverage` split helpers."""
 
     all_bk: EagerTensorProtocol
-    arg: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
-    arg_int: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    arg: GenericNDArray
+    arg_int: GenericNDArray
     args: list[BackendOperand]
     bk: BackendOperand
     build_call: _BuildCallFn
@@ -781,7 +781,7 @@ class _TestMissingCoverageState(typing.TypedDict, total=False):
 
     EmptyBk: type
     MatmulBk: type
-    arg: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    arg: GenericNDArray
     mod: types.ModuleType
     np: types.ModuleType
 
@@ -1627,7 +1627,7 @@ class _TestEvenMoreCoverageState(typing.TypedDict, total=False):
     """Typed shared state for `_test_even_more_coverage` split helpers."""
 
     BkSpecial: type
-    arg: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    arg: GenericNDArray
     bk: EagerTensorProtocol
 
 

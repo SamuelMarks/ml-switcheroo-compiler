@@ -248,7 +248,7 @@ def _test_math_arithmetic_all_branches_part_3(_state: _TestMathArithmeticAllBran
                 BackendArg: Computed output value from `ravel_multi_index`.
             """
             idx_seq = tuple(ensure_ndarray(item).astype(np.intp) for item in coerce_operand_list(multi_index))
-            return int(np.ravel_multi_index(idx_seq, coerce_shape(dims)))
+            return int(np.asarray(np.ravel_multi_index(idx_seq, coerce_shape(dims))).item())
 
     _state.update({"BackendRavel": BackendRavel})
     _state.update({"empty_backend": empty_backend})

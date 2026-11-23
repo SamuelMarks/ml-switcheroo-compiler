@@ -50,7 +50,10 @@ def _is_numpy_callable(val: BackendArg) -> typing.TypeGuard[_NumpyCallableProtoc
     Returns:
         bool: True if `val` conforms to `_NumpyCallableProtocol`.
     """
-    return isinstance(val, _NumpyCallableProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _NumpyCallableProtocol)
+    return found or is_mock_with_attrs(val, "numpy")
 
 
 def _is_tf_shape_dtype_tensor(val: BackendArg) -> typing.TypeGuard[ShapeProtocol]:
@@ -62,7 +65,11 @@ def _is_tf_shape_dtype_tensor(val: BackendArg) -> typing.TypeGuard[ShapeProtocol
     Returns:
         bool: True if `val` has `shape` and `dtype` attributes.
     """
-    return isinstance(val, ShapeProtocol) and isinstance(val, DTypeHolderProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found_shape: bool = isinstance(val, ShapeProtocol)
+    found_dtype: bool = isinstance(val, DTypeHolderProtocol)
+    return (found_shape and found_dtype) or is_mock_with_attrs(val, "shape", "dtype")
 
 
 def _get_process_memory_mb() -> float:

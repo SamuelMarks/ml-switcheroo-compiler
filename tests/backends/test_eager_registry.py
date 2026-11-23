@@ -289,3 +289,31 @@ def test_eager_registry_narrowing_and_schema_hooks() -> None:
     assert coerce_opt_callable(None) is None
     fn_ref = coerce_opt_callable(len)
     assert fn_ref is not None
+
+
+def test_coerce_int_and_float_mock_and_module_guards() -> None:
+    """Verify coerce_int and coerce_float prevent NonCallableMock .item auto-vivification and bound unwrapping."""
+    import types
+    from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.backends.eager_registry import coerce_float, coerce_int
+
+    bare_mock = MagicMock()
+    assert coerce_int(bare_mock) == 1
+    assert coerce_float(bare_mock) == 1.0
+    assert "item" not in bare_mock._mock_children
+
+    item_mock = MagicMock()
+    item_mock.item.return_value = 7
+    assert coerce_int(item_mock) == 7
+    assert coerce_float(item_mock) == 7.0
+
+    nested_mock = MagicMock()
+    nested_mock.item.return_value = MagicMock()
+    assert coerce_int(nested_mock) == 1
+    assert coerce_float(nested_mock) == 1.0
+
+    with pytest.raises(TypeError):
+        coerce_int(types)
+    with pytest.raises(TypeError):
+        coerce_float(types)

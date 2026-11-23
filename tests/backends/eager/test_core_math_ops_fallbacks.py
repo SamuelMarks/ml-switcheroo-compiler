@@ -19,6 +19,7 @@ from tests.testing_utils import (
     BackendOperand,
     EagerBoundCallable,
     EagerTensorProtocol,
+    GenericNDArray,
     MockTestStub,
     adapt_backend_module,
     require_callable,
@@ -67,7 +68,7 @@ class _DisabledTestCoreMathOpsBranchesState(typing.TypedDict, total=False):
     AttnBackend: type
     MockData3: type
     builtins: types.ModuleType
-    dummy_input: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    dummy_input: GenericNDArray
     empty_backend: EmptyMockBackend
     full_backend: FullMockBackend
     mock_hasattr: EagerBoundCallable

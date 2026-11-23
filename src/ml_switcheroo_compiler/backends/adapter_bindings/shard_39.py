@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -397,3 +399,53 @@ SHARD_39_READERS: dict[str, MemberReader] = {
         (True, t.raggedsegmentidstorowsplits) if isinstance(t, _HasMember39_44) else (False, None)
     ),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember39_00,
+        _HasMember39_01,
+        _HasMember39_02,
+        _HasMember39_03,
+        _HasMember39_04,
+        _HasMember39_05,
+        _HasMember39_06,
+        _HasMember39_07,
+        _HasMember39_08,
+        _HasMember39_09,
+        _HasMember39_10,
+        _HasMember39_11,
+        _HasMember39_12,
+        _HasMember39_13,
+        _HasMember39_14,
+        _HasMember39_15,
+        _HasMember39_16,
+        _HasMember39_17,
+        _HasMember39_18,
+        _HasMember39_19,
+        _HasMember39_20,
+        _HasMember39_21,
+        _HasMember39_22,
+        _HasMember39_23,
+        _HasMember39_24,
+        _HasMember39_25,
+        _HasMember39_26,
+        _HasMember39_27,
+        _HasMember39_28,
+        _HasMember39_29,
+        _HasMember39_30,
+        _HasMember39_31,
+        _HasMember39_32,
+        _HasMember39_33,
+        _HasMember39_34,
+        _HasMember39_35,
+        _HasMember39_36,
+        _HasMember39_37,
+        _HasMember39_38,
+        _HasMember39_39,
+        _HasMember39_40,
+        _HasMember39_41,
+        _HasMember39_42,
+        _HasMember39_43,
+        _HasMember39_44,
+    )
+)

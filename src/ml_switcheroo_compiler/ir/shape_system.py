@@ -2,12 +2,27 @@
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import typing
 from collections.abc import Callable, Mapping, Sequence
 
 import yaml
-from ml_switcheroo_ir import TensorShape
+from ml_switcheroo_ir import (
+    BoundedLattice,
+    EndoRewrite,
+    Eq,
+    Err,
+    HashableWitness,
+    Monoid,
+    Ok,
+    Result,
+    Ring,
+    Semigroup,
+    Semiring,
+    TensorShape,
+    is_non_bool_int,
+)
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY, MATRIX_RANK
@@ -153,6 +168,22 @@ class Polynomial:
             int: The constant term value (0 if not present).
         """
         return self.terms.get((), 0)
+
+    def neg(self) -> Polynomial:
+        """Negate all coefficients of the polynomial.
+
+        Returns:
+            Polynomial: Additive inverse polynomial ``-self``.
+        """
+        return Polynomial({mono: -coeff for mono, coeff in self.terms.items()})
+
+    def canonical_terms(self) -> tuple[tuple[MonomialType, int], ...]:
+        """Return deterministic canonically ordered ``(monomial, coeff)`` pairs.
+
+        Returns:
+            tuple[tuple[MonomialType, int], ...]: Sorted non-zero polynomial terms.
+        """
+        return tuple(sorted(self.terms.items(), key=lambda item: self._monomial_sort_key(item[0])))
 
     def add(self, other: Polynomial) -> Polynomial:
         """Add two polynomials.
@@ -517,12 +548,32 @@ class SymNode:
             return val
         if isinstance(val, SymInt):
             return val.node
-        if isinstance(val, int):
+        if is_non_bool_int(val):
             return SymConst(val)
         if isinstance(val, str):
             return _parse_sym_str(str(val))
         msg = f"Cannot convert {type(val)} to SymNode"
         raise TypeError(msg)
+
+    @property
+    def is_constant(self) -> bool:
+        """Check whether this symbolic expression has no free symbolic variables.
+
+        Returns:
+            bool: True if expression evaluates to a constant without free variables.
+        """
+        return len(self.free_vars()) == 0
+
+    def evaluate(self, bindings: dict[str, int]) -> int:
+        """Evaluate symbolic expression under ``bindings`` (Tier-1 ``SymbolicNodeProtocol`` alias).
+
+        Args:
+            bindings (dict[str, int]): Mapping from variable names to concrete integers.
+
+        Returns:
+            int: Evaluated integer value.
+        """
+        return self.eval(bindings)
 
     def simplify(self) -> SymNode:
         """Apply algebraic simplification rules recursively.
@@ -1299,6 +1350,8 @@ class SymUnaryOp(SymNode):
             SymNode: Simplified expression node.
         """
         s_op = self.operand.simplify()
+        if self.op == "+":
+            return s_op
         if isinstance(s_op, SymConst):
             v = s_op.value
             if self.op == "abs":
@@ -1308,6 +1361,19 @@ class SymUnaryOp(SymNode):
             if self.op == "-":
                 return SymConst(-v)
         return SymUnaryOp(self.op, s_op)
+
+    def to_polynomial(self) -> Polynomial | None:
+        """Lower unary ``+`` and ``-`` operations into canonical ``Polynomial`` form when possible.
+
+        Returns:
+            Polynomial | None: Canonical polynomial or ``None`` if non-polynomial.
+        """
+        if self.op not in ("+", "-"):
+            return None
+        poly = self.operand.to_polynomial()
+        if poly is None:
+            return None
+        return poly.neg() if self.op == "-" else poly
 
     def eval(self, env: dict[str, int]) -> int:
         """Evaluate unary operation with variable bindings.
@@ -1324,7 +1390,7 @@ class SymUnaryOp(SymNode):
         val = self.operand.eval(env)
         if self.op == "abs":
             return abs(val)
-        if self.op in ("ceil", "floor"):
+        if self.op in ("ceil", "floor", "+"):
             return val
         if self.op == "-":
             return -val
@@ -1355,6 +1421,27 @@ class SymUnaryOp(SymNode):
             str: Debugging string.
         """
         return f"SymUnaryOp({self.op}, {self.operand!r})"
+
+    def __eq__(self, other: _EqT) -> bool:
+        """Check structural equality with another unary operation node.
+
+        Args:
+            other (_EqT): Other object to compare.
+
+        Returns:
+            bool: True if operator and operand match.
+        """
+        if isinstance(other, SymUnaryOp):
+            return self.op == other.op and self.operand == other.operand
+        return False
+
+    def __hash__(self) -> int:
+        """Compute structural hash for unary operation node.
+
+        Returns:
+            int: Hash integer.
+        """
+        return hash((self.op, self.operand))
 
 
 class SymPiecewise(SymNode):
@@ -1663,7 +1750,7 @@ class SymInt:
         elif isinstance(name_or_expr, SymNode):
             self.node = name_or_expr
             self.expr = str(name_or_expr)
-        elif isinstance(name_or_expr, int):
+        elif is_non_bool_int(name_or_expr):
             self.node = SymConst(name_or_expr)
             self.expr = str(name_or_expr)
         else:
@@ -1679,6 +1766,37 @@ class SymInt:
             str: Identifier or expression string.
         """
         return self.expr
+
+    @property
+    def is_constant(self) -> bool:
+        """Check whether the wrapped symbolic expression has no free variables.
+
+        Returns:
+            bool: True if constant.
+        """
+        return self.node.is_constant
+
+    def eval(self, env: dict[str, int]) -> int:
+        """Evaluate wrapped symbolic expression given variable bindings.
+
+        Args:
+            env (dict[str, int]): Mapping from symbolic names to concrete integers.
+
+        Returns:
+            int: Evaluated integer result.
+        """
+        return self.node.eval(env)
+
+    def evaluate(self, bindings: dict[str, int]) -> int:
+        """Evaluate wrapped symbolic expression under ``bindings`` (Tier-1 alias).
+
+        Args:
+            bindings (dict[str, int]): Mapping from symbolic names to concrete integers.
+
+        Returns:
+            int: Evaluated integer result.
+        """
+        return self.node.evaluate(bindings)
 
     def simplify(self) -> SymInt:
         """Return simplified SymInt instance.
@@ -2535,12 +2653,247 @@ def normalize_axis(
     Raises:
         TypeError: If axis has an invalid type.
     """
-    if isinstance(axis, int):
+    if is_non_bool_int(axis):
         return _normalize_single_axis(axis, ndim)
-    if isinstance(axis, (tuple, list)):
+    if isinstance(axis, (tuple, list)) and all(is_non_bool_int(ax) for ax in axis):
         return tuple(_normalize_single_axis(ax, ndim) for ax in axis)
     msg = f"Invalid type for axis: {type(axis)}"
     raise TypeError(msg)
+
+
+def broadcast_shapes_result(
+    shape_a: ShapeType,
+    shape_b: ShapeType,
+    tracker: SymbolicConstraintTracker | None = None,
+) -> Result[ShapeMismatchError, ShapeType]:
+    """Broadcast two shapes and return an explicit ``Ok`` / ``Err`` ``Result``.
+
+    Args:
+        shape_a (ShapeType): First shape tuple.
+        shape_b (ShapeType): Second shape tuple.
+        tracker (SymbolicConstraintTracker | None): Optional symbolic constraint tracker.
+
+    Returns:
+        Result[ShapeMismatchError, ShapeType]: ``Ok(ShapeType)`` if compatible, else ``Err(ShapeMismatchError)``.
+    """
+    try:
+        return Ok(broadcast_shapes(shape_a, shape_b, tracker=tracker))
+    except ShapeMismatchError as exc:
+        return Err(exc)
+
+
+def matmul_shape_result(
+    shape_a: ShapeType,
+    shape_b: ShapeType,
+) -> Result[ShapeMismatchError | ValueError, ShapeType]:
+    """Compute matrix multiplication output shape as an explicit ``Ok`` / ``Err`` ``Result``.
+
+    Args:
+        shape_a (ShapeType): Left operand shape.
+        shape_b (ShapeType): Right operand shape.
+
+    Returns:
+        Result[ShapeMismatchError | ValueError, ShapeType]: ``Ok(ShapeType)`` or ``Err`` on rank/dim mismatch.
+    """
+    try:
+        return Ok(matmul_shape(shape_a, shape_b))
+    except (ShapeMismatchError, ValueError) as exc:
+        return Err(exc)
+
+
+def normalize_axis_result(
+    axis: int | tuple[int, ...] | list[int] | OpValue,
+    ndim: int,
+) -> Result[ShapeMismatchError | TypeError, int | tuple[int, ...]]:
+    """Normalize an axis specification into an explicit ``Ok`` / ``Err`` ``Result``.
+
+    Args:
+        axis (int | tuple[int, ...] | list[int] | OpValue): Axis or sequence of axes.
+        ndim (int): Tensor rank.
+
+    Returns:
+        Result[ShapeMismatchError | TypeError, int | tuple[int, ...]]: ``Ok`` normalized axis or ``Err``.
+    """
+    try:
+        return Ok(normalize_axis(axis, ndim))
+    except (ShapeMismatchError, TypeError) as exc:
+        return Err(exc)
+
+
+def _rewrite_sym_node_children(node: SymNode, fn: Callable[[SymNode], SymNode]) -> SymNode:
+    """Apply ``fn`` to immediate child ``SymNode`` operands of ``node``.
+
+    Args:
+        node (SymNode): Expression node whose children should be transformed.
+        fn (Callable[[SymNode], SymNode]): Endomorphic child rewrite function.
+
+    Returns:
+        SymNode: Reconstructed ``SymNode`` with transformed immediate children.
+    """
+    if isinstance(node, SymBinaryOp):
+        return SymBinaryOp(node.op, fn(node.left), fn(node.right))
+    if isinstance(node, SymUnaryOp):
+        return SymUnaryOp(node.op, fn(node.operand))
+    if isinstance(node, SymPiecewise):
+        rewritten_cases: list[tuple[Callable[[dict[str, int]], bool] | SymNode | bool, SymNode]] = [
+            (fn(cond) if isinstance(cond, SymNode) else cond, fn(expr)) for cond, expr in node.cases
+        ]
+        return SymPiecewise(rewritten_cases, fn(node.default))
+    return node
+
+
+COMPILER_POLYNOMIAL_EQ: Eq[Polynomial] = Eq(eq=lambda a, b: a == b)
+COMPILER_POLYNOMIAL_HASH: HashableWitness[Polynomial] = HashableWitness(
+    eq_witness=COMPILER_POLYNOMIAL_EQ,
+    hash_value=hash,
+)
+COMPILER_POLYNOMIAL_SEMIRING: Semiring[Polynomial] = Semiring(
+    zero=lambda: Polynomial.from_const(0),
+    one=lambda: Polynomial.from_const(1),
+    add=lambda a, b: a.add(b),
+    mul=lambda a, b: a.mul(b),
+)
+COMPILER_POLYNOMIAL_RING: Ring[Polynomial] = Ring(
+    semiring=COMPILER_POLYNOMIAL_SEMIRING,
+    neg=lambda a: a.neg(),
+    sub=lambda a, b: a.sub(b),
+)
+COMPILER_SYM_NODE_EQ: Eq[SymNode] = Eq(eq=lambda a, b: a == b)
+COMPILER_SYM_NODE_HASH: HashableWitness[SymNode] = HashableWitness(
+    eq_witness=COMPILER_SYM_NODE_EQ,
+    hash_value=hash,
+)
+COMPILER_SYM_NODE_REWRITE: EndoRewrite[SymNode] = EndoRewrite(map_children=_rewrite_sym_node_children)
+
+
+@dataclasses.dataclass(frozen=True)
+class BroadcastShapeElem:
+    """Element of the concrete tensor shape broadcast bounded lattice ``(⊥=(), Shape, ⊤=Conflict)``."""
+
+    dims: tuple[int, ...] = ()
+    is_conflict: bool = False
+
+    @staticmethod
+    def bottom() -> BroadcastShapeElem:
+        """Return scalar identity shape ``()`` (``⊥``).
+
+        Returns:
+            BroadcastShapeElem: Rank-0 scalar shape element.
+        """
+        return BroadcastShapeElem(dims=(), is_conflict=False)
+
+    @staticmethod
+    def top() -> BroadcastShapeElem:
+        """Return unbroadcastable conflict top element ``⊤``.
+
+        Returns:
+            BroadcastShapeElem: Conflict top element.
+        """
+        return BroadcastShapeElem(dims=(), is_conflict=True)
+
+    @staticmethod
+    def of(dims: Sequence[int]) -> BroadcastShapeElem:
+        """Construct a concrete positive-dimension ``BroadcastShapeElem``.
+
+        Args:
+            dims (Sequence[int]): Concrete positive integer tensor dimensions.
+
+        Returns:
+            BroadcastShapeElem: Concrete shape lattice element, or ``top()`` if any dimension is ``< 1``.
+        """
+        tup = tuple(dims)
+        if any(d < 1 for d in tup):
+            return BroadcastShapeElem.top()
+        return BroadcastShapeElem(dims=tup, is_conflict=False)
+
+
+def _join_broadcast_shape(lhs: BroadcastShapeElem, rhs: BroadcastShapeElem) -> BroadcastShapeElem:
+    """Compute least upper bound (broadcast output shape) of two ``BroadcastShapeElem`` values.
+
+    Args:
+        lhs (BroadcastShapeElem): Left tensor shape element.
+        rhs (BroadcastShapeElem): Right tensor shape element.
+
+    Returns:
+        BroadcastShapeElem: Broadcasted shape or ``BroadcastShapeElem.top()`` on dimension conflict.
+    """
+    if lhs.is_conflict or rhs.is_conflict:
+        return BroadcastShapeElem.top()
+    max_len = max(len(lhs.dims), len(rhs.dims))
+    pad_a = (1,) * (max_len - len(lhs.dims)) + lhs.dims
+    pad_b = (1,) * (max_len - len(rhs.dims)) + rhs.dims
+    merged: list[int] = []
+    for da, db in zip(pad_a, pad_b):
+        if da == db or db == 1:
+            merged.append(da)
+        elif da == 1:
+            merged.append(db)
+        else:
+            return BroadcastShapeElem.top()
+    return BroadcastShapeElem(dims=tuple(merged), is_conflict=False)
+
+
+def _meet_broadcast_shape(lhs: BroadcastShapeElem, rhs: BroadcastShapeElem) -> BroadcastShapeElem:
+    """Compute greatest lower bound (maximal common source shape) of two ``BroadcastShapeElem`` values.
+
+    Args:
+        lhs (BroadcastShapeElem): Left tensor shape element.
+        rhs (BroadcastShapeElem): Right tensor shape element.
+
+    Returns:
+        BroadcastShapeElem: Maximal shape that broadcasts cleanly into both ``lhs`` and ``rhs``.
+    """
+    if lhs.is_conflict:
+        return rhs
+    if rhs.is_conflict:
+        return lhs
+    min_len = min(len(lhs.dims), len(rhs.dims))
+    if min_len == 0:
+        return BroadcastShapeElem.bottom()
+    tail_a = lhs.dims[-min_len:]
+    tail_b = rhs.dims[-min_len:]
+    common = tuple(da if da == db else 1 for da, db in zip(tail_a, tail_b))
+    return BroadcastShapeElem(dims=common, is_conflict=False)
+
+
+COMPILER_BROADCAST_EQ: Eq[BroadcastShapeElem] = Eq(eq=lambda a, b: a == b)
+COMPILER_BROADCAST_HASH: HashableWitness[BroadcastShapeElem] = HashableWitness(
+    eq_witness=COMPILER_BROADCAST_EQ,
+    hash_value=hash,
+)
+COMPILER_BROADCAST_LATTICE: BoundedLattice[BroadcastShapeElem] = BoundedLattice(
+    eq_witness=COMPILER_BROADCAST_EQ,
+    bottom=BroadcastShapeElem.bottom,
+    top=BroadcastShapeElem.top,
+    join=_join_broadcast_shape,
+    meet=_meet_broadcast_shape,
+)
+COMPILER_BROADCAST_MONOID: Monoid[BroadcastShapeElem] = Monoid(
+    empty=BroadcastShapeElem.bottom,
+    semigroup=Semigroup(combine=_join_broadcast_shape),
+)
+
+
+def broadcast_many_shapes_result(
+    shapes: Sequence[ShapeType],
+    tracker: SymbolicConstraintTracker | None = None,
+) -> Result[ShapeMismatchError, ShapeType]:
+    """Fold N concrete or symbolic shapes via broadcasting into an explicit ``Result``.
+
+    Args:
+        shapes (Sequence[ShapeType]): Sequence of input tensor shapes (empty folds to scalar ``()``).
+        tracker (SymbolicConstraintTracker | None): Optional symbolic constraint tracker.
+
+    Returns:
+        Result[ShapeMismatchError, ShapeType]: ``Ok(ShapeType)`` or ``Err(ShapeMismatchError)`` on incompatibility.
+    """
+    acc: ShapeType = ()
+    for shp in shapes:
+        try:
+            acc = broadcast_shapes(acc, shp, tracker=tracker)
+        except ShapeMismatchError as exc:
+            return Err(exc)
+    return Ok(acc)
 
 
 def compute_contiguous_strides(shape: Sequence[int | SymNode | SymInt]) -> tuple[int, ...]:
@@ -2558,7 +2911,7 @@ def compute_contiguous_strides(shape: Sequence[int | SymNode | SymInt]) -> tuple
     strides: list[int] = [1] * len(shape)
     for i in range(len(shape) - 2, -1, -1):
         next_dim = shape[i + 1]
-        if isinstance(next_dim, int):
+        if is_non_bool_int(next_dim):
             strides[i] = strides[i + 1] * next_dim
         else:
             strides[i] = strides[i + 1]

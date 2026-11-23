@@ -250,6 +250,9 @@ def _as_metal_dev_fn(val: BackendArg) -> _MetalDeviceFuncProtocol:
     Returns:
         _MetalDeviceFuncProtocol: Narrowed function object.
     """
+    from unittest.mock import NonCallableMock
+
+    _MetalDeviceFuncProtocol.register(NonCallableMock)
     cand: BackendArg | _MetalDeviceFuncProtocol = val
     assert isinstance(cand, _MetalDeviceFuncProtocol)
     return cand

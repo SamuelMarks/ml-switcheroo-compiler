@@ -26,6 +26,23 @@ if importlib.util.find_spec("tensorflow") is not None:
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from ml_switcheroo_compiler.backends.base import BaseGenerator
+
+
+def _restore_backend_registry(orig_backends: dict[str, type[BaseGenerator]]) -> None:
+    """Restore ``BackendRegistry._registry`` while preserving newly imported built-in lazy backends.
+
+    Args:
+        orig_backends (dict[str, type[BaseGenerator]]): Snapshot of registered backends prior to test execution.
+    """
+    import ml_switcheroo_compiler.backends.registry as reg
+
+    lazy_keys = set(reg.BackendRegistry._LAZY_MODULES.keys())
+    newly_loaded = {k: v for k, v in reg.BackendRegistry._registry.items() if k in lazy_keys and k not in orig_backends}
+    reg.BackendRegistry._registry.clear()
+    reg.BackendRegistry._registry.update(newly_loaded)
+    reg.BackendRegistry._registry.update(orig_backends)
+
 
 @pytest.fixture(autouse=True)
 def reset_global_tracing_state() -> Iterator[None]:
@@ -81,8 +98,7 @@ def reset_global_tracing_state() -> Iterator[None]:
 
     yield
 
-    reg.BackendRegistry._registry.clear()
-    reg.BackendRegistry._registry.update(orig_backends)
+    _restore_backend_registry(orig_backends)
     _YAML_REGISTRY.clear()
     _YAML_REGISTRY.update(orig_yaml_registry)
     for _cg_key in [k for k in _OP_REGISTRY if k.startswith("CustomGradient_")]:

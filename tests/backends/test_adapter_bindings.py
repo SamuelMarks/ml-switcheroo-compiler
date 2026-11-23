@@ -2,33 +2,11 @@
 
 from __future__ import annotations
 
+import types
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends.adapter_bindings import ADAPTER_ATTR_READERS, read_static_attr
 from ml_switcheroo_compiler.backends.eager_registry import BackendArg
-
-
-class _FailingAttrTarget:
-    """Target raising `AttributeError` dynamically on second property access after structural check."""
-
-    def __init__(self) -> None:
-        """Initialize access counter."""
-        self._reads = 0
-
-    @property
-    def abs(self) -> int:
-        """Return `1` on protocol `isinstance` probe, then raise `AttributeError` on value read.
-
-        Returns:
-            int: Sentinel value during structural protocol check.
-
-        Raises:
-            AttributeError: Raised on subsequent value read to exercise `read_static_attr` exception handling.
-        """
-        self._reads += 1
-        if self._reads > 1:
-            raise AttributeError("absent")
-        return 1
 
 
 class _EmptyTarget:
@@ -58,4 +36,16 @@ def test_read_static_attr_dispatch_and_error_branches() -> None:
     present.abs = 123
     res_present: tuple[bool, BackendArg] = read_static_attr(present, "abs")
     assert res_present == (True, 123)
-    assert read_static_attr(_FailingAttrTarget(), "abs") == (False, None)
+    assert read_static_attr(types.ModuleType("empty_mod"), "abs") == (False, None)
+    assert read_static_attr(MagicMock(spec=[]), "abs") == (False, None)
+
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+    from ml_switcheroo_compiler.core.shape import extract_data
+    from tests.testing_utils import MockTensorStub
+
+    deleted_mock = MagicMock()
+    _ = deleted_mock.abs
+    del deleted_mock.abs
+    assert is_mock_with_attrs(deleted_mock, "abs") is False
+    stub_no_data = MockTensorStub()
+    assert extract_data(stub_no_data) is stub_no_data

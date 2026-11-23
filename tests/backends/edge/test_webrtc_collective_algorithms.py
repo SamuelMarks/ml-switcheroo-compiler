@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import struct
 import sys
 import types
@@ -245,14 +246,14 @@ async def _test_stream_event_handlers_and_messages_part_3(_state: _TestStreamEve
             """Test function __init__."""
             self.msgs: list[BackendArg] = []
 
-        def send(self, data: bytes) -> BackendArg:
+        def send(self, data: bytes) -> collections.abc.Awaitable[None]:
             """Test function send.
 
             Args:
                 data: Test parameter `data`.
 
             Returns:
-                BackendArg: Computed output value from `send`.
+                collections.abc.Awaitable[None]: Computed output value from `send`.
             """
 
             async def _coro() -> None:
@@ -298,11 +299,11 @@ async def _test_stream_event_handlers_and_messages_part_4(_state: _TestStreamEve
     class SyncRecvChannel(MockTestStub):
         """Test class SyncRecvChannel."""
 
-        def recv(self) -> BackendArg:
+        def recv(self) -> collections.abc.Awaitable[BackendArg]:
             """Test function recv.
 
             Returns:
-                BackendArg: Computed output value from `recv`.
+                collections.abc.Awaitable[BackendArg]: Computed output value from `recv`.
             """
 
             async def _r() -> BackendArg:
@@ -380,14 +381,14 @@ async def _test_stream_event_handlers_and_messages_part_6(_state: _TestStreamEve
             """Test function __init__."""
             self.msgs: list[BackendArg] = []
 
-        def sendMessage(self, data: bytes) -> BackendArg:
+        def sendMessage(self, data: bytes) -> collections.abc.Awaitable[None]:
             """Test function sendMessage.
 
             Args:
                 data: Test parameter `data`.
 
             Returns:
-                BackendArg: Computed output value from `sendMessage`.
+                collections.abc.Awaitable[None]: Computed output value from `sendMessage`.
             """
 
             async def _c() -> None:

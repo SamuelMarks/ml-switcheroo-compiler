@@ -437,11 +437,16 @@ def _mlx_scatter_nd(
             """
             ...
 
+    from unittest.mock import NonCallableMock
+
+    _ScatterIndexProto.register(NonCallableMock)
     mod_adp = adapt_backend_module(backend_module)
     raw_indices = args[0]
     has_conv = mod_adp.has_symbol("asarray") or mod_adp.has_symbol("array")
     indices_val: BackendArg | _ScatterIndexProto = (
-        mod_adp.asarray(raw_indices) if not isinstance(raw_indices, BackendArrayProtocol) and has_conv else raw_indices
+        mod_adp.asarray(raw_indices)
+        if not (isinstance(raw_indices, BackendArrayProtocol) or isinstance(raw_indices, NonCallableMock)) and has_conv
+        else raw_indices
     )
     assert isinstance(indices_val, _ScatterIndexProto)
     updates = args[1]

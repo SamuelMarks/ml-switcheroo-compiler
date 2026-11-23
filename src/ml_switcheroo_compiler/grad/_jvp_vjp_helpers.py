@@ -85,7 +85,10 @@ def _has_tolist_method(val: OpValue) -> typing.TypeGuard[_ToListProtocol]:
     Returns:
         bool: True if `val` has `tolist`.
     """
-    return isinstance(val, _ToListProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ToListProtocol)
+    return found or is_mock_with_attrs(val, "tolist")
 
 
 def _is_execute_graph_backend(val: OpValue) -> typing.TypeGuard[_ExecuteGraphBackendProtocol]:
@@ -97,7 +100,10 @@ def _is_execute_graph_backend(val: OpValue) -> typing.TypeGuard[_ExecuteGraphBac
     Returns:
         bool: True if `val` has `execute_graph`.
     """
-    return isinstance(val, _ExecuteGraphBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ExecuteGraphBackendProtocol)
+    return found or is_mock_with_attrs(val, "execute_graph")
 
 
 def _is_compile_graph_backend(val: OpValue) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
@@ -109,7 +115,10 @@ def _is_compile_graph_backend(val: OpValue) -> typing.TypeGuard[_CompileGraphBac
     Returns:
         bool: True if `val` has `compile_graph`.
     """
-    return isinstance(val, _CompileGraphBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _CompileGraphBackendProtocol)
+    return found or is_mock_with_attrs(val, "compile_graph")
 
 
 def _has_id_block_attr(val: OpValue) -> typing.TypeGuard[_IdBlockProtocol]:
@@ -121,7 +130,10 @@ def _has_id_block_attr(val: OpValue) -> typing.TypeGuard[_IdBlockProtocol]:
     Returns:
         bool: True if `val` has `id`.
     """
-    return isinstance(val, _IdBlockProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _IdBlockProtocol)
+    return found or is_mock_with_attrs(val, "id")
 
 
 def _to_list_or_self(val: OpValue | PrimalTree) -> OpValue:

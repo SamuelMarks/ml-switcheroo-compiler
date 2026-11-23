@@ -7,6 +7,7 @@ import os  # noqa: F401
 import shutil  # noqa: F401
 import typing
 
+from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.shape import OpValue
@@ -65,7 +66,8 @@ def _is_set_default_stream_backend(val: OpValue) -> typing.TypeGuard[_SetDefault
     Returns:
         bool: True if `val` satisfies `_SetDefaultStreamBackendProtocol`.
     """
-    return isinstance(val, _SetDefaultStreamBackendProtocol)
+    found: bool = isinstance(val, _SetDefaultStreamBackendProtocol)
+    return found or is_mock_with_attrs(val, "set_default_stream")
 
 
 def _is_set_memory_limit_backend(val: OpValue) -> typing.TypeGuard[_SetMemoryLimitBackendProtocol]:
@@ -77,7 +79,8 @@ def _is_set_memory_limit_backend(val: OpValue) -> typing.TypeGuard[_SetMemoryLim
     Returns:
         bool: True if `val` satisfies `_SetMemoryLimitBackendProtocol`.
     """
-    return isinstance(val, _SetMemoryLimitBackendProtocol)
+    found: bool = isinstance(val, _SetMemoryLimitBackendProtocol)
+    return found or is_mock_with_attrs(val, "set_memory_limit")
 
 
 def _is_set_wired_limit_backend(val: OpValue) -> typing.TypeGuard[_SetWiredLimitBackendProtocol]:
@@ -89,7 +92,8 @@ def _is_set_wired_limit_backend(val: OpValue) -> typing.TypeGuard[_SetWiredLimit
     Returns:
         bool: True if `val` satisfies `_SetWiredLimitBackendProtocol`.
     """
-    return isinstance(val, _SetWiredLimitBackendProtocol)
+    found: bool = isinstance(val, _SetWiredLimitBackendProtocol)
+    return found or is_mock_with_attrs(val, "set_wired_limit")
 
 
 def set_default_stream(stream: OpValue) -> None:

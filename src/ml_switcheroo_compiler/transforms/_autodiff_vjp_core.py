@@ -22,20 +22,13 @@ def _is_zero_node(graph: LogicalGraph, node_id: str) -> bool:
     Returns:
         bool: True if node represents zero.
     """
-    if node_id not in graph.nodes:
-        return False
-    node = graph.nodes[node_id]
-    if node.op_type in ("Zeros", "ZerosLike"):
-        return True
-    if node.op_type == "Constant":
-        val = node.attributes.get("value")
-        if isinstance(val, (int, float)) and val == 0:
-            return True
-    return False
+    from ml_switcheroo_compiler.grad.typeclasses import is_symbolic_zero_node
+
+    return is_symbolic_zero_node(graph, node_id)
 
 
 def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
-    """Emit an Add node for gradient accumulation, avoiding redundant Add chains.
+    """Emit an Add node for gradient accumulation via the graph cotangent monoid, avoiding redundant Add chains.
 
     Args:
         graph (LogicalGraph): The graph parameter for the operation.
@@ -45,23 +38,19 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
     Returns:
         str: The computed result.
     """
+    from ml_switcheroo_compiler.grad.typeclasses import GraphCotangentElem, build_graph_cotangent_monoid
+
     if _is_zero_node(graph, n1_id):
         return n2_id
     if _is_zero_node(graph, n2_id):
         return n1_id
 
-    out_id = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
-    n1 = graph.nodes[n1_id]
-
-    # Simple shape heuristic for accumulation
-    node = LogicalNode(
-        id=out_id,
-        op_type="Add",
-        inputs=[n1_id, n2_id],
-        shape_metadata=n1.shape_metadata,
+    monoid = build_graph_cotangent_monoid(graph)
+    combined = monoid.semigroup.combine(
+        GraphCotangentElem.from_node(graph, n1_id),
+        GraphCotangentElem.from_node(graph, n2_id),
     )
-    graph.nodes[out_id] = node
-    return out_id
+    return combined.node_id if combined.node_id is not None else n2_id
 
 
 def _copy_graph(graph: LogicalGraph) -> LogicalGraph:
@@ -155,8 +144,6 @@ def _recompute_subgraph(new_graph: LogicalGraph, node: LogicalNode) -> LogicalNo
     Returns:
         LogicalNode: The cloned recomputed node.
     """
-    import uuid
-
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
     recompute_node = clone_logical_node(node)

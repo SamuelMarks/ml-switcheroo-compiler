@@ -112,15 +112,6 @@ class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.float64]]):
         assert isinstance(cloned, _MockTorchTensor)
         return cloned
 
-    @property
-    def device(self) -> _MockTorchDevice:
-        """Return mock device.
-
-        Returns:
-            _MockTorchDevice: CPU device.
-        """
-        return _MockTorchDevice("cpu")
-
     def unsqueeze(self, dim: int) -> _MockTorchTensor:
         """Insert dimension of size 1.
 

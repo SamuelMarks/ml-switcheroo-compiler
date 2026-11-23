@@ -23,7 +23,7 @@ from ml_switcheroo_compiler.backends.cuda.nccl_collectives import (
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.distributed.host_collectives import HostCollectiveCommunicator
-from tests.testing_utils import EagerTensorProtocol, coerce_operand_list
+from tests.testing_utils import EagerTensorProtocol, GenericNDArray, coerce_operand_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -377,7 +377,7 @@ def test_nccl_driver_exhaustive_branches() -> None:
 class _TestNcclDriverCudaRtMemoryAndStreamsState(typing.TypedDict, total=False):
     """Typed shared state for `_test_nccl_driver_cuda_rt_memory_and_streams` split helpers."""
 
-    arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    arr: GenericNDArray
     dev_ptr: int
     driver: NCCLDriver
     mock_rt: EagerTensorProtocol

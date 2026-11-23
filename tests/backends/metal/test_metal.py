@@ -13,7 +13,7 @@ from ml_switcheroo_ir import IRGraph, IRNode, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner, _calculate_node_bytes
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
-from tests.testing_utils import MockTestStub, require_callable
+from tests.testing_utils import GenericNDArray, MockTestStub, require_callable
 
 if typing.TYPE_CHECKING:
     pass
@@ -432,7 +432,10 @@ def test_metal_evaluate_fallback() -> None:
     class _MockTensor(MockTestStub):
         """Test class _MockTensor."""
 
-        def __init__(self, data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+        def __init__(
+            self,
+            data: GenericNDArray,
+        ) -> None:
             """Test function __init__.
 
             Args:

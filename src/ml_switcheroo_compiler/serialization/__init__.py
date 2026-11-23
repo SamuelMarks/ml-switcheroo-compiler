@@ -2,11 +2,28 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.serialization.codecs import (
+    FROZEN_TENSOR_ARCHIVE_CODEC,
+    FROZEN_TENSOR_ARCHIVE_EQ,
+    TENSOR_MAP_BYTES_CODEC,
+    TENSOR_MAP_JSON_CODEC,
+    UTF8_BYTES_STR_CODEC,
+    FrozenTensorArchive,
+)
 from ml_switcheroo_compiler.serialization.formats.base import WeightFormatProtocol
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
+from ml_switcheroo_compiler.serialization.ir_format import (
+    COMPILER_IR_BYTES_CODEC,
+    COMPILER_IR_STR_CODEC,
+    COMPILER_IR_YAML_CODEC,
+    COMPILER_PROVEN_ACYCLIC_JSON_CODEC,
+    graph_to_json_result,
+    json_to_graph_result,
+    yaml_to_graph_result,
+)
 from ml_switcheroo_compiler.serialization.model_archive import (
     ArchiveFileEditor,
     ArchiveSerializationContext,
@@ -79,7 +96,14 @@ from ml_switcheroo_compiler.serialization.weights_io import (
 __all__ = [
     "ArchiveFileEditor",
     "ArchiveSerializationContext",
+    "COMPILER_IR_BYTES_CODEC",
+    "COMPILER_IR_STR_CODEC",
+    "COMPILER_IR_YAML_CODEC",
+    "COMPILER_PROVEN_ACYCLIC_JSON_CODEC",
     "CustomObjectScope",
+    "FROZEN_TENSOR_ARCHIVE_CODEC",
+    "FROZEN_TENSOR_ARCHIVE_EQ",
+    "FrozenTensorArchive",
     "H5WeightFormat",
     "LoadedModel",
     "MaxShardSizePolicy",
@@ -89,7 +113,10 @@ __all__ = [
     "SafetensorsWeightFormat",
     "SavedModel",
     "ShardByTaskPolicy",
+    "TENSOR_MAP_BYTES_CODEC",
+    "TENSOR_MAP_JSON_CODEC",
     "TrackableResource",
+    "UTF8_BYTES_STR_CODEC",
     "WeightFormatProtocol",
     "WeightedModelProtocol",
     "_CUSTOM_OBJECTS",
@@ -126,7 +153,9 @@ __all__ = [
     "get_registered_name",
     "get_registered_object",
     "graph_to_json",
+    "graph_to_json_result",
     "is_numpy_array",
+    "json_to_graph_result",
     "load_model",
     "load_npz",
     "load_variable",
@@ -138,4 +167,5 @@ __all__ = [
     "save_weights",
     "serialize_object",
     "to_numpy",
+    "yaml_to_graph_result",
 ]

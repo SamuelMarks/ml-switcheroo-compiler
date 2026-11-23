@@ -32,6 +32,11 @@ This repository (`ml-switcheroo-compiler`) is the EXCLUSIVE home for all actual 
 * **MUST NOT:** A `zero-*` frontend must NEVER implement custom math, gradient tracking, or raw array manipulation. They are purely API routing shells.
 * **WHERE IT BELONGS:** If a user requests adding a new mathematical operation, a custom gradient formula, or AD logic, it MUST be implemented here in the compiler (inside `ml_switcheroo_compiler/ops/`, `ml_switcheroo_compiler/grad/`, or `ml_switcheroo_compiler/transforms/autodiff_rules/`). The `zero-*` repo will then simply delegate to this implementation.
 
+### 6. STRICT STATIC TYPING, ANTI-REFLECTION & SNAPSHOT GROUNDING
+All code in `src/ml_switcheroo_compiler/`, `scripts/`, and `tests/` must pass strict AST and schema verifiers:
+* **NO `Any`, `cast`, OR DYNAMIC REFLECTION:** `typing.Any` (`scripts/lint_any.py --max-count 0`), `typing.cast`, disguised casts, and dynamic attribute reflection (`getattr`, `setattr`, `hasattr`, `delattr`, `vars`, `globals`, `locals` via `scripts/lint_typing.py`) are strictly forbidden; use explicit `typing.Protocol` / `TypeGuard` narrowing under `mypy --strict`.
+* **SNAPSHOT GROUNDING & QUALITY GATES:** Backend mappings and operator parameters must match upstream `ml-ecosystem-snapshots` with zero hallucinated kwargs (`scripts/validate_backend_mappings.py`, `scripts/validate_parameters.py`), tests must contain substantive assertions without bare `pass` (`scripts/lint_pass.py --check-zero-assertions`), and all modules/classes/functions must maintain 100% line, branch, and granular AST docstring coverage (`scripts/check_docs.py`).
+
 ---
 **ACTION REQUIRED ON VIOLATION:**
 If the user's prompt requests a change that violates *any* of the rules above, you MUST:

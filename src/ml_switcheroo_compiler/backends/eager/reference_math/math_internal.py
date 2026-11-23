@@ -38,9 +38,9 @@ def _np_population_count(
     """
     arr_mod = _resolve_eager_mod(backend_module)
     x_arr = arr_mod.asarray(x)
-    return arr_mod.array([bin(bool(n) if (type(n).__name__ == "bool_") else n).count("1") for n in x_arr.flat]).reshape(
-        x_arr.shape
-    )
+    return arr_mod.array(
+        [bin(bool(n) if type(n).__name__ in ("bool", "bool_") else n).count("1") for n in x_arr.flat]
+    ).reshape(x_arr.shape)
 
 
 @global_eager_registry.register("GetPrintoptions")

@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -391,3 +393,53 @@ SHARD_24_READERS: dict[str, MemberReader] = {
     "get_sorted_nodes": lambda t: (True, t.get_sorted_nodes) if isinstance(t, _HasMember24_43) else (False, None),
     "gfile_copy": lambda t: (True, t.gfile_copy) if isinstance(t, _HasMember24_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember24_00,
+        _HasMember24_01,
+        _HasMember24_02,
+        _HasMember24_03,
+        _HasMember24_04,
+        _HasMember24_05,
+        _HasMember24_06,
+        _HasMember24_07,
+        _HasMember24_08,
+        _HasMember24_09,
+        _HasMember24_10,
+        _HasMember24_11,
+        _HasMember24_12,
+        _HasMember24_13,
+        _HasMember24_14,
+        _HasMember24_15,
+        _HasMember24_16,
+        _HasMember24_17,
+        _HasMember24_18,
+        _HasMember24_19,
+        _HasMember24_20,
+        _HasMember24_21,
+        _HasMember24_22,
+        _HasMember24_23,
+        _HasMember24_24,
+        _HasMember24_25,
+        _HasMember24_26,
+        _HasMember24_27,
+        _HasMember24_28,
+        _HasMember24_29,
+        _HasMember24_30,
+        _HasMember24_31,
+        _HasMember24_32,
+        _HasMember24_33,
+        _HasMember24_34,
+        _HasMember24_35,
+        _HasMember24_36,
+        _HasMember24_37,
+        _HasMember24_38,
+        _HasMember24_39,
+        _HasMember24_40,
+        _HasMember24_41,
+        _HasMember24_42,
+        _HasMember24_43,
+        _HasMember24_44,
+    )
+)

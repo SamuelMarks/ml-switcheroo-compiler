@@ -173,10 +173,25 @@ def test_missing_methods() -> None:
 
 def test_pytorch_generator_tensor_factories() -> None:
     """Verify PyTorchCodeGenerator.zeros, array, asarray, and item classmethods."""
-    z = PyTorchCodeGenerator.zeros((2, 2))
-    assert PyTorchCodeGenerator.item(PyTorchCodeGenerator.zeros(())) == 0.0
-    arr = PyTorchCodeGenerator.array([1.5])
-    as_arr = PyTorchCodeGenerator.asarray([2.5])
-    assert PyTorchCodeGenerator.item(arr) == 1.5
-    assert PyTorchCodeGenerator.item(as_arr) == 2.5
-    assert z is not None
+    import types
+    from unittest.mock import patch
+
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.pytorch import types as pt_types
+
+    stub = types.ModuleType("torch")
+    mp = pytest.MonkeyPatch()
+    mp.setattr(stub, "zeros", np.zeros, raising=False)
+    mp.setattr(stub, "tensor", np.array, raising=False)
+    mp.setattr(stub, "as_tensor", np.asarray, raising=False)
+    active_torch = stub if pt_types.torch is None else pt_types.torch
+
+    with patch.object(pt_types, "torch", active_torch):
+        z = PyTorchCodeGenerator.zeros((2, 2))
+        assert PyTorchCodeGenerator.item(PyTorchCodeGenerator.zeros(())) == 0.0
+        arr = PyTorchCodeGenerator.array([1.5])
+        as_arr = PyTorchCodeGenerator.asarray([2.5])
+        assert PyTorchCodeGenerator.item(arr) == 1.5
+        assert PyTorchCodeGenerator.item(as_arr) == 2.5
+        assert z is not None

@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -387,3 +389,53 @@ SHARD_48_READERS: dict[str, MemberReader] = {
     "tensorscattersub": lambda t: (True, t.tensorscattersub) if isinstance(t, _HasMember48_43) else (False, None),
     "tensorscatterupdate": lambda t: (True, t.tensorscatterupdate) if isinstance(t, _HasMember48_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember48_00,
+        _HasMember48_01,
+        _HasMember48_02,
+        _HasMember48_03,
+        _HasMember48_04,
+        _HasMember48_05,
+        _HasMember48_06,
+        _HasMember48_07,
+        _HasMember48_08,
+        _HasMember48_09,
+        _HasMember48_10,
+        _HasMember48_11,
+        _HasMember48_12,
+        _HasMember48_13,
+        _HasMember48_14,
+        _HasMember48_15,
+        _HasMember48_16,
+        _HasMember48_17,
+        _HasMember48_18,
+        _HasMember48_19,
+        _HasMember48_20,
+        _HasMember48_21,
+        _HasMember48_22,
+        _HasMember48_23,
+        _HasMember48_24,
+        _HasMember48_25,
+        _HasMember48_26,
+        _HasMember48_27,
+        _HasMember48_28,
+        _HasMember48_29,
+        _HasMember48_30,
+        _HasMember48_31,
+        _HasMember48_32,
+        _HasMember48_33,
+        _HasMember48_34,
+        _HasMember48_35,
+        _HasMember48_36,
+        _HasMember48_37,
+        _HasMember48_38,
+        _HasMember48_39,
+        _HasMember48_40,
+        _HasMember48_41,
+        _HasMember48_42,
+        _HasMember48_43,
+        _HasMember48_44,
+    )
+)

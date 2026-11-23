@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -389,3 +391,53 @@ SHARD_05_READERS: dict[str, MemberReader] = {
     "Welch": lambda t: (True, t.Welch) if isinstance(t, _HasMember05_43) else (False, None),
     "WelchConfig": lambda t: (True, t.WelchConfig) if isinstance(t, _HasMember05_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember05_00,
+        _HasMember05_01,
+        _HasMember05_02,
+        _HasMember05_03,
+        _HasMember05_04,
+        _HasMember05_05,
+        _HasMember05_06,
+        _HasMember05_07,
+        _HasMember05_08,
+        _HasMember05_09,
+        _HasMember05_10,
+        _HasMember05_11,
+        _HasMember05_12,
+        _HasMember05_13,
+        _HasMember05_14,
+        _HasMember05_15,
+        _HasMember05_16,
+        _HasMember05_17,
+        _HasMember05_18,
+        _HasMember05_19,
+        _HasMember05_20,
+        _HasMember05_21,
+        _HasMember05_22,
+        _HasMember05_23,
+        _HasMember05_24,
+        _HasMember05_25,
+        _HasMember05_26,
+        _HasMember05_27,
+        _HasMember05_28,
+        _HasMember05_29,
+        _HasMember05_30,
+        _HasMember05_31,
+        _HasMember05_32,
+        _HasMember05_33,
+        _HasMember05_34,
+        _HasMember05_35,
+        _HasMember05_36,
+        _HasMember05_37,
+        _HasMember05_38,
+        _HasMember05_39,
+        _HasMember05_40,
+        _HasMember05_41,
+        _HasMember05_42,
+        _HasMember05_43,
+        _HasMember05_44,
+    )
+)

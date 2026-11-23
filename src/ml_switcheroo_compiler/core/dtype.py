@@ -4,6 +4,20 @@ from __future__ import annotations
 
 from enum import Enum
 
+from ml_switcheroo_ir import (
+    Codec,
+    CodecError,
+    Eq,
+    Err,
+    HashableWitness,
+    Ok,
+    Ord,
+    Ordering,
+    Pretty,
+    PythonExprEmit,
+    Result,
+)
+
 from ml_switcheroo_compiler.core.errors import DTypeValidationError as DTypeValidationError
 
 _DTYPE_ALIASES: dict[str, str] = {
@@ -245,3 +259,97 @@ def check_dtype_for_op(op_name: str, dtype: DType | str) -> None:
     valid, err = validate_dtype_for_op(op_name, dtype)
     if not valid:
         raise DTypeValidationError(err or f"Invalid dtype '{dtype}' for op '{op_name}'")
+
+
+def parse_dtype_result(val: DType | str) -> Result[DTypeValidationError, DType]:
+    """Parse a ``DType`` or string alias into a total ``Result`` without raising exceptions.
+
+    Args:
+        val (DType | str): Canonical ``DType`` member or string alias.
+
+    Returns:
+        Result[DTypeValidationError, DType]: ``Ok(DType)`` on success or ``Err(DTypeValidationError)`` on unknown input.
+    """
+    if isinstance(val, DType):
+        return Ok(val)
+    try:
+        return Ok(DType.from_str(val))
+    except ValueError as exc:
+        return Err(DTypeValidationError(str(exc)))
+
+
+_DTYPE_CANONICAL_ORDER: tuple[DType, ...] = tuple(DType)
+_DTYPE_RANK_MAP: dict[DType, int] = {dt: idx for idx, dt in enumerate(_DTYPE_CANONICAL_ORDER)}
+
+
+def _compare_dtypes(lhs: DType, rhs: DType) -> Ordering:
+    """Compare two ``DType`` values deterministically according to canonical declaration rank.
+
+    Args:
+        lhs (DType): Left-hand ``DType``.
+        rhs (DType): Right-hand ``DType``.
+
+    Returns:
+        Ordering: ``Ordering.LT``, ``Ordering.EQ``, or ``Ordering.GT``.
+    """
+    rank_l: int = _DTYPE_RANK_MAP[lhs]
+    rank_r: int = _DTYPE_RANK_MAP[rhs]
+    if rank_l < rank_r:
+        return Ordering.LT
+    if rank_l > rank_r:
+        return Ordering.GT
+    return Ordering.EQ
+
+
+def _emit_dtype_python_expr(dt: DType, module_prefix: str) -> str:
+    """Emit a deterministic Python constructor expression for ``dt``.
+
+    Args:
+        dt (DType): Canonical ``DType`` enum member.
+        module_prefix (str): Optional module qualifier prefix.
+
+    Returns:
+        str: Valid Python attribute expression referencing ``dt``.
+    """
+    if module_prefix:
+        return f"{module_prefix}.DType.{dt.name}"
+    return f"DType.{dt.name}"
+
+
+def _decode_dtype_wire(wire: str) -> Result[CodecError, DType]:
+    """Decode a wire string representation into a canonical ``DType``.
+
+    Args:
+        wire (str): Serialized ``DType`` string or alias.
+
+    Returns:
+        Result[CodecError, DType]: ``Ok(DType)`` or ``Err(CodecError)``.
+    """
+    parsed = parse_dtype_result(wire)
+    if isinstance(parsed, Err):
+        return Err(
+            CodecError(
+                path=("dtype",),
+                expected="DType",
+                actual_description=wire,
+                message=str(parsed.error),
+            )
+        )
+    return Ok(parsed.value)
+
+
+COMPILER_DTYPE_EQ: Eq[DType] = Eq(eq=lambda a, b: a == b)
+COMPILER_DTYPE_HASH: HashableWitness[DType] = HashableWitness(
+    eq_witness=COMPILER_DTYPE_EQ,
+    hash_value=lambda dt: hash(dt.value),
+)
+COMPILER_DTYPE_ORD: Ord[DType] = Ord(
+    eq_witness=COMPILER_DTYPE_EQ,
+    compare=_compare_dtypes,
+)
+COMPILER_DTYPE_PRETTY: Pretty[DType] = Pretty(render=lambda dt: dt.value)
+COMPILER_DTYPE_PYTHON_EMIT: PythonExprEmit[DType] = PythonExprEmit(emit_python=_emit_dtype_python_expr)
+COMPILER_DTYPE_STR_CODEC: Codec[str, DType] = Codec(
+    encode=lambda dt: dt.value,
+    decode=_decode_dtype_wire,
+)

@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -379,3 +381,53 @@ SHARD_22_READERS: dict[str, MemberReader] = {
     "fractional_max_pool": lambda t: (True, t.fractional_max_pool) if isinstance(t, _HasMember22_43) else (False, None),
     "fractionalavgpool": lambda t: (True, t.fractionalavgpool) if isinstance(t, _HasMember22_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember22_00,
+        _HasMember22_01,
+        _HasMember22_02,
+        _HasMember22_03,
+        _HasMember22_04,
+        _HasMember22_05,
+        _HasMember22_06,
+        _HasMember22_07,
+        _HasMember22_08,
+        _HasMember22_09,
+        _HasMember22_10,
+        _HasMember22_11,
+        _HasMember22_12,
+        _HasMember22_13,
+        _HasMember22_14,
+        _HasMember22_15,
+        _HasMember22_16,
+        _HasMember22_17,
+        _HasMember22_18,
+        _HasMember22_19,
+        _HasMember22_20,
+        _HasMember22_21,
+        _HasMember22_22,
+        _HasMember22_23,
+        _HasMember22_24,
+        _HasMember22_25,
+        _HasMember22_26,
+        _HasMember22_27,
+        _HasMember22_28,
+        _HasMember22_29,
+        _HasMember22_30,
+        _HasMember22_31,
+        _HasMember22_32,
+        _HasMember22_33,
+        _HasMember22_34,
+        _HasMember22_35,
+        _HasMember22_36,
+        _HasMember22_37,
+        _HasMember22_38,
+        _HasMember22_39,
+        _HasMember22_40,
+        _HasMember22_41,
+        _HasMember22_42,
+        _HasMember22_43,
+        _HasMember22_44,
+    )
+)

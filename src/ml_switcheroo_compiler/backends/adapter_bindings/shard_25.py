@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -383,3 +385,53 @@ SHARD_25_READERS: dict[str, MemberReader] = {
     "hfft": lambda t: (True, t.hfft) if isinstance(t, _HasMember25_43) else (False, None),
     "hinge_loss": lambda t: (True, t.hinge_loss) if isinstance(t, _HasMember25_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember25_00,
+        _HasMember25_01,
+        _HasMember25_02,
+        _HasMember25_03,
+        _HasMember25_04,
+        _HasMember25_05,
+        _HasMember25_06,
+        _HasMember25_07,
+        _HasMember25_08,
+        _HasMember25_09,
+        _HasMember25_10,
+        _HasMember25_11,
+        _HasMember25_12,
+        _HasMember25_13,
+        _HasMember25_14,
+        _HasMember25_15,
+        _HasMember25_16,
+        _HasMember25_17,
+        _HasMember25_18,
+        _HasMember25_19,
+        _HasMember25_20,
+        _HasMember25_21,
+        _HasMember25_22,
+        _HasMember25_23,
+        _HasMember25_24,
+        _HasMember25_25,
+        _HasMember25_26,
+        _HasMember25_27,
+        _HasMember25_28,
+        _HasMember25_29,
+        _HasMember25_30,
+        _HasMember25_31,
+        _HasMember25_32,
+        _HasMember25_33,
+        _HasMember25_34,
+        _HasMember25_35,
+        _HasMember25_36,
+        _HasMember25_37,
+        _HasMember25_38,
+        _HasMember25_39,
+        _HasMember25_40,
+        _HasMember25_41,
+        _HasMember25_42,
+        _HasMember25_43,
+        _HasMember25_44,
+    )
+)

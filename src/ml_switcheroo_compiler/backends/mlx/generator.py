@@ -254,10 +254,13 @@ class MLXCodeGenerator(ClassBasedGenerator):
         Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
         """
+        import types
+
         import mlx.core as mx
 
         # Note: MLX load does not use allow_pickle, fix_imports, or encoding
-        return mx.load(filepath)
+        mx_mod: types.ModuleType = mx
+        return adapt_backend_module(mx_mod).require_op("load")(filepath)
 
     @classmethod
     def save(cls: type, file: str, arr: BackendArg, allow_pickle: bool = True, fix_imports: bool = True) -> None:

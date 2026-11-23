@@ -17,6 +17,7 @@ from pytest_mock import MockerFixture
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
+from tests.testing_utils import GenericNDArray
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import BackendArg
@@ -166,24 +167,18 @@ class _MockArrayWithNumpy:
 
     def __init__(
         self,
-        arr: np.ndarray[
-            tuple[int, ...],
-            np.dtype[np.generic],
-        ],
+        arr: GenericNDArray,
     ) -> None:
         """Initialize with numpy array.
 
         Args:
-            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
+            arr (GenericNDArray): Underlying array.
         """
         self.arr = arr
 
     def numpy(
         self,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Return underlying numpy array.
 
         Returns:
@@ -197,15 +192,12 @@ class _MockDataWithNumpy:
 
     def __init__(
         self,
-        arr: np.ndarray[
-            tuple[int, ...],
-            np.dtype[np.generic],
-        ],
+        arr: GenericNDArray,
     ) -> None:
         """Initialize with nested data object.
 
         Args:
-            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
+            arr (GenericNDArray): Underlying array.
         """
         self.data = _MockArrayWithNumpy(arr)
 
@@ -260,10 +252,7 @@ class _MockBackendH5:
             tuple[
                 dict[
                     str,
-                    np.ndarray[
-                        tuple[int, ...],
-                        np.dtype[np.generic],
-                    ],
+                    GenericNDArray,
                 ],
                 str,
             ]
@@ -274,10 +263,7 @@ class _MockBackendH5:
         self, path: str
     ) -> dict[
         str,
-        np.ndarray[
-            tuple[int, ...],
-            np.dtype[np.generic],
-        ],
+        GenericNDArray,
     ]:
         """Load h5 mock weights.
 
@@ -293,17 +279,14 @@ class _MockBackendH5:
         self,
         weights: dict[
             str,
-            np.ndarray[
-                tuple[int, ...],
-                np.dtype[np.generic],
-            ],
+            GenericNDArray,
         ],
         path: str,
     ) -> None:
         """Save h5 mock weights.
 
         Args:
-            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
+            weights (dict[str, GenericNDArray]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
@@ -318,10 +301,7 @@ class _MockBackendNPZ:
             tuple[
                 dict[
                     str,
-                    np.ndarray[
-                        tuple[int, ...],
-                        np.dtype[np.generic],
-                    ],
+                    GenericNDArray,
                 ],
                 str,
             ]
@@ -332,17 +312,14 @@ class _MockBackendNPZ:
         self,
         weights: dict[
             str,
-            np.ndarray[
-                tuple[int, ...],
-                np.dtype[np.generic],
-            ],
+            GenericNDArray,
         ],
         path: str,
     ) -> None:
         """Save npz mock weights.
 
         Args:
-            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
+            weights (dict[str, GenericNDArray]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
@@ -351,10 +328,7 @@ class _MockBackendNPZ:
         self, path: str
     ) -> dict[
         str,
-        np.ndarray[
-            tuple[int, ...],
-            np.dtype[np.generic],
-        ],
+        GenericNDArray,
     ]:
         """Load npz mock weights.
 

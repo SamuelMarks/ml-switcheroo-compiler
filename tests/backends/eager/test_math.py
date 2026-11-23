@@ -18,6 +18,7 @@ from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from tests.testing_utils import (
     EagerBoundCallable,
+    GenericNDArray,
     MockTestStub,
     coerce_int_list,
     coerce_operand_list,
@@ -52,7 +53,7 @@ class _TestMathMissingState(typing.TypedDict, total=False):
     _np_truncatemod: EagerBoundCallable
     _np_xdivy: EagerBoundCallable
     _scaled_dot_product_attention_eager: EagerBoundCallable
-    arr: list[int] | np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    arr: list[int] | GenericNDArray
     db: DummyBackend
 
 

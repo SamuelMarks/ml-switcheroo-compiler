@@ -7,7 +7,6 @@ import io
 import json
 import typing
 
-import numpy as np
 import pytest
 import yaml
 from ml_switcheroo_ir import IRGraph
@@ -18,7 +17,7 @@ from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.benchmarks.config_models import BenchmarkRunResult
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics, export_benchmark_results
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
-from tests.testing_utils import coerce_float
+from tests.testing_utils import GenericNDArray, coerce_float
 
 
 def test_compute_statistical_metrics_standard() -> None:
@@ -144,7 +143,16 @@ def test_export_benchmark_results_formats() -> None:
 MetricsVal = typing.Union[list[float], "float"]
 
 ProcessArg = typing.Union[
-    tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, BackendArg, "None"
+    tuple[str, str],
+    IRGraph,
+    dict[
+        str,
+        GenericNDArray,
+    ],
+    str,
+    int,
+    BackendArg,
+    "None",
 ]
 
 
@@ -154,7 +162,10 @@ class MockSimpleProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[
+            str,
+            GenericNDArray,
+        ],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -163,7 +174,7 @@ class MockSimpleProfiler:
 
         Args:
             graph (IRGraph): Computational graph.
-            inputs (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Inputs.
+            inputs (dict[str, GenericNDArray]): Inputs.
             device (str | None): Device identifier.
             num_iters (int): Measurement count.
             warmup_iters (int): Warmup count.
@@ -301,7 +312,10 @@ class MockDeviceFailingProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[
+            str,
+            GenericNDArray,
+        ],
         *args: int,
         **kwargs: str | int | None,
     ) -> dict[str, MetricsVal]:
@@ -309,7 +323,7 @@ class MockDeviceFailingProfiler:
 
         Args:
             graph (IRGraph): Computational graph.
-            inputs (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Inputs.
+            inputs (dict[str, GenericNDArray]): Inputs.
             *args (int): Additional positional args.
             **kwargs (str | int | None): Keyword arguments.
 

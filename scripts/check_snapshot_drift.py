@@ -11,7 +11,7 @@ import typing
 # Ensure src is discoverable when invoked directly or via pre-commit
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, Err, Monoid, Ok, Result, Semigroup
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
@@ -87,13 +87,40 @@ def _flatten_snapshot_items(snap: dict[str, AttributeValue]) -> dict[str, dict[s
     categories_dict = snap.get("categories", {})
     if isinstance(categories_dict, dict):
         for items in categories_dict.values():
-            if isinstance(items, list):
+            if isinstance(items, (list, tuple)):
                 for item in items:
                     if isinstance(item, dict):
                         key = str(item.get("api_path") or item.get("name") or "")
                         if key:
                             flattened[key] = item
     return flattened
+
+
+def _combine_diff_results(left: DiffResult, right: DiffResult) -> DiffResult:
+    """Combine two ``DiffResult`` instances deterministically with deduplicated sorted paths.
+
+    Args:
+        left (DiffResult): First snapshot diff result.
+        right (DiffResult): Second snapshot diff result.
+
+    Returns:
+        DiffResult: Merged ``DiffResult`` model.
+    """
+    return DiffResult(
+        added=sorted(set(left.added) | set(right.added)),
+        removed=sorted(set(left.removed) | set(right.removed)),
+        signature_changed=sorted(set(left.signature_changed) | set(right.signature_changed)),
+        breaking_signature_changed=sorted(set(left.breaking_signature_changed) | set(right.breaking_signature_changed)),
+        non_breaking_signature_changed=sorted(
+            set(left.non_breaking_signature_changed) | set(right.non_breaking_signature_changed)
+        ),
+    )
+
+
+DIFF_RESULT_MONOID: Monoid[DiffResult] = Monoid(
+    empty=DiffResult,
+    semigroup=Semigroup(combine=_combine_diff_results),
+)
 
 
 def diff_snapshots(
@@ -125,8 +152,8 @@ def diff_snapshots(
             item1 = flat1[path]
             raw_p1 = item1.get("params", [])
             raw_p2 = item2.get("params", [])
-            p1 = [p for p in raw_p1 if isinstance(p, dict)] if isinstance(raw_p1, list) else []
-            p2 = [p for p in raw_p2 if isinstance(p, dict)] if isinstance(raw_p2, list) else []
+            p1 = [p for p in raw_p1 if isinstance(p, dict)] if isinstance(raw_p1, (list, tuple)) else []
+            p2 = [p for p in raw_p2 if isinstance(p, dict)] if isinstance(raw_p2, (list, tuple)) else []
             sig1 = [(p.get("name"), p.get("kind"), p.get("default"), p.get("annotation")) for p in p1]
             sig2 = [(p.get("name"), p.get("kind"), p.get("default"), p.get("annotation")) for p in p2]
             if sig1 != sig2:
@@ -174,6 +201,27 @@ def generate_changelog(diff: DiffResult) -> str:
     return "\n".join(lines).strip() + "\n"
 
 
+def load_snapshot_file_result(file_path: str) -> Result[OSError | ValueError, dict[str, AttributeValue]]:
+    """Load and parse a JSON snapshot file into an explicit ``Ok`` / ``Err`` ``Result``.
+
+    Args:
+        file_path (str): Path to snapshot JSON file.
+
+    Returns:
+        Result[OSError | ValueError, dict[str, AttributeValue]]: ``Ok`` parsed JSON dict or ``Err``.
+    """
+    if not os.path.exists(file_path):
+        return Err(FileNotFoundError(f"Snapshot file not found: {file_path}"))
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError) as exc:
+        return Err(exc)
+    if not isinstance(data, dict):
+        return Err(ValueError(f"Snapshot root in {file_path} must be a JSON object."))
+    return Ok(data)
+
+
 def load_snapshot_file(file_path: str) -> dict[str, AttributeValue]:
     """Load and parse a JSON snapshot file from disk.
 
@@ -185,12 +233,13 @@ def load_snapshot_file(file_path: str) -> dict[str, AttributeValue]:
 
     Raises:
         FileNotFoundError: If the specified file path does not exist.
+        OSError: If reading the snapshot file fails.
+        ValueError: If the snapshot JSON is malformed or not a JSON object.
     """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Snapshot file not found: {file_path}")
-    with open(file_path, encoding="utf-8") as f:
-        data: dict[str, AttributeValue] = json.load(f)
-    return data
+    outcome = load_snapshot_file_result(file_path)
+    if isinstance(outcome, Ok):
+        return outcome.value
+    raise outcome.error
 
 
 def compare_snapshot_files(

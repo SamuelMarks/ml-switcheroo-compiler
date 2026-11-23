@@ -67,3 +67,39 @@ def test_export_to_protobuf() -> None:
     assert 'syntax = "proto3";' in pb_code
     assert "message matmul {" in pb_code
     assert "TensorProto input = 1;" in pb_code
+
+
+def test_ecosystem_snapshots_v008_proofs_and_identifiers() -> None:
+    """Verify ml-ecosystem-snapshots v0.0.8 ProvenSnapshot, identifier parsers, and Valid/Ok outcomes."""
+    from ml_ecosystem_snapshots import (
+        Err,
+        Ok,
+        ProvenSnapshot,
+        Valid,
+        parse_api_path,
+        parse_framework_id,
+        prove_envelope_valid,
+        prove_hydrated_refs,
+    )
+
+    fw_ok = parse_framework_id("torch")
+    fw_err = parse_framework_id("")
+    api_ok = parse_api_path("torch.matmul")
+    assert isinstance(fw_ok, Ok)
+    assert isinstance(fw_err, Err)
+    assert isinstance(api_ok, Ok)
+
+    ref = _create_sample_ghost_ref("matmul")
+    envelope_payload = {
+        "schema_version": "2.0.0",
+        "framework": "torch",
+        "version": "2.4.0",
+        "categories": {"linalg": [ref.model_dump(mode="json")]},
+    }
+    env_res = prove_envelope_valid(envelope_payload)
+    assert isinstance(env_res, Ok)
+    assert isinstance(env_res.value, ProvenSnapshot)
+
+    hydrated_res = prove_hydrated_refs(env_res.value)
+    assert isinstance(hydrated_res, Valid)
+    assert any(r.api_path == "torch.matmul" for _, cat_refs in hydrated_res.value.hydrated_categories for r in cat_refs)

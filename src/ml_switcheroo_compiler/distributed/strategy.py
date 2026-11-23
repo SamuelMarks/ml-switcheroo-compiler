@@ -104,6 +104,36 @@ class _CustomJoinServerBackendProtocol(typing.Protocol):
         ...
 
 
+def _is_custom_server_backend(val: OpValue) -> typing.TypeGuard[_CustomServerBackendProtocol]:
+    """Check whether `val` exposes `start_server`.
+
+    Args:
+        val (OpValue): Active backend.
+
+    Returns:
+        typing.TypeGuard[_CustomServerBackendProtocol]: `True` if `val` has `start_server`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _CustomServerBackendProtocol)
+    return found or is_mock_with_attrs(val, "start_server")
+
+
+def _is_custom_join_server_backend(val: OpValue) -> typing.TypeGuard[_CustomJoinServerBackendProtocol]:
+    """Check whether `val` exposes `join_server`.
+
+    Args:
+        val (OpValue): Active backend.
+
+    Returns:
+        typing.TypeGuard[_CustomJoinServerBackendProtocol]: `True` if `val` has `join_server`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _CustomJoinServerBackendProtocol)
+    return found or is_mock_with_attrs(val, "join_server")
+
+
 def _wrap_graph_resolver_hook(
     fn: typing.Callable[[IRGraph, OpValue], OpValue],
 ) -> TypedVariadicCallable[OpValue]:
@@ -712,8 +742,8 @@ class Server:
         import ml_switcheroo_compiler.backends.registry as registry
 
         try:
-            backend: OpValue | _CustomServerBackendProtocol = registry.get_active_backend()
-            if isinstance(backend, _CustomServerBackendProtocol) and callable(backend.start_server):
+            backend: OpValue = registry.get_active_backend()
+            if _is_custom_server_backend(backend) and callable(backend.start_server):
                 backend.start_server(self)
                 return
         except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError) as e:
@@ -859,8 +889,8 @@ class Server:
         import ml_switcheroo_compiler.backends.registry as registry
 
         try:
-            backend: OpValue | _CustomJoinServerBackendProtocol = registry.get_active_backend()
-            if isinstance(backend, _CustomJoinServerBackendProtocol) and callable(backend.join_server):
+            backend: OpValue = registry.get_active_backend()
+            if _is_custom_join_server_backend(backend) and callable(backend.join_server):
                 backend.join_server(self)
                 return
         except (ImportError, ModuleNotFoundError, OSError, AttributeError, RuntimeError, TypeError, ValueError) as e:

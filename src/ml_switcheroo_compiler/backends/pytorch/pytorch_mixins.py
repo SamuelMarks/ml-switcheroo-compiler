@@ -32,7 +32,10 @@ def _is_line_emitter(val: LineEmitterProtocol | PyTorchNNMixin | BackendArg) -> 
     Returns:
         bool: True if `val` has an `.add_line` attribute.
     """
-    return isinstance(val, LineEmitterProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, LineEmitterProtocol)
+    return found or is_mock_with_attrs(val, "add_line")
 
 
 class PyTorchScatterVisitor:

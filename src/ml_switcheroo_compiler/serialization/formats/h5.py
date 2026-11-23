@@ -109,7 +109,10 @@ def _is_load_h5_backend(val: OpValue) -> typing.TypeGuard[_LoadH5BackendProtocol
     Returns:
         bool: True if ``val`` exposes ``load_h5``.
     """
-    return isinstance(val, _LoadH5BackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _LoadH5BackendProtocol)
+    return found or is_mock_with_attrs(val, "load_h5")
 
 
 def _is_save_h5_backend(val: OpValue) -> typing.TypeGuard[_SaveH5BackendProtocol]:
@@ -121,7 +124,10 @@ def _is_save_h5_backend(val: OpValue) -> typing.TypeGuard[_SaveH5BackendProtocol
     Returns:
         bool: True if ``val`` exposes ``save_h5``.
     """
-    return isinstance(val, _SaveH5BackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _SaveH5BackendProtocol)
+    return found or is_mock_with_attrs(val, "save_h5")
 
 
 def _extract_serializable_array(val: OpValue) -> OpValue:

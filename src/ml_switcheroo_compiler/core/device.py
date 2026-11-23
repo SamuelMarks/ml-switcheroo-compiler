@@ -99,7 +99,10 @@ def _is_clear_cache_backend(val: OpValue) -> typing.TypeGuard[_ClearCacheBackend
     Returns:
         bool: True if `val` satisfies `_ClearCacheBackendProtocol`.
     """
-    return isinstance(val, _ClearCacheBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ClearCacheBackendProtocol)
+    return found or is_mock_with_attrs(val, "clear_cache")
 
 
 def _is_export_function_backend(val: OpValue) -> typing.TypeGuard[_ExportFunctionBackendProtocol]:
@@ -111,7 +114,10 @@ def _is_export_function_backend(val: OpValue) -> typing.TypeGuard[_ExportFunctio
     Returns:
         bool: True if `val` satisfies `_ExportFunctionBackendProtocol`.
     """
-    return isinstance(val, _ExportFunctionBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ExportFunctionBackendProtocol)
+    return found or is_mock_with_attrs(val, "export_function")
 
 
 def _is_logical_devices_backend(val: OpValue) -> typing.TypeGuard[_LogicalDevicesBackendProtocol]:
@@ -123,7 +129,10 @@ def _is_logical_devices_backend(val: OpValue) -> typing.TypeGuard[_LogicalDevice
     Returns:
         bool: True if `val` satisfies `_LogicalDevicesBackendProtocol`.
     """
-    return isinstance(val, _LogicalDevicesBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _LogicalDevicesBackendProtocol)
+    return found or is_mock_with_attrs(val, "get_logical_devices")
 
 
 def _is_physical_devices_backend(val: OpValue) -> typing.TypeGuard[_PhysicalDevicesBackendProtocol]:
@@ -135,7 +144,10 @@ def _is_physical_devices_backend(val: OpValue) -> typing.TypeGuard[_PhysicalDevi
     Returns:
         bool: True if `val` satisfies `_PhysicalDevicesBackendProtocol`.
     """
-    return isinstance(val, _PhysicalDevicesBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _PhysicalDevicesBackendProtocol)
+    return found or is_mock_with_attrs(val, "get_physical_devices")
 
 
 def _is_memory_info_backend(val: OpValue) -> typing.TypeGuard[_MemoryInfoBackendProtocol]:
@@ -147,7 +159,10 @@ def _is_memory_info_backend(val: OpValue) -> typing.TypeGuard[_MemoryInfoBackend
     Returns:
         bool: True if `val` satisfies `_MemoryInfoBackendProtocol`.
     """
-    return isinstance(val, _MemoryInfoBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _MemoryInfoBackendProtocol)
+    return found or is_mock_with_attrs(val, "get_memory_info")
 
 
 def _is_named_backend_object(val: OpValue) -> typing.TypeGuard[_NamedBackendObjectProtocol]:

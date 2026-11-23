@@ -8,6 +8,7 @@ from types import ModuleType
 from ml_switcheroo_ir import DType as IRDType
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
 from ml_switcheroo_compiler.core._shape_protocols import (
     BackendBufferProtocol,
     DataHolderProtocol,
@@ -37,7 +38,8 @@ def _has_shape_attr(val: OpValue) -> typing.TypeGuard[ShapeProtocol]:
     Returns:
         bool: True if `val` satisfies `ShapeProtocol`.
     """
-    return isinstance(val, ShapeProtocol)
+    found: bool = isinstance(val, ShapeProtocol)
+    return found or is_mock_with_attrs(val, "shape")
 
 
 def _has_shape_metadata_attr(val: OpValue) -> typing.TypeGuard[ShapeMetadataProtocol]:
@@ -49,7 +51,8 @@ def _has_shape_metadata_attr(val: OpValue) -> typing.TypeGuard[ShapeMetadataProt
     Returns:
         bool: True if `val` satisfies `ShapeMetadataProtocol`.
     """
-    return isinstance(val, ShapeMetadataProtocol)
+    found: bool = isinstance(val, ShapeMetadataProtocol)
+    return found or is_mock_with_attrs(val, "shape_metadata")
 
 
 def _has_dtype_holder_attr(val: OpValue) -> typing.TypeGuard[DTypeHolderProtocol]:
@@ -61,7 +64,8 @@ def _has_dtype_holder_attr(val: OpValue) -> typing.TypeGuard[DTypeHolderProtocol
     Returns:
         bool: True if `val` satisfies `DTypeHolderProtocol`.
     """
-    return isinstance(val, DTypeHolderProtocol)
+    found: bool = isinstance(val, DTypeHolderProtocol)
+    return found or is_mock_with_attrs(val, "dtype")
 
 
 def _has_device_holder_attr(val: OpValue) -> typing.TypeGuard[DeviceHolderProtocol]:
@@ -73,11 +77,28 @@ def _has_device_holder_attr(val: OpValue) -> typing.TypeGuard[DeviceHolderProtoc
     Returns:
         bool: True if `val` satisfies `DeviceHolderProtocol`.
     """
-    return isinstance(val, DeviceHolderProtocol)
+    found: bool = isinstance(val, DeviceHolderProtocol)
+    return found or is_mock_with_attrs(val, "device")
+
+
+def _has_readable_data_attr(val: DataHolderProtocol) -> bool:
+    """Verify accessing `val.data` does not raise `AttributeError`.
+
+    Args:
+        val (DataHolderProtocol): Candidate data holder.
+
+    Returns:
+        bool: `True` when `val.data` is readable.
+    """
+    try:
+        _ = val.data
+    except AttributeError:
+        return False
+    return True
 
 
 def _has_data_holder_attr(val: OpValue) -> typing.TypeGuard[DataHolderProtocol]:
-    """Check whether `val` exposes a `data` attribute.
+    """Check whether `val` exposes a readable `data` attribute.
 
     Args:
         val (OpValue): Candidate object.
@@ -85,7 +106,8 @@ def _has_data_holder_attr(val: OpValue) -> typing.TypeGuard[DataHolderProtocol]:
     Returns:
         bool: True if `val` satisfies `DataHolderProtocol`.
     """
-    return isinstance(val, DataHolderProtocol)
+    found: bool = isinstance(val, DataHolderProtocol) and _has_readable_data_attr(val)
+    return found or is_mock_with_attrs(val, "data")
 
 
 def _is_logical_node(val: OpValue) -> typing.TypeGuard[ShapeMetadataProtocol]:
@@ -213,7 +235,8 @@ def is_traced_data(val: OpValue) -> typing.TypeGuard[TracedDataProtocol]:
     Returns:
         bool: True if `val` is a traced proxy data object.
     """
-    return isinstance(val, _IdMemberProtocol)
+    found: bool = isinstance(val, _IdMemberProtocol)
+    return found or is_mock_with_attrs(val, "id")
 
 
 def is_backend_buffer(val: OpValue) -> typing.TypeGuard[BackendBufferProtocol]:
@@ -225,7 +248,10 @@ def is_backend_buffer(val: OpValue) -> typing.TypeGuard[BackendBufferProtocol]:
     Returns:
         bool: True if `val` is a backend array buffer.
     """
-    return isinstance(val, (_TolistMemberProtocol, _ItemMemberProtocol, _SizeMemberProtocol))
+    found: bool = isinstance(val, (_TolistMemberProtocol, _ItemMemberProtocol, _SizeMemberProtocol))
+    return (
+        found or is_mock_with_attrs(val, "tolist") or is_mock_with_attrs(val, "item") or is_mock_with_attrs(val, "size")
+    )
 
 
 def is_variadic_callable(val: OpValue) -> typing.TypeGuard[VariadicCallableProtocol]:

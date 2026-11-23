@@ -13,19 +13,41 @@ import json
 import typing
 from collections.abc import Callable, Iterable, Mapping, Sequence  # noqa: F401
 
-from ml_switcheroo_ir import AttributeValue, NodeDict  # noqa: F401
+from ml_switcheroo_ir import (
+    AcyclicSortedPhase,
+    AttributeValue,
+    CyclicGraphError,
+    Endo,
+    Err,
+    GroundedPhase,
+    IRGraph,
+    IRNode,
+    Monoid,
+    NodeDict,  # noqa: F401
+    Ok,
+    ProvenGraph,
+    Result,
+    SchemaValidPhase,
+    Validation,
+    prove_acyclic_sorted,
+    prove_schema_valid,
+)
+from ml_switcheroo_ir.typeclasses import endo_monoid
+from ml_switcheroo_ir.validation import ValidationError
 
+from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.shape import OpValue
-from ml_switcheroo_compiler.ir.core import as_node_list
+from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.ir.core import as_node_list, clone_logical_node
+from ml_switcheroo_compiler.transforms.typeclasses import (
+    LOGICAL_GRAPH_EQ,
+    GroundingManifestArg,
+    fixpoint_endo_pass,
+    prove_full_graph_pipeline,
+)
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCriteria
-
-from ml_switcheroo_ir import IRGraph, IRNode
-
-from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import clone_logical_node
 
 
 @typing.runtime_checkable
@@ -118,6 +140,35 @@ class IRValidator:
             if node.shape_metadata is None:
                 msg = f"Node {node.id} is missing shape_metadata."
                 raise CompilationError(msg)
+
+    @staticmethod
+    def prove_acyclic(graph: IRGraph) -> Result[CompilationError, ProvenGraph[AcyclicSortedPhase]]:
+        """Verify graph acyclicity and mint ``ProvenGraph[AcyclicSortedPhase]`` as a total ``Result``.
+
+        Args:
+            graph (IRGraph): Candidate intermediate representation graph.
+
+        Returns:
+            Result[CompilationError, ProvenGraph[AcyclicSortedPhase]]:
+                ``Ok`` proven acyclic graph or ``Err(CompilationError)`` on cycle detection.
+        """
+        outcome: Result[CyclicGraphError, ProvenGraph[AcyclicSortedPhase]] = prove_acyclic_sorted(graph)
+        if isinstance(outcome, Ok):
+            return outcome
+        return Err(CompilationError(str(outcome.error)))
+
+    @staticmethod
+    def prove_schema(graph: IRGraph) -> Validation[tuple[ValidationError, ...], ProvenGraph[SchemaValidPhase]]:
+        """Validate Tier-1 IR schema rules and mint ``ProvenGraph[SchemaValidPhase]``.
+
+        Args:
+            graph (IRGraph): Candidate intermediate representation graph.
+
+        Returns:
+            Validation[tuple[ValidationError, ...], ProvenGraph[SchemaValidPhase]]:
+                ``Valid`` proven schema-valid graph or ``Invalid`` tuple of fatal ``ValidationError`` items.
+        """
+        return prove_schema_valid(graph)
 
 
 def _graph_hash(graph: IRGraph) -> str:
@@ -417,6 +468,105 @@ class PassManager:
             ir_pass(graph)
             self.validate(graph)
         return graph
+
+    def to_endo(self) -> Endo[IRGraph]:
+        """Compose registered passes into a single algebraic ``Endo[IRGraph]`` pipeline via ``endo_monoid``.
+
+        Returns:
+            Endo[IRGraph]: Monoidally composed endomorphism executing each pass and validation step.
+        """
+        monoid: Monoid[Endo[IRGraph]] = endo_monoid()
+
+        def _validate_only(g: IRGraph) -> IRGraph:
+            """Validate ``g`` without mutating its structure.
+
+            Args:
+                g (IRGraph): Input IR graph.
+
+            Returns:
+                IRGraph: Validated IR graph.
+            """
+            self.validate(g)
+            return g
+
+        def _make_step(ir_pass: Callable[[IRGraph], bool | IRGraph | None]) -> Endo[IRGraph]:
+            """Lift a single compiler pass into a validated ``Endo[IRGraph]`` step.
+
+            Args:
+                ir_pass (Callable[[IRGraph], bool | IRGraph | None]): Registered graph pass callable.
+
+            Returns:
+                Endo[IRGraph]: Endomorphism wrapping ``ir_pass`` and post-pass validation.
+            """
+
+            def _apply(g: IRGraph) -> IRGraph:
+                """Execute ``ir_pass`` and validate ``g``.
+
+                Args:
+                    g (IRGraph): Input IR graph.
+
+                Returns:
+                    IRGraph: Validated post-pass IR graph.
+                """
+                ir_pass(g)
+                self.validate(g)
+                return g
+
+            return Endo(app=_apply)
+
+        initial: Endo[IRGraph] = Endo(app=_validate_only)
+        composed: Endo[IRGraph] = initial
+        for ir_pass in self.passes:
+            composed = monoid.semigroup.combine(composed, _make_step(ir_pass))
+        return composed
+
+    def to_fixpoint_endo(self, max_iterations: int = 16) -> Endo[IRGraph]:
+        """Lift ``self.to_endo()`` into a bounded fixed-point ``Endo[IRGraph]`` via ``LOGICAL_GRAPH_EQ``.
+
+        Args:
+            max_iterations (int): Maximum iteration budget before halting (must be ``>= 1``).
+
+        Returns:
+            Endo[IRGraph]: Fixed-point graph optimization endomorphism.
+        """
+        return fixpoint_endo_pass(self.to_endo(), eq_witness=LOGICAL_GRAPH_EQ, max_iterations=max_iterations)
+
+    @staticmethod
+    def prove_grounded_pipeline(
+        graph: IRGraph,
+        snapshots_path: GroundingManifestArg = None,
+    ) -> Result[str, ProvenGraph[GroundedPhase]]:
+        """Run the 4-phase Kleisli proof pipeline ``AcyclicSorted -> SchemaValid -> ShardingValid -> Grounded``.
+
+        Args:
+            graph (IRGraph): Candidate IR graph to validate and ground.
+            snapshots_path (GroundingManifestArg): Optional snapshot manifest path or mapping.
+
+        Returns:
+            Result[str, ProvenGraph[GroundedPhase]]: ``Ok`` grounded proven graph or ``Err(str)``.
+        """
+        return prove_full_graph_pipeline(graph, snapshots_path=snapshots_path)
+
+    def run_checked(
+        self,
+        graph: IRGraph | ProvenGraph[AcyclicSortedPhase],
+    ) -> Result[CompilationError, ProvenGraph[AcyclicSortedPhase]]:
+        """Execute all passes and return an explicit ``Result`` carrying ``ProvenGraph[AcyclicSortedPhase]``.
+
+        Args:
+            graph (IRGraph | ProvenGraph[AcyclicSortedPhase]): Raw ``IRGraph`` or proven acyclic graph.
+
+        Returns:
+            Result[CompilationError, ProvenGraph[AcyclicSortedPhase]]:
+                ``Ok`` proven acyclic transformed graph or ``Err(CompilationError)`` on validation failure.
+        """
+        raw_graph: IRGraph = graph.graph.clone() if isinstance(graph, ProvenGraph) else graph
+        try:
+            transformed = self.to_endo().app(raw_graph)
+        except (CompilationError, CyclicGraphError, ValueError) as exc:
+            err = exc if isinstance(exc, CompilationError) else CompilationError(str(exc))
+            return Err(err)
+        return IRValidator.prove_acyclic(transformed)
 
     def run_until_converged(self, graph: IRGraph, max_iterations: int = 10) -> IRGraph:
         """Run passes until the graph stops changing or max_iterations reached.

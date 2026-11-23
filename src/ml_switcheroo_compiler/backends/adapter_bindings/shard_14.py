@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -385,3 +387,53 @@ SHARD_14_READERS: dict[str, MemberReader] = {
     ),
     "cumlogsumexp": lambda t: (True, t.cumlogsumexp) if isinstance(t, _HasMember14_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember14_00,
+        _HasMember14_01,
+        _HasMember14_02,
+        _HasMember14_03,
+        _HasMember14_04,
+        _HasMember14_05,
+        _HasMember14_06,
+        _HasMember14_07,
+        _HasMember14_08,
+        _HasMember14_09,
+        _HasMember14_10,
+        _HasMember14_11,
+        _HasMember14_12,
+        _HasMember14_13,
+        _HasMember14_14,
+        _HasMember14_15,
+        _HasMember14_16,
+        _HasMember14_17,
+        _HasMember14_18,
+        _HasMember14_19,
+        _HasMember14_20,
+        _HasMember14_21,
+        _HasMember14_22,
+        _HasMember14_23,
+        _HasMember14_24,
+        _HasMember14_25,
+        _HasMember14_26,
+        _HasMember14_27,
+        _HasMember14_28,
+        _HasMember14_29,
+        _HasMember14_30,
+        _HasMember14_31,
+        _HasMember14_32,
+        _HasMember14_33,
+        _HasMember14_34,
+        _HasMember14_35,
+        _HasMember14_36,
+        _HasMember14_37,
+        _HasMember14_38,
+        _HasMember14_39,
+        _HasMember14_40,
+        _HasMember14_41,
+        _HasMember14_42,
+        _HasMember14_43,
+        _HasMember14_44,
+    )
+)

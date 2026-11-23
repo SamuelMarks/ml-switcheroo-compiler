@@ -134,11 +134,11 @@ def _test_sparse_conversions_and_kernels_part_3(_state: _TestSparseConversionsAn
     """
     bad_b, csc, csr, csr_add_res = _state["bad_b"], _state["csc"], _state["csr"], _state["csr_add_res"]
     dense_b, expected_add = _state["dense_b"], _state["expected_add"]
-    np.testing.assert_allclose(csr_add_res.to_dense(), expected_add)
+    np.testing.assert_allclose(ensure_ndarray(csr_add_res.to_dense()), expected_add)
 
     csc_b = CSCTensor.from_dense(dense_b)
     csc_add_res = sp_pkg.csc_add(csc, csc_b)
-    np.testing.assert_allclose(csc_add_res.to_dense(), expected_add)
+    np.testing.assert_allclose(ensure_ndarray(csc_add_res.to_dense()), expected_add)
 
     # Empty operand branches for addition
     empty_csr_zero = CSRTensor.from_dense(np.zeros((3, 3), dtype=np.float32))
@@ -198,7 +198,9 @@ def _test_sparse_conversions_and_kernels_part_4(_state: _TestSparseConversionsAn
     res_eager_spmm = sp_pkg.execute_op(SparseGenerator, "spmm", csr, dense_rhs)
     np.testing.assert_allclose(ensure_ndarray(res_eager_spmm), expected_prod)
     res_eager_spgemm = sp_pkg.execute_op(SparseGenerator, "spgemm", csr, csr_b)
-    np.testing.assert_allclose(adapt_backend_module(res_eager_spgemm).require_symbol("to_dense")(), expected_spgemm)
+    np.testing.assert_allclose(
+        ensure_ndarray(adapt_backend_module(res_eager_spgemm).require_symbol("to_dense")()), expected_spgemm
+    )
 
 
 def test_sparse_conversions_and_kernels() -> None:

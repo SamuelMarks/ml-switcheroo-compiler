@@ -12,6 +12,7 @@ import typing
 
 import pydantic
 import yaml
+from ml_switcheroo_ir.typeclasses import Invalid, Semigroup, Valid, Validation, zip_validation3
 
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
@@ -173,7 +174,7 @@ def verify_live_typeclass_instances(
     for name in backend_names:
         try:
             gen_cls = BackendRegistry.get(name)
-        except ImportError:
+        except (ImportError, ValueError):
             continue
         caps = gen_cls.declared_capabilities()
         if CapabilityKind.CODE_EMIT not in caps:
@@ -252,8 +253,51 @@ def verify_all_typeclasses(
     return violations
 
 
+_VIOLATION_TUPLE_SG: Semigroup[tuple[str, ...]] = Semigroup(combine=lambda a, b: a + b)
+
+
+def _to_unit_validation(errs: list[str]) -> Validation[tuple[str, ...], None]:
+    """Convert a list of violation strings into ``Valid(None)`` or ``Invalid(tuple(errs))``.
+
+    Args:
+        errs (list[str]): Collected violation diagnostic strings.
+
+    Returns:
+        Validation[tuple[str, ...], None]: Applicative validation value.
+    """
+    if errs:
+        return Invalid(tuple(errs))
+    return Valid(None)
+
+
+def validate_all_typeclasses_checked(
+    backends_dir: str = "src/ml_switcheroo_compiler/backends",
+    live_backends: tuple[str, ...] = DENSE_CORE_EAGER_BACKENDS,
+) -> Validation[tuple[str, ...], tuple[str, ...]]:
+    """Applicatively validate AST capabilities, live typeclass dictionaries, and YAML schemas without short-circuiting.
+
+    Args:
+        backends_dir (str): Root directory containing compiler backend packages.
+        live_backends (tuple[str, ...]): Dense eager backends to verify live when installed.
+
+    Returns:
+        Validation[tuple[str, ...], tuple[str, ...]]: ``Valid(live_backends)`` or ``Invalid`` with all violations.
+    """
+    v_ast = _to_unit_validation(verify_backend_ast_capabilities(backends_dir))
+    v_live = _to_unit_validation(verify_live_typeclass_instances(live_backends))
+    v_yaml = _to_unit_validation(verify_curated_yaml_mappings(backends_dir))
+    return zip_validation3(
+        _VIOLATION_TUPLE_SG,
+        v_ast,
+        v_live,
+        v_yaml,
+        lambda _a, _b, _c: live_backends,
+    )
+
+
 __all__ = [
     "DENSE_CORE_EAGER_BACKENDS",
+    "validate_all_typeclasses_checked",
     "verify_all_typeclasses",
     "verify_backend_ast_capabilities",
     "verify_curated_yaml_mappings",

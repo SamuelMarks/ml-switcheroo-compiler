@@ -141,6 +141,6 @@ def _np_bitwise_count(
     """
     arr_mod = _resolve_eager_mod(backend_module)
     x = arr_mod.asarray(args[0])
-    return arr_mod.array([bin(bool(n) if (type(n).__name__ == "bool_") else n).count("1") for n in x.flat]).reshape(
-        x.shape
-    )
+    return arr_mod.array(
+        [bin(bool(n) if type(n).__name__ in ("bool", "bool_") else n).count("1") for n in x.flat]
+    ).reshape(x.shape)

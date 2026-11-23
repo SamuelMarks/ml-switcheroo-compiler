@@ -5,7 +5,6 @@ from __future__ import annotations
 import types
 
 import numpy as np
-import scipy.linalg
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     BackendArg,
@@ -85,6 +84,8 @@ def _np_cholesky_solve(
     if len(args) < 2:
         return args[0]
 
+    import scipy.linalg
+
     b: EagerTensorProtocol = adapt_backend_module(backend_module).require_symbol("asarray")(args[0])
     u: EagerTensorProtocol = adapt_backend_module(backend_module).require_symbol("asarray")(args[1])
     upper: bool = coerce_bool(kwargs.get("upper", False))
@@ -109,6 +110,8 @@ def _np_eigh_tridiagonal(
     if len(args) < 2:
         return args[0]
 
+    import scipy.linalg
+
     alpha: EagerTensorProtocol = adapt_backend_module(backend_module).require_symbol("asarray")(args[0])
     beta: EagerTensorProtocol = adapt_backend_module(backend_module).require_symbol("asarray")(args[1])
     eigvals, eigvecs = scipy.linalg.eigh_tridiagonal(alpha, beta)
@@ -132,6 +135,8 @@ def _np_lu(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     return require_callable(scipy.linalg.lu)(args[0])
 
 
@@ -150,6 +155,8 @@ def _np_lu_factor(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     return require_callable(scipy.linalg.lu_factor)(args[0])
 
 
@@ -168,6 +175,8 @@ def _np_lu_solve(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     return require_callable(scipy.linalg.lu_solve)((args[0], args[1]), args[2])
 
 
@@ -186,6 +195,8 @@ def _np_matrix_exponential(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     return require_callable(scipy.linalg.expm)(args[0])
 
 
@@ -204,6 +215,8 @@ def _np_hessenberg(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     return require_callable(scipy.linalg.hessenberg)(args[0], calc_q=True)
 
 
@@ -222,6 +235,8 @@ def _np_tridiagonal_solve(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     dl, d, du, b = args[0], args[1], args[2], args[3]
     return require_callable(scipy.linalg.solve_banded)(
         (1, 1),
@@ -249,6 +264,8 @@ def _np_polar(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
+    import scipy.linalg
+
     return require_callable(scipy.linalg.polar)(args[0], side=kwargs.get("side", "right"))
 
 
@@ -268,6 +285,7 @@ def _np_qdwh(
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     import numpy as np
+    import scipy.linalg
 
     a: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(args[0])
     u, p = scipy.linalg.polar(a)
@@ -288,6 +306,8 @@ def _np_schur(
     Returns:
         BackendArg: Tuple of `(T, Z)` Schur form and unitary Schur transformation matrix.
     """
+    import scipy.linalg
+
     _ = backend_module
     return require_callable(scipy.linalg.schur)(*args, **kwargs)
 
@@ -306,6 +326,8 @@ def _np_banded_triangular_solve(
     Returns:
         BackendArg: Solution array `x`.
     """
+    import scipy.linalg
+
     _ = (backend_module, kwargs)
     ab, b = np.asarray(args[0]), np.asarray(args[1])
     k = ab.shape[0] - 1

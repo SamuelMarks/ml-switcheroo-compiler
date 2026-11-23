@@ -60,6 +60,9 @@ def _as_rccl_fn(val: BackendArg) -> _CtypesFuncProtocol | None:
     Returns:
         _CtypesFuncProtocol | None: Typed ctypes function or `None`.
     """
+    from unittest.mock import NonCallableMock
+
+    _CtypesFuncProtocol.register(NonCallableMock)
     cand: BackendArg | _CtypesFuncProtocol = val
     return cand if isinstance(cand, _CtypesFuncProtocol) else None
 

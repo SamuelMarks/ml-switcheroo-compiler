@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     upsample_bilinear,
     upsample_nearest,
 )
-from tests.testing_utils import MockTensorStub, extract_test_shape
+from tests.testing_utils import GenericNDArray, MockTensorStub, extract_test_shape
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import BackendArg
@@ -77,9 +77,7 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         class DummyBackend:
             """Dummy backend for upsample testing."""
 
-            def execute_op(
-                self, op: str, *args: BackendArg, **kwargs: BackendArg
-            ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def execute_op(self, op: str, *args: BackendArg, **kwargs: BackendArg) -> GenericNDArray:
                 """Execute op return dummy array.
 
                 Args:
@@ -88,18 +86,18 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `execute_op`.
+                    GenericNDArray: Computed output value from `execute_op`.
                 """
                 return np.zeros((1, 1, 4, 4), dtype=np.float32)
 
-            def array(self, x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def array(self, x: BackendArg) -> GenericNDArray:
                 """Convert array.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `array`.
+                    GenericNDArray: Computed output value from `array`.
                 """
                 return np.asarray(x)
 
@@ -181,9 +179,7 @@ def test_upsample_brute() -> None:
         class DummyBackend1D:
             """Dummy backend for 1D upsampling."""
 
-            def execute_op(
-                self, op: str, *args: BackendArg, **kwargs: BackendArg
-            ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def execute_op(self, op: str, *args: BackendArg, **kwargs: BackendArg) -> GenericNDArray:
                 """Execute op return dummy array.
 
                 Args:
@@ -192,18 +188,18 @@ def test_upsample_brute() -> None:
                     kwargs: Test parameter `kwargs`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `execute_op`.
+                    GenericNDArray: Computed output value from `execute_op`.
                 """
                 return np.zeros((2, 3, 8), dtype=np.float32)
 
-            def array(self, x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+            def array(self, x: BackendArg) -> GenericNDArray:
                 """Convert array.
 
                 Args:
                     x: Test parameter `x`.
 
                 Returns:
-                    np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `array`.
+                    GenericNDArray: Computed output value from `array`.
                 """
                 return np.asarray(x)
 

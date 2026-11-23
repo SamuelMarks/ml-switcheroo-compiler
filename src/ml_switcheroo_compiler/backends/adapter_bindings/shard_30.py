@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -421,3 +423,53 @@ SHARD_30_READERS: dict[str, MemberReader] = {
     "log_sigmoid": lambda t: (True, t.log_sigmoid) if isinstance(t, _HasMember30_43) else (False, None),
     "log_softmax": lambda t: (True, t.log_softmax) if isinstance(t, _HasMember30_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember30_00,
+        _HasMember30_01,
+        _HasMember30_02,
+        _HasMember30_03,
+        _HasMember30_04,
+        _HasMember30_05,
+        _HasMember30_06,
+        _HasMember30_07,
+        _HasMember30_08,
+        _HasMember30_09,
+        _HasMember30_10,
+        _HasMember30_11,
+        _HasMember30_12,
+        _HasMember30_13,
+        _HasMember30_14,
+        _HasMember30_15,
+        _HasMember30_16,
+        _HasMember30_17,
+        _HasMember30_18,
+        _HasMember30_19,
+        _HasMember30_20,
+        _HasMember30_21,
+        _HasMember30_22,
+        _HasMember30_23,
+        _HasMember30_24,
+        _HasMember30_25,
+        _HasMember30_26,
+        _HasMember30_27,
+        _HasMember30_28,
+        _HasMember30_29,
+        _HasMember30_30,
+        _HasMember30_31,
+        _HasMember30_32,
+        _HasMember30_33,
+        _HasMember30_34,
+        _HasMember30_35,
+        _HasMember30_36,
+        _HasMember30_37,
+        _HasMember30_38,
+        _HasMember30_39,
+        _HasMember30_40,
+        _HasMember30_41,
+        _HasMember30_42,
+        _HasMember30_43,
+        _HasMember30_44,
+    )
+)

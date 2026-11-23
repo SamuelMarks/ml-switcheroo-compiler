@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -393,3 +395,53 @@ SHARD_55_READERS: dict[str, MemberReader] = {
     "visit_SegmentSum": lambda t: (True, t.visit_SegmentSum) if isinstance(t, _HasMember55_43) else (False, None),
     "visit_SegmentedMm": lambda t: (True, t.visit_SegmentedMm) if isinstance(t, _HasMember55_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember55_00,
+        _HasMember55_01,
+        _HasMember55_02,
+        _HasMember55_03,
+        _HasMember55_04,
+        _HasMember55_05,
+        _HasMember55_06,
+        _HasMember55_07,
+        _HasMember55_08,
+        _HasMember55_09,
+        _HasMember55_10,
+        _HasMember55_11,
+        _HasMember55_12,
+        _HasMember55_13,
+        _HasMember55_14,
+        _HasMember55_15,
+        _HasMember55_16,
+        _HasMember55_17,
+        _HasMember55_18,
+        _HasMember55_19,
+        _HasMember55_20,
+        _HasMember55_21,
+        _HasMember55_22,
+        _HasMember55_23,
+        _HasMember55_24,
+        _HasMember55_25,
+        _HasMember55_26,
+        _HasMember55_27,
+        _HasMember55_28,
+        _HasMember55_29,
+        _HasMember55_30,
+        _HasMember55_31,
+        _HasMember55_32,
+        _HasMember55_33,
+        _HasMember55_34,
+        _HasMember55_35,
+        _HasMember55_36,
+        _HasMember55_37,
+        _HasMember55_38,
+        _HasMember55_39,
+        _HasMember55_40,
+        _HasMember55_41,
+        _HasMember55_42,
+        _HasMember55_43,
+        _HasMember55_44,
+    )
+)

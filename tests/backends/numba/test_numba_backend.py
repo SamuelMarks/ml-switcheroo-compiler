@@ -394,3 +394,30 @@ def test_numba_aot_compilation_and_runner_execution() -> None:
             artifact_crash = gen._compile_aot_impl(g)
             res_recovered = require_callable(artifact_crash)(arr)
             np.testing.assert_allclose(ensure_ndarray(res_recovered), arr + arr)
+
+
+def test_numba_runner_exceptions() -> None:
+    """Verify `_numba_runner_exceptions` handles installed and non-exception `NumbaError` symbols."""
+    import sys
+    import types
+
+    from ml_switcheroo_compiler.backends.numba.generator import _numba_runner_exceptions
+
+    class _FakeNumbaError(Exception):
+        """Synthetic NumbaError subclass for runner exception tuple testing."""
+
+    nb_pkg = types.ModuleType("numba")
+    nb_pkg.__path__ = []
+    nb_core = types.ModuleType("numba.core")
+    nb_core.__path__ = []
+    nb_errs = types.ModuleType("numba.core.errors")
+    setattr_chk = pytest.MonkeyPatch()
+    setattr_chk.setattr(nb_errs, "NumbaError", _FakeNumbaError, raising=False)
+    with patch.dict(sys.modules, {"numba": nb_pkg, "numba.core": nb_core, "numba.core.errors": nb_errs}):
+        assert _FakeNumbaError in _numba_runner_exceptions()
+        setattr_chk.setattr(nb_errs, "NumbaError", "not_a_type", raising=False)
+        assert _FakeNumbaError not in _numba_runner_exceptions()
+    setattr_chk.undo()
+
+    with patch.dict(sys.modules, {"numba.core.errors": None}):
+        assert RuntimeError in _numba_runner_exceptions()

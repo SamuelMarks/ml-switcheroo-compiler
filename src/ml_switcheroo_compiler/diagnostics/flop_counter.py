@@ -5,6 +5,9 @@ from __future__ import annotations
 import math
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir.typeclasses import INT_SUM_MONOID
+
+from ml_switcheroo_compiler.ir.core import fold_logical_graph_monoid
 
 _ZERO_FLOP_OPS: frozenset[str] = frozenset(
     {"Input", "Output", "Constant", "NoOp", "Identity", "Reshape", "Squeeze", "ExpandDims", "Transpose"}
@@ -109,15 +112,12 @@ def _estimate_node_flops(node: LogicalNode, graph: LogicalGraph | None = None) -
 
 
 def estimate_flops(graph: LogicalGraph) -> int:
-    """Estimate the number of floating-point operations in the graph.
+    """Estimate the number of floating-point operations in the graph and nested subgraphs.
 
     Args:
         graph (LogicalGraph): The IR graph to analyze.
 
     Returns:
-        int: Total estimated FLOP count across all nodes.
+        int: Total estimated FLOP count across all nodes and nested control-flow subgraphs.
     """
-    total_flops = 0
-    for node in graph.nodes.values():
-        total_flops += _estimate_node_flops(node, graph)
-    return total_flops
+    return fold_logical_graph_monoid(graph, INT_SUM_MONOID, _estimate_node_flops)

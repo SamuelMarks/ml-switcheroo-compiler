@@ -24,8 +24,11 @@ graph TD
         COMP[ml-switcheroo-compiler]
     end
 
-    subgraph Tier 3: Functional Foundation
+    subgraph Tier 3: Functional & Data Foundations
         ZJ[zero-jax]
+        ZC[zero-chex]
+        ZG[zero-grain]
+        ZOB[zero-orbax]
     end
 
     subgraph Tier 4: Neural Networks & Frontends
@@ -36,9 +39,6 @@ graph TD
         ZM[zero-mlx]
         ZPX[zero-pax]
         ZO[zero-optax]
-        ZC[zero-chex]
-        ZG[zero-grain]
-        ZOB[zero-orbax]
     end
 
     subgraph Tier 5: Verification
@@ -106,14 +106,17 @@ The compiler defines first-class tensor abstractions exported directly from `ml_
 - **`SparseTensor`**: Implements sparse tensor representations (coordinate list / COO) for memory-efficient sparse linear algebra.
 - **`TensorArray`**: Supports dynamically indexable, growable, and writable sequences of tensors for loop execution and dynamic control flow.
 
-Complementing the root tensor hierarchy, functional data pipeline abstractions live in `ml_switcheroo_compiler.core.dataset`:
-- **`Dataset`**: Core functional pipeline abstractions for batched tensor transforms and streaming data evaluation.
+Complementing the root tensor hierarchy, functional data pipeline, PyTree, initialization, and stochastic abstractions live in dedicated compiler modules:
+- **`Dataset` (`ml_switcheroo_compiler.core.dataset`)**: Core functional pipeline abstractions for batched tensor transforms and streaming data evaluation.
+- **PyTree Utilities (`ml_switcheroo_compiler.tree_util`)**: Structural tree flattening, unflattening, and leaf mapping (`TreeDef`, `tree_flatten`, `tree_unflatten`, `tree_map`) backing `jit`, AD, and functional state lifting.
+- **Stateless Initializers (`ml_switcheroo_compiler.nn`)**: Pure mathematical parameter initializers (`initializers.py`, e.g., `glorot_uniform`, `kaiming_normal`, `orthogonal`, `variance_scaling`) free of OOP layer state.
+- **Stochastic Distributions & PRNG (`ml_switcheroo_compiler.random`)**: Continuous and discrete probability distributions (`continuous/`, `distributions_discrete.py`), explicit PRNG state (`rng_uniform`), and `shuffle`.
 
 ### Configuration & Context-Isolated State Management
 The `ml_switcheroo_compiler.core.config.config` singleton controls execution flow (`eager_mode`, `backend`, `default_float_dtype`, `default_int_dtype`, `default_device`, `current_stream`, `seed`). Its backing `ConfigState` is stored in a `contextvars.ContextVar` with lazy per-thread initialization and copy-on-write property updates, ensuring spawned `threading.Thread` workers and concurrent `asyncio` tasks remain isolated. Environment variables (`SWITCHEROO_EAGER_MODE=1`, `SWITCHEROO_BACKEND=numpy`) configure defaults at startup.
 
 ### Error Handling Hierarchy
-Rooted at `CompilerError` (`SwitcherooError`) in `ml_switcheroo_compiler.core.errors`, specific exception classes—including `TracingError`, `CompilationError`, `EvaluationError`, `ShapeInferenceError`, `ShapeMismatchError`, `DTypePromotionError`, `DTypeValidationError`, `BackendNotSupportedError`, `UnimplementedMathError`, `AutodiffError`, `MissingJVPRuleError`, `FrontendBoundaryViolationError`, `BackendDecouplingError`, `DependencyViolationError`, and `SnapshotGroundingError`—provide structured diagnostics carrying node ID, op type, backend target, and trace context.
+Rooted at `CompilerError` (`SwitcherooError`) in `ml_switcheroo_compiler.core.errors`, specific exception classes—including `TracingError`, `CompilationError`, `EvaluationError`, `ShapeInferenceError`, `ShapeMismatchError`, `DTypePromotionError`, `DTypeValidationError`, `BackendNotSupportedError`, `UnimplementedMathError`, `AutodiffError`, `AutodiffLinkageError`, `SymbolicDifferentiationError`, `MissingJVPRuleError`, `FrontendBoundaryViolationError`, `BackendDecouplingError`, `DependencyViolationError`, and `SnapshotGroundingError`—provide structured diagnostics carrying node ID, op type, backend target, and trace context.
 
 ## 2. Core Execution Engine Modes & Pathways
 
@@ -151,7 +154,7 @@ flowchart TD
 Constructs the Intermediate Representation by intercepting operations on proxy variables (`ml_switcheroo_compiler.tracing.ProxyTensor`).
 - **`ContextVar`-Isolated `TracerTape` & `TracingState`**: Managed via `global_tracing_state` (`ml_switcheroo_compiler.tracing.state`), isolating `is_tracing`, `active_graph`, `graph_stack`, `constant_cache`, and `LoopOptions` across OS threads and `asyncio` tasks.
 - **`jit`, `disable_jit`, & Symbolic `eval_shape` (`ml_switcheroo_compiler.grad.jit`)**:
-  - `jit` traces PyTree inputs once per `(static_args, input_specs, backend, device, keep_unused)` cache key, runs `PassManager` optimizations (constant folding, CSE, DCE, and dead-input pruning), composes inline with nested `grad(jit(f))` / `jit(grad(f))`, and respects `ContextVar`-scoped `disable_jit()`.
+  - `jit` traces PyTree inputs once per `(fun_id, static_args, treedef, input_specs, backend, device, keep_unused)` cache key, runs `PassManager` optimizations (constant folding, CSE, DCE, and dead-input pruning), composes inline with nested `grad(jit(f))` / `jit(grad(f))`, and respects `ContextVar`-scoped `disable_jit()`.
   - `eval_shape` performs zero-allocation symbolic shape/dtype propagation over `Tensor`, `TensorSpec`, or `TensorConfig` PyTrees using `ProxyTensor` without allocating concrete buffers.
 - **Foreign Graph Ingestion**: External framework graphs ingest directly into `LogicalGraph` via `ingest_torch_fx` (`backends/pytorch/fx_ingest.py`), `ingest_jaxpr` (`backends/jax/jaxpr_ingest.py`), and `ForeignCall` IR nodes.
 
@@ -162,7 +165,7 @@ Located in `ml_switcheroo_compiler.grad` and `ml_switcheroo_compiler.transforms.
 - Memory-budgeted checkpointing (`checkpoint`, `remat`, `recompute_grad` in `grad/checkpointing.py`) implementing dynamic programming (Knapsack) and binomial rematerialization schedules.
 
 ### Higher-Order Control Flow
-Implements universal cross-framework primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap` under `ml_switcheroo_compiler.ops.control_flow`), lowering Python control flow into structured IR subgraphs without runtime loop-unrolling bloat.
+Implements universal cross-framework primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`, `map_fn` under `ml_switcheroo_compiler.ops.control_flow`), lowering Python control flow into structured IR subgraphs without runtime loop-unrolling bloat.
 
 ### Concrete Syntax Tree (CST) Source-to-Source Transpiler
 Located in `ml_switcheroo_compiler.backends.cst_transpiler`:
@@ -196,7 +199,7 @@ All shared graph and node models are imported directly from `ml_switcheroo_ir` (
 
 ## 4. Middle-End Transformations (Pass Manager)
 
-Before lowering to source code or executable backends, `PassManager` (`ml_switcheroo_compiler.transforms.pass_manager`) validates DAG invariants (`IRValidator`) and runs iterative passes until fixpoint convergence across optimization levels (`O0` to `O3`) configured in `transforms/passes/pass_pipeline.yaml`.
+Before lowering to source code or executable backends, `PassManager` (`ml_switcheroo_compiler.transforms.pass_manager`) validates DAG invariants (`IRValidator`) and executes the staged `O0`–`O3` optimization schedules defined in `transforms/passes/pass_pipeline.yaml`, complemented by standalone canonicalization, quantization, and target-lowering passes in `transforms/passes/`.
 
 ```mermaid
 flowchart TD
@@ -230,7 +233,7 @@ flowchart TD
         GS[GraphSchedulingPass]
         BA[BufferAllocationPass]
         SPMD[spmd_partitioning_pass]
-        MP[mixed_precision_pass / quantization]
+        MP[mixed_precision_pass / PTQPass & QATFakeQuantizePass]
         LT[loop_tiling_pass / loop_unrolling_pass]
         VEC[vectorization_pass]
         OF --> GS --> BA --> SPMD --> MP --> LT --> VEC
@@ -238,27 +241,28 @@ flowchart TD
 ```
 
 ### Canonicalization & Inference Passes (`transforms/passes/`)
-- **`polyfill_lowering_pass`**: Rewrites composite operations into canonical elementary primitives.
-- **`shape_inference_pass` & `dtype_inference_pass`**: Propagates static/symbolic dimensions and element types across nodes.
-- **`lift_state_pass` / `StateLoweringPass` (`state_lowering_pass`)**: Converts mutable state assignments into explicit functional graph inputs and outputs (and vice-versa).
-- **`axis_translation_pass`**: Injects `Transpose` nodes to reconcile differing tensor layouts (e.g., NCHW vs. NHWC).
-- **`type_promotion_explicitizer_pass` & `broadcast_explicitizer_pass`**: Eliminates implicit casting and broadcasting by inserting explicit `Cast` and `BroadcastTo` nodes.
+- **`polyfill_lowering_pass`** *(pipeline `O0`–`O3`)*: Rewrites composite operations into canonical elementary primitives.
+- **`type_promotion_explicitizer_pass` & `broadcast_explicitizer_pass`** *(pipeline `O0`–`O3`)*: Eliminates implicit casting and broadcasting by inserting explicit `Cast` and `BroadcastTo` nodes.
+- **`shape_inference_pass` & `dtype_inference_pass`** *(standalone)*: Propagates static/symbolic dimensions and element types across nodes.
+- **`lift_state_pass` / `StateLoweringPass` (`state_lowering_pass`)** *(standalone)*: Converts mutable state assignments into explicit functional graph inputs and outputs (and vice-versa).
+- **`axis_translation_pass`** *(standalone)*: Injects `Transpose` nodes to reconcile differing tensor layouts (e.g., NCHW vs. NHWC).
 
 ### Target-Agnostic Optimizations
-- **`constant_folding_pass`**: Pre-computes static subgraphs while guarding stateful and opaque custom-AD callback nodes.
-- **`dead_code_elimination_pass` (DCE)**: Prunes unreferenced nodes from the IR graph.
-- **`common_subexpression_elimination_pass` (CSE)**: Merges structurally identical operations via canonical hashing.
-- **`control_flow_optimization_pass`**: Simplifies constant branches and loop invariants.
-- **`batch_norm_folding_pass`**: Fuses batch normalization parameters into adjacent convolutional weights.
-- **`parallel_scan_pass`**: Rewrites associative prefix scans into logarithmic-depth parallel patterns.
+- **`constant_folding_pass`** *(pipeline `O1`–`O3`)*: Pre-computes static subgraphs while guarding stateful and opaque custom-AD callback nodes.
+- **`dead_code_elimination_pass` (DCE)** *(pipeline `O1`–`O3`)*: Prunes unreferenced nodes from the IR graph.
+- **`common_subexpression_elimination_pass` (CSE)** *(pipeline `O2`–`O3`)*: Merges structurally identical operations via canonical hashing.
+- **`control_flow_optimization_pass`** *(standalone)*: Simplifies constant branches and loop invariants.
+- **`batch_norm_folding_pass`** *(standalone)*: Fuses batch normalization parameters into adjacent convolutional weights.
+- **`parallel_scan_pass`** *(standalone)*: Rewrites associative prefix scans into logarithmic-depth parallel patterns.
+- **`strip_offline_diagnostic_nodes_pass`** *(standalone)*: Strips offline diagnostic/inspection ops prior to deployment emission.
 
 ### Low-Level, Hardware & Distributed Passes
-- **`operator_fusion_pass` (`HorizontalFusionPass`, `VerticalFusionPass`)**: Fuses consecutive elementwise and reduction clusters using cost models.
-- **`GraphSchedulingPass` (`graph_scheduling_pass`)**: Computes memory-aware topological execution schedules.
-- **`BufferAllocationPass` (`buffer_allocation_pass`)**: Plans reuse-aware contiguous linear memory offsets for WebGPU and WASM runtimes.
-- **`spmd_partitioning_pass` & `inject_spmd_communication_pass`**: Partitions sharded graphs and injects collective operations (`all_reduce`, `all_gather`, `reduce_scatter`).
-- **`mixed_precision_pass`, `quantization`, & `rematerialization_pass`**: Handles FP16/BF16 casting, PTQ/QAT INT8/INT4 lowering, and activation checkpointing.
-- **`loop_tiling_pass`, `loop_unrolling_pass`, & `vectorization_pass`**: Hardware-level transformations generating cache- and SIMD-friendly compute strides.
+- **`operator_fusion_pass` (`HorizontalFusionPass`, `VerticalFusionPass`)** *(pipeline `O2`–`O3`)*: Fuses consecutive elementwise and reduction clusters using cost models.
+- **`GraphSchedulingPass` (`graph_scheduling_pass`)** *(pipeline `O2`–`O3`)*: Computes memory-aware topological execution schedules.
+- **`BufferAllocationPass` (`buffer_allocation_pass`)** *(pipeline `O2`–`O3`)*: Plans reuse-aware contiguous linear memory offsets for WebGPU and WASM runtimes.
+- **`spmd_partitioning_pass` & `inject_spmd_communication_pass`** *(pipeline `O3` / standalone)*: Partitions sharded graphs and injects collective operations (`all_reduce`, `all_gather`, `reduce_scatter`).
+- **`mixed_precision_pass`** *(pipeline `O3`)*, **`PTQPass` / `QATFakeQuantizePass` / `IntegerQuantizationLoweringPass`** (`quantization.py`), **& `rematerialization_pass`** *(standalone)*: Handles FP16/BF16 casting, calibrated PTQ/QAT INT8/INT4 lowering (`QuantizationConfig`), and activation checkpointing.
+- **`loop_tiling_pass` & `vectorization_pass`** *(pipeline `O3`)*, **& `loop_unrolling_pass`** *(standalone)*: Hardware-level transformations generating cache- and SIMD-friendly compute strides.
 
 ## 5. Distributed Runtime & WebRTC Mesh
 
@@ -324,13 +328,16 @@ Defined in `ml_switcheroo_compiler.backends.typeclasses` and enforced statically
 - **ONNX (`edge` / `edge_onnx`)**: Serializes `LogicalGraph` directly into ONNX wire format without requiring the external `onnx` package at emission time.
 - **StableHLO (`edge_stablehlo`)**: Emits MLIR-compliant StableHLO textual and bytecode (`mlir_bytecode.py`) representations for OpenXLA toolchains.
 
-## 7. Diagnostics, Profiling, Serialization & Export
+## 7. Diagnostics, Benchmarking, Serialization & Export
 
 ### Diagnostics & Anomaly Detection (`ml_switcheroo_compiler.diagnostics`)
 - **`flop_counter`**: Computes theoretical FLOP and MAC counts across `LogicalGraph` nodes.
 - **`memory_profiler`**: Estimates peak working-set memory and buffer lifetimes.
-- **`numerical_anomaly`**: Detects NaNs, infinities, and vanishing/exploding gradients.
+- **`numerical_anomaly` & `debugging`**: Detects NaNs, infinities, and vanishing/exploding gradients, and configures debug dump hooks (`enable_dump_debug_info`).
 - **`shape_debugger` & `summary`**: Tracks symbolic dimension compatibility and prints structured model summaries.
+
+### Cross-Backend Benchmarking (`ml_switcheroo_compiler.benchmarks`)
+- **`BenchmarkOrchestrator` (`orchestrator.py`) & `metrics.py`**: Executes declarative workload plans (`BenchmarkSuite`, `BenchmarkPlan`, `ModelWorkload`) across isolated backends, evaluating latency thresholds, device constraints, and numerical precision targets (`BenchmarkRunResult`).
 
 ### Serialization & Ahead-Of-Time (AOT) Export (`serialization/` & `export/`)
 - **Weight & Model Formats (`ml_switcheroo_compiler.serialization`)**: First-class loaders/savers for SafeTensors (`SafetensorsWeightFormat`), HDF5 (`h5py`), NumPy `.npz`, Pickle, IR JSON/YAML archives, and SavedModel bundles.
@@ -375,9 +382,10 @@ sequenceDiagram
 
 ## 8. Architectural Boundaries & Decoupling Guarantees
 
-The codebase enforces five non-negotiable architectural invariants via automated pre-commit linters and boundary tests:
+The codebase enforces six non-negotiable architectural and static-verification invariants via automated pre-commit linters and CI boundary tests:
 1. **Frontend Independence (The "No API Shell" Rule):** `ml-switcheroo-compiler` contains zero Tier 3/4 frontend API shells; core layers expose universal, backend-agnostic operations (`ml_switcheroo_compiler.ops`).
 2. **N-to-M Universal Utility (`scripts/validate_rules.py`):** Every compiler operation and pass reduces to `ml-switcheroo-ir` and targets multiple backends, with opaque external operations represented via `ForeignCall`.
 3. **Single-Backend Dependency Isolation (`scripts/lint_dependencies.py`):** Each `backends/<target>/` package imports at most one external framework root, and upward imports from `zero-*` or `zero-zoo` are strictly forbidden.
 4. **Zero Global NumPy Leaks (`scripts/lint_numpy_leak.py` & `scripts/lint_dynamic_numpy.py`):** `numpy` and `scipy` are isolated exclusively inside `backends/numpy/`; cross-backend fallbacks are prohibited.
-5. **Static Typeclass & Curated YAML Verification (`scripts/verify_typeclasses.py`):** Every `@register_backend` class and curated YAML mapping file is verified statically for protocol conformance (`CodeEmitterTypeclass`, `AOTCompilerTypeclass`, `CoreEagerTypeclass`) and upstream snapshot grounding.
+5. **Static Typeclass & Snapshot Grounding Verification (`scripts/verify_typeclasses.py`, `scripts/validate_backend_mappings.py`, `scripts/validate_parameters.py`, & `scripts/check_snapshot_drift.py`):** Every `@register_backend` class and curated YAML mapping file is verified statically for protocol conformance (`CodeEmitterTypeclass`, `AOTCompilerTypeclass`, `CoreEagerTypeclass`), zero hallucinated parameters, and upstream `ml-ecosystem-snapshots` parity.
+6. **Strict Typing, Anti-Reflection & Coverage Gates (`mypy --strict`, `scripts/lint_any.py`, `scripts/lint_typing.py`, `scripts/lint_pass.py`, & `scripts/check_docs.py`):** Enforces zero `typing.Any`, forbids dynamic attribute reflection (`getattr`/`setattr`/`hasattr`), `typing.cast`, disguised casts, and tautological or zero-assertion tests, and verifies 100% line/branch coverage alongside granular AST parameter/return docstring parity.

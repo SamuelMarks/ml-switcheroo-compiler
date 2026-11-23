@@ -114,7 +114,10 @@ def _is_decode_image_bytes_backend(val: OpValue) -> typing.TypeGuard[_DecodeImag
     Returns:
         bool: True if `val` satisfies `_DecodeImageBytesBackendProtocol`.
     """
-    return isinstance(val, _DecodeImageBytesBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _DecodeImageBytesBackendProtocol)
+    return found or is_mock_with_attrs(val, "decode_image_bytes")
 
 
 def _is_decode_jpeg_backend(val: OpValue) -> typing.TypeGuard[_DecodeJpegBackendProtocol]:
@@ -126,7 +129,10 @@ def _is_decode_jpeg_backend(val: OpValue) -> typing.TypeGuard[_DecodeJpegBackend
     Returns:
         bool: True if `val` satisfies `_DecodeJpegBackendProtocol`.
     """
-    return isinstance(val, _DecodeJpegBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _DecodeJpegBackendProtocol)
+    return found or is_mock_with_attrs(val, "decode_jpeg")
 
 
 def _is_decode_png_backend(val: OpValue) -> typing.TypeGuard[_DecodePngBackendProtocol]:
@@ -138,7 +144,10 @@ def _is_decode_png_backend(val: OpValue) -> typing.TypeGuard[_DecodePngBackendPr
     Returns:
         bool: True if `val` satisfies `_DecodePngBackendProtocol`.
     """
-    return isinstance(val, _DecodePngBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _DecodePngBackendProtocol)
+    return found or is_mock_with_attrs(val, "decode_png")
 
 
 def _is_decode_gif_backend(val: OpValue) -> typing.TypeGuard[_DecodeGifBackendProtocol]:
@@ -150,7 +159,10 @@ def _is_decode_gif_backend(val: OpValue) -> typing.TypeGuard[_DecodeGifBackendPr
     Returns:
         bool: True if `val` satisfies `_DecodeGifBackendProtocol`.
     """
-    return isinstance(val, _DecodeGifBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _DecodeGifBackendProtocol)
+    return found or is_mock_with_attrs(val, "decode_gif")
 
 
 def _is_decode_bmp_backend(val: OpValue) -> typing.TypeGuard[_DecodeBmpBackendProtocol]:
@@ -162,7 +174,10 @@ def _is_decode_bmp_backend(val: OpValue) -> typing.TypeGuard[_DecodeBmpBackendPr
     Returns:
         bool: True if `val` satisfies `_DecodeBmpBackendProtocol`.
     """
-    return isinstance(val, _DecodeBmpBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _DecodeBmpBackendProtocol)
+    return found or is_mock_with_attrs(val, "decode_bmp")
 
 
 def _is_shape_arg(val: OpValue) -> typing.TypeGuard[ShapeProtocol]:

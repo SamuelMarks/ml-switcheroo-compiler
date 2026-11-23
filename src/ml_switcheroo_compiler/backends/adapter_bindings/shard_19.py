@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -331,3 +333,47 @@ SHARD_19_READERS: dict[str, MemberReader] = {
         (True, t.extract_bounding_boxes) if isinstance(t, _HasMember19_44) else (False, None)
     ),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember19_00,
+        _HasMember19_07,
+        _HasMember19_08,
+        _HasMember19_09,
+        _HasMember19_10,
+        _HasMember19_11,
+        _HasMember19_12,
+        _HasMember19_13,
+        _HasMember19_14,
+        _HasMember19_15,
+        _HasMember19_16,
+        _HasMember19_17,
+        _HasMember19_18,
+        _HasMember19_19,
+        _HasMember19_20,
+        _HasMember19_21,
+        _HasMember19_22,
+        _HasMember19_23,
+        _HasMember19_24,
+        _HasMember19_25,
+        _HasMember19_26,
+        _HasMember19_27,
+        _HasMember19_28,
+        _HasMember19_29,
+        _HasMember19_30,
+        _HasMember19_31,
+        _HasMember19_32,
+        _HasMember19_33,
+        _HasMember19_34,
+        _HasMember19_35,
+        _HasMember19_36,
+        _HasMember19_37,
+        _HasMember19_38,
+        _HasMember19_39,
+        _HasMember19_40,
+        _HasMember19_41,
+        _HasMember19_42,
+        _HasMember19_43,
+        _HasMember19_44,
+    )
+)

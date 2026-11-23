@@ -32,6 +32,7 @@ from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 from tests.testing_utils import (
     BackendModuleProtocol,
+    GenericNDArray,
     MockTestStub,
     coerce_operand_list,
     extract_test_shape,
@@ -107,10 +108,7 @@ def test_mel_conversions() -> None:
     assert np.isclose(hz_val, recovered_hz, atol=1e-4)
 
     # Array conversions
-    hz_arr: np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ] = np.array([0.0, 500.0, 1000.0, 4000.0], dtype=np.float32)
+    hz_arr: GenericNDArray = np.array([0.0, 500.0, 1000.0, 4000.0], dtype=np.float32)
     mel_arr = _hz_to_mel(np, hz_arr)
     assert isinstance(mel_arr, np.ndarray)
     recovered_arr = _mel_to_hz(mel_arr)
@@ -207,10 +205,7 @@ def test_tensor_conversion_helpers() -> None:
 
         def __init__(
             self,
-            arr: np.ndarray[
-                tuple[int, ...],
-                np.dtype[np.generic],
-            ],
+            arr: GenericNDArray,
         ) -> None:
             """Test function __init__.
 
@@ -221,14 +216,11 @@ def test_tensor_conversion_helpers() -> None:
 
         def numpy(
             self,
-        ) -> np.ndarray[
-            tuple[int, ...],
-            np.dtype[np.generic],
-        ]:
+        ) -> GenericNDArray:
             """Test function numpy.
 
             Returns:
-                np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `numpy`.
+                GenericNDArray: Computed output value from `numpy`.
             """
             return self.arr
 

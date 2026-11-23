@@ -14,6 +14,15 @@ from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
+from .sharding_lattice import (
+    COMPILER_SHARDING_EQ,
+    COMPILER_SHARDING_HASH,
+    COMPILER_SHARDING_LATTICE,
+    COMPILER_SHARDING_MONOID,
+    COMPILER_SHARDING_PRETTY,
+    ShardingLatticeElem,
+    infer_collective_transition,
+)
 
 
 @typing.runtime_checkable
@@ -220,5 +229,12 @@ def distribute_tensor(*args: OpValue, **kwargs: IRAttrValue) -> OpValue:
 
 
 __all__ = [
+    "COMPILER_SHARDING_EQ",
+    "COMPILER_SHARDING_HASH",
+    "COMPILER_SHARDING_LATTICE",
+    "COMPILER_SHARDING_MONOID",
+    "COMPILER_SHARDING_PRETTY",
+    "ShardingLatticeElem",
     "ShardingSpec",
+    "infer_collective_transition",
 ]

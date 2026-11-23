@@ -12,9 +12,26 @@ import json
 import logging
 import os
 import typing
+from collections.abc import Sequence
 
 import yaml
+from ml_switcheroo_ir import (
+    Err,
+    GroundedPhase,
+    GroundingDiagnostic,
+    Invalid,
+    LogicalGraph,
+    Ok,
+    ProvenGraph,
+    Result,
+    Valid,
+    Validation,
+    prove_grounded,
+)
 from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
+from ml_switcheroo_ir.typeclasses import Semigroup, traverse_validation
+from ml_switcheroo_ir.validation import ValidationError
+from ml_switcheroo_ir.validation import compute_levenshtein as _ir_compute_levenshtein
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import SnapshotGroundingError
@@ -185,7 +202,7 @@ def _extract_item_endpoints(
                 item_map[val] = item
 
     aliases_obj: AttributeValue = item.get("aliases")
-    if isinstance(aliases_obj, list):
+    if isinstance(aliases_obj, (list, tuple)):
         for a in aliases_obj:
             if isinstance(a, str) and a:
                 endpoints.add(a)
@@ -208,7 +225,7 @@ def _extract_category_endpoints(
     if not isinstance(categories_obj, dict):
         return
     for items_obj in categories_obj.values():
-        if isinstance(items_obj, list):
+        if isinstance(items_obj, (list, tuple)):
             for item_obj in items_obj:
                 if isinstance(item_obj, dict):
                     _extract_item_endpoints(item_obj, endpoints, item_map)
@@ -500,7 +517,7 @@ DOCSTRING_SECTION_HEADERS: frozenset[str] = frozenset(
 
 
 def compute_levenshtein(s1: str, s2: str) -> int:
-    """Compute the Levenshtein edit distance between two strings.
+    """Compute the Levenshtein edit distance between two strings via Tier-1 ``ml_switcheroo_ir``.
 
     Args:
         s1 (str): First string.
@@ -509,32 +526,16 @@ def compute_levenshtein(s1: str, s2: str) -> int:
     Returns:
         int: Edit distance between s1 and s2.
     """
-    if s1 == s2:
-        return 0
-    if len(s1) < len(s2):
-        s1, s2 = s2, s1
-    if not s2:
-        return len(s1)
-
-    previous_row: list[int] = list(range(len(s2) + 1))
-    for i, c1 in enumerate(s1):
-        current_row: list[int] = [i + 1] + [0] * len(s2)
-        for j, c2 in enumerate(s2):
-            insertions: int = previous_row[j + 1] + 1
-            deletions: int = current_row[j] + 1
-            substitutions: int = previous_row[j] + (c1 != c2)
-            current_row[j + 1] = min(insertions, deletions, substitutions)
-        previous_row = current_row
-    return previous_row[-1]
+    return _ir_compute_levenshtein(s1, s2)
 
 
 def _split_signature_params(
-    raw_params: list[AttributeValue] | list[dict[str, AttributeValue]],
+    raw_params: Sequence[AttributeValue] | Sequence[dict[str, AttributeValue]],
 ) -> list[list[dict[str, AttributeValue]]]:
     """Split concatenated or malformed parameter lists into coherent Python signatures.
 
     Args:
-        raw_params (list[AttributeValue] | list[dict[str, AttributeValue]]): Raw list of parameter dictionaries.
+        raw_params (Sequence[AttributeValue] | Sequence[dict[str, AttributeValue]]): Raw sequence of parameter dicts.
 
     Returns:
         list[list[dict[str, AttributeValue]]]: Extracted distinct signature parameter lists.
@@ -726,7 +727,7 @@ def _populate_from_framework_ast(
 
 
 def _populate_from_snapshot_data(
-    snapshot_data: dict[str, AttributeValue] | list[AttributeValue],
+    snapshot_data: dict[str, AttributeValue] | Sequence[AttributeValue],
     endpoints: set[str],
     item_map: dict[str, dict[str, AttributeValue]],
     ref_map: dict[str, ExtendedGhostRef],
@@ -734,14 +735,14 @@ def _populate_from_snapshot_data(
     """Extract endpoints and hydrate ghost refs from parsed snapshot JSON data.
 
     Args:
-        snapshot_data (dict[str, AttributeValue] | list[AttributeValue]): Parsed snapshot JSON structure.
+        snapshot_data (dict[str, AttributeValue] | Sequence[AttributeValue]): Parsed snapshot JSON structure.
         endpoints (set[str]): Destination set to populate with valid endpoint strings.
         item_map (dict[str, dict[str, AttributeValue]]): Destination map from endpoint to raw item dict.
         ref_map (dict[str, ExtendedGhostRef]): Destination map from endpoint to hydrated ghost ref.
     """
     if isinstance(snapshot_data, dict):
         _extract_category_endpoints(snapshot_data.get("categories"), endpoints, item_map)
-    elif isinstance(snapshot_data, list):
+    elif isinstance(snapshot_data, (list, tuple)):
         for item in snapshot_data:
             if isinstance(item, dict):
                 _extract_item_endpoints(item, endpoints, item_map)
@@ -793,7 +794,7 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
                 if isinstance(raw_ov, _OverloadParamsProtocol)
                 else (ov.get("params") if isinstance(ov, dict) else None)
             )
-            if isinstance(ov_params, list) and ov_params:
+            if isinstance(ov_params, (list, tuple)) and ov_params:
                 ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
                 signatures.extend(_split_signature_params(ov_sig))
     return signatures
@@ -810,13 +811,13 @@ def _signatures_from_item(item: dict[str, AttributeValue]) -> list[list[dict[str
     """
     fallback_signatures: list[list[dict[str, AttributeValue]]] = []
     params_obj: AttributeValue = item.get("params")
-    if isinstance(params_obj, list) and params_obj:
+    if isinstance(params_obj, (list, tuple)) and params_obj:
         fallback_signatures.extend(_split_signature_params(params_obj))
 
     overloads_obj: AttributeValue = item.get("overloads")
-    if isinstance(overloads_obj, list):
+    if isinstance(overloads_obj, (list, tuple)):
         for ov in overloads_obj:
-            if isinstance(ov, dict) and isinstance(ov.get("params"), list) and ov["params"]:
+            if isinstance(ov, dict) and isinstance(ov.get("params"), (list, tuple)) and ov["params"]:
                 fallback_signatures.extend(_split_signature_params(ov["params"]))
     return fallback_signatures
 
@@ -1324,3 +1325,167 @@ class SnapshotGroundingEngine:
             raise GroundingValidationError("; ".join(chosen_errors))
 
         return chosen_errors
+
+    def resolve_backend_name(self, target_or_backend: str) -> str | None:
+        """Resolve a compiler backend key or framework identifier to a configured backend name.
+
+        Args:
+            target_or_backend (str): Backend key (e.g. ``"pytorch"``) or framework name (e.g. ``"torch"``).
+
+        Returns:
+            str | None: Canonical configured backend identifier, or ``None`` if unrecognized.
+        """
+        if target_or_backend in self.config.targets:
+            return target_or_backend
+        for backend_key, target_cfg in self.config.targets.items():
+            if target_cfg.framework == target_or_backend or target_or_backend in target_cfg.canonical_roots:
+                return backend_key
+        return None
+
+    def get_symbol(self, target: str, symbol: str) -> ExtendedGhostRef | None:
+        """Look up a hydrated ``ExtendedGhostRef`` by framework/backend ``target`` (Tier-1 protocol).
+
+        Args:
+            target (str): Backend name or target framework identifier.
+            symbol (str): Candidate API symbol path.
+
+        Returns:
+            ExtendedGhostRef | None: Hydrated ``ExtendedGhostRef`` when grounded, else ``None``.
+        """
+        resolved = self.resolve_backend_name(target)
+        if resolved is None:
+            return None
+        return self.get_endpoint_ghost_ref(resolved, symbol)
+
+    def suggest_closest_symbol(self, target: str, symbol: str, max_distance: int = 3) -> str | None:
+        """Suggest closest valid symbol for ``target`` using Levenshtein distance (Tier-1 protocol).
+
+        Args:
+            target (str): Backend name or target framework identifier.
+            symbol (str): Mistyped symbol candidate.
+            max_distance (int): Maximum Levenshtein distance threshold.
+
+        Returns:
+            str | None: Closest valid endpoint or ``None``.
+        """
+        resolved = self.resolve_backend_name(target)
+        if resolved is None:
+            return None
+        return self.suggest_closest_endpoint(resolved, symbol, max_distance=max_distance)
+
+    def load_snapshot_result(
+        self,
+        backend_name: str,
+    ) -> Result[FileNotFoundError, dict[str, AttributeValue] | list[AttributeValue]]:
+        """Load a backend snapshot into an explicit ``Ok`` / ``Err`` ``Result``.
+
+        Args:
+            backend_name (str): Identifier of the target backend.
+
+        Returns:
+            Result[FileNotFoundError, dict[str, AttributeValue] | list[AttributeValue]]:
+                ``Ok`` parsed snapshot data or ``Err(FileNotFoundError)``.
+        """
+        try:
+            return Ok(self.load_snapshot(backend_name))
+        except FileNotFoundError as exc:
+            return Err(exc)
+
+    def validate_parameter_contract_checked(
+        self,
+        backend_name: str,
+        endpoint: str,
+        positional_args_count: int,
+        keyword_arg_names: Sequence[str],
+    ) -> Validation[tuple[str, ...], None]:
+        """Validate parameter contracts as an applicative ``Validation[tuple[str, ...], None]``.
+
+        Args:
+            backend_name (str): Target backend framework identifier.
+            endpoint (str): Fully qualified or short API endpoint string.
+            positional_args_count (int): Number of positional arguments supplied.
+            keyword_arg_names (Sequence[str]): Keyword argument names supplied.
+
+        Returns:
+            Validation[tuple[str, ...], None]: ``Valid(None)`` when valid, else ``Invalid`` error tuple.
+        """
+        errs = self.validate_parameter_contract(
+            backend_name,
+            endpoint,
+            positional_args_count,
+            list(keyword_arg_names),
+            raise_on_error=False,
+        )
+        if errs:
+            return Invalid(tuple(errs))
+        return Valid(None)
+
+    def prove_graph_grounded(
+        self,
+        graph: LogicalGraph,
+    ) -> Validation[tuple[GroundingDiagnostic | ValidationError, ...], ProvenGraph[GroundedPhase]]:
+        """Audit ``graph`` against ``self.snapshot_dir`` and mint ``ProvenGraph[GroundedPhase]``.
+
+        Args:
+            graph (LogicalGraph): Candidate computation graph to ground.
+
+        Returns:
+            Validation[tuple[GroundingDiagnostic | ValidationError, ...], ProvenGraph[GroundedPhase]]:
+                ``Valid`` proven grounded graph or ``Invalid`` tuple of grounding diagnostics.
+        """
+        snap_arg: str | None = self.snapshot_dir if os.path.isdir(self.snapshot_dir) else None
+        return prove_grounded(graph, snapshots_path=snap_arg)
+
+    def validate_endpoints_batch_checked(
+        self,
+        backend_name: str,
+        endpoints: Sequence[str],
+    ) -> Validation[tuple[str, ...], tuple[str, ...]]:
+        """Applicatively validate a batch of API endpoints, accumulating all errors and Levenshtein hints.
+
+        Args:
+            backend_name (str): Target backend name.
+            endpoints (Sequence[str]): Candidate API endpoint strings to verify against snapshots.
+
+        Returns:
+            Validation[tuple[str, ...], tuple[str, ...]]: ``Valid(tuple(endpoints))`` or ``Invalid`` with all errors.
+        """
+        err_sg: Semigroup[tuple[str, ...]] = Semigroup(combine=lambda a, b: a + b)
+
+        def _check_one(ep: str) -> Validation[tuple[str, ...], str]:
+            """Validate a single endpoint ``ep`` and attach Levenshtein suggestion on failure.
+
+            Args:
+                ep (str): Single endpoint path string.
+
+            Returns:
+                Validation[tuple[str, ...], str]: ``Valid(ep)`` or ``Invalid`` diagnostic tuple.
+            """
+            if self.is_endpoint_valid(backend_name, ep):
+                return Valid(ep)
+            suggestion = self.suggest_closest_endpoint(backend_name, ep)
+            if suggestion is not None:
+                return Invalid((f"{backend_name}: invalid endpoint {ep!r} (did you mean {suggestion!r}?)",))
+            return Invalid((f"{backend_name}: invalid endpoint {ep!r}",))
+
+        return traverse_validation(err_sg, endpoints, _check_one)
+
+
+def validate_endpoints_batch_checked(
+    backend_name: str,
+    endpoints: Sequence[str],
+    *,
+    engine: SnapshotGroundingEngine | None = None,
+) -> Validation[tuple[str, ...], tuple[str, ...]]:
+    """Applicatively validate a batch of API endpoints using ``engine`` or a default ``SnapshotGroundingEngine``.
+
+    Args:
+        backend_name (str): Target backend name.
+        endpoints (Sequence[str]): Candidate API endpoint strings to verify against snapshots.
+        engine (SnapshotGroundingEngine | None): Optional pre-configured grounding engine instance.
+
+    Returns:
+        Validation[tuple[str, ...], tuple[str, ...]]: ``Valid(tuple(endpoints))`` or ``Invalid`` with all errors.
+    """
+    active_engine = engine if engine is not None else SnapshotGroundingEngine()
+    return active_engine.validate_endpoints_batch_checked(backend_name, endpoints)

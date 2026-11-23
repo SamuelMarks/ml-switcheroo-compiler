@@ -43,6 +43,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.scipy_linalg_kernels import (
 from ml_switcheroo_compiler.core.shape import OpValue
 from tests.testing_utils import (
     EagerTensorProtocol,
+    GenericNDArray,
     MockTestStub,
     adapt_backend_module,
     coerce_int_list,
@@ -141,8 +142,8 @@ class DummyBackend(MockTestStub):
 class _TestLinalgExtrasState(typing.TypedDict, total=False):
     """Typed shared state for `_test_linalg_extras` split helpers."""
 
-    A: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
-    b: np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    A: GenericNDArray
+    b: GenericNDArray
     vals: EagerTensorProtocol | OpValue
 
 

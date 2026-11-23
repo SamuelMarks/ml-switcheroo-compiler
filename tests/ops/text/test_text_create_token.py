@@ -8,6 +8,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.text as text_mod
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import GenericNDArray
 
 
 class _DummyGenerator:
@@ -25,15 +26,20 @@ class _DummyGenerator:
 class _MockArrayWithNumpy:
     """Mock object with numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+    def __init__(
+        self,
+        arr: GenericNDArray,
+    ) -> None:
         """Initialize with numpy array.
 
         Args:
-            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
+            arr (GenericNDArray): Underlying array.
         """
         self.arr = arr
 
-    def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def numpy(
+        self,
+    ) -> GenericNDArray:
         """Return underlying numpy array.
 
         Returns:
@@ -45,11 +51,14 @@ class _MockArrayWithNumpy:
 class _MockDataWithNumpy:
     """Mock object with data.numpy() method."""
 
-    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> None:
+    def __init__(
+        self,
+        arr: GenericNDArray,
+    ) -> None:
         """Initialize with nested data object.
 
         Args:
-            arr (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Underlying array.
+            arr (GenericNDArray): Underlying array.
         """
         self.data = _MockArrayWithNumpy(arr)
 
@@ -100,9 +109,23 @@ class _MockBackendH5:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
+        self.saved: (
+            tuple[
+                dict[
+                    str,
+                    GenericNDArray,
+                ],
+                str,
+            ]
+            | None
+        ) = None
 
-    def load_h5(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def load_h5(
+        self, path: str
+    ) -> dict[
+        str,
+        GenericNDArray,
+    ]:
         """Load h5 mock weights.
 
         Args:
@@ -113,11 +136,18 @@ class _MockBackendH5:
         """
         return {"backend_key": np.array([42.0])}
 
-    def save_h5(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
+    def save_h5(
+        self,
+        weights: dict[
+            str,
+            GenericNDArray,
+        ],
+        path: str,
+    ) -> None:
         """Save h5 mock weights.
 
         Args:
-            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
+            weights (dict[str, GenericNDArray]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
@@ -128,18 +158,39 @@ class _MockBackendNPZ:
 
     def __init__(self) -> None:
         """Initialize mock backend."""
-        self.saved: tuple[dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str] | None = None
+        self.saved: (
+            tuple[
+                dict[
+                    str,
+                    GenericNDArray,
+                ],
+                str,
+            ]
+            | None
+        ) = None
 
-    def save_npz(self, weights: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], path: str) -> None:
+    def save_npz(
+        self,
+        weights: dict[
+            str,
+            GenericNDArray,
+        ],
+        path: str,
+    ) -> None:
         """Save npz mock weights.
 
         Args:
-            weights (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Weights dict.
+            weights (dict[str, GenericNDArray]): Weights dict.
             path (str): Filepath.
         """
         self.saved = (weights, path)
 
-    def load_npz(self, path: str) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def load_npz(
+        self, path: str
+    ) -> dict[
+        str,
+        GenericNDArray,
+    ]:
         """Load npz mock weights.
 
         Args:

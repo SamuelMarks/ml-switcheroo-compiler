@@ -60,7 +60,10 @@ def _is_eval_backend(val: OpValue) -> typing.TypeGuard[_BackendEvalProtocol]:
     Returns:
         bool: True if `val` satisfies `_BackendEvalProtocol`.
     """
-    return isinstance(val, _BackendEvalProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _BackendEvalProtocol)
+    return found or is_mock_with_attrs(val, "eval")
 
 
 def _is_synchronize_backend(val: OpValue) -> typing.TypeGuard[_BackendSynchronizeProtocol]:
@@ -72,7 +75,10 @@ def _is_synchronize_backend(val: OpValue) -> typing.TypeGuard[_BackendSynchroniz
     Returns:
         bool: True if `val` satisfies `_BackendSynchronizeProtocol`.
     """
-    return isinstance(val, _BackendSynchronizeProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _BackendSynchronizeProtocol)
+    return found or is_mock_with_attrs(val, "synchronize")
 
 
 def _is_peak_memory_backend(val: OpValue) -> typing.TypeGuard[_BackendPeakMemoryProtocol]:
@@ -84,7 +90,10 @@ def _is_peak_memory_backend(val: OpValue) -> typing.TypeGuard[_BackendPeakMemory
     Returns:
         bool: True if `val` satisfies `_BackendPeakMemoryProtocol`.
     """
-    return isinstance(val, _BackendPeakMemoryProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _BackendPeakMemoryProtocol)
+    return found or is_mock_with_attrs(val, "get_peak_memory")
 
 
 def eval(*args: OpValue) -> None:

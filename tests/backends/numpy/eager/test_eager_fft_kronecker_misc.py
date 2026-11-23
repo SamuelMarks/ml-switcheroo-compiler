@@ -583,9 +583,10 @@ def test_math_misc_exceptions() -> None:
         """
         raise ValueError("Intentional error")
 
-    ThrowingBackend = type("ThrowingBackend", (), {"_" + "_getattr_" + "_": _throwing_getattr})
+    import types
 
-    tb = ThrowingBackend()
+    ThrowingBackend = type("ThrowingBackend", (types.ModuleType,), {"_" + "_getattr_" + "_": _throwing_getattr})
+    tb = ThrowingBackend("throwing_backend")
     with pytest.raises(ValueError):
         math_misc._np_rawmatmul(tb, np.ones((2, 2)), np.ones((2, 2)))
     with pytest.raises(ValueError):

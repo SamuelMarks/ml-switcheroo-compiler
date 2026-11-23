@@ -37,6 +37,7 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     quantized_matmul,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import GenericNDArray
 
 if typing.TYPE_CHECKING:
     pass
@@ -99,11 +100,13 @@ def test_quantized_ops_trace() -> None:
         config.eager_mode = orig
 
 
-def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
+def create_eager_tensor(
+    data: GenericNDArray,
+) -> Tensor:
     """Create a CPU Float32 Tensor from a NumPy array.
 
     Args:
-        data (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Input array.
+        data (GenericNDArray): Input array.
 
     Returns:
         Tensor: Wrapped tensor.

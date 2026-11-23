@@ -86,12 +86,15 @@ jobs:
         python3 scripts/validate_backend_mappings.py
         python3 scripts/validate_parameters.py
         python3 scripts/validate_rules.py
+        python3 scripts/verify_typeclasses.py
 
     - name: Check Snapshot Drift
       run: python3 scripts/check_snapshot_drift.py
 
     - name: Run JavaScript Runtime Tests
-      run: node --test tests_js/*.js
+      run: |
+        sudo apt-get update -qq && sudo apt-get install -y -qq wabt
+        node --test tests_js/*.js
 
     - name: Build Package
       run: python3 -m build

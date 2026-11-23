@@ -34,6 +34,21 @@ class _DataWrapperProtocol(typing.Protocol):
         ...
 
 
+def _is_data_wrapper(val: Tensor | str | float | int) -> typing.TypeGuard[_DataWrapperProtocol]:
+    """Check whether `val` exposes `.data`.
+
+    Args:
+        val (Tensor | str | float | int): Input operand.
+
+    Returns:
+        typing.TypeGuard[_DataWrapperProtocol]: `True` when `val` exposes `.data`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _DataWrapperProtocol)
+    return found or is_mock_with_attrs(val, "data")
+
+
 def _ensure_tensor_obj(val: OpValue | Tensor) -> Tensor:
     """Return ``val`` directly if already a ``Tensor``, otherwise wrap it in a ``Tensor``.
 
@@ -84,10 +99,7 @@ def _emit_random_node(
         return Tensor(res, TensorConfig(shape_tuple, dtype, "cpu"))
 
     out_id = str(uuid.uuid4())
-    in_ids = [
-        str(inp.data.id) if isinstance(inp, _DataWrapperProtocol) and is_traced_data(inp.data) else str(inp)
-        for inp in inputs
-    ]
+    in_ids = [str(inp.data.id) if _is_data_wrapper(inp) and is_traced_data(inp.data) else str(inp) for inp in inputs]
     attrs = dict(attributes) if attributes is not None else {}
 
     node = LogicalNode(

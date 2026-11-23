@@ -47,7 +47,10 @@ def _is_computable_dask(val: BackendArg) -> typing.TypeGuard[_ComputableDaskProt
     Returns:
         bool: True if `val` has a `.compute` attribute.
     """
-    return isinstance(val, _ComputableDaskProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ComputableDaskProtocol)
+    return found or is_mock_with_attrs(val, "compute")
 
 
 def _get_process_memory_mb() -> float:

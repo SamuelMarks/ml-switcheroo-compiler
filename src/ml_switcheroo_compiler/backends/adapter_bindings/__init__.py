@@ -9,6 +9,7 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import wrap_shard_readers
 from .shard_00 import SHARD_00_READERS
 from .shard_01 import SHARD_01_READERS
 from .shard_02 import SHARD_02_READERS
@@ -76,69 +77,71 @@ MemberReader = Callable[
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
 ]
 
-ADAPTER_ATTR_READERS: dict[str, MemberReader] = {
-    **SHARD_00_READERS,
-    **SHARD_01_READERS,
-    **SHARD_02_READERS,
-    **SHARD_03_READERS,
-    **SHARD_04_READERS,
-    **SHARD_05_READERS,
-    **SHARD_06_READERS,
-    **SHARD_07_READERS,
-    **SHARD_08_READERS,
-    **SHARD_09_READERS,
-    **SHARD_10_READERS,
-    **SHARD_11_READERS,
-    **SHARD_12_READERS,
-    **SHARD_13_READERS,
-    **SHARD_14_READERS,
-    **SHARD_15_READERS,
-    **SHARD_16_READERS,
-    **SHARD_17_READERS,
-    **SHARD_18_READERS,
-    **SHARD_19_READERS,
-    **SHARD_20_READERS,
-    **SHARD_21_READERS,
-    **SHARD_22_READERS,
-    **SHARD_23_READERS,
-    **SHARD_24_READERS,
-    **SHARD_25_READERS,
-    **SHARD_26_READERS,
-    **SHARD_27_READERS,
-    **SHARD_28_READERS,
-    **SHARD_29_READERS,
-    **SHARD_30_READERS,
-    **SHARD_31_READERS,
-    **SHARD_32_READERS,
-    **SHARD_33_READERS,
-    **SHARD_34_READERS,
-    **SHARD_35_READERS,
-    **SHARD_36_READERS,
-    **SHARD_37_READERS,
-    **SHARD_38_READERS,
-    **SHARD_39_READERS,
-    **SHARD_40_READERS,
-    **SHARD_41_READERS,
-    **SHARD_42_READERS,
-    **SHARD_43_READERS,
-    **SHARD_44_READERS,
-    **SHARD_45_READERS,
-    **SHARD_46_READERS,
-    **SHARD_47_READERS,
-    **SHARD_48_READERS,
-    **SHARD_49_READERS,
-    **SHARD_50_READERS,
-    **SHARD_51_READERS,
-    **SHARD_52_READERS,
-    **SHARD_53_READERS,
-    **SHARD_54_READERS,
-    **SHARD_55_READERS,
-    **SHARD_56_READERS,
-    **SHARD_57_READERS,
-    **SHARD_58_READERS,
-    **SHARD_59_READERS,
-    **SHARD_60_READERS,
-}
+ADAPTER_ATTR_READERS: dict[str, MemberReader] = wrap_shard_readers(
+    {
+        **SHARD_00_READERS,
+        **SHARD_01_READERS,
+        **SHARD_02_READERS,
+        **SHARD_03_READERS,
+        **SHARD_04_READERS,
+        **SHARD_05_READERS,
+        **SHARD_06_READERS,
+        **SHARD_07_READERS,
+        **SHARD_08_READERS,
+        **SHARD_09_READERS,
+        **SHARD_10_READERS,
+        **SHARD_11_READERS,
+        **SHARD_12_READERS,
+        **SHARD_13_READERS,
+        **SHARD_14_READERS,
+        **SHARD_15_READERS,
+        **SHARD_16_READERS,
+        **SHARD_17_READERS,
+        **SHARD_18_READERS,
+        **SHARD_19_READERS,
+        **SHARD_20_READERS,
+        **SHARD_21_READERS,
+        **SHARD_22_READERS,
+        **SHARD_23_READERS,
+        **SHARD_24_READERS,
+        **SHARD_25_READERS,
+        **SHARD_26_READERS,
+        **SHARD_27_READERS,
+        **SHARD_28_READERS,
+        **SHARD_29_READERS,
+        **SHARD_30_READERS,
+        **SHARD_31_READERS,
+        **SHARD_32_READERS,
+        **SHARD_33_READERS,
+        **SHARD_34_READERS,
+        **SHARD_35_READERS,
+        **SHARD_36_READERS,
+        **SHARD_37_READERS,
+        **SHARD_38_READERS,
+        **SHARD_39_READERS,
+        **SHARD_40_READERS,
+        **SHARD_41_READERS,
+        **SHARD_42_READERS,
+        **SHARD_43_READERS,
+        **SHARD_44_READERS,
+        **SHARD_45_READERS,
+        **SHARD_46_READERS,
+        **SHARD_47_READERS,
+        **SHARD_48_READERS,
+        **SHARD_49_READERS,
+        **SHARD_50_READERS,
+        **SHARD_51_READERS,
+        **SHARD_52_READERS,
+        **SHARD_53_READERS,
+        **SHARD_54_READERS,
+        **SHARD_55_READERS,
+        **SHARD_56_READERS,
+        **SHARD_57_READERS,
+        **SHARD_58_READERS,
+        **SHARD_59_READERS,
+        **SHARD_60_READERS,
+    }
+)
 
 
 def read_static_attr(
@@ -157,10 +160,7 @@ def read_static_attr(
     reader = ADAPTER_ATTR_READERS.get(name)
     if reader is None:
         return False, None
-    try:
-        return reader(target)
-    except AttributeError:
-        return False, None
+    return reader(target)
 
 
 __all__ = ["ADAPTER_ATTR_READERS", "MemberReader", "read_static_attr"]

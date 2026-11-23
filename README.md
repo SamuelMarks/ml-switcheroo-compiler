@@ -22,13 +22,14 @@ Exported directly from the root namespace (`ml_switcheroo_compiler`), the compil
 - **`SparseTensor`**: Memory-efficient coordinate list (COO) representation for sparse linear algebra.
 - **`TensorArray`**: Dynamically indexable, growable, and writable sequences of tensors for dynamic control flow loops.
 
-Complementing the tensor hierarchy, functional dataset pipeline abstractions are provided under `ml_switcheroo_compiler.core.dataset`:
-- **`Dataset`**: Functional data transformation pipelines and batched streaming iterators.
+Complementing the tensor hierarchy, core pipeline, PyTree, initialization, and stochastic utilities are provided across dedicated compiler modules:
+- **`Dataset` (`ml_switcheroo_compiler.core.dataset`)**: Functional data transformation pipelines and batched streaming iterators.
+- **PyTrees, Initializers & Random (`tree_util`, `nn`, `random`)**: Structural PyTree manipulation (`TreeDef`, `tree_flatten`, `tree_unflatten`), stateless mathematical parameter initializers (`nn.initializers`), and 38 continuous/discrete probability distributions (`random`).
 
 ## Major Project Goals
 
 1. **In-Browser Shape Learning & Transpilation:** Enhance the original [ML Switcheroo](https://samuelmarks.github.io/ml-switcheroo) project (focused on ML framework and SASS/RDNA transpilation) with the ability to learn precise tensor shapes by executing actual forward and backward passes directly in the browser.
-2. **Cross-Backend Benchmarking:** Benchmark different execution backends independently of the frontend API (e.g., testing TensorFlow syntax running on the MLX backend) with strict single-backend dependency isolation and zero cross-backend NumPy fallbacks.
+2. **Cross-Backend Benchmarking:** Benchmark different execution backends independently of the frontend API (e.g., testing TensorFlow syntax running on the MLX backend) via `ml_switcheroo_compiler.benchmarks` (`BenchmarkOrchestrator`), with strict single-backend dependency isolation and zero cross-backend NumPy fallbacks.
 3. **Decentralized Edge & Browser Mesh:** Enable distributed, serverless peer-to-peer collective execution (`AllReduce`, `AllGather`) directly across WebAssembly and WebGPU clients using built-in WebRTC signaling and data channels.
 
 ## Architectural Vision
@@ -45,85 +46,59 @@ Please refer to [`ARCHITECTURE.md`](ARCHITECTURE.md) for an in-depth dive into t
 
 ## Compilation Pipeline
 
+### 1. Frontend Dispatch, Tracing & Static Transpilation
+
 ```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 24, 'rankSpacing': 32, 'wrappingWidth': 270, 'padding': 12}}}%%
 flowchart TD
-    subgraph Frontends ["zero-* Frontends (API Shells)"]
-        direction LR
-        PT[PyTorch API]
-        JX[JAX API]
-        KR[Keras API]
-        MLX_F[MLX API]
-        TF_F[TensorFlow API]
-        PT ~~~ JX ~~~ KR ~~~ MLX_F ~~~ TF_F
-    end
+    SHELLS["<b>zero-* Frontend Shells</b><br/>PyTorch · JAX · Keras · MLX<br/>TensorFlow · Flax · Pax · Optax"]
 
-    subgraph Compiler ["ml-switcheroo-compiler"]
-        DISP[Unified Dispatcher & Typeclasses]
-        TR[ContextVar Tracer, jit & AD Engine]
-        CST[CST Transpiler / LibCST]
-        IR[Tier-1 Unified IR: LogicalGraph]
-        EVAL[IR Interpreter / Evaluator]
-        PM[PassManager Pipeline O0 - O3]
+    CST["<b>CST Transpiler (LibCST)</b><br/>Static AST &amp; kwarg rewriting<br/>OOP lift_state to PyTrees<br/>→ Python &amp; Array .py Source"]
+    DISP["<b>Unified Dispatcher</b><br/>ops.dispatcher routing<br/>Verified CoreEager &amp;<br/>DomainEager typeclasses"]
 
-        DISP -->|Traced Ops| TR
-        TR -->|Captures Graph| IR
-        IR -->|Direct Graph Eval| EVAL
-        IR -->|Pass Pipeline| PM
-    end
+    EAGER["<b>Eager Execution</b><br/>Immediate backend tensors<br/>Pure-Python reference ops<br/>Zero global NumPy lock-in"]
+    TRACER["<b>Tracer, jit &amp; Autodiff</b><br/>ProxyTensor · ContextVar Tape<br/>jvp · vjp · grad · hessian<br/>eval_shape · checkpoint"]
 
-    subgraph Backends ["Emitters & Targets"]
-        subgraph S2S ["Python & Array Backends"]
-            GEN_S2S[Python & Array Generators]
-            PT_B[pytorch / torch]
-            JX_B[jax]
-            MLX_B[mlx]
-            KR_B[keras]
-            TF_B[tensorflow]
-            NP_B[numpy]
-            PY_B[pure_python]
-            CP_B[cupy]
-            DK_B[dask]
-            SP_B[sparse / sparse_coo]
-            NB_B[numba]
-            AK_B[awkward]
-            DP_B[dpnp]
-            PA_B[pyarrow_compute]
+    FOREIGN["<b>Foreign Graph Ingest</b><br/>ingest_torch_fx (torch.fx)<br/>ingest_jaxpr (jaxpr)<br/>ForeignCall IR nodes"]
+    IR["<b>Tier-1 Unified IR (ml-switcheroo-ir)</b><br/>LogicalGraph · LogicalNode<br/>SymInt shapes · PartitionSpec"]
 
-            GEN_S2S --> PT_B & JX_B & MLX_B & KR_B & TF_B
-            GEN_S2S --> NP_B & PY_B & CP_B & DK_B & SP_B
-            GEN_S2S --> NB_B & AK_B & DP_B & PA_B
-        end
+    SHELLS -.->|"Static Source"| CST
+    SHELLS -->|"Tensor / Proxy"| DISP
+    DISP -->|"Eager Mode"| EAGER
+    DISP -->|"Traced / @jit"| TRACER
+    EAGER ~~~ FOREIGN
+    FOREIGN -->|"Lowers Graph"| IR
+    TRACER -->|"Captures Graph"| IR
 
-        subgraph Hardware ["Hardware Accelerators"]
-            GEN_HW[Hardware Kernel Compilers]
-            CUDA_B[cuda]
-            ROCM_B[rocm]
-            METAL_B[metal]
-            LLVM_B[llvm_cpp]
+    style IR fill:#1e3a8a,color:#ffffff,stroke:#60a5fa,stroke-width:2.5px
+```
 
-            GEN_HW --> CUDA_B & ROCM_B & METAL_B & LLVM_B
-        end
+### 2. Middle-End Optimization & Target Lowering
 
-        subgraph Edge ["Direct-to-Edge & Web Native"]
-            GEN_EDGE[Edge & Browser Emitters]
-            WG_B[webgpu / edge_wgsl]
-            WA_B[edge_wasm / edge_wasm_simd]
-            GL_B[edge_webgl]
-            ONNX_B[edge / edge_onnx]
-            SHLO_B[edge_stablehlo]
-            RTC_B[WebRTC Distributed Mesh]
+```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 24, 'rankSpacing': 32, 'wrappingWidth': 285, 'padding': 12}}}%%
+flowchart TD
+    IR["<b>Tier-1 Unified IR (ml-switcheroo-ir)</b><br/>LogicalGraph · LogicalNode<br/>SymInt shapes · PartitionSpec"]
 
-            GEN_EDGE --> WG_B & WA_B & GL_B
-            GEN_EDGE --> ONNX_B & SHLO_B & RTC_B
-        end
-    end
+    EVAL["<b>Graph Interpreter</b><br/>evaluate_graph<br/>Direct topological execution<br/>on concrete tensors"]
+    S1["<b>PassManager · Stage 1</b><br/>Canonicalize &amp; Polyfill<br/>Shape &amp; DType Inference<br/>Cast/Broadcast · lift_state · Layout"]
 
-    PT & JX & KR & MLX_F & TF_F -.->|Direct Code Translation| CST
-    PT & JX & KR & MLX_F & TF_F -->|Tensor / ProxyTensor| DISP
-    CST -.->|Transpiled Source| GEN_S2S
-    PM -->|Optimized IR| GEN_S2S
-    PM -->|Optimized IR| GEN_HW
-    PM -->|Optimized IR| GEN_EDGE
+    S2["<b>PassManager · Stage 2</b><br/>Constant Folding · DCE · CSE<br/>Control-Flow Simplification<br/>BatchNorm Fold · Loop-to-Scan"]
+    S3["<b>PassManager · Stage 3 (O2–O3)</b><br/>Operator Fusion · Scheduling<br/>Buffer Alloc · INT8/INT4 Quant<br/>Loop Tile/SIMD · SPMD Sharding"]
+
+    S2S["<b>Python &amp; Array Targets (14)</b><br/><b>CORE_EAGER (8):</b> pytorch (torch)<br/>jax · mlx · keras · tensorflow<br/>numpy · pure_python · dask<br/><b>DOMAIN_EAGER (6):</b> cupy · numba<br/>sparse (sparse_coo) · awkward<br/>dpnp · pyarrow_compute"]
+    NATIVE["<b>Hardware &amp; Edge (9 + Mesh)</b><br/><b>Native Kernels:</b> cuda · rocm<br/>metal · llvm_cpp (C++17)<br/><b>Browser:</b> webgpu (edge_wgsl)<br/>edge_wasm (edge_wasm_simd) · edge_webgl<br/><b>Formats &amp; Mesh:</b> edge (edge_onnx)<br/>edge_stablehlo · WebRTC Mesh"]
+
+    IR -->|"Direct Eval"| EVAL
+    IR -->|"Optimize (O0–O3)"| S1
+    EVAL ~~~ S2
+    S1 --> S2
+    S2 --> S3
+    S3 -->|"AST / PyTree Codegen"| S2S
+    S3 -->|"Kernel / Wire Lowering"| NATIVE
+
+    style IR fill:#1e3a8a,color:#ffffff,stroke:#60a5fa,stroke-width:2.5px
+    style S3 fill:#9a3412,color:#ffffff,stroke:#fb923c,stroke-width:2px
 ```
 
 - **Tier-1 Unified IR (`ml-switcheroo-ir`):** A strict, framework-agnostic intermediate representation (`LogicalGraph` / `LogicalNode`) paired with compiler symbolic shape algebra (`SymInt`, `ShapeTracker`), mathematical primitives, control flow, and functional state management.
@@ -134,12 +109,12 @@ flowchart TD
 ## Advanced Transformations and Distributed Support
 
 The engine supports a comprehensive suite of advanced optimizations and parity features across backends:
-- **`jit` Compilation, `disable_jit`, & Symbolic `eval_shape`:** PyTree-aware `jit` compilation with `(static_args, input_specs, backend, device, keep_unused)` caching, `ContextVar`-scoped `disable_jit()`, inline `grad(jit(f))` / `jit(grad(f))` composition, and zero-allocation symbolic shape inference via `eval_shape` (`ml_switcheroo_compiler.grad`).
+- **`jit` Compilation, `disable_jit`, & Symbolic `eval_shape`:** PyTree-aware `jit` compilation with `(fun_id, static_args, treedef, input_specs, backend, device, keep_unused)` caching, `ContextVar`-scoped `disable_jit()`, inline `grad(jit(f))` / `jit(grad(f))` composition, and zero-allocation symbolic shape inference via `eval_shape` (`ml_switcheroo_compiler.grad`).
 - **Haskell-Style Backend Capability Typeclasses:** Parameterized capability protocols (`CoreEagerTypeclass`, `CapabilityKind.CORE_EAGER` vs `DOMAIN_EAGER`, `CodeEmitterTypeclass`, `AOTCompilerTypeclass`) statically verified across registered backends and curated YAML mappings via `ml_switcheroo_compiler.backends.typeclasses` and `scripts/verify_typeclasses.py`.
 - **Compiler Optimizations:** Built-in Dead Code Elimination (DCE), Common Subexpression Elimination (CSE), Constant Folding, Operator Fusion, Loop Tiling & Unrolling, Buffer Allocation & Graph Scheduling, Vectorization, Batch Normalization folding, Mixed Precision casting, and Quantization passes (PTQ, QAT, and INT8/INT4 lowering) via `PassManager`.
 - **Foreign Graph Ingestion:** Ingest external framework computation graphs directly into `LogicalGraph` via `ingest_torch_fx` (PyTorch `torch.fx.GraphModule`), `ingest_jaxpr` (JAX `jaxpr`), and `ForeignCall` nodes without manual rewrites.
 - **Model Serialization & Formats:** First-class model export and weight serialization supporting SafeTensors (`SafetensorsWeightFormat`), HDF5 (`h5py`), NumPy (`npz`), Python Pickle, and TensorFlow SavedModel Protobuf (`export_api`).
-- **Diagnostics & Profiling Suite:** Integrated FLOP counter (`flop_counter`), peak memory profiler (`memory_profiler`), automated NaN/Inf numerical anomaly detection (`numerical_anomaly`), live shape debugging (`shape_debugger`), and architectural layer inspection (`summary`).
+- **Diagnostics, Profiling & Benchmarking Suite:** Integrated FLOP counter (`flop_counter`), peak memory profiler (`memory_profiler`), automated NaN/Inf numerical anomaly detection (`numerical_anomaly`), live shape debugging (`shape_debugger`), architectural layer inspection (`summary`), and declarative cross-backend workload benchmarking (`ml_switcheroo_compiler.benchmarks.BenchmarkOrchestrator`).
 - **Automatic Differentiation:** Full support for `jvp` (Forward-Mode), `vjp` / `grad` / `backward` (Reverse-Mode), and higher-order derivatives (`hessian`, `hvp`, `jacfwd`, `jacrev`, `nth_order_grad`), accompanied by dynamic programming (Knapsack) memory-budgeted checkpointing, binomial rematerialization schedules, and scoped `custom_jvp` / `custom_vjp` hooks.
 - **Distributed Topologies, Collectives & Edge Mesh:** Device meshes (`DeviceMesh`), layout maps (`LayoutMap`), `PartitionSpec` sharding, host collectives (`all_reduce`, `all_gather`, `reduce_scatter`, `broadcast`, `shard_tensor`), and browser-to-browser P2P WebRTC data channels.
 
@@ -154,92 +129,74 @@ The engine supports four distinct execution and translation paradigms:
 
 ## Ecosystem Dependency Graph
 
+### 1. Five-Tier Ecosystem Architecture
+
+`zero-zoo` (Tier 5) validates float-for-float numerical equivalence across `zero-jax`, `zero-flax`, `zero-pax`, `zero-pytorch`, `zero-keras`, `zero-tensorflow`, and `zero-mlx`, and executes end-to-end data pipeline tests against `zero-grain`.
+
 ```mermaid
-graph TD
-    subgraph "Verification Tier (zero-zoo)"
-        ZZ[zero-zoo / The Model Zoo]
-    end
+%%{init: {'flowchart': {'nodeSpacing': 24, 'rankSpacing': 32, 'wrappingWidth': 285, 'padding': 12}}}%%
+flowchart TD
+    ZZ["<b>Tier 5 · zero-zoo (Model Zoo)</b><br/>Golden-seed training &amp; .allclose()<br/>float equivalence + pipeline tests"]
 
-    subgraph "API-Compatible Shells"
-        ZJ[zero-jax]
-        ZF[zero-flax]
-        ZP[zero-pytorch]
-        ZK[zero-keras]
-        ZT[zero-tensorflow]
-        ZM[zero-mlx]
-        ZPX[zero-pax]
-        ZO[zero-optax]
-        ZC[zero-chex]
-        ZG[zero-grain]
-        ZOB[zero-orbax]
-    end
+    JAX_FAM["<b>Tiers 3–4 · JAX &amp; Data Stack</b><br/>zero-jax · zero-flax · zero-pax<br/>zero-optax · zero-chex<br/>zero-orbax · zero-grain"]
+    OOP_FAM["<b>Tiers 3–4 · OOP Framework Shells</b><br/>zero-pytorch · zero-keras<br/>zero-tensorflow · zero-mlx"]
 
-    subgraph "Compilation Core"
-        COMP[ml-switcheroo-compiler]
-    end
-    style COMP fill:#ff9900,color:#fff,stroke:#333,stroke-width:4px
+    COMP["<b>Tier 2 · ml-switcheroo-compiler</b><br/>Unified Tensor Hierarchy · Dispatcher<br/>Tracer · jit · Autodiff<br/>PassManager · CST Transpiler"]
 
-    subgraph "Tier 1 Core Dialect"
-        IR[ml-switcheroo-ir]
-    end
+    IR_SNAP["<b>Tier 1 · Core Foundations</b><br/><b>ml-switcheroo-ir</b><br/>LogicalGraph · Nodes · Dialects<br/><b>ml-ecosystem-snapshots</b><br/>Static API Schema Grounding"]
+    BACKENDS["<b>Registered Internal Backends (23)</b><br/><b>Dense (8):</b> numpy · pure_python<br/>pytorch (torch) · jax · mlx<br/>keras · tensorflow · dask<br/><b>Domain (6):</b> cupy · numba<br/>sparse (sparse_coo) · awkward<br/>dpnp · pyarrow_compute<br/><b>Native &amp; Edge (9):</b> cuda · rocm<br/>metal · llvm_cpp · webgpu<br/>edge_wasm_simd · edge_webgl<br/>edge_onnx · edge_stablehlo"]
 
-    subgraph "Registered Internal Backends"
-        NUMPY[numpy]
-        PY_B[pure_python]
-        JAX_B[jax]
-        MLX_B[mlx]
-        CUPY[cupy]
-        DASK[dask]
-        TORCH_B[pytorch / torch]
-        KERAS_B[keras]
-        TF_B[tensorflow]
-        NUMBA_B[numba]
-        SPARSE_B[sparse / sparse_coo]
-        AK_B[awkward]
-        DP_B[dpnp]
-        PA_B[pyarrow_compute]
-        CUDA_B[cuda]
-        ROCM_B[rocm]
-        METAL_B[metal]
-        LLVM[llvm_cpp]
-        EDGE_WGPU[webgpu / edge_wgsl]
-        EDGE_WASM[edge_wasm / edge_wasm_simd]
-        EDGE_WEBGL[edge_webgl]
-        ONNX[edge / edge_onnx]
-        STABLEHLO[edge_stablehlo]
-    end
+    ZZ -.->|"Parity &amp; Pipeline Tests"| JAX_FAM
+    ZZ -.->|"Float Equivalence"| OOP_FAM
+    JAX_FAM -->|"Pure PyTrees"| COMP
+    OOP_FAM -->|"State Lift &amp; Dispatch"| COMP
+    COMP -->|"Depends On"| IR_SNAP
+    COMP -->|"Isolated Backend Dispatch"| BACKENDS
 
-    ZZ -.->|Validates Float Equivalence| ZJ
-    ZZ -.->|Validates Float Equivalence| ZF
-    ZZ -.->|Validates Float Equivalence| ZP
-    ZZ -.->|Validates Float Equivalence| ZK
-    ZZ -.->|Validates Float Equivalence| ZT
-    ZZ -.->|Validates Float Equivalence| ZM
-    ZZ -.->|Validates Float Equivalence| ZPX
-    ZZ -.->|Tests| ZG
+    style ZZ fill:#14532d,color:#ffffff,stroke:#4ade80,stroke-width:2px
+    style COMP fill:#9a3412,color:#ffffff,stroke:#fb923c,stroke-width:2.5px
+    style IR_SNAP fill:#1e3a8a,color:#ffffff,stroke:#60a5fa,stroke-width:2px
+```
 
-    ZJ --> COMP
-    ZO --> ZJ
-    ZC --> COMP
-    ZG --> COMP
-    ZOB --> COMP
-    ZJ --> ZC
-    ZO --> ZC
+### 2. JAX & Data Shell Package Dependencies
 
-    ZF --> ZJ
-    ZF --> ZO
-    ZF --> ZOB
-    ZP --> COMP
-    ZK --> COMP
-    ZT --> ZK
-    ZM --> COMP
+```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 20, 'rankSpacing': 28, 'wrappingWidth': 230, 'padding': 10}}}%%
+flowchart TD
+    ZF["<b>zero-flax</b><br/>Neural networks"]
+    ZPX["<b>zero-pax</b><br/>Large-scale training"]
+    ZO["<b>zero-optax</b><br/>Gradient optimizers"]
+    ZOB["<b>zero-orbax</b><br/>Checkpointing"]
+    ZJ["<b>zero-jax</b><br/>jit · grad · vmap"]
+    ZC["<b>zero-chex</b><br/>Assertions &amp; PyTrees"]
+    ZG["<b>zero-grain</b><br/>Data pipelines"]
+    COMP1["<b>ml-switcheroo-compiler</b><br/>Tier-2 Compilation Core"]
+
+    ZF --> ZO & ZJ & ZOB
     ZPX --> ZJ
+    ZPX ~~~ ZG
+    ZO --> ZJ & ZC
+    ZJ --> ZC & COMP1
+    ZC & ZOB & ZG --> COMP1
 
-    COMP -->|Depends On| IR
-    COMP --> NUMPY & PY_B & JAX_B & MLX_B & CUPY & DASK
-    COMP --> TORCH_B & KERAS_B & TF_B & NUMBA_B & SPARSE_B
-    COMP --> AK_B & DP_B & PA_B & CUDA_B & ROCM_B & METAL_B & LLVM
-    COMP --> EDGE_WGPU & EDGE_WASM & EDGE_WEBGL & ONNX & STABLEHLO
+    style COMP1 fill:#9a3412,color:#ffffff,stroke:#fb923c,stroke-width:2.5px
+```
+
+### 3. Stateful & OOP Shell Package Dependencies
+
+```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 20, 'rankSpacing': 28, 'wrappingWidth': 230, 'padding': 10}}}%%
+flowchart TD
+    ZT["<b>zero-tensorflow</b><br/>TensorFlow v2 API"]
+    ZK["<b>zero-keras</b><br/>Keras 3 API"]
+    ZP["<b>zero-pytorch</b><br/>torch &amp; nn.Module"]
+    ZM["<b>zero-mlx</b><br/>Apple MLX API"]
+    COMP2["<b>ml-switcheroo-compiler</b><br/>Tier-2 Compilation Core"]
+
+    ZT --> ZK
+    ZK & ZP & ZM --> COMP2
+
+    style COMP2 fill:#9a3412,color:#ffffff,stroke:#fb923c,stroke-width:2.5px
 ```
 
 ## Internal Backends

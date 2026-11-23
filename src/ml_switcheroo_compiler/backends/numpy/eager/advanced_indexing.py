@@ -118,8 +118,11 @@ def _tensor_scatter_update(tensor: BackendArg, indices: BackendArg, updates: Bac
     )
     if not isinstance(indices, (tuple, list, np.ndarray)):
         indices = np.asarray(indices)
-    idx_tuple: tuple[BackendArg, ...] = tuple(adapt_backend_module(np).require_op("moveaxis")(indices, -1, 0))
-    res[idx_tuple] = updates
+    moved_idx = ensure_ndarray(adapt_backend_module(np).require_op("moveaxis")(indices, -1, 0)).astype(np.intp)
+    idx_tuple: tuple[np.ndarray[tuple[int, ...], np.dtype[np.intp]], ...] = tuple(
+        np.asarray(moved_idx[i], dtype=np.intp) for i in range(moved_idx.shape[0])
+    )
+    res[idx_tuple] = ensure_ndarray(updates)
     return res
 
 
@@ -363,8 +366,11 @@ def _np_scatter_nd(
     out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = ensure_ndarray(
         adapt_backend_module(np).require_op("zeros")(shape, dtype=adapt_backend_module(updates).require_symbol("dtype"))
     )
-    idx: tuple[BackendArg, ...] = tuple(adapt_backend_module(np).require_op("moveaxis")(np.array(indices), -1, 0))
-    out[idx] = updates
+    moved = ensure_ndarray(adapt_backend_module(np).require_op("moveaxis")(np.array(indices), -1, 0)).astype(np.intp)
+    idx: tuple[np.ndarray[tuple[int, ...], np.dtype[np.intp]], ...] = tuple(
+        np.asarray(moved[i], dtype=np.intp) for i in range(moved.shape[0])
+    )
+    out[idx] = ensure_ndarray(updates)
     return out
 
 

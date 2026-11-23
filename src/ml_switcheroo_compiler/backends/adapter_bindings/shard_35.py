@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -379,3 +381,53 @@ SHARD_35_READERS: dict[str, MemberReader] = {
     "my_sum": lambda t: (True, t.my_sum) if isinstance(t, _HasMember35_43) else (False, None),
     "my_target": lambda t: (True, t.my_target) if isinstance(t, _HasMember35_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember35_00,
+        _HasMember35_01,
+        _HasMember35_02,
+        _HasMember35_03,
+        _HasMember35_04,
+        _HasMember35_05,
+        _HasMember35_06,
+        _HasMember35_07,
+        _HasMember35_08,
+        _HasMember35_09,
+        _HasMember35_10,
+        _HasMember35_11,
+        _HasMember35_12,
+        _HasMember35_13,
+        _HasMember35_14,
+        _HasMember35_15,
+        _HasMember35_16,
+        _HasMember35_17,
+        _HasMember35_18,
+        _HasMember35_19,
+        _HasMember35_20,
+        _HasMember35_21,
+        _HasMember35_22,
+        _HasMember35_23,
+        _HasMember35_24,
+        _HasMember35_25,
+        _HasMember35_26,
+        _HasMember35_27,
+        _HasMember35_28,
+        _HasMember35_29,
+        _HasMember35_30,
+        _HasMember35_31,
+        _HasMember35_32,
+        _HasMember35_33,
+        _HasMember35_34,
+        _HasMember35_35,
+        _HasMember35_36,
+        _HasMember35_37,
+        _HasMember35_38,
+        _HasMember35_39,
+        _HasMember35_40,
+        _HasMember35_41,
+        _HasMember35_42,
+        _HasMember35_43,
+        _HasMember35_44,
+    )
+)

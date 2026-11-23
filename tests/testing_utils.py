@@ -138,7 +138,35 @@ from tests.fixtures.profiler_stubs import (
 
 NumpyTestArray: typing.TypeAlias = np.ndarray[
     tuple[int, ...],
-    np.dtype[typing.Union[np.float64, np.float32, np.int64, np.int32, np.uint8, np.bool_]],  # noqa: UP007
+    typing.Union[  # noqa: UP007
+        np.dtype[np.float64],
+        np.dtype[np.float32],
+        np.dtype[np.int64],
+        np.dtype[np.int32],
+        np.dtype[np.uint8],
+    ],
+]
+
+GenericNDArray: typing.TypeAlias = np.ndarray[
+    tuple[int, ...],
+    typing.Union[  # noqa: UP007
+        np.dtype[np.float16],
+        np.dtype[np.float32],
+        np.dtype[np.float64],
+        np.dtype[np.int8],
+        np.dtype[np.int16],
+        np.dtype[np.int32],
+        np.dtype[np.int64],
+        np.dtype[np.uint8],
+        np.dtype[np.uint16],
+        np.dtype[np.uint32],
+        np.dtype[np.uint64],
+        np.dtype[np.complex64],
+        np.dtype[np.complex128],
+        np.dtype[np.bool_],
+        np.dtype[np.str_],
+        np.dtype[np.bytes_],
+    ],
 ]
 
 __all__ = [
@@ -151,6 +179,7 @@ __all__ = [
     "EagerBoundCallable",
     "EagerCallableProtocol",
     "EagerTensorProtocol",
+    "GenericNDArray",
     "LogicalGraph",
     "LogicalNode",
     "MockGraphStub",

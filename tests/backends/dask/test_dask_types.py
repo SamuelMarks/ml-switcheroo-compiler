@@ -170,6 +170,21 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
                 """
                 return coerce_float(self._arr.item())
 
+            def __array__(
+                self, dtype: np.dtype[np.float64] | None = None, copy: bool | None = None
+            ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+                """Convert fake Dask array into a NumPy ndarray.
+
+                Args:
+                    dtype (np.dtype[np.float64] | None): Optional target dtype.
+                    copy (bool | None): Optional NumPy 2.0 copy flag.
+
+                Returns:
+                    np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Underlying ndarray.
+                """
+                _ = copy
+                return np.asarray(self._arr, dtype=dtype)
+
         mock_da.zeros.side_effect = lambda s, dtype=None, **kw: _FakeDaskArray(np.zeros(s, dtype=dtype))
         mock_da.array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(
             np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype)
@@ -177,7 +192,9 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
         mock_da.from_array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(
             np.array(d._arr if isinstance(d, _FakeDaskArray) else d, dtype=dtype)
         )
-        mock_da.asarray.side_effect = lambda d, **kw: _FakeDaskArray(d)
+        mock_da.asarray.side_effect = lambda d, **kw: _FakeDaskArray(
+            np.asarray(d._arr if isinstance(d, _FakeDaskArray) else d)
+        )
         mock_dask = MagicMock()
         mock_dask.array = mock_da
         monkeypatch.setitem(sys.modules, "dask", mock_dask)

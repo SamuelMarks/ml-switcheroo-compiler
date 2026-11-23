@@ -13,6 +13,7 @@ from ml_switcheroo_ir import IRGraph, IRNode, LogicalGraph, LogicalNode, NodeDic
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.ir.core import ensure_attrs
 from ml_switcheroo_compiler.transforms.passes.constant_folding import _evaluate_constant_node, constant_folding_pass
+from tests.testing_utils import GenericNDArray
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import BackendArg
@@ -248,12 +249,7 @@ def test_constant_folding_exceptions_and_fallback() -> None:
     n_out = LogicalNode(id="n_out", op_type="Relu", inputs=["c1"])
     g.nodes = NodeDict({"c1": c1, "n_err": n_val_err, "n_unimpl": n_unimpl, "n_out": n_out})
 
-    def mock_eval(
-        node: LogicalNode, *args: BackendArg, **kwargs: BackendArg
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    def mock_eval(node: LogicalNode, *args: BackendArg, **kwargs: BackendArg) -> GenericNDArray:
         """Test function mock_eval.
 
         Args:
@@ -262,7 +258,7 @@ def test_constant_folding_exceptions_and_fallback() -> None:
             kwargs: Test parameter `kwargs`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `mock_eval`.
+            GenericNDArray: Computed output value from `mock_eval`.
 
         Raises:
             UnimplementedMathError: When raised during `mock_eval` (Unimplemented math).

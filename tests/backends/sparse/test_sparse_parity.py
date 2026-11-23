@@ -23,7 +23,6 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from tests.testing_utils import (
     EagerBoundCallable,
     MockTestStub,
-    NumpyTestArray,
     adapt_backend_module,
     coerce_operand_list,
     extract_test_shape,
@@ -281,7 +280,7 @@ class _TestSparseEdgeCasesAndBranchCoverageState(typing.TypedDict, total=False):
     coo_adj: COOTensor
     csc_adj: CSCTensor
     csr_adj: CSRTensor
-    dense_adj: NumpyTestArray
+    dense_adj: np.ndarray[tuple[int, ...], np.dtype[np.float32]]
     empty_csc: CSCTensor
     empty_csr: CSRTensor
     fake_sparse_import: EagerBoundCallable
@@ -337,12 +336,12 @@ def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: _TestSparseEdgeCa
         _state["dense_adj"],
     )
     (empty_csc, empty_csr, sub_csr_res) = (_state["empty_csc"], _state["empty_csr"], _state["sub_csr_res"])
-    np.testing.assert_allclose(sub_csr_res.to_dense(), -dense_adj)
+    np.testing.assert_allclose(ensure_ndarray(sub_csr_res.to_dense()), -dense_adj)
     sub_csr_b_empty = kernels.csr_sub(csr_adj, empty_csr)
     assert sub_csr_b_empty is csr_adj
     sub_csc_res = kernels.csc_sub(empty_csc, csc_adj)
     assert isinstance(sub_csc_res, CSCTensor)
-    np.testing.assert_allclose(sub_csc_res.to_dense(), -dense_adj)
+    np.testing.assert_allclose(ensure_ndarray(sub_csc_res.to_dense()), -dense_adj)
     sub_csc_b_empty = kernels.csc_sub(csc_adj, empty_csc)
     assert sub_csc_b_empty is csc_adj
     csr_100 = kernels.sparse_dropout(csr_adj, drop_rate=1.0)

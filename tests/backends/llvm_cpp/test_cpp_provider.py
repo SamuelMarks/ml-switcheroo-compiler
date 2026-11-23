@@ -4,18 +4,27 @@ from __future__ import annotations
 
 import typing
 
-import numpy as np
 from ml_switcheroo_ir import IRGraph
 
 import ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider as cpp_prov_mod
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 from ml_switcheroo_compiler.backends.eager_registry import BackendArg
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import GenericNDArray
 
 MetricsVal = typing.Union[list[float], "float"]
 
 ProcessArg = typing.Union[
-    tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, BackendArg, "None"
+    tuple[str, str],
+    IRGraph,
+    dict[
+        str,
+        GenericNDArray,
+    ],
+    str,
+    int,
+    BackendArg,
+    "None",
 ]
 
 
@@ -25,7 +34,10 @@ class MockSimpleProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[
+            str,
+            GenericNDArray,
+        ],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -34,7 +46,7 @@ class MockSimpleProfiler:
 
         Args:
             graph (IRGraph): Computational graph.
-            inputs (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Inputs.
+            inputs (dict[str, GenericNDArray]): Inputs.
             device (str | None): Device identifier.
             num_iters (int): Measurement count.
             warmup_iters (int): Warmup count.
@@ -172,7 +184,10 @@ class MockDeviceFailingProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[
+            str,
+            GenericNDArray,
+        ],
         *args: int,
         **kwargs: str | int | None,
     ) -> dict[str, MetricsVal]:
@@ -180,7 +195,7 @@ class MockDeviceFailingProfiler:
 
         Args:
             graph (IRGraph): Computational graph.
-            inputs (dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]): Inputs.
+            inputs (dict[str, GenericNDArray]): Inputs.
             *args (int): Additional positional args.
             **kwargs (str | int | None): Keyword arguments.
 

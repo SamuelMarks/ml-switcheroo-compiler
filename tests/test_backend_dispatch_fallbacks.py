@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import types
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.backends.cuda.cuda import _as_tpl_opt
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
@@ -25,6 +27,102 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import upsample_nearest
 from ml_switcheroo_compiler.ops.shape.joining import _resolve_stack_dtype_str, stack
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from tests.testing_utils import MockTensorStub, MockTestStub, ensure_tensor, require_callable
+
+
+class _StubDaskArr:
+    """Minimal Dask array stub supporting `.compute()` and `__array__`."""
+
+    def __init__(self, arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> None:
+        """Initialize with backing ndarray.
+
+        Args:
+            arr (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): Backing NumPy array.
+        """
+        self._arr = arr
+
+    def compute(self) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+        """Return materialized NumPy array.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Materialized array.
+        """
+        return self._arr
+
+    def __array__(
+        self, dtype: np.dtype[np.float64] | None = None, copy: bool | None = None
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+        """Convert stub to NumPy ndarray.
+
+        Args:
+            dtype (np.dtype[np.float64] | None): Optional target dtype.
+            copy (bool | None): Optional NumPy 2.0 copy flag.
+
+        Returns:
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Underlying ndarray.
+        """
+        _ = copy
+        return np.asarray(self._arr, dtype=dtype)
+
+
+def _build_fallback_backend_stubs() -> tuple[types.ModuleType, dict[str, types.ModuleType]]:
+    """Construct lightweight Dask/MLX/Torch module stubs when optional runtimes are uninstalled.
+
+    Returns:
+        tuple[types.ModuleType, dict[str, types.ModuleType]]: `(fake_da, sys_modules_patch_dict)`.
+    """
+    import importlib.util
+    import types
+
+    mp = pytest.MonkeyPatch()
+    fake_da = types.ModuleType("dask.array")
+    mp.setattr(fake_da, "add", lambda a, b: np.add(np.asarray(a), np.asarray(b)), raising=False)
+    mp.setattr(
+        fake_da,
+        "zeros",
+        lambda shape, dtype=None, chunks="auto": _StubDaskArr(np.zeros(shape, dtype=dtype)),
+        raising=False,
+    )
+    mp.setattr(
+        fake_da,
+        "array",
+        lambda data, dtype=None: _StubDaskArr(
+            np.array(data._arr if isinstance(data, _StubDaskArr) else data, dtype=dtype)
+        ),
+        raising=False,
+    )
+    mp.setattr(
+        fake_da,
+        "from_array",
+        lambda data, dtype=None, chunks="auto": _StubDaskArr(
+            np.array(data._arr if isinstance(data, _StubDaskArr) else data, dtype=dtype)
+        ),
+        raising=False,
+    )
+    mp.setattr(
+        fake_da,
+        "asarray",
+        lambda data, dtype=None: _StubDaskArr(
+            np.asarray(data._arr if isinstance(data, _StubDaskArr) else data, dtype=dtype)
+        ),
+        raising=False,
+    )
+    stub_sys: dict[str, types.ModuleType] = {}
+    if importlib.util.find_spec("dask") is None:
+        fake_dask = types.ModuleType("dask")
+        fake_dask.__path__ = []
+        mp.setattr(fake_dask, "array", fake_da, raising=False)
+        stub_sys["dask"] = fake_dask
+        stub_sys["dask.array"] = fake_da
+    if importlib.util.find_spec("mlx") is None:
+        fake_mlx = types.ModuleType("mlx")
+        fake_mlx.__path__ = []
+        fake_mx_core = types.ModuleType("mlx.core")
+        mp.setattr(fake_mlx, "core", fake_mx_core, raising=False)
+        stub_sys["mlx"] = fake_mlx
+        stub_sys["mlx.core"] = fake_mx_core
+    if importlib.util.find_spec("torch") is None:
+        stub_sys["torch"] = types.ModuleType("torch")
+    return fake_da, stub_sys
 
 
 def test_backend_generator_array_and_execution_delegates() -> None:
@@ -53,16 +151,34 @@ def test_backend_generator_array_and_execution_delegates() -> None:
         cp_sum = CupyGenerator.execute_op("Add", cp_a, cp_b)
         np.testing.assert_allclose(np.asarray(cp_sum), np.array([4.0, 6.0]))
 
-    da_z = DaskGenerator.zeros((2, 2))
-    np.testing.assert_allclose(np.asarray(da_z), np.zeros((2, 2)))
-    da_a = DaskGenerator.array([1.0, 2.0])
-    da_b = DaskGenerator.asarray([5.0, 6.0])
-    assert DaskGenerator.item(DaskGenerator.array(7.5)) == 7.5
-    da_sum = DaskGenerator.execute_op("Add", da_a, da_b)
-    np.testing.assert_allclose(np.asarray(da_sum), np.array([6.0, 8.0]))
+    import sys
 
-    assert MLXCodeGenerator.get_module().__name__ == "mlx.core"
-    assert PyTorchCodeGenerator.get_module().__name__ == "torch"
+    from ml_switcheroo_compiler.backends.dask import eager as dask_eager_mod
+    from ml_switcheroo_compiler.backends.dask import types as dask_types_mod
+
+    fake_da, stub_sys = _build_fallback_backend_stubs()
+    dask_patch = (
+        patch.object(dask_types_mod, "da", fake_da)
+        if dask_types_mod.da is None
+        else patch.object(dask_types_mod, "da", dask_types_mod.da)
+    )
+    dask_eager_patch = (
+        patch.object(dask_eager_mod, "da", fake_da)
+        if dask_eager_mod.da is None
+        else patch.object(dask_eager_mod, "da", dask_eager_mod.da)
+    )
+
+    with dask_patch, dask_eager_patch, patch.dict(sys.modules, stub_sys):
+        da_z = DaskGenerator.zeros((2, 2))
+        np.testing.assert_allclose(np.asarray(da_z), np.zeros((2, 2)))
+        da_a = DaskGenerator.array([1.0, 2.0])
+        da_b = DaskGenerator.asarray([5.0, 6.0])
+        assert DaskGenerator.item(DaskGenerator.array(7.5)) == 7.5
+        da_sum = DaskGenerator.execute_op("Add", da_a, da_b)
+        np.testing.assert_allclose(np.asarray(da_sum), np.array([6.0, 8.0]))
+
+        assert MLXCodeGenerator.get_module().__name__ == "mlx.core"
+        assert PyTorchCodeGenerator.get_module().__name__ == "torch"
 
     with ConfigContext(backend="numpy", eager_mode=True):
         nb_abs = require_callable(numba_kernels.abs)([-3.0, 4.0])

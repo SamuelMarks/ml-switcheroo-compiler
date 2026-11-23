@@ -37,7 +37,7 @@ from ml_switcheroo_compiler.backends.sparse.kernels import (
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, array, asarray, item, zeros
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.shape import OpValue
-from tests.testing_utils import adapt_backend_module, coerce_float, extract_test_shape, require_callable
+from tests.testing_utils import GenericNDArray, adapt_backend_module, coerce_float, extract_test_shape, require_callable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import BackendArg
@@ -556,12 +556,7 @@ def test_sparse_eager_execute_op() -> None:
             del global_eager_registry._registry["coo_todense"]
 
     # Global eager registry fallback with COOTensor arguments
-    def custom_eager(
-        backend_mod: BackendArg, x: BackendArg, scale: BackendArg = 2.0
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    def custom_eager(backend_mod: BackendArg, x: BackendArg, scale: BackendArg = 2.0) -> GenericNDArray:
         """Test function custom_eager.
 
         Args:
@@ -570,7 +565,7 @@ def test_sparse_eager_execute_op() -> None:
             scale: Test parameter `scale`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `custom_eager`.
+            GenericNDArray: Computed output value from `custom_eager`.
         """
         return ensure_ndarray(np.asarray(x) * coerce_float(scale))
 

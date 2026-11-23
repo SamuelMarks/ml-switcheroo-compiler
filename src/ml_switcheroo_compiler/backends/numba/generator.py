@@ -704,23 +704,10 @@ class NumbaGenerator(PythonStringGenerator):
             """
             del runner_kwargs
             if compiled_fn is not None:
-                from numba.core.errors import NumbaError
-
                 try:
                     args_tuple = tuple(extract_data(a) for a in args)
                     return require_callable(compiled_fn)(args_tuple)
-                except (
-                    NumbaError,
-                    AttributeError,
-                    ImportError,
-                    LookupError,
-                    OSError,
-                    ArithmeticError,
-                    RuntimeError,
-                    SyntaxError,
-                    TypeError,
-                    ValueError,
-                ):
+                except _numba_runner_exceptions():
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -762,3 +749,30 @@ class NumbaGenerator(PythonStringGenerator):
             },
             module=nb,
         )
+
+
+def _numba_runner_exceptions() -> tuple[type[BaseException], ...]:
+    """Return catchable exception types for Numba AOT runner execution.
+
+    Returns:
+        tuple[type[BaseException], ...]: Exception types including `NumbaError` when installed.
+    """
+    base: tuple[type[BaseException], ...] = (
+        AttributeError,
+        ImportError,
+        LookupError,
+        OSError,
+        ArithmeticError,
+        RuntimeError,
+        SyntaxError,
+        TypeError,
+        ValueError,
+    )
+    try:
+        from numba.core.errors import NumbaError
+
+        if isinstance(NumbaError, type) and issubclass(NumbaError, BaseException):
+            return (NumbaError, *base)
+    except ImportError:
+        pass
+    return base

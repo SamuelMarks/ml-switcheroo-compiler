@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -383,3 +385,53 @@ SHARD_44_READERS: dict[str, MemberReader] = {
     "shape": lambda t: (True, t.shape) if isinstance(t, _HasMember44_43) else (False, None),
     "shape_inference": lambda t: (True, t.shape_inference) if isinstance(t, _HasMember44_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember44_00,
+        _HasMember44_01,
+        _HasMember44_02,
+        _HasMember44_03,
+        _HasMember44_04,
+        _HasMember44_05,
+        _HasMember44_06,
+        _HasMember44_07,
+        _HasMember44_08,
+        _HasMember44_09,
+        _HasMember44_10,
+        _HasMember44_11,
+        _HasMember44_12,
+        _HasMember44_13,
+        _HasMember44_14,
+        _HasMember44_15,
+        _HasMember44_16,
+        _HasMember44_17,
+        _HasMember44_18,
+        _HasMember44_19,
+        _HasMember44_20,
+        _HasMember44_21,
+        _HasMember44_22,
+        _HasMember44_23,
+        _HasMember44_24,
+        _HasMember44_25,
+        _HasMember44_26,
+        _HasMember44_27,
+        _HasMember44_28,
+        _HasMember44_29,
+        _HasMember44_30,
+        _HasMember44_31,
+        _HasMember44_32,
+        _HasMember44_33,
+        _HasMember44_34,
+        _HasMember44_35,
+        _HasMember44_36,
+        _HasMember44_37,
+        _HasMember44_38,
+        _HasMember44_39,
+        _HasMember44_40,
+        _HasMember44_41,
+        _HasMember44_42,
+        _HasMember44_43,
+        _HasMember44_44,
+    )
+)

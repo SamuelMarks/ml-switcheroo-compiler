@@ -79,13 +79,13 @@ def _dynamic_update_slice(
             return int(adapt_backend_module(v).require_symbol("item")())
         return int(coerce_int(v))
 
-    slices: tuple[BackendArg, ...] = tuple(
+    slices: tuple[slice[int | None, int | None, int | None], ...] = tuple(
         slice(_to_int(start), _to_int(start) + int(coerce_int(size)))
         for (start, size) in zip(
             coerce_operand_list(start_indices), adapt_backend_module(update).require_symbol("shape")
         )
     )
-    out[slices] = update
+    out[slices] = ensure_ndarray(update)
     return out
 
 

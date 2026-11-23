@@ -29,7 +29,8 @@ const filePath = path.resolve(__dirname, '../docs/_build/html/playground.html');
 test('E2E Combinations', async () => {
     if (!puppeteer || !fs.existsSync(filePath)) {
         const pyScript = `
-import json
+import json, sys, types
+sys.modules.setdefault("pytest", types.ModuleType("pytest"))
 from ml_switcheroo_ir import IRGraph, IRNode
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator

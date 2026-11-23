@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import sys
 import typing
 from collections.abc import Sequence
@@ -28,6 +29,7 @@ from ml_switcheroo_compiler.distributed.collectives import (
 from tests.testing_utils import (
     EagerBoundCallable,
     EagerTensorProtocol,
+    GenericNDArray,
     MockTestStub,
     NumpyTestArray,
     extract_test_dtype,
@@ -330,9 +332,9 @@ async def test_stream_event_handlers_snake_case_and_payload_types() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.on_message = None
-            self.buffered_amount_low_threshold = 0
-            self.on_buffered_amount_low = None
+            self.on_message: BackendArg = None
+            self.buffered_amount_low_threshold: int = 0
+            self.on_buffered_amount_low: BackendArg = None
             self.buffered_amount = lambda: 50
 
     ch = SnakeCaseChannel()
@@ -468,14 +470,14 @@ async def _test_stream_send_recv_message_variants_part_1(_state: _TestStreamSend
             """Test function __init__."""
             self.sent: list[BackendArg] = []
 
-        def send(self, data: BackendArg) -> BackendArg:
+        def send(self, data: BackendArg) -> collections.abc.Awaitable[None]:
             """Test function send.
 
             Args:
                 data: Test parameter `data`.
 
             Returns:
-                BackendArg: Computed output value from `send`.
+                collections.abc.Awaitable[None]: Computed output value from `send`.
             """
 
             async def _inner() -> None:
@@ -541,14 +543,14 @@ async def _test_stream_send_recv_message_variants_part_3(_state: _TestStreamSend
             """Test function __init__."""
             self.sent: list[BackendArg] = []
 
-        def sendMessage(self, data: BackendArg) -> BackendArg:
+        def sendMessage(self, data: BackendArg) -> collections.abc.Awaitable[None]:
             """Test function sendMessage.
 
             Args:
                 data: Test parameter `data`.
 
             Returns:
-                BackendArg: Computed output value from `sendMessage`.
+                collections.abc.Awaitable[None]: Computed output value from `sendMessage`.
             """
 
             async def _inner() -> None:
@@ -582,11 +584,11 @@ async def _test_stream_send_recv_message_variants_part_4(_state: _TestStreamSend
             """
             self.mode = mode
 
-        def recv(self) -> BackendArg:
+        def recv(self) -> bytes | collections.abc.Awaitable[BackendArg]:
             """Test function recv.
 
             Returns:
-                BackendArg: Computed output value from `recv`.
+                bytes | collections.abc.Awaitable[BackendArg]: Computed output value from `recv`.
             """
             if self.mode == "sync_coro":
 
@@ -1017,17 +1019,14 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
     async def run_rank_sum(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_sum.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_sum`.
+            GenericNDArray: Computed output value from `run_rank_sum`.
         """
         return ensure_ndarray(await ring_all_reduce(inputs[rank], "SUM", mesh[rank], rank))
 
@@ -1041,17 +1040,14 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
     async def run_rank_prod(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_prod.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_prod`.
+            GenericNDArray: Computed output value from `run_rank_prod`.
         """
         return ensure_ndarray(await all_reduce(inputs_prod[rank], "PROD", mesh_prod[rank], rank, algorithm="ring"))
 
@@ -1068,17 +1064,14 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
     async def run_rank_max(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_max.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_max`.
+            GenericNDArray: Computed output value from `run_rank_max`.
         """
         return ensure_ndarray(await ring_all_reduce(inputs_max[rank], "MAX", mesh_max[rank], rank))
 
@@ -1092,17 +1085,14 @@ async def test_multi_peer_ring_all_reduce() -> None:
 
     async def run_rank_min(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_min.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_min`.
+            GenericNDArray: Computed output value from `run_rank_min`.
         """
         return ensure_ndarray(await ring_all_reduce(inputs_max[rank], "MIN", mesh_min[rank], rank))
 
@@ -1139,17 +1129,14 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
     async def run_rank(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank`.
+            GenericNDArray: Computed output value from `run_rank`.
         """
         return ensure_ndarray(await recursive_halving_doubling_all_gather(inputs[rank], 0, mesh[rank], rank))
 
@@ -1162,17 +1149,14 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
     async def run_rank2(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank2.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank2`.
+            GenericNDArray: Computed output value from `run_rank2`.
         """
         return ensure_ndarray(await all_gather(inputs[rank], 0, mesh2[rank], rank, algorithm="recursive_doubling"))
 
@@ -1191,17 +1175,14 @@ async def test_multi_peer_recursive_doubling_all_gather() -> None:
 
     async def run_rank_3(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_3.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_3`.
+            GenericNDArray: Computed output value from `run_rank_3`.
         """
         return ensure_ndarray(await recursive_halving_doubling_all_gather(inputs_3[rank], 0, mesh_3[rank], rank))
 
@@ -1258,17 +1239,14 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: _TestMultiPeerRing
 
     async def run_rank_sum(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_sum.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_sum`.
+            GenericNDArray: Computed output value from `run_rank_sum`.
         """
         return ensure_ndarray(await ring_reduce_scatter(inputs[rank], "SUM", 0, mesh[rank], rank))
 
@@ -1281,17 +1259,14 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: _TestMultiPeerRing
 
     async def run_rank_ring(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_ring.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_ring`.
+            GenericNDArray: Computed output value from `run_rank_ring`.
         """
         return ensure_ndarray(await reduce_scatter(inputs[rank], "SUM", 0, mesh_ring[rank], rank, algorithm="ring"))
 
@@ -1316,17 +1291,14 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: _TestMultiPeerRing
 
     async def run_rank_prod(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_prod.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_prod`.
+            GenericNDArray: Computed output value from `run_rank_prod`.
         """
         return ensure_ndarray(await ring_reduce_scatter(inputs_prod[rank], "PROD", 0, mesh_prod[rank], rank))
 
@@ -1381,17 +1353,14 @@ async def _test_multi_peer_ring_reduce_scatter_part_3(_state: _TestMultiPeerRing
 
     async def run_rank_min(
         rank: int,
-    ) -> np.ndarray[
-        tuple[int, ...],
-        np.dtype[np.generic],
-    ]:
+    ) -> GenericNDArray:
         """Test function run_rank_min.
 
         Args:
             rank: Test parameter `rank`.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `run_rank_min`.
+            GenericNDArray: Computed output value from `run_rank_min`.
         """
         return ensure_ndarray(await ring_reduce_scatter(inputs_max[rank], "MIN", 0, mesh_min[rank], rank))
 

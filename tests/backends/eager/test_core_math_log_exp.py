@@ -18,7 +18,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_log_exp import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
-from tests.testing_utils import MockTestStub, coerce_operand_list
+from tests.testing_utils import GenericNDArray, MockTestStub, coerce_operand_list
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import BackendArg
@@ -245,14 +245,14 @@ def _test_math_log_exp_coverage_part_4(_state: _TestMathLogExpCoverageState) -> 
             """Initialize proxy."""
             self.linalg = LinalgProxy()
 
-        def asarray(self, x: BackendArg) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def asarray(self, x: BackendArg) -> GenericNDArray:
             """Mock asarray.
 
             Args:
                 x: Test parameter `x`.
 
             Returns:
-                np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed output value from `asarray`.
+                GenericNDArray: Computed output value from `asarray`.
             """
             return np.asarray(x)
 

@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -385,3 +387,53 @@ SHARD_11_READERS: dict[str, MemberReader] = {
         (True, t.chebyshev_polynomial_t) if isinstance(t, _HasMember11_44) else (False, None)
     ),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember11_00,
+        _HasMember11_01,
+        _HasMember11_02,
+        _HasMember11_03,
+        _HasMember11_04,
+        _HasMember11_05,
+        _HasMember11_06,
+        _HasMember11_07,
+        _HasMember11_08,
+        _HasMember11_09,
+        _HasMember11_10,
+        _HasMember11_11,
+        _HasMember11_12,
+        _HasMember11_13,
+        _HasMember11_14,
+        _HasMember11_15,
+        _HasMember11_16,
+        _HasMember11_17,
+        _HasMember11_18,
+        _HasMember11_19,
+        _HasMember11_20,
+        _HasMember11_21,
+        _HasMember11_22,
+        _HasMember11_23,
+        _HasMember11_24,
+        _HasMember11_25,
+        _HasMember11_26,
+        _HasMember11_27,
+        _HasMember11_28,
+        _HasMember11_29,
+        _HasMember11_30,
+        _HasMember11_31,
+        _HasMember11_32,
+        _HasMember11_33,
+        _HasMember11_34,
+        _HasMember11_35,
+        _HasMember11_36,
+        _HasMember11_37,
+        _HasMember11_38,
+        _HasMember11_39,
+        _HasMember11_40,
+        _HasMember11_41,
+        _HasMember11_42,
+        _HasMember11_43,
+        _HasMember11_44,
+    )
+)

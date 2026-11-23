@@ -19,6 +19,21 @@ InterpreterValue = typing.Union[  # noqa: UP007
 ValueType = InterpreterValue
 
 
+def _is_eval_shape_value(val: OpValue | InterpreterValue) -> typing.TypeGuard[ShapeProtocol]:
+    """Check whether `val` satisfies `ShapeProtocol` including mock tensors.
+
+    Args:
+        val (OpValue | InterpreterValue): Candidate runtime value.
+
+    Returns:
+        typing.TypeGuard[ShapeProtocol]: `True` when `val` exposes `.shape`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, ShapeProtocol)
+    return found or is_mock_with_attrs(val, "shape")
+
+
 def as_eval_value(val: OpValue | InterpreterValue) -> InterpreterValue:
     """Validate and narrow a candidate runtime value to `InterpreterValue`.
 
@@ -31,7 +46,7 @@ def as_eval_value(val: OpValue | InterpreterValue) -> InterpreterValue:
     Raises:
         TypeError: If `val` is not a valid runtime tensor, scalar, or sequence value.
     """
-    if val is None or isinstance(val, (int, float, bool, complex, str, ShapeProtocol)):
+    if val is None or isinstance(val, (int, float, bool, complex, str)) or _is_eval_shape_value(val):
         return val
     if isinstance(val, tuple):
         return tuple(as_eval_value(item) for item in val)

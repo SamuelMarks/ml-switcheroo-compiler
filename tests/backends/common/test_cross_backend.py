@@ -80,14 +80,19 @@ def test_keras_generator_full() -> None:
 
 def test_keras_eager_coverage() -> None:
     """Test function test_keras_eager_coverage."""
+    from unittest.mock import patch
+
+    import numpy as np
     import pytest
 
     with pytest.raises(Exception, match=".*"):
         execute_op(None, "UnknownFakeOp", None)
-    assert zeros(None, (2,)) is not None
-    assert array(None, [1, 2]) is not None
-    assert asarray(None, [3, 4]) is not None
-    assert item(None, kops.array([5])) == 5
+    active_kops = kops if kops is not None else np
+    with patch("ml_switcheroo_compiler.backends.keras.types.kops", active_kops):
+        assert zeros(None, (2,)) is not None
+        assert array(None, [1, 2]) is not None
+        assert asarray(None, [3, 4]) is not None
+        assert item(None, adapt_backend_module(active_kops).require_op("array")([5])) == 5
 
 
 def test_mlx_generator_coverage() -> None:

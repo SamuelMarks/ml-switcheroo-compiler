@@ -398,3 +398,52 @@ def test_is_breaking_and_flatten_edge_cases() -> None:
 
     empty_changelog = generate_changelog(DiffResult())
     assert "No changes detected." in empty_changelog
+
+
+def test_diff_result_monoid_and_load_result_branches(tmp_path: Path) -> None:
+    """Verify DIFF_RESULT_MONOID laws, tuple sequences, and load_snapshot_file_result branches.
+
+    Args:
+        tmp_path (Path): Temporary directory fixture.
+    """
+    from ml_switcheroo_ir import Err, Ok
+
+    from scripts.check_snapshot_drift import (
+        DIFF_RESULT_MONOID,
+        DiffResult,
+        diff_snapshots,
+        load_snapshot_file,
+        load_snapshot_file_result,
+    )
+
+    d_left = DiffResult(added=["b"], removed=["x"])
+    d_right = DiffResult(added=["a", "b"], non_breaking_signature_changed=["z"])
+    merged = DIFF_RESULT_MONOID.semigroup.combine(d_left, d_right)
+    assert merged.added == ["a", "b"]
+    assert merged.removed == ["x"]
+    assert merged.non_breaking_signature_changed == ["z"]
+    assert DIFF_RESULT_MONOID.semigroup.combine(DIFF_RESULT_MONOID.empty(), d_left) == d_left
+
+    tuple_diff = diff_snapshots(
+        {"categories": {"math": ({"api_path": "f", "params": ({"name": "x"},)},)}},
+        {"categories": {"math": ({"api_path": "f", "params": ({"name": "x"}, {"name": "y", "default": "1"})},)}},
+    )
+    assert tuple_diff.non_breaking_signature_changed == ["f"]
+
+    missing_res = load_snapshot_file_result(str(tmp_path / "nope.json"))
+    assert isinstance(missing_res, Err)
+
+    bad_json = tmp_path / "bad.json"
+    bad_json.write_text("{invalid", encoding="utf-8")
+    assert isinstance(load_snapshot_file_result(str(bad_json)), Err)
+
+    list_json = tmp_path / "list.json"
+    list_json.write_text("[1, 2]", encoding="utf-8")
+    assert isinstance(load_snapshot_file_result(str(list_json)), Err)
+    with pytest.raises(ValueError, match="must be a JSON object"):
+        load_snapshot_file(str(list_json))
+
+    valid_json = tmp_path / "ok.json"
+    valid_json.write_text('{"categories": {}}', encoding="utf-8")
+    ok_res = load_snapshot_file_result(str(valid_json))
+    assert isinstance(ok_res, Ok)

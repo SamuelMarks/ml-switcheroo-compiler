@@ -49,7 +49,10 @@ def _is_load_npz_backend(val: OpValue) -> typing.TypeGuard[_LoadNpzBackendProtoc
     Returns:
         bool: True if `val` has `load_npz`.
     """
-    return isinstance(val, _LoadNpzBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _LoadNpzBackendProtocol)
+    return found or is_mock_with_attrs(val, "load_npz")
 
 
 def _is_save_npz_backend(val: OpValue) -> typing.TypeGuard[_SaveNpzBackendProtocol]:
@@ -61,7 +64,10 @@ def _is_save_npz_backend(val: OpValue) -> typing.TypeGuard[_SaveNpzBackendProtoc
     Returns:
         bool: True if `val` has `save_npz`.
     """
-    return isinstance(val, _SaveNpzBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _SaveNpzBackendProtocol)
+    return found or is_mock_with_attrs(val, "save_npz")
 
 
 class NpzWeightFormat(WeightLoader, WeightSaver):

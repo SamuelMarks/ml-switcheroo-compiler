@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -385,3 +387,53 @@ SHARD_46_READERS: dict[str, MemberReader] = {
     "split_pattern": lambda t: (True, t.split_pattern) if isinstance(t, _HasMember46_43) else (False, None),
     "split_pattern_regex": lambda t: (True, t.split_pattern_regex) if isinstance(t, _HasMember46_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember46_00,
+        _HasMember46_01,
+        _HasMember46_02,
+        _HasMember46_03,
+        _HasMember46_04,
+        _HasMember46_05,
+        _HasMember46_06,
+        _HasMember46_07,
+        _HasMember46_08,
+        _HasMember46_09,
+        _HasMember46_10,
+        _HasMember46_11,
+        _HasMember46_12,
+        _HasMember46_13,
+        _HasMember46_14,
+        _HasMember46_15,
+        _HasMember46_16,
+        _HasMember46_17,
+        _HasMember46_18,
+        _HasMember46_19,
+        _HasMember46_20,
+        _HasMember46_21,
+        _HasMember46_22,
+        _HasMember46_23,
+        _HasMember46_24,
+        _HasMember46_25,
+        _HasMember46_26,
+        _HasMember46_27,
+        _HasMember46_28,
+        _HasMember46_29,
+        _HasMember46_30,
+        _HasMember46_31,
+        _HasMember46_32,
+        _HasMember46_33,
+        _HasMember46_34,
+        _HasMember46_35,
+        _HasMember46_36,
+        _HasMember46_37,
+        _HasMember46_38,
+        _HasMember46_39,
+        _HasMember46_40,
+        _HasMember46_41,
+        _HasMember46_42,
+        _HasMember46_43,
+        _HasMember46_44,
+    )
+)

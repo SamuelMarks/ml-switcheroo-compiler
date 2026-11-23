@@ -7,6 +7,7 @@ from collections.abc import Iterable, Mapping, Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
 from ml_switcheroo_compiler.core.shape import OpValue, VariadicCallableProtocol
 
 
@@ -145,6 +146,112 @@ class _NamedModulesProtocol(typing.Protocol):
         ...
 
 
+def _has_fx_kwargs(
+    val: FxNodeProtocol | LogicalNode | OpValue | _FxNodeKwargsProtocol,
+) -> typing.TypeGuard[_FxNodeKwargsProtocol]:
+    """Check whether `val` exposes `.kwargs`.
+
+    Args:
+        val (FxNodeProtocol | LogicalNode | OpValue | _FxNodeKwargsProtocol): Candidate FX node.
+
+    Returns:
+        typing.TypeGuard[_FxNodeKwargsProtocol]: `True` when `.kwargs` exists.
+    """
+    found: bool = isinstance(val, _FxNodeKwargsProtocol)
+    return found or is_mock_with_attrs(val, "kwargs")
+
+
+def _has_fx_args(val: FxNodeProtocol | LogicalNode | OpValue) -> typing.TypeGuard[_FxNodeArgsProtocol]:
+    """Check whether `val` exposes `.args`.
+
+    Args:
+        val (FxNodeProtocol | LogicalNode | OpValue): Candidate FX node.
+
+    Returns:
+        typing.TypeGuard[_FxNodeArgsProtocol]: `True` when `.args` exists.
+    """
+    found: bool = isinstance(val, _FxNodeArgsProtocol)
+    return found or is_mock_with_attrs(val, "args")
+
+
+def _has_fx_target(val: FxNodeProtocol | LogicalNode | OpValue) -> typing.TypeGuard[_FxNodeTargetProtocol]:
+    """Check whether `val` exposes `.target`.
+
+    Args:
+        val (FxNodeProtocol | LogicalNode | OpValue): Candidate FX node.
+
+    Returns:
+        typing.TypeGuard[_FxNodeTargetProtocol]: `True` when `.target` exists.
+    """
+    found: bool = isinstance(val, _FxNodeTargetProtocol)
+    return found or is_mock_with_attrs(val, "target")
+
+
+def _has_fx_name(val: OpValue | _HasNameProtocol) -> typing.TypeGuard[_HasNameProtocol]:
+    """Check whether `val` exposes `.name`.
+
+    Args:
+        val (OpValue | _HasNameProtocol): Candidate FX node or argument.
+
+    Returns:
+        typing.TypeGuard[_HasNameProtocol]: `True` when `.name` exists.
+    """
+    found: bool = isinstance(val, _HasNameProtocol)
+    return found or is_mock_with_attrs(val, "name")
+
+
+def _has_fx_dunder_name(val: OpValue | _HasDunderNameProtocol) -> typing.TypeGuard[_HasDunderNameProtocol]:
+    """Check whether `val` exposes `__name__`.
+
+    Args:
+        val (OpValue | _HasDunderNameProtocol): Candidate target callable.
+
+    Returns:
+        typing.TypeGuard[_HasDunderNameProtocol]: `True` when `__name__` exists.
+    """
+    found: bool = isinstance(val, _HasDunderNameProtocol)
+    return found or is_mock_with_attrs(val, "__name__")
+
+
+def _is_fx_graph_module(val: OpValue) -> typing.TypeGuard[FxGraphModuleProtocol]:
+    """Check whether `val` exposes `.graph`.
+
+    Args:
+        val (OpValue): Candidate FX GraphModule.
+
+    Returns:
+        typing.TypeGuard[FxGraphModuleProtocol]: `True` when `.graph` exists.
+    """
+    found: bool = isinstance(val, FxGraphModuleProtocol)
+    return found or is_mock_with_attrs(val, "graph")
+
+
+def _is_fx_graph_inner(val: _FxGraphInnerProtocol | OpValue) -> typing.TypeGuard[_FxGraphInnerProtocol]:
+    """Check whether `val` exposes `.nodes`.
+
+    Args:
+        val (_FxGraphInnerProtocol | OpValue): Candidate FX Graph.
+
+    Returns:
+        typing.TypeGuard[_FxGraphInnerProtocol]: `True` when `.nodes` exists.
+    """
+    found: bool = isinstance(val, _FxGraphInnerProtocol)
+    return found or is_mock_with_attrs(val, "nodes")
+
+
+def _has_named_modules(val: FxGraphModuleProtocol | OpValue) -> typing.TypeGuard[_NamedModulesProtocol]:
+    """Check whether `val` exposes `.named_modules`.
+
+    Args:
+        val (FxGraphModuleProtocol | OpValue): Candidate FX GraphModule.
+
+    Returns:
+        typing.TypeGuard[_NamedModulesProtocol]: `True` when `.named_modules` exists.
+    """
+    found: bool = isinstance(val, _NamedModulesProtocol)
+    return found or is_mock_with_attrs(val, "named_modules")
+
+
 def _extract_node_attributes(node: FxNodeProtocol | LogicalNode | OpValue) -> dict[str, AttributeValue]:
     """Extract serializable ``AttributeValue`` entries from an FX node's ``kwargs``.
 
@@ -157,9 +264,7 @@ def _extract_node_attributes(node: FxNodeProtocol | LogicalNode | OpValue) -> di
     attributes: dict[str, AttributeValue] = {}
     cand_node: FxNodeProtocol | LogicalNode | OpValue | _FxNodeKwargsProtocol = node
     raw_kwargs: Mapping[str, OpValue] = (
-        cand_node.kwargs
-        if isinstance(cand_node, _FxNodeKwargsProtocol) and isinstance(cand_node.kwargs, Mapping)
-        else {}
+        cand_node.kwargs if _has_fx_kwargs(cand_node) and isinstance(cand_node.kwargs, Mapping) else {}
     )
     for k, v in raw_kwargs.items():
         if isinstance(v, (list, tuple)):
@@ -200,7 +305,7 @@ def _extract_fx_inputs(args: Sequence[OpValue], node_map: dict[str, str]) -> lis
     inputs: list[str] = []
     for arg in args:
         cand_arg: OpValue | _HasNameProtocol = arg
-        if isinstance(cand_arg, _HasNameProtocol) and cand_arg.name in node_map:
+        if _has_fx_name(cand_arg) and cand_arg.name in node_map:
             inputs.append(node_map[cand_arg.name])
         else:
             inputs.append(str(arg))
@@ -222,7 +327,7 @@ def _handle_fx_call_method(
         modules (dict[str, VariadicCallableProtocol] | None): Optional named submodules map.
     """
     del modules
-    target_name = str(node.target) if isinstance(node, _FxNodeTargetProtocol) else ""
+    target_name = str(node.target) if _has_fx_target(node) else ""
 
     op_map = {
         "view": "Reshape",
@@ -237,7 +342,7 @@ def _handle_fx_call_method(
     }
 
     op_type = op_map.get(target_name, "Unknown")
-    node_args = node.args if isinstance(node, _FxNodeArgsProtocol) else ()
+    node_args = node.args if _has_fx_args(node) else ()
     inputs = _extract_fx_inputs(node_args, node_map)
 
     node_name = str(node.name)
@@ -296,9 +401,9 @@ def _handle_fx_call_module(
         node_map (dict[str, str]): Mapping from FX node names to ``LogicalNode`` IDs.
         modules (dict[str, VariadicCallableProtocol] | None): Optional named submodules map.
     """
-    target_name = str(node.target) if isinstance(node, _FxNodeTargetProtocol) else ""
+    target_name = str(node.target) if _has_fx_target(node) else ""
     op_type = _resolve_fx_module_op_type(target_name, modules)
-    node_args = node.args if isinstance(node, _FxNodeArgsProtocol) else ()
+    node_args = node.args if _has_fx_args(node) else ()
     inputs = _extract_fx_inputs(node_args, node_map)
 
     node_name = str(node.name)
@@ -327,7 +432,7 @@ def _handle_fx_get_attr(
         modules (dict[str, VariadicCallableProtocol] | None): Optional named submodules map.
     """
     del modules
-    target_str = str(node.target) if isinstance(node, _FxNodeTargetProtocol) else ""
+    target_str = str(node.target) if _has_fx_target(node) else ""
     node_name = str(node.name)
     graph.nodes[node_name] = LogicalNode(
         id=node_name,
@@ -354,8 +459,8 @@ def _handle_fx_call_function(
         modules (dict[str, VariadicCallableProtocol] | None): Optional named submodules map.
     """
     del modules
-    target_obj: OpValue = node.target if isinstance(node, _FxNodeTargetProtocol) else ""
-    target_name = str(target_obj.__name__) if isinstance(target_obj, _HasDunderNameProtocol) else str(target_obj)
+    target_obj: OpValue = node.target if _has_fx_target(node) else ""
+    target_name = str(target_obj.__name__) if _has_fx_dunder_name(target_obj) else str(target_obj)
 
     op_map = {
         "add": "Add",
@@ -408,7 +513,7 @@ def _handle_fx_call_function(
                 op_type = val
                 break
 
-    node_args = node.args if isinstance(node, _FxNodeArgsProtocol) else ()
+    node_args = node.args if _has_fx_args(node) else ()
     inputs = _extract_fx_inputs(node_args, node_map)
 
     node_name = str(node.name)
@@ -438,13 +543,13 @@ def _handle_fx_output(
     """
     del node_map, modules
     outputs: list[str] = []
-    node_args = node.args if (isinstance(node, _FxNodeArgsProtocol) and node.args) else (None,)
+    node_args = node.args if (_has_fx_args(node) and node.args) else (None,)
     args = node_args[0]
     if isinstance(args, (tuple, list)):
         for item in args:
-            if isinstance(item, _HasNameProtocol):
+            if _has_fx_name(item):
                 outputs.append(str(item.name))
-    elif isinstance(args, _HasNameProtocol):
+    elif _has_fx_name(args):
         outputs.append(str(args.name))
     graph.outputs = outputs
 
@@ -466,9 +571,7 @@ def ingest_torch_fx(fx_graph_module: OpValue) -> LogicalGraph:
 
     graph = LogicalGraph(name="torch_fx_ingested")
 
-    if not isinstance(fx_graph_module, FxGraphModuleProtocol) or not isinstance(
-        fx_graph_module.graph, _FxGraphInnerProtocol
-    ):
+    if not _is_fx_graph_module(fx_graph_module) or not _is_fx_graph_inner(fx_graph_module.graph):
         return graph
     raw_inner = fx_graph_module.graph
 
@@ -482,7 +585,7 @@ def ingest_torch_fx(fx_graph_module: OpValue) -> LogicalGraph:
     }
 
     modules: dict[str, VariadicCallableProtocol] = {}
-    if isinstance(fx_graph_module, _NamedModulesProtocol) and callable(fx_graph_module.named_modules):
+    if _has_named_modules(fx_graph_module) and callable(fx_graph_module.named_modules):
         modules = {str(k): v for k, v in fx_graph_module.named_modules()}
 
     node_map: dict[str, str] = {}

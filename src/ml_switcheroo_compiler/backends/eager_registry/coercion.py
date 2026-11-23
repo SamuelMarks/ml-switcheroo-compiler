@@ -84,12 +84,29 @@ class IndexableSequenceProtocol(typing.Protocol[_ItemT_co]):
         ...
 
 
-def coerce_int(val: BackendOperand, default: int = 0) -> int:
+def _can_unwrap_item(val: BackendOperand) -> bool:
+    """Return `True` when `val` is a non-module object whose `.item` will not auto-vivify a mock child.
+
+    Args:
+        val (BackendOperand): Candidate scalar wrapper.
+
+    Returns:
+        bool: `True` if `.item()` may be safely inspected.
+    """
+    from unittest.mock import NonCallableMock
+
+    if type(val) is types.ModuleType:
+        return False
+    return not (isinstance(val, NonCallableMock) and "item" not in val._mock_children)
+
+
+def coerce_int(val: BackendOperand, default: int = 0, *, _unwrap_item: bool = True) -> int:
     """Validate and convert `val` to a genuine Python `int`, returning `default` when `None`.
 
     Args:
         val (BackendOperand): Candidate integer or `None`.
         default (int): Default integer when `val` is `None`.
+        _unwrap_item (bool): Whether to attempt single-step `.item()` unwrapping on scalar wrappers.
 
     Returns:
         int: Validated Python integer.
@@ -103,13 +120,16 @@ def coerce_int(val: BackendOperand, default: int = 0) -> int:
         return int(val)
     if isinstance(val, (int, float, str, bytes)):
         return int(val)
+    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
+
+    if _unwrap_item and _can_unwrap_item(val) and isinstance(val, _ItemMemberProtocol):
+        try:
+            return coerce_int(val.item(), default=default, _unwrap_item=False)
+        except (TypeError, ValueError):
+            pass
     cand: BackendOperand | _SupportsIntProto = val
     if isinstance(cand, _SupportsIntProto):
         return int(cand)
-    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
-
-    if type(val) is not types.ModuleType and isinstance(val, _ItemMemberProtocol):
-        return coerce_int(val.item(), default=default)
     raise TypeError(f"Expected int-convertible value, got {type(val).__name__}")
 
 
@@ -127,12 +147,13 @@ def coerce_opt_int(val: BackendOperand) -> int | None:
     return coerce_int(val)
 
 
-def coerce_float(val: BackendOperand, default: float = 0.0) -> float:
+def coerce_float(val: BackendOperand, default: float = 0.0, *, _unwrap_item: bool = True) -> float:
     """Validate and convert `val` to a genuine Python `float`, returning `default` when `None`.
 
     Args:
         val (BackendOperand): Candidate numeric scalar or `None`.
         default (float): Default float when `val` is `None`.
+        _unwrap_item (bool): Whether to attempt single-step `.item()` unwrapping on scalar wrappers.
 
     Returns:
         float: Validated Python float.
@@ -144,6 +165,13 @@ def coerce_float(val: BackendOperand, default: float = 0.0) -> float:
         return default
     if isinstance(val, (int, float, str, bytes)):
         return float(val)
+    from ml_switcheroo_compiler.core._shape_protocols import _ItemMemberProtocol
+
+    if _unwrap_item and _can_unwrap_item(val) and isinstance(val, _ItemMemberProtocol):
+        try:
+            return coerce_float(val.item(), default=default, _unwrap_item=False)
+        except (TypeError, ValueError):
+            pass
     cand: BackendOperand | _SupportsFloatProto = val
     if isinstance(cand, _SupportsFloatProto):
         return float(cand)
@@ -525,6 +553,21 @@ def require_callable(val: _RequireCallableCandidate[_CallRetT]) -> EagerBoundCal
     raise TypeError(f"Expected callable object, got {type(val).__name__}")
 
 
+def _is_backend_array(val: BackendOperand) -> typing.TypeGuard[BackendArrayProtocol]:
+    """Check whether `val` satisfies `BackendArrayProtocol` including mock arrays.
+
+    Args:
+        val (BackendOperand): Candidate value.
+
+    Returns:
+        typing.TypeGuard[BackendArrayProtocol]: `True` if `val` is a backend array.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, BackendArrayProtocol)
+    return found or is_mock_with_attrs(val, "shape")
+
+
 def coerce_array(
     mod: types.ModuleType | BackendOperand,
     val: BackendArg,
@@ -538,7 +581,7 @@ def coerce_array(
     Returns:
         BackendArrayProtocol: Validated backend array instance.
     """
-    if isinstance(val, BackendArrayProtocol):
+    if _is_backend_array(val):
         return val
     from ml_switcheroo_compiler.backends.protocols import adapt_backend_module
 
@@ -558,7 +601,7 @@ def coerce_numeric(val: BackendOperand) -> BackendArrayProtocol | float | int:
         return int(val)
     if isinstance(val, (int, float)):
         return val
-    if isinstance(val, BackendArrayProtocol):
+    if _is_backend_array(val):
         return val
     return coerce_float(val)
 

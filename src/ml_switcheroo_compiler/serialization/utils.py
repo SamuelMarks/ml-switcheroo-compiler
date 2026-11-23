@@ -454,6 +454,23 @@ def _tensor_to_npy_bytes(tensor: OpValue) -> bytes:
     return header + data_bytes
 
 
+def _is_get_npz_bytes_backend(
+    val: OpValue | _GetNpzBytesBackendProtocol,
+) -> typing.TypeGuard[_GetNpzBytesBackendProtocol]:
+    """Check whether `val` exposes `get_npz_bytes`.
+
+    Args:
+        val (OpValue | _GetNpzBytesBackendProtocol): Active backend.
+
+    Returns:
+        bool: True if `val` has `get_npz_bytes`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _GetNpzBytesBackendProtocol)
+    return found or is_mock_with_attrs(val, "get_npz_bytes")
+
+
 def get_npz_bytes(weights: OpValue) -> bytes:
     """Get npz bytes.
 
@@ -469,7 +486,7 @@ def get_npz_bytes(weights: OpValue) -> bytes:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend: OpValue | _GetNpzBytesBackendProtocol = get_active_backend()
-    if isinstance(backend, _GetNpzBytesBackendProtocol):
+    if _is_get_npz_bytes_backend(backend):
         return _ensure_util_bytes(backend.get_npz_bytes(weights))
 
     assert isinstance(weights, Mapping)
@@ -483,16 +500,19 @@ def get_npz_bytes(weights: OpValue) -> bytes:
     return zf_out.getvalue()
 
 
-def _is_npz_files(val: OpValue) -> typing.TypeGuard[_NpzFilesProtocol]:
+def _is_npz_files(val: OpValue | _NpzFilesProtocol) -> typing.TypeGuard[_NpzFilesProtocol]:
     """Check whether `val` exposes a `files` attribute.
 
     Args:
-        val (OpValue): Loaded npz archive.
+        val (OpValue | _NpzFilesProtocol): Loaded npz archive.
 
     Returns:
         bool: True if `val` has `files`.
     """
-    return isinstance(val, _NpzFilesProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _NpzFilesProtocol)
+    return found or is_mock_with_attrs(val, "files")
 
 
 def _decode_npy_payload(raw_npy: bytes) -> TensorLike:
@@ -515,6 +535,36 @@ def _decode_npy_payload(raw_npy: bytes) -> TensorLike:
     code, item_sz = fmt_map.get(descr, ("f", 4))
     count = len(payload) // item_sz if item_sz > 0 else 0
     return list(struct.unpack(f"<{count}{code}", payload[: count * item_sz])) if count > 0 else []
+
+
+def _is_get_module_backend(val: OpValue | _GetModuleBackendProtocol) -> typing.TypeGuard[_GetModuleBackendProtocol]:
+    """Check whether `val` exposes `get_module`.
+
+    Args:
+        val (OpValue | _GetModuleBackendProtocol): Active backend.
+
+    Returns:
+        bool: True if `val` has `get_module`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _GetModuleBackendProtocol)
+    return found or is_mock_with_attrs(val, "get_module")
+
+
+def _is_loadable_mod(val: OpValue | _LoadableModuleProtocol) -> typing.TypeGuard[_LoadableModuleProtocol]:
+    """Check whether `val` exposes `load`.
+
+    Args:
+        val (OpValue | _LoadableModuleProtocol): Backend module.
+
+    Returns:
+        bool: True if `val` has `load`.
+    """
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _LoadableModuleProtocol)
+    return found or is_mock_with_attrs(val, "load")
 
 
 def parse_npz(file_obj: str | bytes | io.IOBase | TensorLike) -> dict[str, TensorLike]:
@@ -541,11 +591,11 @@ def parse_npz(file_obj: str | bytes | io.IOBase | TensorLike) -> dict[str, Tenso
             target = io.BytesIO(raw_bytes if isinstance(raw_bytes, (bytes, bytearray)) else b"")
         else:
             target = file_obj
-        if isinstance(active_be, _GetModuleBackendProtocol):
+        if _is_get_module_backend(active_be):
             active_mod = active_be.get_module()
-            assert isinstance(active_mod, _LoadableModuleProtocol)
+            assert _is_loadable_mod(active_mod)
             with active_mod.load(target) as data:
-                assert isinstance(data, _NpzFilesProtocol)
+                assert _is_npz_files(data)
                 return {k: data[k] for k in data.files}
         assert isinstance(target, (str, os.PathLike, io.BytesIO))
         with zipfile.ZipFile(target, "r") as zf:
@@ -576,7 +626,10 @@ def _is_load_npz_backend(val: OpValue) -> typing.TypeGuard[_LoadNpzListBackendPr
     Returns:
         bool: True if `val` has `load_npz`.
     """
-    return isinstance(val, _LoadNpzListBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _LoadNpzListBackendProtocol)
+    return found or is_mock_with_attrs(val, "load_npz")
 
 
 def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:

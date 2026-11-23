@@ -791,11 +791,11 @@ class _TestLlvmCppExecutionVerificationState(typing.TypedDict, total=False):
     g_conv3d: LogicalGraph
     in_w3d: LogicalNode
     in_x3d: LogicalNode
-    mean: EagerTensorProtocol
+    mean: NumpyTestArray
     node_c3d: LogicalNode
     np: types.ModuleType
     runner: LLVMCPPRunner
-    var: EagerTensorProtocol
+    var: NumpyTestArray
     x_ln: NumpyTestArray
     x_sl: EagerTensorProtocol
     y_ln: NumpyTestArray
@@ -832,8 +832,10 @@ def _test_llvm_cpp_execution_verification_part_1(_state: _TestLlvmCppExecutionVe
     x_ln = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]], dtype=np.float32)
     y_ln = np.zeros_like(x_ln)
     require_callable(fn_ln)((ctypes.c_void_p * 1)(x_ln.ctypes.data), (ctypes.c_void_p * 1)(y_ln.ctypes.data))
-    mean = x_ln.mean(axis=-1, keepdims=True)
-    var = x_ln.var(axis=-1, keepdims=True)
+    from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
+
+    mean = ensure_ndarray(x_ln.mean(axis=-1, keepdims=True))
+    var = ensure_ndarray(x_ln.var(axis=-1, keepdims=True))
     _state.update({"ctypes": ctypes})
     _state.update({"mean": mean})
     _state.update({"np": np, "runner": runner})

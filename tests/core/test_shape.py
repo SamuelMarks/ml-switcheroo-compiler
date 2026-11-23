@@ -169,3 +169,52 @@ def test_shape_ellipsis_version_branches(monkeypatch: pytest.MonkeyPatch) -> Non
     n_fix = build_test_node("n0", "Relu", ["x"], {"alpha": 0.0})
     g_fix = build_test_graph("g_fix", {"n0": n_fix}, ["x"], ["n0"])
     assert g_fix.nodes["n0"].op_type == "Relu"
+
+
+def test_mock_protocol_and_broken_data_holders() -> None:
+    """Verify is_mock_with_attrs and readable-data helpers across Python 3.9 and 3.12+."""
+    from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+    from ml_switcheroo_compiler.core._shape_extractors import _has_readable_data_attr
+    from ml_switcheroo_compiler.core.shape import OpValue
+    from ml_switcheroo_compiler.ops.creation.api_basic import _can_read_data_holder
+
+    assert not is_mock_with_attrs(42, "shape")
+    configured_mock = MagicMock(shape=(2, 3))
+    assert is_mock_with_attrs(configured_mock, "shape")
+    assert is_mock_with_attrs(MagicMock(), "unconfigured_attr")
+    specced_mock = MagicMock(spec=["only_attr"])
+    assert not is_mock_with_attrs(specced_mock, "missing_attr")
+
+    class _BrokenDataHolder:
+        """DataHolderProtocol witness whose .data property raises AttributeError."""
+
+        @property
+        def data(self) -> OpValue:
+            """Raise AttributeError when inspected.
+
+            Returns:
+                OpValue: Unreachable; raises ``AttributeError``.
+
+            Raises:
+                AttributeError: Always raised to exercise broken descriptor handling.
+            """
+            raise AttributeError("broken descriptor")
+
+    class _ValidDataHolder:
+        """DataHolderProtocol witness whose .data property returns an integer."""
+
+        @property
+        def data(self) -> OpValue:
+            """Return scalar data payload.
+
+            Returns:
+                OpValue: Constant integer payload.
+            """
+            return 1
+
+    assert not _has_readable_data_attr(_BrokenDataHolder())
+    assert _has_readable_data_attr(_ValidDataHolder())
+    assert not _can_read_data_holder(_BrokenDataHolder())
+    assert _can_read_data_holder(_ValidDataHolder())

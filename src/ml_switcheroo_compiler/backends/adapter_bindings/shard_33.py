@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -387,3 +389,53 @@ SHARD_33_READERS: dict[str, MemberReader] = {
     "mock_getframeinfo": lambda t: (True, t.mock_getframeinfo) if isinstance(t, _HasMember33_43) else (False, None),
     "mock_getsource": lambda t: (True, t.mock_getsource) if isinstance(t, _HasMember33_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember33_00,
+        _HasMember33_01,
+        _HasMember33_02,
+        _HasMember33_03,
+        _HasMember33_04,
+        _HasMember33_05,
+        _HasMember33_06,
+        _HasMember33_07,
+        _HasMember33_08,
+        _HasMember33_09,
+        _HasMember33_10,
+        _HasMember33_11,
+        _HasMember33_12,
+        _HasMember33_13,
+        _HasMember33_14,
+        _HasMember33_15,
+        _HasMember33_16,
+        _HasMember33_17,
+        _HasMember33_18,
+        _HasMember33_19,
+        _HasMember33_20,
+        _HasMember33_21,
+        _HasMember33_22,
+        _HasMember33_23,
+        _HasMember33_24,
+        _HasMember33_25,
+        _HasMember33_26,
+        _HasMember33_27,
+        _HasMember33_28,
+        _HasMember33_29,
+        _HasMember33_30,
+        _HasMember33_31,
+        _HasMember33_32,
+        _HasMember33_33,
+        _HasMember33_34,
+        _HasMember33_35,
+        _HasMember33_36,
+        _HasMember33_37,
+        _HasMember33_38,
+        _HasMember33_39,
+        _HasMember33_40,
+        _HasMember33_41,
+        _HasMember33_42,
+        _HasMember33_43,
+        _HasMember33_44,
+    )
+)

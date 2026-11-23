@@ -301,10 +301,13 @@ def _execute_variance(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:
     Returns:
             BackendArg: Computed `BackendArg` output.
     """
+    import types
+
     import jax.numpy as jnp
 
+    jnp_mod: types.ModuleType = jnp
     kwargs.setdefault("ddof", 0)
-    return adapt_backend_module(jnp).require_op("var")(*args, **kwargs)
+    return adapt_backend_module(jnp_mod).require_op("var")(*args, **kwargs)
 
 
 def _execute_cast(*args: BackendArg, **kwargs: BackendArg) -> BackendArg:

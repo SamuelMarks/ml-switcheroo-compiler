@@ -17,14 +17,16 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_parameterized_truncated_normal,
     stateless_split,
 )
-from tests.testing_utils import ensure_tensor
+from tests.testing_utils import GenericNDArray, ensure_tensor
 
 
-def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
+def create_eager_tensor(
+    data: GenericNDArray,
+) -> Tensor:
     """Create a CPU float32 Tensor from a NumPy array.
 
     Args:
-        data (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): Input array.
+        data (GenericNDArray): Input array.
 
     Returns:
         Tensor: Wrapped compiler Tensor.

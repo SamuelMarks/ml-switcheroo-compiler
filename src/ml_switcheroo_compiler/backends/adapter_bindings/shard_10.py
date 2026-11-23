@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -385,3 +387,53 @@ SHARD_10_READERS: dict[str, MemberReader] = {
     "bitwise_xor": lambda t: (True, t.bitwise_xor) if isinstance(t, _HasMember10_43) else (False, None),
     "bitwiseand": lambda t: (True, t.bitwiseand) if isinstance(t, _HasMember10_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember10_00,
+        _HasMember10_01,
+        _HasMember10_02,
+        _HasMember10_03,
+        _HasMember10_04,
+        _HasMember10_05,
+        _HasMember10_06,
+        _HasMember10_07,
+        _HasMember10_08,
+        _HasMember10_09,
+        _HasMember10_10,
+        _HasMember10_11,
+        _HasMember10_12,
+        _HasMember10_13,
+        _HasMember10_14,
+        _HasMember10_15,
+        _HasMember10_16,
+        _HasMember10_17,
+        _HasMember10_18,
+        _HasMember10_19,
+        _HasMember10_20,
+        _HasMember10_21,
+        _HasMember10_22,
+        _HasMember10_23,
+        _HasMember10_24,
+        _HasMember10_25,
+        _HasMember10_26,
+        _HasMember10_27,
+        _HasMember10_28,
+        _HasMember10_29,
+        _HasMember10_30,
+        _HasMember10_31,
+        _HasMember10_32,
+        _HasMember10_33,
+        _HasMember10_34,
+        _HasMember10_35,
+        _HasMember10_36,
+        _HasMember10_37,
+        _HasMember10_38,
+        _HasMember10_39,
+        _HasMember10_40,
+        _HasMember10_41,
+        _HasMember10_42,
+        _HasMember10_43,
+        _HasMember10_44,
+    )
+)

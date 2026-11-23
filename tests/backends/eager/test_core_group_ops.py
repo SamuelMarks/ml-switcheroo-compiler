@@ -214,7 +214,10 @@ class MockTorchStyleBackend:
         Returns:
             NumpyTestArray: Computed mean.
         """
-        return ensure_ndarray(np.mean(x, axis=dim, keepdims=keepdim))
+        arr_f = np.asarray(x, dtype=np.float64)
+        return ensure_ndarray(
+            np.mean(arr_f, axis=dim, keepdims=True) if keepdim else np.mean(arr_f, axis=dim, keepdims=False)
+        )
 
     def var(
         self,
@@ -235,7 +238,12 @@ class MockTorchStyleBackend:
             NumpyTestArray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return ensure_ndarray(np.var(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        arr_f = np.asarray(x, dtype=np.float64)
+        return ensure_ndarray(
+            np.var(arr_f, axis=dim, keepdims=True, ddof=ddof)
+            if keepdim
+            else np.var(arr_f, axis=dim, keepdims=False, ddof=ddof)
+        )
 
 
 class MockFailingAxisBackend(MockTestStub):

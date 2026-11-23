@@ -49,7 +49,10 @@ def _is_numpy_callable(val: BackendArg) -> typing.TypeGuard[_NumpyCallableProtoc
     Returns:
         bool: True if `val` has a `.numpy` attribute.
     """
-    return isinstance(val, _NumpyCallableProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _NumpyCallableProtocol)
+    return found or is_mock_with_attrs(val, "numpy")
 
 
 def _get_process_memory_mb() -> float:

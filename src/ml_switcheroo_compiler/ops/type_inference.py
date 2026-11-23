@@ -5,8 +5,11 @@ from __future__ import annotations
 import re
 import typing
 
+from ml_switcheroo_ir import Err, Result
+
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.dtype import DType, parse_dtype_result
+from ml_switcheroo_compiler.core.errors import DTypeValidationError
 from ml_switcheroo_compiler.core.shape import DTypeHolderProtocol, OpValue
 
 if typing.TYPE_CHECKING:
@@ -64,3 +67,26 @@ def resolve_output_dtype_and_device(
         out_dtype = DType.Float32
     device = first_tensor.device if first_tensor is not None else None
     return out_dtype, device
+
+
+def resolve_dtype_result(
+    res_data: OpValue,
+    first_tensor: Tensor | None,
+) -> Result[DTypeValidationError, DType]:
+    """Resolve the ``DType`` of an eager result into an explicit ``Result`` without silent fallback.
+
+    Args:
+        res_data (OpValue): Raw eager backend output value.
+        first_tensor (Tensor | None): Optional first input tensor fallback when ``res_data`` has no ``.dtype``.
+
+    Returns:
+        Result[DTypeValidationError, DType]: ``Ok(DType)`` if resolvable, else ``Err(DTypeValidationError)``.
+    """
+    if isinstance(res_data, DTypeHolderProtocol):
+        raw_str = str(res_data.dtype)
+        m = re.search(r"dtype\('(.*?)'\)", raw_str)
+        candidate = m.group(1) if m is not None else raw_str.split(".")[-1]
+        return parse_dtype_result(candidate)
+    if first_tensor is not None:
+        return parse_dtype_result(first_tensor.dtype)
+    return Err(DTypeValidationError("Cannot resolve DType: neither result nor fallback tensor provides dtype."))

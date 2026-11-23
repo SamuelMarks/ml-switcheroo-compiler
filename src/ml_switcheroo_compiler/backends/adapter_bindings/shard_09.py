@@ -9,6 +9,8 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry.protocols import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.eager_registry.types_base import BackendOperand
 
+from ._support import register_dynamic_protocols
+
 MemberReader = Callable[
     [typing.Union[types.ModuleType, BackendOperand]],  # noqa: UP007
     tuple[bool, typing.Optional[EagerTensorProtocol]],  # noqa: UP045
@@ -377,3 +379,53 @@ SHARD_09_READERS: dict[str, MemberReader] = {
     "avg_pool3d": lambda t: (True, t.avg_pool3d) if isinstance(t, _HasMember09_43) else (False, None),
     "avgpool2d": lambda t: (True, t.avgpool2d) if isinstance(t, _HasMember09_44) else (False, None),
 }
+
+register_dynamic_protocols(
+    (
+        _HasMember09_00,
+        _HasMember09_01,
+        _HasMember09_02,
+        _HasMember09_03,
+        _HasMember09_04,
+        _HasMember09_05,
+        _HasMember09_06,
+        _HasMember09_07,
+        _HasMember09_08,
+        _HasMember09_09,
+        _HasMember09_10,
+        _HasMember09_11,
+        _HasMember09_12,
+        _HasMember09_13,
+        _HasMember09_14,
+        _HasMember09_15,
+        _HasMember09_16,
+        _HasMember09_17,
+        _HasMember09_18,
+        _HasMember09_19,
+        _HasMember09_20,
+        _HasMember09_21,
+        _HasMember09_22,
+        _HasMember09_23,
+        _HasMember09_24,
+        _HasMember09_25,
+        _HasMember09_26,
+        _HasMember09_27,
+        _HasMember09_28,
+        _HasMember09_29,
+        _HasMember09_30,
+        _HasMember09_31,
+        _HasMember09_32,
+        _HasMember09_33,
+        _HasMember09_34,
+        _HasMember09_35,
+        _HasMember09_36,
+        _HasMember09_37,
+        _HasMember09_38,
+        _HasMember09_39,
+        _HasMember09_40,
+        _HasMember09_41,
+        _HasMember09_42,
+        _HasMember09_43,
+        _HasMember09_44,
+    )
+)

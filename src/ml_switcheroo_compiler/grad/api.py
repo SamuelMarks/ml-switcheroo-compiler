@@ -222,7 +222,10 @@ def _is_execute_graph_backend(val: OpValue) -> typing.TypeGuard[_ExecuteGraphBac
     Returns:
         bool: True if `val` has `execute_graph`.
     """
-    return isinstance(val, _ExecuteGraphBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _ExecuteGraphBackendProtocol)
+    return found or is_mock_with_attrs(val, "execute_graph")
 
 
 def _is_compile_graph_backend(val: OpValue) -> typing.TypeGuard[_CompileGraphBackendProtocol]:
@@ -234,7 +237,10 @@ def _is_compile_graph_backend(val: OpValue) -> typing.TypeGuard[_CompileGraphBac
     Returns:
         bool: True if `val` has `compile_graph`.
     """
-    return isinstance(val, _CompileGraphBackendProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _CompileGraphBackendProtocol)
+    return found or is_mock_with_attrs(val, "compile_graph")
 
 
 def _is_addable_operand(val: OpValue) -> typing.TypeGuard[_AddableProtocol]:
@@ -258,7 +264,10 @@ def _has_id_data_attr(val: OpValue) -> typing.TypeGuard[_IdDataProtocol]:
     Returns:
         bool: True if `val` has `id`.
     """
-    return isinstance(val, _IdDataProtocol)
+    from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
+
+    found: bool = isinstance(val, _IdDataProtocol)
+    return found or is_mock_with_attrs(val, "id")
 
 
 @register_util("backward")

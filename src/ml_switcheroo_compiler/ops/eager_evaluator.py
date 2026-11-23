@@ -5,6 +5,7 @@ from __future__ import annotations
 import abc
 import typing
 
+from ml_switcheroo_compiler.core._mock_protocol import is_mock_with_attrs
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.shape import (
     OpValue,
@@ -58,7 +59,8 @@ def _has_eager_eval_method(val: EagerPayload | type) -> typing.TypeGuard[_EagerE
     Returns:
         bool: True if `val` satisfies `_EagerEvalMethodProtocol`.
     """
-    return isinstance(val, _EagerEvalMethodProtocol)
+    found: bool = isinstance(val, _EagerEvalMethodProtocol)
+    return found or is_mock_with_attrs(val, "eager_eval")
 
 
 def _has_forward_method(val: EagerPayload | type) -> typing.TypeGuard[_ForwardMethodProtocol]:
@@ -70,7 +72,8 @@ def _has_forward_method(val: EagerPayload | type) -> typing.TypeGuard[_ForwardMe
     Returns:
         bool: True if `val` satisfies `_ForwardMethodProtocol`.
     """
-    return isinstance(val, _ForwardMethodProtocol)
+    found: bool = isinstance(val, _ForwardMethodProtocol)
+    return found or is_mock_with_attrs(val, "forward")
 
 
 def _has_execute_op_backend(val: EagerPayload | type) -> typing.TypeGuard[_ExecuteOpBackendProtocol]:
@@ -82,7 +85,8 @@ def _has_execute_op_backend(val: EagerPayload | type) -> typing.TypeGuard[_Execu
     Returns:
         bool: True if `val` satisfies `_ExecuteOpBackendProtocol`.
     """
-    return isinstance(val, _ExecuteOpBackendProtocol)
+    found: bool = isinstance(val, _ExecuteOpBackendProtocol)
+    return found or is_mock_with_attrs(val, "execute_op")
 
 
 class EvaluationContext:

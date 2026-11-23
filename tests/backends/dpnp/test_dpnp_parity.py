@@ -41,6 +41,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import (
     EagerTensorProtocol,
+    GenericNDArray,
     MockTestStub,
     coerce_float,
     coerce_int_list,
@@ -366,7 +367,9 @@ def test_dpnp_types_buffer_management() -> None:
     class CustomAsNumpyObj(MockTestStub):
         """Object exposing custom asnumpy."""
 
-        def asnumpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+        def asnumpy(
+            self,
+        ) -> GenericNDArray:
             """Extract numpy array.
 
             Returns:
