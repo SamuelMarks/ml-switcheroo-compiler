@@ -47,6 +47,7 @@ from ml_switcheroo_compiler.core._shape_protocols import (
     ShapeProtocol,
     SliceProtocol,
     TypedVariadicCallable,
+    UfuncProtocol,
     VariadicCallableProtocol,
     _ItemMemberProtocol,
     _R_co,
@@ -235,6 +236,7 @@ ArrayBufferProtocol = typing.Union[  # noqa: UP007
 IndexSpec = typing.Union[SliceType, _EllipsisType]  # noqa: UP007
 OpCallableOrConfig = typing.Union[  # noqa: UP007
     CallableObjectProtocol,
+    UfuncProtocol,
     VariadicCallableProtocol,
     CompilerConfigProtocol,
     type,

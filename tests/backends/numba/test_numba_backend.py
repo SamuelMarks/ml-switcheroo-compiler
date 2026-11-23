@@ -417,6 +417,9 @@ def test_numba_runner_exceptions() -> None:
         assert _FakeNumbaError in _numba_runner_exceptions()
         setattr_chk.setattr(nb_errs, "NumbaError", "not_a_type", raising=False)
         assert _FakeNumbaError not in _numba_runner_exceptions()
+        setattr_chk.setattr(nb_errs, "NumbaError", int, raising=False)
+        non_exc_tuple = _numba_runner_exceptions()
+        assert _FakeNumbaError not in non_exc_tuple and all(issubclass(cls, BaseException) for cls in non_exc_tuple)
     setattr_chk.undo()
 
     with patch.dict(sys.modules, {"numba.core.errors": None}):

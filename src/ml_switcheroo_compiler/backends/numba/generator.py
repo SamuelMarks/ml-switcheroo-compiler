@@ -751,6 +751,20 @@ class NumbaGenerator(PythonStringGenerator):
         )
 
 
+def _extract_exception_type(candidate: BackendArg) -> type[BaseException] | None:
+    """Return `candidate` if it is a `BaseException` subclass, otherwise `None`.
+
+    Args:
+        candidate (BackendArg): Runtime symbol resolved from an optional backend module.
+
+    Returns:
+        type[BaseException] | None: Validated exception class or `None`.
+    """
+    if isinstance(candidate, type) and issubclass(candidate, BaseException):
+        return candidate
+    return None
+
+
 def _numba_runner_exceptions() -> tuple[type[BaseException], ...]:
     """Return catchable exception types for Numba AOT runner execution.
 
@@ -771,8 +785,9 @@ def _numba_runner_exceptions() -> tuple[type[BaseException], ...]:
     try:
         from numba.core.errors import NumbaError
 
-        if isinstance(NumbaError, type) and issubclass(NumbaError, BaseException):
-            return (NumbaError, *base)
+        exc_cls = _extract_exception_type(NumbaError)
+        if exc_cls is not None:
+            return (exc_cls, *base)
     except ImportError:
         pass
     return base

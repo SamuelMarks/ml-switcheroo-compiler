@@ -19,7 +19,6 @@ from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
     get_wgsl_template,
 )
 from ml_switcheroo_compiler.ir.core import ensure_attrs
-from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data, get_vjp_from_data
 from ml_switcheroo_compiler.transforms.passes.control_flow_opt import (
     control_flow_optimization_pass,
@@ -191,7 +190,7 @@ def test_autodiff_provider_public_vjp_and_jvp_rules() -> None:
         "SyntheticReshapeAd": {"autodiff": {"vjp": ["Reshape($cotangent)"]}},
     }
 
-    with patch.dict(OPS_REGISTRY, custom_registry_entries):
+    with patch.dict("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", custom_registry_entries):
         g = IRGraph()
         g.nodes["a"] = IRNode(id="a", op_type="Input", shape_metadata=(2, 4))
         g.nodes["b"] = IRNode(id="b", op_type="Input", shape_metadata=(2, 4))

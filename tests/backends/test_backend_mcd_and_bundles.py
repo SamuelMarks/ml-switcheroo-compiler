@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +63,40 @@ def _arr64(data: BackendOperand, dtype: str | None) -> FloatArray:
     return np.asarray(data, dtype=np.float64)
 
 
+def _sum64(x: FloatArray, axis: int | Sequence[int] | None, keepdims: bool) -> FloatArray:
+    """Compute float64 sum with normalized tuple axis and explicit keepdims literal overloads.
+
+    Args:
+        x (FloatArray): Input float64 array.
+        axis (int | Sequence[int] | None): Reduction axis or axes.
+        keepdims (bool): Whether reduced dimensions are retained.
+
+    Returns:
+        FloatArray: Reduced float64 array.
+    """
+    axis_arg: int | tuple[int, ...] | None = axis if axis is None or isinstance(axis, int) else tuple(axis)
+    if keepdims:
+        return np.asarray(np.sum(x, axis=axis_arg, keepdims=True), dtype=np.float64)
+    return np.asarray(np.sum(x, axis=axis_arg, keepdims=False), dtype=np.float64)
+
+
+def _mean64(x: FloatArray, axis: int | Sequence[int] | None, keepdims: bool) -> FloatArray:
+    """Compute float64 mean with normalized tuple axis and explicit keepdims literal overloads.
+
+    Args:
+        x (FloatArray): Input float64 array.
+        axis (int | Sequence[int] | None): Reduction axis or axes.
+        keepdims (bool): Whether reduced dimensions are retained.
+
+    Returns:
+        FloatArray: Reduced float64 mean array.
+    """
+    axis_arg: int | tuple[int, ...] | None = axis if axis is None or isinstance(axis, int) else tuple(axis)
+    if keepdims:
+        return np.asarray(np.mean(x, axis=axis_arg, keepdims=True), dtype=np.float64)
+    return np.asarray(np.mean(x, axis=axis_arg, keepdims=False), dtype=np.float64)
+
+
 def test_minimal_core_eager_primitives_derives_all_default_ops() -> None:
     """Verify derive_core_eager_dictionary synthesizes asarray, subtract, sqrt, abs, tanh, and mean."""
     primitives = MinimalCoreEagerPrimitives[FloatArray](
@@ -78,7 +113,7 @@ def test_minimal_core_eager_primitives_derives_all_default_ops() -> None:
         matmul_fn=lambda a, b: np.asarray(np.matmul(a, b), dtype=np.float64),
         reshape_fn=lambda x, shp: np.asarray(np.reshape(x, shp), dtype=np.float64),
         transpose_fn=lambda x, axes: np.asarray(np.transpose(x, axes=axes), dtype=np.float64),
-        sum_fn=lambda x, axis, keepdims: np.asarray(np.sum(x, axis=axis, keepdims=keepdims), dtype=np.float64),
+        sum_fn=_sum64,
     )
     derived = verify_core_eager_typeclass(derive_core_eager_dictionary(primitives))
     assert isinstance(derived, CoreEagerTypeclass)
@@ -116,10 +151,12 @@ def test_minimal_core_eager_primitives_derives_all_default_ops() -> None:
             sqrt_fn=lambda x: np.asarray(np.sqrt(x), dtype=np.float64),
             abs_fn=lambda x: np.asarray(np.abs(x), dtype=np.float64),
             tanh_fn=lambda x: np.asarray(np.tanh(x), dtype=np.float64),
-            mean_fn=lambda x, axis, keepdims: np.asarray(np.mean(x, axis=axis, keepdims=keepdims), dtype=np.float64),
+            mean_fn=_mean64,
         )
     )
     assert math.isclose(float(overridden.sqrt(np.array(16.0))), 4.0)
+    np.testing.assert_allclose(overridden.mean(mat, [0, 1], False), np.mean(mat))
+    np.testing.assert_allclose(overridden.mean(mat, 1, True), np.mean(mat, axis=1, keepdims=True))
 
 
 def test_capability_dictionaries_bundle_and_applicative_verifier(tmp_path: Path) -> None:
@@ -154,7 +191,7 @@ def test_capability_dictionaries_bundle_and_applicative_verifier(tmp_path: Path)
         matmul_fn=lambda a, b: np.asarray(np.matmul(a, b), dtype=np.float64),
         reshape_fn=lambda x, shp: np.asarray(np.reshape(x, shp), dtype=np.float64),
         transpose_fn=lambda x, axes: np.asarray(np.transpose(x, axes=axes), dtype=np.float64),
-        sum_fn=lambda x, axis, keepdims: np.asarray(np.sum(x, axis=axis, keepdims=keepdims), dtype=np.float64),
+        sum_fn=_sum64,
     )
     full_bundle = BackendCapabilityBundle[FloatArray](
         backend_name="full_dict_backend",

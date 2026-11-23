@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import numpy as np
 from ml_switcheroo_ir import Err, LogicalGraph, LogicalNode, Ok
 from numpy.typing import NDArray
@@ -15,6 +17,23 @@ from ml_switcheroo_compiler.backends.typeclasses import (
 from ml_switcheroo_compiler.interpreter import evaluate_graph_with_typeclass
 
 FloatArray = NDArray[np.float64]
+
+
+def _sum64(x: FloatArray, axis: int | Sequence[int] | None, keepdims: bool) -> FloatArray:
+    """Compute float64 sum with normalized tuple axis and explicit keepdims literal overloads.
+
+    Args:
+        x (FloatArray): Input float64 array.
+        axis (int | Sequence[int] | None): Reduction axis or axes.
+        keepdims (bool): Whether reduced dimensions are retained.
+
+    Returns:
+        FloatArray: Reduced float64 array.
+    """
+    axis_arg: int | tuple[int, ...] | None = axis if axis is None or isinstance(axis, int) else tuple(axis)
+    if keepdims:
+        return np.asarray(np.sum(x, axis=axis_arg, keepdims=True), dtype=np.float64)
+    return np.asarray(np.sum(x, axis=axis_arg, keepdims=False), dtype=np.float64)
 
 
 def _make_numpy_typeclass() -> CoreEagerTypeclass[FloatArray]:
@@ -51,7 +70,7 @@ def _make_numpy_typeclass() -> CoreEagerTypeclass[FloatArray]:
             matmul_fn=lambda a, b: np.asarray(np.matmul(a, b), dtype=np.float64),
             reshape_fn=lambda x, shp: np.asarray(np.reshape(x, shp), dtype=np.float64),
             transpose_fn=lambda x, axes: np.asarray(np.transpose(x, axes=axes), dtype=np.float64),
-            sum_fn=lambda x, axis, keepdims: np.asarray(np.sum(x, axis=axis, keepdims=keepdims), dtype=np.float64),
+            sum_fn=_sum64,
         )
     )
 

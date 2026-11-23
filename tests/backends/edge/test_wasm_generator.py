@@ -19,12 +19,17 @@ if typing.TYPE_CHECKING:
 
 def test_wasm_generator() -> None:
     """Test function test_wasm_generator."""
-    # Force reload OPS_REGISTRY to avoid test pollution
+    # Refresh OPS_REGISTRY while preserving dictionary identity across tests on the same xdist worker
     import importlib
 
     import ml_switcheroo_compiler.ops.generated_registry
 
+    canonical_ops_registry = ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY
     importlib.reload(ml_switcheroo_compiler.ops.generated_registry)
+    reloaded_entries = dict(ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY)
+    canonical_ops_registry.clear()
+    canonical_ops_registry.update(reloaded_entries)
+    ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY = canonical_ops_registry
     import ml_switcheroo_compiler.ops.registry
 
     orig = ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.copy()

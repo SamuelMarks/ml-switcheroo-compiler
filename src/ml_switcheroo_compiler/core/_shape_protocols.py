@@ -40,6 +40,28 @@ class CallableObjectProtocol(typing.Protocol):
         ...
 
 
+class UfuncProtocol(typing.Protocol):
+    """Structural protocol matching universal function objects exposing `.nin` and `.nout`."""
+
+    @property
+    def nin(self) -> int:
+        """Return input arity of the universal function.
+
+        Returns:
+            int: Number of input operands.
+        """
+        ...
+
+    @property
+    def nout(self) -> int:
+        """Return output arity of the universal function.
+
+        Returns:
+            int: Number of output operands.
+        """
+        ...
+
+
 @typing.runtime_checkable
 class TracedDataProtocol(typing.Protocol):
     """Protocol for traced proxy data objects exposing `.id`, `.shape`, and `.dtype`."""

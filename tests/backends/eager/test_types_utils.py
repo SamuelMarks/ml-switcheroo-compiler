@@ -65,6 +65,20 @@ class _MockItemObject:
         return 42.5
 
 
+class _MockNumpyObject:
+    """Mock tensor-like object implementing numpy() without item()."""
+
+    ndim: int = 0
+
+    def numpy(self) -> _MockItemObject:
+        """Return scalar wrapper exposing item().
+
+        Returns:
+            _MockItemObject: Mock scalar item holder.
+        """
+        return _MockItemObject()
+
+
 class _MockDaskDtypeWrapper:
     """Mock dtype object with value attribute."""
 
@@ -118,3 +132,4 @@ def test_backends_eager_init_and_types_utils() -> None:
     assert eager_types_utils.generic_array(mock_mod, [1, 2], dtype="float32") == ("array", [1, 2], "float32")
     assert eager_types_utils.generic_asarray(mock_mod, [3, 4]) == ("asarray", [3, 4])
     assert eager_types_utils.generic_item(mock_mod, _MockItemObject()) == 42.5
+    assert eager_types_utils.generic_item(mock_mod, _MockNumpyObject()) == 42.5
