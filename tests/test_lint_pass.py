@@ -220,6 +220,7 @@ def fn(a: {any_name}, *args: {obj_name}, **kwargs: typing.{any_name}) -> {any_na
 
     with pytest.MonkeyPatch().context() as mp:
         mp.setattr(sys, "argv", ["scripts/lint_any.py", "--target-dir", str(tmp_path / "nonexistent")])
+        mp.delitem(sys.modules, "scripts.lint_any", raising=False)
         with pytest.raises(SystemExit) as exc_main:
             runpy.run_module("scripts.lint_any", run_name="__main__")
         assert exc_main.value.code == 0
@@ -227,8 +228,10 @@ def fn(a: {any_name}, *args: {obj_name}, **kwargs: typing.{any_name}) -> {any_na
 
 def test_lint_pass_module_main() -> None:
     """Verify executing scripts.lint_pass as __main__."""
-    with pytest.raises(SystemExit) as exc_info:
-        runpy.run_module("scripts.lint_pass", run_name="__main__")
+    with pytest.MonkeyPatch().context() as mp:
+        mp.delitem(sys.modules, "scripts.lint_pass", raising=False)
+        with pytest.raises(SystemExit) as exc_info:
+            runpy.run_module("scripts.lint_pass", run_name="__main__")
     assert exc_info.value.code in (0, 1)
 
 

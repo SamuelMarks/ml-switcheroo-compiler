@@ -70,8 +70,10 @@ def test_clear_cache() -> None:
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.device import clear_cache
 
-    clear_cache()
-    config.clear_cache()
+    with pytest.warns(UserWarning, match="does not support clear_cache"):
+        clear_cache()
+    with pytest.warns(UserWarning, match="does not support clear_cache"):
+        config.clear_cache()
     assert callable(config.clear_cache)
 
 

@@ -48,8 +48,14 @@ def _np_einsum_path_(backend_module: BackendArg, *args: BackendArg, **kwargs: Ba
         *args: Variable positional arguments.
         **kwargs: Arbitrary keyword arguments.
 
-    Returns: np.ndarray: The computed result.
+    Returns:
+        np.ndarray: The computed result.
+
+    Raises:
+        TypeError: If the first subscript argument is a boolean array.
     """
+    if args and isinstance(args[0], np.ndarray) and args[0].dtype == np.bool_:
+        raise TypeError("einsum_path subscripts cannot be a boolean array")
     return adapt_backend_module(backend_module).require_symbol("einsum_path")(*args, **kwargs)
 
 

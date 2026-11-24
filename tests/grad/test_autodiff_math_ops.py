@@ -79,8 +79,9 @@ def test_autodiff_unary_math_ops() -> None:
             """
             return ensure_tensor(dispatch_op(op_bound, inp))
 
+        x_in = _make_tensor([1.5, 1.5]) if op == "Acosh" else x
         try:
-            primal, vjp_fn = vjp(f, x)
+            primal, vjp_fn = vjp(f, x_in)
             grads = vjp_fn(cot)
             assert primal is not None
             assert grads is not None

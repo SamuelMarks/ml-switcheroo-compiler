@@ -330,4 +330,5 @@ def _np_xdivy(
     if func is not None:
         return func(*args, **kwargs)
     mod = _resolve_eager_mod(backend_module)
-    return mod.where(args[0] == 0, 0, mod.divide(args[0], args[1]))
+    safe_y = mod.where(args[0] == 0, 1, args[1])
+    return mod.where(args[0] == 0, 0, mod.divide(args[0], safe_y))

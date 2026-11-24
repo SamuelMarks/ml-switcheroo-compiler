@@ -309,7 +309,7 @@ def test__np_convwithgeneralpadding() -> None:
 
 def test__np_corrcoef() -> None:
     """Test function test__np_corrcoef."""
-    mm._np_corrcoef(np, np.ones((2, 2)))
+    mm._np_corrcoef(np, np.array([[1.0, 2.0], [3.0, 5.0]]))
     with pytest.raises(TypeError):
         mm._np_corrcoef(np)
 

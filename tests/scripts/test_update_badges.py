@@ -9,6 +9,8 @@ import subprocess
 import typing
 from unittest.mock import mock_open, patch
 
+import pytest
+
 from scripts.update_badges import (
     _extract_expected_arg_names,
     _has_non_none_return,
@@ -319,7 +321,9 @@ def test_main_block() -> None:
     import runpy
     import sys
 
-    with patch.object(sys, "argv", ["update_badges.py"]):
-        with patch("os.path.exists", return_value=False), patch("builtins.open") as mock_open_fn:
-            runpy.run_module("scripts.update_badges", run_name="__main__")
-            mock_open_fn.assert_not_called()
+    with pytest.MonkeyPatch().context() as mp:
+        mp.delitem(sys.modules, "scripts.update_badges", raising=False)
+        with patch.object(sys, "argv", ["update_badges.py"]):
+            with patch("os.path.exists", return_value=False), patch("builtins.open") as mock_open_fn:
+                runpy.run_module("scripts.update_badges", run_name="__main__")
+                mock_open_fn.assert_not_called()

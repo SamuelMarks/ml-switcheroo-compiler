@@ -54,7 +54,8 @@ def _test_strategy_server_part_1(_state: _TestStrategyServerState) -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=RuntimeError("mock fail")):
         with patch("socket.socket"):
             with patch("threading.Thread") as mock_thread:
-                server.start()
+                with pytest.warns(UserWarning, match="Backend failed to start custom server: mock fail"):
+                    server.start()
                 assert server._running
                 assert mock_thread.called
     _state.update({"MagicMock": MagicMock, "io": io, "json": json})
@@ -360,7 +361,8 @@ def _test_strategy_server_part_7(_state: _TestStrategyServerState) -> None:
         "ml_switcheroo_compiler.backends.registry.get_active_backend",
         side_effect=RuntimeError("join mock fail"),
     ):
-        server.join()
+        with pytest.warns(UserWarning, match="Backend failed to start custom server: join mock fail"):
+            server.join()
 
     server._server = MagicMock()
     _state.update({"MagicMock": MagicMock, "patch": require_callable(patch), "server": server})
@@ -379,7 +381,8 @@ def _test_strategy_server_part_8(_state: _TestStrategyServerState) -> None:
         OSError("close error"),
         raising=False,
     )
-    server.join()
+    with pytest.warns(UserWarning, match="Server loop error: close error"):
+        server.join()
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.distributed.strategy import DataParallelStrategy, MultiWorkerMirroredStrategy, Server
@@ -458,7 +461,8 @@ def _test_strategy_server_part_9(_state: _TestStrategyServerState) -> None:
             raising=False,
         )
         pytest.MonkeyPatch().setattr(mock_select, "return_value", ([server._server], [], []), raising=False)
-        server._run_server()
+        with pytest.warns(UserWarning, match="Server loop error"):
+            server._run_server()
     _state.update({"MagicMock": MagicMock, "json": json, "patch": require_callable(patch)})
     _state.update({"server": server})
 

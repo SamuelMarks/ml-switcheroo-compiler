@@ -899,6 +899,8 @@ class Server:
             warnings.warn(f"Backend failed to start custom server: {e}", stacklevel=2)
 
         self._running = False
+        if self._thread:
+            self._thread.join(timeout=1.0)
         if self._server:
             try:
                 self._server.close()
@@ -915,8 +917,6 @@ class Server:
                 import warnings
 
                 warnings.warn(f"Server loop error: {e}", stacklevel=2)
-        if self._thread:
-            self._thread.join(timeout=1.0)
 
 
 class Coordinator:

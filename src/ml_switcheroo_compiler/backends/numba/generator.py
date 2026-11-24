@@ -156,7 +156,10 @@ class NumbaGenerator(PythonStringGenerator):
             Returns:
                 BackendArg: Evaluated Numba output.
             """
-            return bound_fn(*args, **kwargs)
+            norm_args: tuple[BackendArg, ...] = (
+                (tuple(args[0]), *args[1:]) if args and isinstance(args[0], list) else args
+            )
+            return bound_fn(*norm_args, **kwargs)
 
         return _numba_runner
 

@@ -101,7 +101,10 @@ def divide_no_nan(x: OpValue, y: OpValue) -> OpValue:
     from ml_switcheroo_compiler.ops.shape.indexing import where
 
     x_tensor = ensure_tensor(x)
-    return where(equal(y, 0.0), zeros_like(x_tensor), divide(x, y))
+    y_tensor = ensure_tensor(y)
+    is_zero = equal(y_tensor, 0.0)
+    safe_y = where(is_zero, ensure_tensor(1.0), y_tensor)
+    return where(is_zero, zeros_like(x_tensor), divide(x, safe_y))
 
 
 def polar(abs: OpValue, angle: OpValue) -> OpValue:

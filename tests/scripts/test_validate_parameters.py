@@ -272,7 +272,9 @@ def test_main_block() -> None:
         patch.object(sys, "argv", ["validate_parameters.py"]),
         patch("scripts.validate_parameters.validate_backend_mappings_parameters", return_value=[]),
         patch("scripts.validate_parameters.validate_op_definitions_parameters", return_value=[]),
+        pytest.MonkeyPatch().context() as mp,
         pytest.raises(SystemExit) as exc_info,
     ):
+        mp.delitem(sys.modules, "scripts.validate_parameters", raising=False)
         runpy.run_module("scripts.validate_parameters", run_name="__main__")
     assert exc_info.value.code == 0

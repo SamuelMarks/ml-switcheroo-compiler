@@ -184,13 +184,16 @@ def _np_fromstring_(
     Returns:
         BackendArg: 1-D array created from string.
     """
-    return _ensure_arr(
-        adapt_backend_module(backend_module).require_symbol(
-            "frombuffer"
-            if "sep" not in kwargs and adapt_backend_module(backend_module).has_symbol("frombuffer")
-            else "fromstring"
-        )(*args, **kwargs)
+    mod = adapt_backend_module(backend_module)
+    sep_val = args[3] if len(args) >= 4 else kwargs.get("sep", "")
+    is_binary = sep_val == "" and mod.has_symbol("frombuffer")
+    buf_args: tuple[BackendArg, ...] = (
+        (args[0].encode("latin1") if args and isinstance(args[0], str) else (args[0] if args else b""), *args[1:3])
+        if is_binary and args
+        else args
     )
+    buf_kwargs = {k: v for k, v in kwargs.items() if k != "sep"} if is_binary else kwargs
+    return _ensure_arr(mod.require_symbol("frombuffer" if is_binary else "fromstring")(*buf_args, **buf_kwargs))
 
 
 @global_eager_registry.register("MatrixPower")
@@ -368,7 +371,8 @@ def _np_distributions(
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    counts, bins = arr_mod.histogram(a, bins="auto")
+    a_in = arr_mod.asarray(a, dtype="uint8") if str(adapt_backend_module(a).get_symbol("dtype", "")) == "bool" else a
+    counts, bins = arr_mod.histogram(a_in, bins="auto")
     return {"counts": _ensure_arr(counts), "bins": _ensure_arr(bins)}
 
 

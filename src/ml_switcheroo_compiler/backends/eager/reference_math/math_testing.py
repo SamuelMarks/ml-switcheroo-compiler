@@ -137,7 +137,13 @@ def _np_histogram_(
 
     Returns: EagerTensorProtocol: The computed result.
     """
-    return adapt_backend_module(backend_module).require_symbol("histogram")(*args, **kwargs)
+    mod = adapt_backend_module(backend_module)
+    norm_args: tuple[BackendArg, ...] = (
+        (mod.require_symbol("asarray")(args[0], dtype="uint8"), *args[1:])
+        if args and mod.has_symbol("asarray") and str(adapt_backend_module(args[0]).get_symbol("dtype", "")) == "bool"
+        else args
+    )
+    return mod.require_symbol("histogram")(*norm_args, **kwargs)
 
 
 @global_eager_registry.register("Histogram2d")
@@ -171,7 +177,13 @@ def _np_histogram_bin_edges_(
 
     Returns: EagerTensorProtocol: The computed result.
     """
-    return adapt_backend_module(backend_module).require_symbol("histogram_bin_edges")(*args, **kwargs)
+    mod = adapt_backend_module(backend_module)
+    norm_args: tuple[BackendArg, ...] = (
+        (mod.require_symbol("asarray")(args[0], dtype="uint8"), *args[1:])
+        if args and mod.has_symbol("asarray") and str(adapt_backend_module(args[0]).get_symbol("dtype", "")) == "bool"
+        else args
+    )
+    return mod.require_symbol("histogram_bin_edges")(*norm_args, **kwargs)
 
 
 @global_eager_registry.register("Histogramdd")

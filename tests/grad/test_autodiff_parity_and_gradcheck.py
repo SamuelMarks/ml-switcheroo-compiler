@@ -220,7 +220,7 @@ def test_reduction_vjp_rules() -> None:
 def test_loss_functions_vjp() -> None:
     """Test mathematically verified VJP rules for loss functions."""
     pred: Tensor = _make_tensor([0.5, 0.8, 0.2])
-    target: Tensor = _make_tensor([0.0, 1.0, 0.0])
+    target: Tensor = _make_tensor([0.1, 0.8, 0.1])
     cot: Tensor = _make_tensor([1.0, 1.0, 1.0])
 
     losses: list[str] = ["MSELoss", "BCELoss", "HuberLoss", "KLDivergenceLoss"]

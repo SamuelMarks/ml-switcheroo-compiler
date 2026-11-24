@@ -82,7 +82,7 @@ def test_unary_math_rules() -> None:
             """
             return dispatch_op(op_bound, x)
 
-        x = make_tensor([0.5, 0.5])
+        x = make_tensor([1.5, 1.5]) if op == "Acosh" else make_tensor([0.5, 0.5])
         cot = make_tensor([1.0, 1.0])
         try:
             out, vjp_fn = vjp(f, x)

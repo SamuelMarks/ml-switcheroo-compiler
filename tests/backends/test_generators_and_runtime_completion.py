@@ -129,59 +129,77 @@ class _NullAvalShapeVar:
 
 def test_all_backend_generators_get_eager_adapter() -> None:
     """Verify `get_eager_adapter()` across all 13 backend code generators."""
-    import importlib.util
+    import importlib
+    import importlib.machinery
+    from collections.abc import Callable
     from unittest.mock import MagicMock
 
-    stub_mods: dict[str, MagicMock] = {}
-
-    def _ensure_stub(pkg_name: str, submods: tuple[str, ...] = ()) -> None:
-        """Populate `stub_mods` with `MagicMock` package placeholders when `pkg_name` is uninstalled.
+    def _call_with_optional_stub(
+        fn: Callable[[], EagerBackendAdapter],
+        pkg_name: str = "",
+        submods: tuple[str, ...] = (),
+    ) -> EagerBackendAdapter:
+        """Invoke `fn()` using real `pkg_name` when importable, or an isolated PEP-451 stub otherwise.
 
         Args:
-            pkg_name (str): Root package name.
-            submods (tuple[str, ...]): Dotted submodule names to attach.
+            fn (Callable[[], EagerBackendAdapter]): Zero-arg factory returning a backend eager adapter.
+            pkg_name (str): Optional root backend package name to probe or stub.
+            submods (tuple[str, ...]): Dotted submodule names under `pkg_name` required by the adapter.
+
+        Returns:
+            EagerBackendAdapter: Concrete eager backend adapter instance.
         """
-        if importlib.util.find_spec(pkg_name) is not None:
-            return
+        if not pkg_name:
+            return fn()
+        preexisting = set(sys.modules.keys())
+        can_import = True
+        try:
+            importlib.import_module(pkg_name)
+            for sub in submods:
+                importlib.import_module(f"{pkg_name}.{sub}")
+        except ImportError:
+            can_import = False
+            for mod_key in list(sys.modules.keys()):
+                if mod_key not in preexisting and (mod_key == pkg_name or mod_key.startswith(f"{pkg_name}.")):
+                    sys.modules.pop(mod_key, None)
+        if can_import:
+            return fn()
+
+        stub_mods: dict[str, MagicMock] = {}
         root = MagicMock(name=pkg_name)
         root.__path__ = []
+        root.__spec__ = importlib.machinery.ModuleSpec(pkg_name, loader=None, is_package=True)
         stub_mods[pkg_name] = root
+        mp = pytest.MonkeyPatch()
         for sub in submods:
-            leaf = MagicMock(name=f"{pkg_name}.{sub}")
-            setattr_patch = pytest.MonkeyPatch()
-            setattr_patch.setattr(root, sub, leaf, raising=False)
-            stub_mods[f"{pkg_name}.{sub}"] = leaf
+            full_sub = f"{pkg_name}.{sub}"
+            leaf = MagicMock(name=full_sub)
+            leaf.__spec__ = importlib.machinery.ModuleSpec(full_sub, loader=None, is_package=False)
+            mp.setattr(root, sub, leaf, raising=False)
+            stub_mods[full_sub] = leaf
+        with patch.dict(sys.modules, stub_mods):
+            return fn()
 
-    _ensure_stub("cupy")
-    _ensure_stub("dask", ("array",))
-    _ensure_stub("jax", ("numpy", "scipy", "lax"))
-    _ensure_stub("keras", ("ops",))
-    _ensure_stub("mlx", ("core",))
-    _ensure_stub("numba")
-    _ensure_stub("sparse")
-    _ensure_stub("tensorflow")
-    _ensure_stub("torch")
-
-    with patch.dict(sys.modules, stub_mods):
-        expected_pairs: list[tuple[str, EagerBackendAdapter]] = [
-            ("awkward", AwkwardGenerator.get_eager_adapter()),
-            ("cupy", CupyGenerator.get_eager_adapter()),
-            ("dask", DaskGenerator.get_eager_adapter()),
-            ("jax", JAXCodeGenerator.get_eager_adapter()),
-            ("keras", KerasCodeGenerator.get_eager_adapter()),
-            ("mlx", MLXCodeGenerator.get_eager_adapter()),
-            ("numba", NumbaGenerator.get_eager_adapter()),
-            ("pure_python", PurePythonGenerator.get_eager_adapter()),
-            ("pyarrow", PyArrowComputeGenerator.get_eager_adapter()),
-            ("pytorch", PyTorchCodeGenerator.get_eager_adapter()),
-            ("sparse", SparseGenerator.get_eager_adapter()),
-            ("tensorflow", TensorFlowCodeGenerator.get_eager_adapter()),
-        ]
+    expected_pairs: list[tuple[str, EagerBackendAdapter]] = [
+        ("awkward", _call_with_optional_stub(AwkwardGenerator.get_eager_adapter, "awkward")),
+        ("cupy", _call_with_optional_stub(CupyGenerator.get_eager_adapter, "cupy")),
+        ("dask", _call_with_optional_stub(DaskGenerator.get_eager_adapter, "dask", ("array",))),
+        ("jax", _call_with_optional_stub(JAXCodeGenerator.get_eager_adapter, "jax", ("numpy", "scipy", "lax"))),
+        ("keras", _call_with_optional_stub(KerasCodeGenerator.get_eager_adapter, "keras", ("ops",))),
+        ("mlx", _call_with_optional_stub(MLXCodeGenerator.get_eager_adapter, "mlx", ("core",))),
+        ("numba", _call_with_optional_stub(NumbaGenerator.get_eager_adapter, "numba")),
+        ("pure_python", _call_with_optional_stub(PurePythonGenerator.get_eager_adapter)),
+        ("pyarrow", _call_with_optional_stub(PyArrowComputeGenerator.get_eager_adapter, "pyarrow", ("compute",))),
+        ("pytorch", _call_with_optional_stub(PyTorchCodeGenerator.get_eager_adapter, "torch")),
+        ("sparse", _call_with_optional_stub(SparseGenerator.get_eager_adapter, "sparse")),
+        ("tensorflow", _call_with_optional_stub(TensorFlowCodeGenerator.get_eager_adapter, "tensorflow")),
+    ]
     for expected_prefix, adapter in expected_pairs:
         assert isinstance(adapter, EagerBackendAdapter)
         assert expected_prefix in adapter.backend_name
 
     fake_dpnp = types.ModuleType("dpnp")
+    fake_dpnp.__spec__ = importlib.machinery.ModuleSpec("dpnp", loader=None, is_package=True)
     with patch.dict(sys.modules, {"dpnp": fake_dpnp}):
         dpnp_adapter = DPNPGenerator.get_eager_adapter()
         assert isinstance(dpnp_adapter, EagerBackendAdapter)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
 import ml_switcheroo_compiler.grad as grad_module
 from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
@@ -49,7 +50,8 @@ def test_mlx_parity_coverage() -> None:
     s = Stream()
     with StreamContext(s):
         pass
-    clear_cache()
+    with pytest.warns(UserWarning, match="does not support clear_cache"):
+        clear_cache()
     with FunctionExporter():
         pass
     export_function()

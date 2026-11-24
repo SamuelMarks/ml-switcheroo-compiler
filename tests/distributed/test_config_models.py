@@ -39,7 +39,7 @@ def test_pipeline_config_model() -> None:
 
     assert list(config.items())[0][0] == "default"
     assert config.model_dump()["default"]["mesh_mapping"]["devices_per_stage"] == 1
-    assert config.dict()["default"]["mesh_mapping"]["devices_per_stage"] == 1
+    assert config.model_dump(mode="json")["default"]["mesh_mapping"]["devices_per_stage"] == 1
     assert config.get("missing") is None
 
     assert MicrobatchSplittingConfig(num_microbatches=1, strategy="strat").num_microbatches == 1

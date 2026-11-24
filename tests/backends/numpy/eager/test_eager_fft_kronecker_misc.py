@@ -324,6 +324,30 @@ def test_math_misc_brute_coverage() -> None:
         func = adapt_backend_module(op).get_symbol("func", op)
         if not str(func.__module__).startswith("ml_switcheroo_compiler.backends.eager.reference_math"):
             continue
+        k_low = k.lower()
+        is_unit_inv = any(tok in k_low for tok in ("acos", "arccos", "asin", "arcsin")) and not any(
+            hyp in k_low for hyp in ("cosh", "sinh")
+        )
+        if is_unit_inv or any(tok in k_low for tok in ("atanh", "arctanh", "logit")):
+            vec_arg = np.array([0.2, 0.5, 0.8])
+            scalar_arg: int | float | list[float] = 0.5
+            scalar_arg2: int | float = 0.5
+            seq_arg: list[int] | list[float] = [0.2, 0.5]
+        elif "acosh" in k_low or "arccosh" in k_low:
+            vec_arg = np.array([1.5, 2.0, 3.0])
+            scalar_arg = 1.5
+            scalar_arg2 = 2.0
+            seq_arg = [1.5, 2.0]
+        elif any(tok in k_low for tok in ("cov", "corrcoef", "nonzero", "where")):
+            vec_arg = np.array([1.0, 2.0, 4.0])
+            scalar_arg = [1.0, 2.0]
+            scalar_arg2 = 0
+            seq_arg = [1.0, 3.0]
+        else:
+            vec_arg = np.array([1, 2, 3])
+            scalar_arg = 1
+            scalar_arg2 = 2
+            seq_arg = [1, 2]
         try:
             op(dummy)
         except (
@@ -344,7 +368,7 @@ def test_math_misc_brute_coverage() -> None:
         ):
             handled_errors += 1
         try:
-            op(dummy, np.array([1, 2, 3]))
+            op(dummy, vec_arg.copy())
         except (
             ValueError,
             TypeError,
@@ -363,7 +387,7 @@ def test_math_misc_brute_coverage() -> None:
         ):
             handled_errors += 1
         try:
-            op(dummy, np.array([1, 2, 3]), np.array([1, 2, 3]))
+            op(dummy, vec_arg.copy(), vec_arg.copy())
         except (
             ValueError,
             TypeError,
@@ -382,7 +406,7 @@ def test_math_misc_brute_coverage() -> None:
         ):
             handled_errors += 1
         try:
-            op(dummy, 1)
+            op(dummy, scalar_arg)
         except (
             ValueError,
             TypeError,
@@ -401,7 +425,7 @@ def test_math_misc_brute_coverage() -> None:
         ):
             handled_errors += 1
         try:
-            op(dummy, [1, 2])
+            op(dummy, seq_arg)
         except (
             ValueError,
             TypeError,
@@ -420,7 +444,7 @@ def test_math_misc_brute_coverage() -> None:
         ):
             handled_errors += 1
         try:
-            op(dummy, 1, 2)
+            op(dummy, scalar_arg, scalar_arg2)
         except (
             ValueError,
             TypeError,
@@ -438,8 +462,9 @@ def test_math_misc_brute_coverage() -> None:
             ArithmeticError,
         ):
             handled_errors += 1
+        fvec = vec_arg.astype(float)
         try:
-            op(dummy, np.array([1.0, 2.0]), np.array([1.0, 2.0]))
+            op(dummy, fvec.copy(), fvec.copy())
         except (
             ValueError,
             TypeError,

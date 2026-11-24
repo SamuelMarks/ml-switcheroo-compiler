@@ -342,10 +342,12 @@ def test_main_block_execution(tmp_path: Path) -> None:
     new_file.write_text(content, encoding="utf-8")
 
     test_args = ["scripts.check_snapshot_drift", "--old", str(old_file), "--new", str(new_file)]
-    with patch.object(sys, "argv", test_args):
-        with pytest.raises(SystemExit) as exc_info:
-            runpy.run_module("scripts.check_snapshot_drift", run_name="__main__")
-        assert exc_info.value.code == 0
+    with pytest.MonkeyPatch().context() as mp:
+        mp.delitem(sys.modules, "scripts.check_snapshot_drift", raising=False)
+        with patch.object(sys, "argv", test_args):
+            with pytest.raises(SystemExit) as exc_info:
+                runpy.run_module("scripts.check_snapshot_drift", run_name="__main__")
+            assert exc_info.value.code == 0
 
 
 def test_is_breaking_and_flatten_edge_cases() -> None:

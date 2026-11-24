@@ -7,6 +7,7 @@ import tempfile
 import typing
 from unittest.mock import patch
 
+import pytest
 from pytest import CaptureFixture
 
 from scripts.lint_numpy_leak import (
@@ -223,12 +224,14 @@ def test_main_block(capsys: CaptureFixture[str]) -> None:
     import runpy
     import sys
 
-    with patch.object(sys, "argv", ["lint_numpy_leak.py"]):
-        with patch("glob.glob", return_value=[]):
-            try:
-                runpy.run_module("scripts.lint_numpy_leak", run_name="__main__")
-            except SystemExit as e:
-                assert e.code == 0
+    with pytest.MonkeyPatch().context() as mp:
+        mp.delitem(sys.modules, "scripts.lint_numpy_leak", raising=False)
+        with patch.object(sys, "argv", ["lint_numpy_leak.py"]):
+            with patch("glob.glob", return_value=[]):
+                try:
+                    runpy.run_module("scripts.lint_numpy_leak", run_name="__main__")
+                except SystemExit as e:
+                    assert e.code == 0
 
     captured = capsys.readouterr()
     assert "Linting passed" in captured.out

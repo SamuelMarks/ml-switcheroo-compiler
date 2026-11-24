@@ -146,17 +146,20 @@ def _fftconvolve(
     s2 = list(a2.shape) + [1] * (ndim - a2.ndim)
     conv_shape = [s1[i] + s2[i] - 1 for i in range(ndim)]
 
-    is_real = not (np_mod.iscomplexobj(a1) or np_mod.iscomplexobj(a2))
+    a1_nd = a1.reshape(s1)
+    a2_nd = a2.reshape(s2)
+    resolved_axes = tuple(range(ndim)) if axes is None else axes
+    is_real = not (np_mod.iscomplexobj(a1_nd) or np_mod.iscomplexobj(a2_nd))
     fft_lib = adapt_backend_module(np_mod).require_symbol("fft")
 
     if is_real:
-        f1 = fft_lib.rfftn(a1, s=conv_shape, axes=axes)
-        f2 = fft_lib.rfftn(a2, s=conv_shape, axes=axes)
-        out = fft_lib.irfftn(f1 * f2, s=conv_shape, axes=axes)
+        f1 = fft_lib.rfftn(a1_nd, s=conv_shape, axes=resolved_axes)
+        f2 = fft_lib.rfftn(a2_nd, s=conv_shape, axes=resolved_axes)
+        out = fft_lib.irfftn(f1 * f2, s=conv_shape, axes=resolved_axes)
     else:
-        f1 = fft_lib.fftn(a1, s=conv_shape, axes=axes)
-        f2 = fft_lib.fftn(a2, s=conv_shape, axes=axes)
-        out = fft_lib.ifftn(f1 * f2, s=conv_shape, axes=axes)
+        f1 = fft_lib.fftn(a1_nd, s=conv_shape, axes=resolved_axes)
+        f2 = fft_lib.fftn(a2_nd, s=conv_shape, axes=resolved_axes)
+        out = fft_lib.ifftn(f1 * f2, s=conv_shape, axes=resolved_axes)
 
     return _slice_fftconvolve_output(out, mode, s1, s2, ndim, np_mod)
 

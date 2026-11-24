@@ -336,7 +336,7 @@ def _test_math_missing_part_5(_state: _TestMathMissingState) -> None:
             Returns:
                 BackendArg: Computed output value from `exp`.
             """
-            return a
+            return ensure_ndarray(a) + 1.0
 
         @staticmethod
         def sum(a: BackendArg, axis: BackendArg, keepdims: BackendArg) -> BackendArg:

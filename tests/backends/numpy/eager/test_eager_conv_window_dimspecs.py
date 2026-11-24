@@ -296,9 +296,11 @@ def test_numpy_eager_coverage_2() -> None:
     ]
     x = MagicMock()
     x.shape = (2, 3)
-    x.dtype = "float32"
+    x.dtype = np.dtype("float32")
     x.device = "cpu"
     x.ndim = 2
+    x.__len__.side_effect = TypeError
+    x.__sub__.side_effect = TypeError
     for op in ops:
         try:
             execute_op(None, op, x, x)

@@ -175,7 +175,7 @@ def fake_quant_with_min_max_vars(
         Tensor: The fake-quantized output tensor.
     """
     if compiler_config.eager_mode:
-        from ml_switcheroo_compiler.ops import add, clip
+        from ml_switcheroo_compiler.ops import add, clip, divide_no_nan
         from ml_switcheroo_compiler.ops import divide as div
         from ml_switcheroo_compiler.ops import multiply as mul
         from ml_switcheroo_compiler.ops import round as round_op
@@ -189,10 +189,10 @@ def fake_quant_with_min_max_vars(
         scale = div(sub(max_val, min_val), max(quant_max - quant_min, 1))
 
         # Handle zero scale to avoid div by zero
-        zero_point = sub(quant_min, round_op(div(min_val, scale)))
+        zero_point = sub(quant_min, round_op(divide_no_nan(min_val, scale)))
         zero_point = clip(zero_point, quant_min, quant_max)
 
-        q_input = round_op(add(div(inputs, scale), zero_point))
+        q_input = round_op(add(divide_no_nan(inputs, scale), zero_point))
         q_input = clip(q_input, quant_min, quant_max)
 
         return mul(sub(q_input, zero_point), scale)

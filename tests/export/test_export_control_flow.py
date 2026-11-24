@@ -73,8 +73,10 @@ def test_stablehlo_control_flow() -> None:
 
 def test_onnx_fallback() -> None:
     """Test function test_onnx_fallback."""
+    import importlib.machinery
     import importlib.util
     import sys
+    from contextlib import nullcontext
     from unittest.mock import MagicMock, patch
 
     graph = IRGraph()
@@ -85,7 +87,10 @@ def test_onnx_fallback() -> None:
     gen = ONNXCodeGenerator(graph)
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    ctx = patch.dict(sys.modules, {"onnx": MagicMock()}) if importlib.util.find_spec("onnx") is None else MagicMock()
+    mock_onnx = MagicMock(name="onnx")
+    mock_onnx.__path__ = []
+    mock_onnx.__spec__ = importlib.machinery.ModuleSpec("onnx", loader=None, is_package=True)
+    ctx = patch.dict(sys.modules, {"onnx": mock_onnx}) if importlib.util.find_spec("onnx") is None else nullcontext()
     with ctx:
         with pytest.raises(BackendNotSupportedError):
             gen.generate()

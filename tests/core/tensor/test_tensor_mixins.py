@@ -317,7 +317,8 @@ def test_tensor_conversion_mixin_missing(monkeypatch: pytest.MonkeyPatch) -> Non
     np.testing.assert_array_equal(ensure_ndarray(m.numpy()), np.array([1, 2]))
 
     # Test __array__
-    np.testing.assert_array_equal(np.array(m), np.array([1, 2]))
+    np.testing.assert_array_equal(np.array(m, copy=True), np.array([1, 2]))
+    np.testing.assert_array_equal(np.asarray(m), np.array([1, 2]))
 
     # Test __int__ etc using a scalar
     m_scalar = MockMixin(np.array([5]))

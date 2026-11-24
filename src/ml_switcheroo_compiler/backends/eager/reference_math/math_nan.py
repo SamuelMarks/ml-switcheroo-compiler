@@ -211,9 +211,9 @@ def _xlogy(x: BackendArg, y: BackendArg) -> EagerTensorProtocol:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
     arr_mod = _resolve_eager_mod(None)
-    res = adapt_backend_module(arr_mod).require_symbol("where")(
-        x == 0.0, 0.0, x * adapt_backend_module(arr_mod).require_symbol("log")(y)
-    )
+    where_fn = adapt_backend_module(arr_mod).require_symbol("where")
+    safe_y = where_fn(x == 0.0, 1.0, y)
+    res = where_fn(x == 0.0, 0.0, x * adapt_backend_module(arr_mod).require_symbol("log")(safe_y))
     return _ensure_arr(res)
 
 

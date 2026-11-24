@@ -985,7 +985,10 @@ def test_empty_backend() -> None:
     ]
     for op in ops:
         sig = inspect.signature(op)
-        args_to_pass = [empty_bk] + [arg] * (len(sig.parameters) - 1)
+        first_arg: int | np.ndarray[tuple[int, ...], np.dtype[np.float64]] = (
+            1 if "polygamma" in op.__name__ else arg.copy()
+        )
+        args_to_pass = [empty_bk, first_arg] + [arg.copy() for _ in range(max(len(sig.parameters) - 2, 0))]
         try:
             op(*args_to_pass[: len(sig.parameters)])
         except (

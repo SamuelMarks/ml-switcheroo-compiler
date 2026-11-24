@@ -189,7 +189,13 @@ def _np_where(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("where")(*args, **kwargs)
+    mod = adapt_backend_module(backend_module)
+    norm_args: tuple[BackendArg, ...] = (
+        (mod.require_symbol("atleast_1d")(args[0]),)
+        if len(args) == 1 and not kwargs and mod.has_symbol("atleast_1d")
+        else args
+    )
+    return mod.require_symbol("where")(*norm_args, **kwargs)
 
 
 @global_eager_registry.register("Assert")

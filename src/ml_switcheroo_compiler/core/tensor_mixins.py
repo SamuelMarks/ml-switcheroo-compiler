@@ -256,16 +256,20 @@ class TensorConversionMixin(TensorPropertiesMixin):
         ):
             return backend.array(data.tolist() if is_backend_buffer(data) else data, dtype=dtype)
 
-    def __array__(self, dtype: DType | str | type | None = None) -> OpValue:
-        """Convert the tensor to a backend array with optional dtype cast.
+    def __array__(self, dtype: DType | str | type | None = None, copy: bool | None = None) -> OpValue:
+        """Convert the tensor to a backend array with optional dtype cast and copy semantics.
 
         Args:
             dtype (DType | str | type | None): Optional target data type.
+            copy (bool | None): Optional NumPy 2.0+ copy flag (`True` forces a copy).
 
         Returns:
             OpValue: The converted array.
         """
-        return self.to_backend_array(dtype=dtype)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        arr = self.to_backend_array(dtype=dtype)
+        return get_active_backend().array(arr, dtype=dtype) if copy else arr
 
     def item(self) -> float:
         """Return the value of this tensor as a standard Python number.

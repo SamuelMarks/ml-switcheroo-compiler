@@ -86,6 +86,30 @@ def _np_irfft(
     return adapt_backend_module(backend_module).require_symbol("fft").irfft(*args, **kwargs)
 
 
+def _with_default_fft_axes(
+    args: tuple[BackendArg, ...],
+    kwargs: dict[str, BackendArg],
+) -> tuple[tuple[BackendArg, ...], dict[str, BackendArg]]:
+    """Populate explicit trailing `axes` when `s` is specified without `axes` (NumPy 2.0+ requirement).
+
+    Args:
+        args (tuple[BackendArg, ...]): Positional FFT arguments `(a, [s, [axes, ...]])`.
+        kwargs (dict[str, BackendArg]): Keyword FFT arguments.
+
+    Returns:
+        tuple[tuple[BackendArg, ...], dict[str, BackendArg]]: Normalized `(args, kwargs)` pair.
+    """
+    from collections.abc import Sized
+
+    s_val = args[1] if len(args) >= 2 else kwargs.get("s")
+    axes_val = args[2] if len(args) >= 3 else kwargs.get("axes")
+    return (
+        (args[:2], {**kwargs, "axes": tuple(range(-len(s_val), 0))})
+        if s_val is not None and axes_val is None and isinstance(s_val, Sized) and not isinstance(s_val, (str, bytes))
+        else (args, kwargs)
+    )
+
+
 @global_eager_registry.register("Fftn")
 def _np_fftn(
     backend_module: BackendModuleProtocol | types.ModuleType | None, *args: BackendArg, **kwargs: BackendArg
@@ -101,7 +125,8 @@ def _np_fftn(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").fftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").fftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Ifftn")
@@ -119,7 +144,8 @@ def _np_ifftn(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").ifftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").ifftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Rfftn")
@@ -137,7 +163,8 @@ def _np_rfftn(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").rfftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").rfftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Irfftn")
@@ -155,7 +182,8 @@ def _np_irfftn(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").irfftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").irfftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Fft2")
@@ -245,7 +273,8 @@ def _np_fftnd(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").fftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").fftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Ifftnd")
@@ -263,7 +292,8 @@ def _np_ifftnd(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").ifftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").ifftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Rfftnd")
@@ -281,7 +311,8 @@ def _np_rfftnd(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").rfftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").rfftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Irfftnd")
@@ -299,7 +330,8 @@ def _np_irfftnd(
     Returns:
             tuple[int, ...]: Computed `tuple[int, ...]` output.
     """
-    return adapt_backend_module(backend_module).require_symbol("fft").irfftn(*args, **kwargs)
+    norm_args, norm_kwargs = _with_default_fft_axes(args, kwargs)
+    return adapt_backend_module(backend_module).require_symbol("fft").irfftn(*norm_args, **norm_kwargs)
 
 
 @global_eager_registry.register("Fftshift")

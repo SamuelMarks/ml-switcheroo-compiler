@@ -324,10 +324,12 @@ def test_backend_hooks() -> None:
         mock_backend.return_value.join_server.side_effect = RuntimeError("join err")
 
         server2 = Server()
-        server2.start()
+        with pytest.warns(UserWarning, match="Backend failed to start custom server: start err"):
+            server2.start()
         # Should fallback to socket server
         assert server2._running
-        server2.join()
+        with pytest.warns(UserWarning, match="Backend failed to start custom server: join err"):
+            server2.join()
 
     # Test server socket close exception
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
@@ -338,7 +340,8 @@ def test_backend_hooks() -> None:
         server3._server = MagicMock()
         server3._thread = MagicMock()
         server3._server.close.side_effect = RuntimeError("close err")
-        server3.join()
+        with pytest.warns(UserWarning, match="Server loop error: close err"):
+            server3.join()
 
 
 def test_values() -> None:

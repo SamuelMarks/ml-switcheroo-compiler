@@ -251,7 +251,13 @@ def _np_nonzero_(
 
     Returns: EagerTensorProtocol: The computed result.
     """
-    return adapt_backend_module(backend_module).require_symbol("nonzero")(*args, **kwargs)
+    mod = adapt_backend_module(backend_module)
+    norm_args: tuple[BackendArg, ...] = (
+        (mod.require_symbol("atleast_1d")(args[0]), *args[1:])
+        if args and mod.has_symbol("atleast_1d") and adapt_backend_module(args[0]).get_symbol("ndim", 0) == 0
+        else args
+    )
+    return mod.require_symbol("nonzero")(*norm_args, **kwargs)
 
 
 @global_eager_registry.register("Resize")

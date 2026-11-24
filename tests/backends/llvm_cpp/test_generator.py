@@ -98,7 +98,8 @@ def test_llvm_cpp_generate_missing_mapping() -> None:
     g.sorted_nodes = [n_add]
 
     gen = CppGenerator(g)
-    out = gen.generate()
+    with pytest.warns(UserWarning, match="unmapped op 'MissingOp'"):
+        out = gen.generate()
     assert "Fallback Unimplemented MissingOp" in out
 
 
@@ -290,7 +291,8 @@ def test_cpp_generator_reduce_min() -> None:
 
     # test unknown reduce
     node2 = LogicalNode(id="n2", op_type="UnknownReduce", inputs=["in1"])
-    gen._visit_node(node2, graph)
+    with pytest.warns(UserWarning, match="unmapped op 'UnknownReduce'"):
+        gen._visit_node(node2, graph)
 
 
 def test_cpp_generator_activation_fallback() -> None:
@@ -298,7 +300,8 @@ def test_cpp_generator_activation_fallback() -> None:
     graph = IRGraph()
     gen = CppGenerator(graph)
     node = LogicalNode(id="n1", op_type="UnknownActivation", inputs=["in1"])
-    gen._visit_node(node, graph)
+    with pytest.warns(UserWarning, match="unmapped op 'UnknownActivation'"):
+        gen._visit_node(node, graph)
     assert "Fallback Unimplemented UnknownActivation" in "".join(gen.lines)
 
 
@@ -327,7 +330,8 @@ def test_cpp_generator_if_with_else() -> None:
     node = LogicalNode(id="n1", op_type="If", inputs=["cond"])
     node.attributes = ensure_attrs({"then_branch": then_graph, "else_branch": else_graph})
 
-    gen._visit_node(node, graph)
+    with pytest.warns(UserWarning, match="unmapped op 'UnsupportedOp'"):
+        gen._visit_node(node, graph)
     lines = "".join(gen.lines)
     assert "Fallback Unimplemented UnsupportedOp" in lines
 
@@ -346,7 +350,8 @@ def test_cpp_generator_while_with_body() -> None:
     node = LogicalNode(id="n1", op_type="WhileLoop", inputs=["cond"])
     node.attributes = ensure_attrs({"cond": cond_graph, "body": body_graph})
 
-    gen._visit_node(node, graph)
+    with pytest.warns(UserWarning, match="unmapped op 'UnsupportedOp'"):
+        gen._visit_node(node, graph)
     lines = "".join(gen.lines)
     assert "Fallback Unimplemented UnsupportedOp" in lines
 

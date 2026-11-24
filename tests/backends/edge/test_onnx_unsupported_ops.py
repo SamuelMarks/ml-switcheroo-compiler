@@ -28,11 +28,16 @@ def test_onnx_backend_not_supported_error() -> None:
     # Set schema to empty to trigger error
     generator.schema = {}
 
+    import importlib.machinery
     import importlib.util
     import sys
+    from contextlib import nullcontext
     from unittest.mock import MagicMock, patch
 
-    ctx = patch.dict(sys.modules, {"onnx": MagicMock()}) if importlib.util.find_spec("onnx") is None else MagicMock()
+    mock_onnx = MagicMock(name="onnx")
+    mock_onnx.__path__ = []
+    mock_onnx.__spec__ = importlib.machinery.ModuleSpec("onnx", loader=None, is_package=True)
+    ctx = patch.dict(sys.modules, {"onnx": mock_onnx}) if importlib.util.find_spec("onnx") is None else nullcontext()
     with ctx:
         with pytest.raises(BackendNotSupportedError) as exc_info:
             generator.generate()

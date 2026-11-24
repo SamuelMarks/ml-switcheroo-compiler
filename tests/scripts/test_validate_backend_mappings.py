@@ -281,10 +281,12 @@ def test_main_block(capsys: pytest.CaptureFixture[str]) -> None:
     import runpy
     import sys
 
-    with patch.object(sys, "argv", ["validate_backend_mappings.py"]):
-        try:
-            runpy.run_module("scripts.validate_backend_mappings", run_name="__main__")
-        except SystemExit as e:
-            assert e.code == 0
+    with pytest.MonkeyPatch().context() as mp:
+        mp.delitem(sys.modules, "scripts.validate_backend_mappings", raising=False)
+        with patch.object(sys, "argv", ["validate_backend_mappings.py"]):
+            try:
+                runpy.run_module("scripts.validate_backend_mappings", run_name="__main__")
+            except SystemExit as e:
+                assert e.code == 0
     captured: str = capsys.readouterr().out
     assert "Passed" in captured or "Validation" in captured

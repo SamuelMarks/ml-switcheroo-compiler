@@ -30,7 +30,8 @@ def test_scalar_fallback_no_zeros() -> None:
     graph.nodes[node.id] = node
 
     generator = CppGenerator(graph, strict=False)
-    code = generator.generate()
+    with pytest.warns(UserWarning, match="unmapped op 'FakeUnknownOp'"):
+        code = generator.generate()
 
     # Assert there is a fallback warning scalar loop that uses the input, instead of all zeros
     assert "Fallback Unimplemented" in code

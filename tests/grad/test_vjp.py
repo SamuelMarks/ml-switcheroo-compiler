@@ -165,8 +165,9 @@ def test_jvp_unary() -> None:
             """
             return dispatch_op(op_bound, x)
 
+        x_in = make_tensor([1.5, 1.5]) if op == "Acosh" else x
         try:
-            res, out_tangent = jvp(f, (x,), (tx,))
+            res, out_tangent = jvp(f, (x_in,), (tx,))
             assert res is not None
             assert out_tangent is not None
             evaluated_un += 1

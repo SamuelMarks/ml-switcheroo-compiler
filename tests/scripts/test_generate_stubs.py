@@ -394,9 +394,11 @@ def test_main_and_runpy(capsys: CaptureFixture[str]) -> None:
         gs.main()
         mock_gen.assert_called_once()
 
-    with patch.object(sys, "argv", ["generate_stubs.py"]):
-        with patch("os.path.exists", return_value=False):
-            runpy.run_module("scripts.generate_stubs", run_name="__main__")
+    with pytest.MonkeyPatch().context() as mp:
+        mp.delitem(sys.modules, "scripts.generate_stubs", raising=False)
+        with patch.object(sys, "argv", ["generate_stubs.py"]):
+            with patch("os.path.exists", return_value=False):
+                runpy.run_module("scripts.generate_stubs", run_name="__main__")
 
     captured = capsys.readouterr()
     assert "Snapshot directory not found" in captured.out

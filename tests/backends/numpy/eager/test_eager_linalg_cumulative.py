@@ -22,10 +22,11 @@ def test_core_math_ops_adjoint_det() -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops import _adjoint, _det
 
     x = np.array([[1.0 + 1j, 2.0], [3.0, 4.0]])
+    x_real = np.array([[2.0, 1.0], [1.0, 2.0]])
     with pytest.raises(TypeError):
         require_callable(_adjoint)(np, x)(np, not None)
     with pytest.raises(TypeError):
-        require_callable(_det)(np, x)(np, not None)
+        require_callable(_det)(np, x_real)(np, not None)
 
     class DummyBackend(MockTestStub):
         """Test class DummyBackend."""
@@ -36,7 +37,7 @@ def test_core_math_ops_adjoint_det() -> None:
     with pytest.raises(AttributeError):
         require_callable(_adjoint)(db, x)(db, not None)
     with pytest.raises(AttributeError):
-        require_callable(_det)(db, x)(db, not None)
+        require_callable(_det)(db, x_real)(db, not None)
 
     class DummyBackend2(MockTestStub):
         """Test class DummyBackend2."""
